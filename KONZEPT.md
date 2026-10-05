@@ -186,4 +186,4 @@ Grafik ist der größte Aufwand. Plan: **MVP mit eingefärbten Vanilla-Grafiken*
 2. Sandwürmer sind echte Gegner (segmented-unit wie Demolisher) und werden durch Vibration angelockt.
 3. Melange verdirbt nicht, nur Spice-Essenz.
 4. Mod-Name: **Arrakis** (ohne „Dune“, wegen Markenrecht).
-5. Repo wird angelegt, Phase 0 umgesetzt (Factorio 2.1).
+5. Repo wird angelegt, Phase 0 umgesetzt (Factorio 2.0, getestet von Max mit 2.0.77).
