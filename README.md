@@ -1,6 +1,6 @@
 # Arrakis
 
-Factorio-Mod für **Factorio 2.1 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
+Factorio-Mod für **Factorio 2.0 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
 
 Stand: Phase 0. Arrakis ist erforscht und anfliegbar, die Oberfläche ist eine einfache Sandwüste mit Nauvis-Erzen. Grafiken sind eingefärbte Vanilla-Platzhalter.
 
