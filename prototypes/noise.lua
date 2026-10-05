@@ -14,7 +14,7 @@ local function ore(name, control, seed, base, angle, start_distance, start_radiu
         richness = "var('control:" .. control .. ":richness')",
         frequency = "var('control:" .. control .. ":frequency')",
         size = "var('control:" .. control .. ":size')",
-        starting = "starting_spot_at_angle{angle = arrakis_starting_angle + " .. angle .. ", distance = " .. start_distance .. ", radius = " .. start_radius .. " * size ^ 0.5, x_distortion = 0, y_distortion = 0}"
+        starting = "starting_spot_at_angle{angle = arrakis_starting_angle + " .. angle .. ", distance = " .. start_distance .. ", radius = " .. start_radius .. " * size ^ 0.5, x_distortion = arrakis_wobble_x * " .. start_radius .. " * 0.7, y_distortion = arrakis_wobble_y * " .. start_radius .. " * 0.7}"
       }
     },
     {
@@ -30,6 +30,17 @@ data:extend({
     type = "noise-expression",
     name = "arrakis_starting_angle",
     expression = "map_seed_normalized * 360"
+  },
+  {
+    -- Verzerrung, damit Startfelder nicht kreisrund sind.
+    type = "noise-expression",
+    name = "arrakis_wobble_x",
+    expression = "multioctave_noise{x = x, y = y, persistence = 0.5, seed0 = map_seed, seed1 = 7601, octaves = 3, input_scale = 1/12}"
+  },
+  {
+    type = "noise-expression",
+    name = "arrakis_wobble_y",
+    expression = "multioctave_noise{x = x, y = y, persistence = 0.5, seed0 = map_seed, seed1 = 7602, octaves = 3, input_scale = 1/12}"
   },
   {
     type = "noise-expression",
@@ -66,7 +77,8 @@ data:extend({
     type = "noise-function",
     name = "arrakis_spot",
     parameters = {"seed1", "radius", "spacing", "favorability"},
-    expression = "spot_noise{x = x, y = y,\z
+    expression = "spot_noise{x = x + arrakis_wobble_x * 0.5 * radius,\z
+                             y = y + arrakis_wobble_y * 0.5 * radius,\z
                              seed0 = map_seed,\z
                              seed1 = seed1,\z
                              skip_span = 1,\z
@@ -93,7 +105,7 @@ data:extend({
       richness = "var('control:arrakis_spice:richness')",
       frequency = "var('control:arrakis_spice:frequency')",
       size = "var('control:arrakis_spice:size')",
-      starting = "starting_spot_at_angle{angle = arrakis_starting_angle + 135, distance = 150, radius = 14 * size ^ 0.5, x_distortion = 0, y_distortion = 0}"
+      starting = "starting_spot_at_angle{angle = arrakis_starting_angle + 135, distance = 150, radius = 14 * size ^ 0.5, x_distortion = arrakis_wobble_x * 10, y_distortion = arrakis_wobble_y * 10}"
     }
   },
   {
