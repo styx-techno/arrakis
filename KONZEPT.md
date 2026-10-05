@@ -180,12 +180,10 @@ Grafik ist der größte Aufwand. Plan: **MVP mit eingefärbten Vanilla-Grafiken*
 | 5 | Endgame-Techs (Ornithopter, Navigation, Schilde) | Langzeitziele |
 | 6 | Balancing, eigene Grafiken, Mod-Portal-Release | v1.0 |
 
-## 8. Offene Designfragen
+## 8. Entscheidungen (05.10.2026, Max)
 
-Siehe Zusammenfassung im Thread; Entscheidungen werden hier nachgetragen.
-
-1. Position in der Progression
-2. Sandwürmer: echte Gegner oder Umweltgefahr
-3. Spice verderblich oder nicht
-4. Name der Mod (Markenrecht „Dune“)
-5. Repo jetzt anlegen
+1. Arrakis wird nach Vulcanus freigeschaltet (Metallurgie-Wissenschaft) und ist optional. Aquilo bleibt ohne Arrakis erreichbar.
+2. Sandwürmer sind echte Gegner (segmented-unit wie Demolisher) und werden durch Vibration angelockt.
+3. Melange verdirbt nicht, nur Spice-Essenz.
+4. Mod-Name: **Arrakis** (ohne „Dune“, wegen Markenrecht).
+5. Repo wird angelegt, Phase 0 umgesetzt (Factorio 2.1).
