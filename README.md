@@ -2,7 +2,7 @@
 
 Factorio-Mod für **Factorio 2.0 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
 
-Stand: Phase 0. Arrakis ist erforscht und anfliegbar, die Oberfläche ist eine einfache Sandwüste mit Nauvis-Erzen. Grafiken sind eingefärbte Vanilla-Platzhalter.
+Stand: Phase 1. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 
@@ -18,7 +18,11 @@ Stand: Phase 0. Arrakis ist erforscht und anfliegbar, die Oberfläche ist eine e
 | Datei | Inhalt |
 |---|---|
 | `prototypes/planet/planet.lua` | Planet und Raumverbindung Vulcanus – Arrakis |
-| `prototypes/planet/planet-map-gen.lua` | Kartengenerator |
+| `prototypes/planet/planet-map-gen.lua` | Kartengenerator (welche Kacheln und Ressourcen) |
+| `prototypes/noise.lua` | Noise-Ausdrücke: Felsinseln, Erz-, Spice- und Wasserverteilung |
+| `prototypes/tiles.lua` | Arrakis-Fels |
+| `prototypes/resources.lua` | Spice-Sand, Tiefenwasser |
+| `prototypes/windtrap.lua` | Windfalle |
 | `prototypes/surface-property.lua` | Luftfeuchtigkeit (`humidity`) |
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Entwicklerbefehl `/arrakis` |

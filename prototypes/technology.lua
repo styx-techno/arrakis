@@ -31,3 +31,29 @@ data:extend({
 
 -- Platzhalter: Technologie-Icon einfärben, bis ein eigenes existiert.
 data.raw.technology["planet-discovery-arrakis"].icons[1].tint = {r = 1, g = 0.82, b = 0.55}
+
+data:extend({
+  {
+    type = "technology",
+    name = "arrakis-windtrap",
+    icons = {{icon = "__base__/graphics/technology/oil-processing.png", icon_size = 256, tint = {r = 1, g = 0.85, b = 0.6}}},
+    effects =
+    {
+      {type = "unlock-recipe", recipe = "arrakis-windtrap"},
+      {type = "unlock-recipe", recipe = "arrakis-windtrap-water"}
+    },
+    prerequisites = {"planet-discovery-arrakis"},
+    unit =
+    {
+      count = 200,
+      ingredients =
+      {
+        {"automation-science-pack", 1},
+        {"logistic-science-pack", 1},
+        {"chemical-science-pack", 1},
+        {"space-science-pack", 1}
+      },
+      time = 30
+    }
+  }
+})

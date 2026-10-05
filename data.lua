@@ -1,3 +1,8 @@
 require("prototypes.surface-property")
+require("prototypes.autoplace-controls")
+require("prototypes.noise")
+require("prototypes.tiles")
+require("prototypes.resources")
+require("prototypes.windtrap")
 require("prototypes.planet.planet")
 require("prototypes.technology")

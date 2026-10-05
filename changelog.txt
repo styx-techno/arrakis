@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 2026-10-05
+  Features:
+    - Felsinseln (Arrakis-Fels) im Sand, der Start liegt immer auf einer Felsinsel.
+    - Eisen, Kupfer, Stein und Kohle nur noch auf Fels, mit Startfeldern rund um den Startpunkt.
+    - Spice-Sand als neue Ressource, nur im offenen Sand.
+    - Tiefenwasser-Brunnen auf Fels, gefördert mit der Pumpe (Pumpjack).
+    - Windfalle: Wasser aus der Luft ohne Strom, freigeschaltet durch die Technologie "Windfalle".
+    - Luftfeuchtigkeit im Weltraum ist 0, Windfallen funktionieren dort nicht.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.2
 Date: 2026-10-05
   Bugfixes:

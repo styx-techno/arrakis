@@ -7,3 +7,6 @@ data:extend({
     default_value = 50
   }
 })
+
+-- Im Weltraum gibt es keine Luft, also auch keine Feuchte (Windfallen funktionieren dort nicht).
+data.raw.surface["space-platform"].surface_properties.humidity = 0
