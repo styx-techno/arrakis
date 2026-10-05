@@ -1,0 +1,28 @@
+# Arrakis
+
+Factorio-Mod für **Factorio 2.1 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
+
+Stand: Phase 0. Arrakis ist erforscht und anfliegbar, die Oberfläche ist eine einfache Sandwüste mit Nauvis-Erzen. Grafiken sind eingefärbte Vanilla-Platzhalter.
+
+## Installation zum Testen
+
+1. Repo in den Factorio-Mod-Ordner klonen, der Ordner muss `arrakis` heißen:
+   - Windows: `%APPDATA%\Factorio\mods\arrakis`
+   - Linux: `~/.factorio/mods/arrakis`
+2. Factorio starten, Mod aktivieren, neues Spiel mit Space Age.
+3. Schnelltest ohne Forschung: im Chat `/arrakis` eingeben (als Admin). Erzeugt die Oberfläche und teleportiert dich hin.
+   Zum Freischalten der Technologie: `/c game.player.force.technologies["planet-discovery-arrakis"].researched = true`
+
+## Aufbau
+
+| Datei | Inhalt |
+|---|---|
+| `prototypes/planet/planet.lua` | Planet und Raumverbindung Vulcanus – Arrakis |
+| `prototypes/planet/planet-map-gen.lua` | Kartengenerator |
+| `prototypes/surface-property.lua` | Luftfeuchtigkeit (`humidity`) |
+| `prototypes/technology.lua` | Entdeckungs-Technologie |
+| `control.lua` | Entwicklerbefehl `/arrakis` |
+
+## Roadmap
+
+Siehe Konzept: Phase 1 Gelände und Wasser, Phase 2 Spice-Kette und Spice-Wissenschaft, Phase 3 Sandwürmer, Phase 4 Stürme und Plast-Stahl, Phase 5 Endgame, Phase 6 Balancing und Release.

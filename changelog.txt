@@ -1,0 +1,8 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-10-05
+  Features:
+    - Neuer Planet Arrakis, erreichbar über eine Raumverbindung von Vulcanus.
+    - Technologie "Entdeckung: Arrakis" (benötigt Metallurgie-Wissenschaft).
+    - Neue Oberflächen-Eigenschaft Luftfeuchtigkeit.
+    - Entwicklerbefehl /arrakis zum direkten Testen.
