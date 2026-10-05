@@ -9,8 +9,12 @@ planet_map_gen.arrakis = function()
     property_expression_names =
     {
       moisture = "arrakis_moisture",
-      aux = "arrakis_aux",
-      cliffiness = "0"
+      aux = "arrakis_aux"
+    },
+    cliff_settings =
+    {
+      name = "cliff",
+      richness = 0
     },
     autoplace_controls =
     {

@@ -44,6 +44,13 @@ data:extend({
     from = "vulcanus",
     to = "arrakis",
     order = "z[arrakis]-a",
+    -- Space Age erzeugt Routen-Icons nur für Planeten mit "icon"; Arrakis nutzt "icons" (eingefärbt), daher hier explizit.
+    icons =
+    {
+      {icon = "__space-age__/graphics/icons/planet-route.png"},
+      {icon = "__space-age__/graphics/icons/vulcanus.png", scale = 0.333, shift = {-6, -6}},
+      {icon = "__space-age__/graphics/icons/vulcanus.png", scale = 0.333, shift = {6, 6}, tint = sand_tint}
+    },
     length = 15000,
     asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.nauvis_vulcanus)
   }
