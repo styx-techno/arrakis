@@ -2,7 +2,7 @@
 
 Factorio-Mod für **Factorio 2.0 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
 
-Stand: Phase 1. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Grafiken sind eingefärbte Vanilla-Platzhalter.
+Stand: Phase 2. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 
@@ -11,7 +11,8 @@ Stand: Phase 1. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offe
    - Linux: `~/.factorio/mods/arrakis`
 2. Factorio starten, Mod aktivieren, neues Spiel mit Space Age.
 3. Schnelltest ohne Forschung: im Chat `/arrakis` eingeben (als Admin). Erzeugt die Oberfläche und teleportiert dich hin.
-   Zum Freischalten der Technologie: `/c game.player.force.technologies["planet-discovery-arrakis"].researched = true`
+   Alle Arrakis-Forschungen auf einmal freischalten (schaltet Achievements ab):
+   `/c for _, t in pairs({"planet-discovery-arrakis", "arrakis-windtrap", "arrakis-spice-processing", "spice-science-pack"}) do game.player.force.technologies[t].researched = true end`
 
 ## Aufbau
 
@@ -23,6 +24,8 @@ Stand: Phase 1. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offe
 | `prototypes/tiles.lua` | Arrakis-Fels |
 | `prototypes/resources.lua` | Spice-Sand, Tiefenwasser |
 | `prototypes/windtrap.lua` | Windfalle |
+| `prototypes/spice.lua` | Spice-Raffinerie, Melange, Spice-Essenz, Sand, Spice-Wissenschaft |
+| `data-updates.lua` | Spice-Wissenschaft in die Labore eintragen |
 | `prototypes/surface-property.lua` | Luftfeuchtigkeit (`humidity`) |
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Entwicklerbefehl `/arrakis` |

@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.0
+Date: 2026-10-05
+  Features:
+    - Spice-Raffinerie (50 % Grundproduktivität): Spice-Sand + Wasser ergibt Melange und Sand.
+    - Spice-Essenz aus Melange, verdirbt nach 15 Minuten.
+    - Spice-Wissenschaftspaket, herstellbar nur auf Arrakis. Wird von Labor und Biolabor angenommen.
+    - Sand lässt sich im Ofen zu Steinziegeln brennen.
+    - Forschungen: Spice-Verarbeitung (Auslöser: Spice-Sand abbauen), Spice-Wissenschaftspaket (Auslöser: 20 Melange herstellen), Melange-Produktivität (unendlich).
+---------------------------------------------------------------------------------------------------
 Version: 0.2.2
 Date: 2026-10-05
   Changes:
