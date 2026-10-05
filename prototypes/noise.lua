@@ -48,10 +48,15 @@ data:extend({
     expression = "multioctave_noise{x = x, y = y, persistence = 0.55, seed0 = map_seed, seed1 = 7201, octaves = 5, input_scale = 1/220} - 0.35"
   },
   {
-    -- Startinsel: Radius etwa 90 Felder um den Startpunkt.
+    -- Startinsel: Radius etwa 55 bis 95 Felder um den Startpunkt, mit ausgefranstem Rand.
     type = "noise-expression",
     name = "arrakis_rock",
-    expression = "max(arrakis_rock_noise, 0.4 - distance / 150)"
+    expression = "max(arrakis_rock_noise, 0.5 - distance / 150 + 0.15 * arrakis_island_edge)"
+  },
+  {
+    type = "noise-expression",
+    name = "arrakis_island_edge",
+    expression = "multioctave_noise{x = x, y = y, persistence = 0.6, seed0 = map_seed, seed1 = 7203, octaves = 4, input_scale = 1/40}"
   },
   {
     type = "noise-expression",

@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.2
+Date: 2026-10-05
+  Changes:
+    - Startinsel hat einen unregelmäßigen Rand statt eines Kreises.
+    - /arrakis erzeugt einen größeren Bereich (etwa 250 Felder Radius), damit Spice und Nachbarinseln sofort auf der Karte sind.
+---------------------------------------------------------------------------------------------------
 Version: 0.2.1
 Date: 2026-10-05
   Changes:
