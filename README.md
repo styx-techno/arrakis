@@ -26,6 +26,7 @@ Stand: Phase 2. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offe
 | `prototypes/windtrap.lua` | Windfalle |
 | `prototypes/spice.lua` | Spice-Raffinerie, Melange, Spice-Essenz, Sand, Spice-Wissenschaft |
 | `data-updates.lua` | Spice-Wissenschaft in die Labore eintragen |
+| `docs/design-ernter-ornithopter.md` | Design v0.3: Spice-Ernter, Ornithopter, Sandwürmer, Automatik |
 | `prototypes/surface-property.lua` | Luftfeuchtigkeit (`humidity`) |
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Entwicklerbefehl `/arrakis` |
