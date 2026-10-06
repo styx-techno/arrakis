@@ -1,6 +1,6 @@
 # Arrakis
 
-Factorio-Mod für **Factorio 2.0 + Space Age**: ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice.
+Factorio-Mod für **Factorio 2.0 + Space Age** (ab 2.0.61): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Der Code ist auf Factorio 2.1 vorbereitet; dafür muss nur `info.json` umgestellt werden (`"factorio_version": "2.1"`, Abhängigkeiten `>= 2.1.20`).
 
 Stand: Phase 2. Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Grafiken sind eingefärbte Vanilla-Platzhalter.
 

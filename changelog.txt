@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.1
+Date: 2026-10-06
+  Changes:
+    - Benötigt jetzt Factorio 2.0.61 oder neuer.
+  Modding:
+    - Versionsweiche für Factorio 2.1 (prototypes/compat.lua): Die Mod schreibt ihre Prototypen in 2.0-Syntax und stellt sie unter 2.1 automatisch um (Rezeptkategorien, Forschungsauslöser, Ergebniswahrscheinlichkeit, Brennstoffkategorie).
+---------------------------------------------------------------------------------------------------
 Version: 0.3.0
 Date: 2026-10-05
   Features:

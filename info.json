@@ -1,10 +1,13 @@
 {
   "name": "arrakis",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "title": "Arrakis",
   "author": "styx-techno",
   "description": "Ein neuer Wüstenplanet für Space Age: Wassermangel, Sandwürmer und Spice.",
   "factorio_version": "2.0",
-  "dependencies": ["base >= 2.0.0", "space-age >= 2.0.0"],
+  "dependencies": [
+    "base >= 2.0.61",
+    "space-age >= 2.0.61"
+  ],
   "space_travel_required": true
 }

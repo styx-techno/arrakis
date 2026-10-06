@@ -23,7 +23,7 @@ local deep_water = table.deepcopy(data.raw.resource["crude-oil"])
 deep_water.name = "arrakis-deep-water"
 deep_water.icon = nil
 deep_water.icons = {{icon = "__base__/graphics/icons/crude-oil-resource.png", tint = water_tint}}
-deep_water.minable.results = {{type = "fluid", name = "water", amount_min = 10, amount_max = 10, probability = 1}}
+deep_water.minable.results = {{type = "fluid", name = "water", amount_min = 10, amount_max = 10}}
 deep_water.stages.sheet.tint = water_tint
 deep_water.map_color = {0.2, 0.45, 0.9}
 deep_water.factoriopedia_simulation = nil

@@ -1,6 +1,13 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 06.10.2026 · Mod-Stand 0.3.0 · Max spielt Factorio 2.0.77 · Factorio 2.1 (bis 2.1.20) ist berücksichtigt
+Stand: 06.10.2026 · Mod-Stand 0.3.1 · Max spielt Factorio 2.0.77 · Factorio 2.1 (bis 2.1.20) ist berücksichtigt
+
+**Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
+1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json.
+2. **Spice-Abbau A:** Spice-Sand nur mit dem Ernter und von Hand (eigene Ressourcenkategorie). Bohrer, die in alten Spielständen auf Spice stehen, werden gemeldet.
+3. **Flucht A:** Ohne Ornithopter kein Entkommen, außer auf dem Lehrfeld. Ernter höchstens 1,5 Kacheln/s, Einpacken 10 s, Spicefelder mindestens 100 Kacheln vom Fels, keine Fernsteuerung.
+4. **Wurmbiss C:** Mod-Einstellung, Standard Totalverlust (Ernter und Ladung weg, Wrack bleibt). Alternative: Ernter überlebt schwer beschädigt, Ladung weg.
+5. **Brennstoff B:** Zusätzlich ein lokales Spice-Brikett (5 Spice-Sand + 1 Kohle → 20 MJ, aus der Raffinerie).
 
 Dieses Dokument ersetzt drei Teile von Konzept v0.1:
 - die „Spice-Erntemaschine (großer Bohrer)“ aus 3.2 und 3.4,
@@ -42,7 +49,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 ### 2.1 Stufe 1: manuell
 
 0. **Briefing.** Mit der Forschung „Entdeckung Arrakis“ erscheint ein Tipps-und-Tricks-Eintrag: Fels ist sicher, Sand lebt, Maschinen auf Sand erzeugen Vibration, Wurmzeichen bedeutet Lebensgefahr.
-1. **Erster Spice.** Spice-Sand wird von Hand abgebaut. Das löst wie bisher „Spice-Verarbeitung“ aus. Normale Bohrer bauen Spice nicht ab (offene Frage 2).
+1. **Erster Spice.** Spice-Sand wird von Hand abgebaut. Das löst wie bisher „Spice-Verarbeitung“ aus. Normale Bohrer bauen Spice nicht ab (Entscheidung 2).
 2. **Spice-Ernte.** Diese Trigger-Forschung (10 Melange herstellen) schaltet Spice-Ernter, Spice-Annahme und Tankstutzen frei.
 3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger). Ab diesem Moment läuft die **Schonfrist**, sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde.
 4. **Zum Feld bringen.**
@@ -67,7 +74,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
    - *Ohne Ornithopter:* einpacken (10 s) und auf Fels kriechen. Das gelingt nur auf dem Lehrfeld.
 9. **Der Wurm kommt an.**
    - *Ziel weg:* Er sucht 10 s und taucht ab.
-   - *Ziel noch da:* Eine Sandfontäne bricht hervor, und der Ernter wird gefressen (wie hart, entscheidet Max mit offener Frage 4). Mit ihm stirbt alles im Umkreis von 4 Kacheln, das auf Sand steht.
+   - *Ziel noch da:* Eine Sandfontäne bricht hervor, und der Ernter wird gefressen (Standard Totalverlust, per Mod-Einstellung abschwächbar, Entscheidung 4). Mit ihm stirbt alles im Umkreis von 4 Kacheln, das auf Sand steht.
    - Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand.
    - Danach ist die Wärme der Gegend null, und der Sektor bleibt 2 bis 4 Minuten ruhig.
 10. **Entladen.** Den Ernter auf den Andockplatz einer Spice-Annahme fahren oder dort absetzen; die Annahme steht auf Fels.
@@ -157,7 +164,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 | Flieger-Bein (`arrakis-flyer-leg`) | `spider-leg` | Unsichtbares, kollisionsfreies Trägerbein | – | keine |
 | Getragener Ernter (`arrakis-harvester-carried`, `-shadow`) | `sprite` | Bild unter dem Flieger | 1 | Erster Frame von `__base__/graphics/entity/tank/tank-base-1.png`, getönt; Schatten-Sprite |
 | Thumper (`arrakis-thumper`) | `simple-entity-with-owner`, nur auf Sand | Ablenkung/Köder, 60 s | 1 | Verkleinerte Pumpjack-Animation per Rendering |
-| Spice-Brikett (`arrakis-spice-briquette`), nur wenn Frage 5 = B | `item` mit Brennwert | Lokaler Brennstoff | 1 | Kohle-Icon orange getönt |
+| Spice-Brikett (`arrakis-spice-briquette`), Entscheidung 5 | `item` mit Brennwert | Lokaler Brennstoff | 1 | Kohle-Icon orange getönt |
 | Ornithopter-Leitstelle (`arrakis-ornithopter-control`) | `container` 4×4 auf Fels + versteckter `constant-combinator` | Basis für Carryalls, Treibstoff, Ersatz-Ernter, Schaltung | 2/3 | Roboport getönt |
 | Carryall (`arrakis-carryall`) | `spider-vehicle` | Unbemannter Lastenträger | 2 | Spidertron-Rumpf größer und dunkler |
 | Ernter Mk2 (`spice-harvester-mk2`) | `car` | +50 % Abbau, −20 % Vibration | 2 | Ernter dunkler getönt |
@@ -183,7 +190,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 | Thumper | 5 Eisenplatte, 5 Zahnrad, 2 Kohle | Verbrauchsgut |
 | Leitstelle | 50 Stahl, 200 Ziegel, 20 Fortgeschr. Schaltkreis, 10 Spice-Essenz | Essenz verdirbt, also wird auf Arrakis gebaut |
 | Carryall | wie Ornithopter + 10 Stahl | |
-| Spice-Brikett (Frage 5) | 5 Spice-Sand + 1 Kohle → 1 Brikett (20 MJ), in der Raffinerie | |
+| Spice-Brikett (Entscheidung 5) | 5 Spice-Sand + 1 Kohle → 1 Brikett (20 MJ), in der Raffinerie | |
 | Ernter Mk2 / Carryall Mk2 | Ernter + 4 Wurmzahn + 10 Spice-Essenz / Carryall + 8 Wurmzahn (Phase 5) | Gibt dem Wurmtöten einen Zweck |
 
 - **Beute:** kleiner Wurm 2 bis 4 Wurmzähne, großer 6 bis 10. Verteilt wird sie per Skript (4.3).
@@ -625,36 +632,30 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 
 ### 5.3 Die Weiche
 
+Umgesetzt in 0.3.1 (`prototypes/compat.lua`). Alle Prototypen der Mod werden in 2.0-Syntax geschrieben. `data.lua` ruft vor den eigenen Prototypen `compat.start()` auf; das merkt sich alle vorhandenen Prototypen. Am Ende schreibt `compat.finish()` nur die neu hinzugekommenen auf die Syntax der laufenden Version um. Vanilla und andere Mods bleiben unberührt.
+
+| Unter 2.1 umgeschrieben | Beleg |
+|---|---|
+| Rezept `category` → `categories = {…}` | CL:707 |
+| `research_trigger` `mine-entity`: `entity` → `entities = {…}` | CL:762 |
+| Ergebnis-`probability` → `independent_probability` (Rezepte und `minable.results`) | CL:766 |
+| Item `fuel_category` → `fuel_categories = {…}` (erst ab 2.1.20) | CL:35 |
+
 ```lua
--- prototypes/compat.lua
-local compat = {}
-local base = mods["base"]
-compat.v21 = helpers.compare_versions(base, "2.1.0") >= 0
-compat.v2120 = helpers.compare_versions(base, "2.1.20") >= 0
+-- prototypes/compat.lua (Kern)
+local base_version = mods["base"]
+compat.v21 = helpers.compare_versions(base_version, "2.1.0") >= 0
+compat.v2120 = helpers.compare_versions(base_version, "2.1.20") >= 0
 
-function compat.recipe_category(recipe, cat)          -- CL:707
-  if compat.v21 then recipe.categories = {cat} else recipe.category = cat end
-end
-function compat.mine_trigger(name)                    -- CL:762
-  if compat.v21 then return {type = "mine-entity", entities = {name}} end
-  return {type = "mine-entity", entity = name}
-end
-function compat.vehicle_physics(p, braking, friction) -- CL:740
-  p.braking_power, p.friction = nil, nil
-  p.braking_force, p.friction_force = braking, friction
-end
-function compat.fuel_category(item, cat)              -- CL:35, erst ab 2.1.20
-  if compat.v2120 then item.fuel_categories = {cat} else item.fuel_category = cat end
-end
-return compat
-
--- scripts/compat.lua (Laufzeit)
+-- scripts/compat.lua (Laufzeit, ab Phase 3a)
 local V21 = helpers.compare_versions(script.active_mods["base"], "2.1.0") >= 0
 ```
-- Für den 2.1-Build schreibt ein kleines Skript `info.json` um: `"factorio_version": "2.1"` und die Abhängigkeiten `"base >= 2.1.20"` und `"space-age >= 2.1.20"`. Ein 2.1.x vor 2.1.20 kommt damit nie zum Zug, und alle [2.1]-Funktionen sind sicher vorhanden (die spätesten kamen mit 2.1.18 und 2.1.20).
+- Fahrzeuge setzen nach dem deepcopy `compat.vehicle_physics(p, bremskraft, reibung)`: Die Funktion löscht `braking_power` und `friction` und schreibt `braking_force` und `friction_force`. Das versteht 2.0 wie 2.1 (CL:740, A20 prototypes.d.ts:16902-16909).
+- Der Lua-Mock prüft beide Versionen (`mock.py <mod> 2.0.77` und `mock.py <mod> 2.1.20`), auch mit Gegenprobe ohne `compat.finish()`.
+- Für den 2.1-Build wird `info.json` umgestellt: `"factorio_version": "2.1"` und die Abhängigkeiten `"base >= 2.1.20"` und `"space-age >= 2.1.20"`. Ein 2.1.x vor 2.1.20 kommt damit nie zum Zug, und alle [2.1]-Funktionen sind sicher vorhanden (die spätesten kamen mit 2.1.18 und 2.1.20).
 - Unbekannte Prototyp-Felder meldet Factorio nur mit `--check-unused-prototype-data` (CL:13997). Trotzdem stehen 2.1-Felder nur hinter der Weiche.
 
-### 5.4 Breaking Changes im bestehenden Code (Stand 0.3.0)
+### 5.4 Breaking Changes im bestehenden Code (Stand 0.3.0, erledigt in 0.3.1)
 
 | Stelle | Heute (2.0) | In 2.1 | Folge ohne Anpassung |
 |---|---|---|---|
@@ -678,7 +679,7 @@ Unverändert laufen `control.lua`, `data-updates.lua` (`LabPrototype.inputs` gib
 
 **Prototypen**
 - Fahrzeuge nur mit `braking_force` und `friction_force`.
-- Brennstoff-Items nur über `compat.fuel_category`.
+- Brennstoff-Items mit `fuel_category` schreiben; `compat.finish()` stellt unter 2.1.20 um.
 - Beute per Skript statt über `loot` (CL:669).
 - Container per deepcopy; `circuit_connector` ist in 2.1 ein Array (CL:661).
 - In `key_sequence` nur dokumentierte Tastennamen (CL:646).
@@ -691,7 +692,7 @@ Die [2.1]-Punkte stehen in 4.1 bis 4.4. Kurz zusammengefasst:
 - **Anzeige:** Tooltip-Felder (CL:797), Inventar-GUI (CL:848), Cursor-Vorschau (CL:902-903).
 - **Flug:** Patrouille (CL:495, CL:804), Pin-Rechtsklick (CL:504), leichteres Anklicken in der Karte (CL:536).
 - **Schaltung:** Radar „universe“ (CL:481), Drahtwahl (CL:471).
-- **Latenzausgleich** für ferngesteuerte Autos (CL:494). Er nützt nur, falls Max die Fernsteuerung des Ernters erlaubt (offene Frage 3).
+- **Latenzausgleich** für ferngesteuerte Autos (CL:494). Entfällt, denn der Ernter lässt sich nicht fernsteuern (Entscheidung 3).
 - **Für Phase 4 (Stürme):** die Oberflächen-Eigenschaft „robot-energy-usage“ (CL:642) und `play_music`.
 
 ## 6. Forschungsbaum
@@ -722,7 +723,7 @@ Ersetzt die alte Phase 3 und holt den Ornithopter aus Phase 5 nach vorn. Jede Ph
 |---|---|---|---|
 | 3.0 | 0.3.1 | Versionsweiche, Breaking Changes aus 5.4, `probability` gestrichen, `base >= 2.0.61` | Ein 0.3.0-Spielstand lädt in 2.0.77 unverändert. Optional: Mit 2.1-`info.json` startet die Mod in 2.1.20 |
 | 3a | 0.4.0 | Prüfstand `/arrakis-test` mit Test-Prototypen: T1–T7, T9, T11, T12 | Protokoll entscheidet: Spider oder Auto als Flieger, Proxy oder Skript, wie der Wurm gesteuert wird, Ernter-Tempo, Noise-Schwelle |
-| 3b | 0.5.0 | Ernter (Abbau, Aufbauen/Einpacken, Tempo-Deckel, Vorsichtsmodus), Ressourcenkategorie samt Migration, Annahme und Tankstutzen, Forschung „Spice-Ernte“, Kartengenerator (Lehrfeld, Mindestabstand), Brennstoff nach Frage 5 | Ernter fährt höchstens 1,5 Kacheln/s, erntet 2000 Spice-Sand, die Annahme leert ihn per Greifarm, der Tankstutzen tankt; die Statistik zeigt Spice. Ein 0.3.0-Spielstand meldet Bohrer auf Spice |
+| 3b | 0.5.0 | Ernter (Abbau, Aufbauen/Einpacken, Tempo-Deckel, Vorsichtsmodus), Ressourcenkategorie samt Migration, Annahme und Tankstutzen, Forschung „Spice-Ernte“, Kartengenerator (Lehrfeld, Mindestabstand), Spice-Brikett, Mod-Einstellung Wurmbiss | Ernter fährt höchstens 1,5 Kacheln/s, erntet 2000 Spice-Sand, die Annahme leert ihn per Greifarm, der Tankstutzen tankt; die Statistik zeigt Spice. Ein 0.3.0-Spielstand meldet Bohrer auf Spice |
 | 3c | 0.6.0 | Ornithopter mit Trigger-Forschung, Ablage, Anheben/Absetzen per Taste und Fernbedienung, Fahrer als Beifahrer, Absturzregeln | Vollen Ernter von Feld A nach B tragen, Inhalt identisch; der Fahrer fliegt mit. Ornithopter mit Last zerstören: Der Ernter fällt mit 30 % Schaden |
 | 3d1 | 0.7.0 | Vibration, Wärme, Unruhe, Wurmzeichen, Countdown, Schonfrist, Briefings, Vibrationsanzeige; **geskripteter Biss mit Eruption, noch ohne Wurm-Entity** | Ein einzelner Ernter: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s; Lehrjagd 90 s. Mit Rettung bleibt er heil, ohne Rettung kommt der Biss genau bei 0. Auf einem Nicht-Lehrfeld scheitert die Flucht per Fahrt |
 | 3d2 | 0.8.0 | Wurm-Entity mit verzögertem Spawn, Körperprüfung, Route/ROUTING, Fels-Wächter, Abtauchen, ohne Ascheeffekte (T5–T7) | Biss höchstens 3 s nach Countdown-Ende. Vor einer Felsinsel biegt der Wurm ab. Ein Ernter 10 Kacheln vor Fels wird trotzdem gebissen. Ein Ornithopter über dem Kopf verliert kein Tempo |
