@@ -72,10 +72,160 @@ for t, ps in pairs(raw) do for n, p in pairs(ps) do if type(p) == "table" and is
   for _, c in ipairs(p.resource_categories or {}) do if not raw["resource-category"][c] then add("FEHLER " .. t .. " " .. n .. " resource_category " .. c) end end
   if p.energy_source and p.energy_source.fuel_categories then for _, c in ipairs(p.energy_source.fuel_categories) do if not raw["fuel-category"][c] then add("FEHLER " .. t .. " " .. n .. " burner fuel " .. c) end end end
   if p.collision_mask and p.collision_mask.layers then for l in pairs(p.collision_mask.layers) do if not raw["collision-layer"][l] then add("FEHLER " .. t .. " " .. n .. " collision layer " .. l) end end end
-  if t == "spider-vehicle" and p.spider_engine then for _, leg in ipairs(p.spider_engine.legs or {p.spider_engine.legs}) do local ln = leg.leg if ln and not raw["spider-leg"][ln] then add("FEHLER spider " .. n .. " leg " .. ln) end end end
+  for _, rule in ipairs(p.tile_buildability_rules or {}) do
+    if not rule.area then add("FEHLER " .. t .. " " .. n .. " tile_buildability_rules ohne area") end
+    for _, key in ipairs({"required_tiles", "colliding_tiles"}) do
+      for l in pairs(rule[key] and rule[key].layers or {}) do if not raw["collision-layer"][l] then add("FEHLER " .. t .. " " .. n .. " " .. key .. " layer " .. l) end end
+    end
+  end
 end end end
 
 for n, tile in pairs(raw.tile) do if is_own(n) and tile.collision_mask then for l in pairs(tile.collision_mask.layers or {}) do if not raw["collision-layer"][l] then add("FEHLER tile " .. n .. " layer " .. l) end end end end
+
+-- Referenzen in Trigger-Effekten eigener Prototypen (z. B. kopierte Wurm-Effekte)
+local entity_types = {}
+for t in pairs(defines.prototypes and defines.prototypes.entity or {}) do entity_types[#entity_types+1] = t end
+local function entity_exists(n)
+  if #entity_types == 0 then for _, ps in pairs(raw) do if ps[n] then return true end end return false end
+  for _, t in ipairs(entity_types) do if raw[t] and raw[t][n] then return true end end
+  return false
+end
+local function in_raw(t) return function(n) return raw[t] ~= nil and raw[t][n] ~= nil end end
+local ref_checks = {
+  ["create-entity"] = {"entity_name", entity_exists},
+  ["create-smoke"] = {"entity_name", entity_exists},
+  ["create-explosion"] = {"entity_name", entity_exists},
+  ["create-fire"] = {"entity_name", entity_exists},
+  ["create-trivial-smoke"] = {"smoke_name", in_raw("trivial-smoke")},
+  ["create-particle"] = {"particle_name", in_raw("optimized-particle")},
+  ["create-sticker"] = {"sticker", in_raw("sticker")},
+}
+local function walk_refs(where, node, seen)
+  if type(node) ~= "table" or seen[node] then return end
+  seen[node] = true
+  local rc = type(node.type) == "string" and ref_checks[node.type]
+  if rc then
+    local ref = node[rc[1]]
+    if type(ref) == "string" and not rc[2](ref) then add("FEHLER " .. where .. " " .. node.type .. " " .. ref) end
+  end
+  if node.type == "delayed" and type(node.delayed_trigger) == "string" and not in_raw("delayed-active-trigger")(node.delayed_trigger) then
+    add("FEHLER " .. where .. " delayed_trigger " .. node.delayed_trigger)
+  end
+  for _, v in pairs(node) do walk_refs(where, v, seen) end
+end
+for _, t in ipairs(entity_types) do for n, p in pairs(raw[t] or {}) do if is_own(n) then
+  walk_refs(t .. " " .. n, p, {})
+  if p.corpse and not entity_exists(p.corpse) then add("FEHLER " .. t .. " " .. n .. " corpse " .. p.corpse) end
+  if p.dying_explosion and type(p.dying_explosion) == "string" and not entity_exists(p.dying_explosion) then add("FEHLER " .. t .. " " .. n .. " dying_explosion " .. p.dying_explosion) end
+end end end
+
+-- Spinnenbeine: vorhanden, Positionen gesetzt, Laufgruppen ab 1 lückenlos
+for n, p in pairs(raw["spider-vehicle"] or {}) do if is_own(n) then
+  local legs = p.spider_engine and p.spider_engine.legs
+  if not legs then add("FEHLER spider " .. n .. " ohne spider_engine.legs") else
+    if legs.leg then legs = {legs} end
+    local groups, max_group = {}, 0
+    for i, leg in ipairs(legs) do
+      if not raw["spider-leg"][leg.leg or ""] then add("FEHLER spider " .. n .. " leg " .. tostring(leg.leg)) end
+      if not leg.mount_position or not leg.ground_position then add("FEHLER spider " .. n .. " Bein " .. i .. " ohne mount/ground_position") end
+      local g = leg.walking_group
+      if type(g) ~= "number" or g < 1 then add("FEHLER spider " .. n .. " Bein " .. i .. " walking_group " .. tostring(g))
+      else groups[g] = true if g > max_group then max_group = g end end
+    end
+    for g = 1, max_group do if not groups[g] then add("FEHLER spider " .. n .. " walking_group " .. g .. " fehlt") end end
+    if #legs == 0 then add("FEHLER spider " .. n .. " ohne Beine") end
+  end
+  for _, fc in ipairs(p.energy_source and p.energy_source.fuel_categories or {}) do if not raw["fuel-category"][fc] then add("FEHLER spider " .. n .. " fuel_category " .. fc) end end
+  if p.tall then add("FEHLER spider " .. n .. " tall gesetzt") end
+end end
+
+-- Segmentierte Einheiten: Segmentnamen, Anzahl (höchstens 63)
+for n, p in pairs(raw["segmented-unit"] or {}) do if is_own(n) then
+  local segs = p.segment_engine and p.segment_engine.segments or {}
+  if #segs == 0 or #segs > 63 then add("FEHLER segmented-unit " .. n .. " " .. #segs .. " Segmente") end
+  for i, s in ipairs(segs) do if not raw.segment[s.segment or ""] then add("FEHLER segmented-unit " .. n .. " Segment " .. i .. " " .. tostring(s.segment)) end end
+  add(string.format("Wurm %s: %d Segmente, investigating %.2f, attacking %.2f Kacheln/s", n, #segs, p.investigating_speed * 60, p.attacking_speed * 60))
+end end
+
+-- Prüfstand-Würmer: keine Ascheeffekte mehr (Ascheschwaden/Sticker, Spuren, destroy-cliffs)
+local ash_patterns = {"ash%-cloud", "ash%-sticker", "%-trail%-upper", "%-trail%-lower"}
+local function has_ash(node, seen)
+  if type(node) ~= "table" or seen[node] then return false end
+  seen[node] = true
+  if node.type == "destroy-cliffs" or node.type == "create-sticker" then return true end
+  for _, key in ipairs({"entity_name", "smoke_name", "sticker", "delayed_trigger"}) do
+    if type(node[key]) == "string" then for _, pat in ipairs(ash_patterns) do if node[key]:find(pat) then return true end end end
+  end
+  for _, v in pairs(node) do if has_ash(v, seen) then return true end end
+  return false
+end
+for _, t in ipairs({"segmented-unit", "segment"}) do for n, p in pairs(raw[t] or {}) do if n:find("^arrakis%-test%-worm") then
+  if has_ash(p.update_effects, {}) or p.update_effects_while_enraged then add("FEHLER " .. t .. " " .. n .. " hat noch Ascheeffekte") end
+  if p.loot or p.corpse then add("FEHLER " .. t .. " " .. n .. " hat noch Beute/Leiche") end
+end end end
+
+-- Custom-Inputs und Sprites
+for n, ci in pairs(raw["custom-input"] or {}) do if is_own(n) then
+  if type(ci.key_sequence) ~= "string" then add("FEHLER custom-input " .. n .. " key_sequence") end
+  if ci.item_to_spawn and not item_exists(ci.item_to_spawn) then add("FEHLER custom-input " .. n .. " item_to_spawn " .. ci.item_to_spawn) end
+end end
+for n, sp in pairs(raw.sprite or {}) do if is_own(n) then
+  if not sp.filename and not sp.layers then add("FEHLER sprite " .. n .. " ohne filename/layers") end
+end end
+
+-- Kollisionsebene am Fels
+if not raw["collision-layer"].arrakis_rock then add("FEHLER collision-layer arrakis_rock fehlt") end
+local rock_tile = raw.tile["arrakis-rock"]
+if not (rock_tile and rock_tile.collision_mask and rock_tile.collision_mask.layers.arrakis_rock) then add("FEHLER tile arrakis-rock ohne Ebene arrakis_rock") end
+
+-- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
+local tb_setting = settings.startup["arrakis-testbench"]
+local tb_on = tb_setting and tb_setting.value
+local tb_expected = {
+  ["spider-leg"] = {"arrakis-test-flyer-leg", "arrakis-test-flyer-leg-fast"},
+  ["spider-vehicle"] = {"arrakis-test-flyer-1", "arrakis-test-flyer-2", "arrakis-test-flyer-4", "arrakis-test-flyer-4-fast"},
+  sticker = {"arrakis-test-load-sticker", "arrakis-test-load-sticker-move"},
+  car = {"arrakis-test-harvester"},
+  ["proxy-container"] = {"arrakis-test-intake", "arrakis-test-nozzle"},
+  ["segmented-unit"] = {"arrakis-test-worm", "arrakis-test-worm-rockmask"},
+  sprite = {"arrakis-test-carried", "arrakis-test-carried-shadow"},
+  ["custom-input"] = {"arrakis-test-key"},
+}
+local tb_count = 0
+local is_entity_type = {}
+for _, t in ipairs(entity_types) do is_entity_type[t] = true end
+for t, ps in pairs(raw) do for n, p in pairs(ps) do if type(n) == "string" and n:find("^arrakis%-test%-") then
+  tb_count = tb_count + 1
+  if not tb_on then add("FEHLER Prüfstand aus, aber " .. t .. " " .. n .. " vorhanden") end
+  if is_entity_type[t] and p.hidden ~= true then add("FEHLER " .. t .. " " .. n .. " nicht hidden") end
+  if t == "recipe" or t == "technology" or item_exists(n) then add("FEHLER Prüfstand: " .. t .. " " .. n .. " (keine Rezepte/Items/Forschung)") end
+end end end
+if tb_on then
+  for t, names in pairs(tb_expected) do for _, n in ipairs(names) do
+    if not (raw[t] and raw[t][n]) then add("FEHLER Prüfstand: " .. t .. " " .. n .. " fehlt") end
+  end end
+  -- Namen "arrakis-test-…" in den Laufzeitdateien müssen Prototypen sein (Tippfehler fallen sonst erst im Spiel auf).
+  -- Keine Prototypen (z. B. Oberflächen) hier eintragen:
+  local not_prototypes = {["arrakis-test-hold"] = true}
+  local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua", "scripts/testbench/t_flyer.lua",
+    "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua"}
+  local read = 0
+  for _, file in ipairs(files) do
+    local f = io.open(file, "r")
+    if f then
+      read = read + 1
+      local text = f:read("*a")
+      f:close()
+      for name in text:gmatch("[\"'](arrakis%-test%-[%w%-_]+)[\"']") do
+        local found = not_prototypes[name] or false
+        if not found then for _, ps in pairs(raw) do if ps[name] then found = true break end end end
+        if not found then add("FEHLER " .. file .. ": unbekannter Name " .. name) end
+      end
+    end
+  end
+  if read == 0 then add("WARN Laufzeitdateien nicht gefunden (aus dem Repo-Root starten)") end
+end
+add("Prüfstand " .. (tb_on and "an" or "aus") .. ": " .. tb_count .. " Test-Prototypen")
 
 -- labs
 local labs = {}

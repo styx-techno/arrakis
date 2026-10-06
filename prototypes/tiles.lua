@@ -7,5 +7,7 @@ rock.sprite_usage_surface = nil
 rock.layer = 11
 rock.map_color = {150, 105, 70}
 rock.autoplace = {probability_expression = "1 + arrakis_rock * 20"}
+-- Eigene Kollisionsebene zusätzlich zu den Ebenen der Fulgora-Kopie (prototypes/collision-layers.lua).
+rock.collision_mask.layers.arrakis_rock = true
 
 data:extend({rock})

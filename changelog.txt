@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.4.0
+Date: 2026-10-06
+  Features:
+    - Prüfstand für Testspielstände: Startup-Einstellung „Prüfstand“ (Standard aus) schaltet den Befehl /arrakis-test frei. Er baut auf einer eigenen Oberfläche Testaufbauten für Flieger, Ernter, Würmer und den Kartengenerator, misst und schreibt die Ergebnisse in den Chat und nach script-output/arrakis-test.txt. Anleitung: docs/pruefstand.md.
+    - Ist die Einstellung aus, gibt es weder Test-Objekte noch den Befehl; das normale Spiel bleibt unverändert.
+  Modding:
+    - Neue Kollisionsebene arrakis_rock an der Kachel Arrakis-Fels (für Bauregeln und Wurmrouten).
+    - control.lua nutzt jetzt event_handler aus __core__. Der Befehl /arrakis liegt in scripts/arrakis-surface.lua, zusammen mit get_or_create(radius_chunks).
+---------------------------------------------------------------------------------------------------
 Version: 0.3.1
 Date: 2026-10-06
   Changes:
