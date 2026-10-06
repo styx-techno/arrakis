@@ -856,6 +856,10 @@ local function t3_start(run, tb)
       burner.remaining_burning_fuel = 2500000
     end)
     if not ok_burn then tb.log(run, "INFO", "Brennvorgang setzen ging nicht: " .. tostring(err_burn)) end
+    -- Puffer voll: sonst füllt der Brenner ihn im nächsten Tick aus dem Restbrennwert auf,
+    -- und der Vergleich meldet einen Verlust, den nicht der Teleport verursacht hat.
+    local ok_heat, err_heat = pcall(function() burner.heat = burner.heat_capacity end)
+    if not ok_heat then tb.log(run, "INFO", "Brenner-Puffer füllen ging nicht: " .. tostring(err_heat)) end
   else
     tb.log(run, "INFO", "Ernter hat keinen Brenner (burner = nil)")
   end

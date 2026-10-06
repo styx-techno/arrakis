@@ -116,6 +116,8 @@ Du stehst zwischen B und C und bist unverwundbar.
 
 **Melden:** Was macht der Wurm auf Bahn B an der Felsinsel: hält er an, weicht er aus, flackert er oder fährt er durch? Wirkt das Ausweichen auf Bahn C glatt?
 
+**Bewertung:** OK nur, wenn der Kopf auf Bahn C und D nie auf Fels war **und** Bahn C am Ziel ankam **und** Bahn D den Ernter erreicht hat. Kam C nicht an oder D nicht zum Ernter, steht dort FEHLER „Wächter nicht bestätigt“.
+
 ### T7 Körperprüfung und `extended = false` (1 s, mit `ja` etwa 12 s)
 
 **Was passiert:** a) Zwei Würmer erscheinen kurz: einer mit dem Körper im Fels, einer ganz auf Sand. Geprüft wird, ob die Körperprüfung Fels erkennt.
@@ -147,7 +149,7 @@ Jeder Druck auf **ALT+O** schreibt eine MESSUNG-Zeile. Der Test endet nach 3 min
 
 **Du, in drei Schritten:**
 1. In den Flieger einsteigen (Enter), Karte öffnen (M), den Flieger aus der Karte steuern (WASD) und ALT+O drücken.
-2. Aussteigen, die Fernbedienung in die Hand nehmen (ist sie weg: Verknüpfungsleiste unten rechts), damit auf den Flieger klicken, Karte öffnen (M) und ALT+O drücken.
+2. Aussteigen, die Fernbedienung in die Hand nehmen (ist sie weg: noch einmal ein- und mit leerer Hand aussteigen, dann legt der Test sie dir in die Hand; die Verknüpfungsleiste gibt sie erst nach der Forschung „Spidertron“), damit auf den Flieger klicken, Karte öffnen (M) und ALT+O drücken.
 3. Karte schließen und in der normalen Ansicht ALT+O drücken.
 
 **Melden:** ob bei jedem Schritt eine MESSUNG-Zeile kam (die Datei reicht).

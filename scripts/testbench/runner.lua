@@ -277,8 +277,23 @@ function tb.fill(area, tile_name, surface)
   return #tiles
 end
 
-local function is_player_character(entity)
-  return entity.type == "character" and (entity.player ~= nil or entity.associated_player ~= nil)
+-- Spielerfiguren nie entfernen. Zusätzlich zu player/associated_player zählt jede Figur, die
+-- player.character eines Spielers ist (z. B. während er in der Kartenansicht/Fernsteuerung ist).
+local function is_player_character(entity, keep)
+  if entity.type ~= "character" then return false end
+  if entity.unit_number and keep[entity.unit_number] then return true end
+  return entity.player ~= nil or entity.associated_player ~= nil
+end
+
+local function player_characters()
+  local keep = {}
+  for _, player in pairs(game.players) do
+    local character = player.character
+    if character and character.valid and character.unit_number then
+      keep[character.unit_number] = true
+    end
+  end
+  return keep
 end
 
 -- Bereitet einen Testbereich vor: Chunks sofort erzeugen, alles außer Spielerfiguren entfernen
@@ -320,9 +335,10 @@ function tb.prepare(origin, half_size, base_tile)
     end
   end
 
+  local keep = player_characters()
   for _, entity in pairs(surface.find_entities_filtered{area = area}) do
     if entity.valid and entity.type ~= "segment" and entity.type ~= "segmented-unit"
-      and not is_player_character(entity) then
+      and not is_player_character(entity, keep) then
       pcall(function() entity.destroy() end)
     end
   end

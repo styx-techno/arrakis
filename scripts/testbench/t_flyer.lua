@@ -898,6 +898,16 @@ local function t12_measure(run, tb, player, event)
     tostring(selection), tostring(cursor), tostring(selected), tostring(prototype))
 end
 
+-- Spidertron-Fernbedienung in die Hand, nur in einen leeren Cursor. true, wenn sie jetzt dort liegt.
+-- Die Verknüpfungsleiste gibt sie erst nach der Forschung „Spidertron“ (base shortcuts.lua:
+-- unavailable_until_unlocked), im Testspielstand also meist nicht.
+local function t12_give_remote(player)
+  if not player.is_cursor_empty() then return false end
+  local stack = player.cursor_stack
+  if not stack then return false end
+  return stack.set_stack({name = "spidertron-remote", count = 1}) == true
+end
+
 local function t12_start(run, tb)
   local data = run.data
   local player = tb.player(run)
@@ -921,23 +931,21 @@ local function t12_start(run, tb)
   add_fuel(run, tb, flyer, 5)
 
   -- Fernbedienung nur in einen leeren Cursor
-  local remote = false
+  local has_remote = false
   local ok_empty, empty = guarded(run, tb, "Cursor prüfen", function() return player.is_cursor_empty() end)
   if ok_empty and empty then
     local ok, set = guarded(run, tb, "Spidertron-Fernbedienung in den Cursor legen", function()
-      local stack = player.cursor_stack
-      if not stack then return false end
-      return stack.set_stack({name = "spidertron-remote", count = 1})
+      return t12_give_remote(player)
     end)
-    remote = ok and set == true
+    has_remote = ok and set == true
     tb.log(run, "INFO", "Fernbedienung im Cursor: " .. (ok and tostring(set) or "Fehler"))
   elseif ok_empty then
-    tb.log(run, "INFO", "Cursor nicht leer: keine Fernbedienung gegeben (für Schritt 2 selbst nehmen: Verknüpfungsleiste)")
+    tb.log(run, "INFO", "Cursor nicht leer: keine Fernbedienung gegeben (Schritt 2: mit leerer Hand aussteigen, dann bekommst du sie)")
   end
   -- Ohne Fernbedienung in der Hand ist ein Fehler hier erwartbar, daher nur INFO.
   local ok_sel = guarded(run, tb, "spidertron_remote_selection setzen", function()
     player.spidertron_remote_selection = {flyer}
-  end, remote and "FEHLER" or "INFO")
+  end, has_remote and "FEHLER" or "INFO")
   local selection = read(function()
     local list = player.spidertron_remote_selection
     return list and #list or "nil"
@@ -946,8 +954,8 @@ local function t12_start(run, tb)
     t12_entity_text(flyer), pos_text(tb, flyer.position), FUEL_ITEM, ok_sel and "ja" or "nein", tostring(selection)))
 
   tb.log(run, "FRAGE", "1) Steig in den Flieger ein (Enter), öffne die Karte (M), steuere den Flieger aus der Karte heraus (WASD) und drück ALT+O.")
-  tb.log(run, "FRAGE", "2) Steig aus, nimm die Spidertron-Fernbedienung in die Hand (ist sie weg: Verknüpfungsleiste unten rechts), " ..
-    "klick damit auf den Flieger (er muss ausgewählt sein), öffne die Karte (M) und drück ALT+O.")
+  tb.log(run, "FRAGE", "2) Steig aus, nimm die Spidertron-Fernbedienung in die Hand (ist sie weg: noch einmal ein- und mit leerer Hand " ..
+    "aussteigen, dann legt der Test sie dir hinein), klick damit auf den Flieger (er muss ausgewählt sein), öffne die Karte (M) und drück ALT+O.")
   tb.log(run, "FRAGE", "3) Schließ die Karte und drück in der normalen Ansicht ALT+O.")
   tb.log(run, "INFO", "Jeder Druck auf ALT+O schreibt eine MESSUNG-Zeile. Bitte melden, ob bei jedem Schritt eine kam " ..
     "(Datei schicken reicht). Ende nach 3 min oder mit /arrakis-test stop.")
@@ -980,8 +988,13 @@ local function t12_on_event(run, tb, name, event)
     tb.log(run, "MESSUNG", string.format("Ein-/Ausstieg: vehicle = %s, controller_type = %s, Ereignis-Entity = %s",
       tostring(vehicle), tostring(controller), read(function() return t12_entity_text(event.entity) end)))
     -- Beim Aussteigen (Schritt 2) den Flieger wieder auswählen; geht nur mit Fernbedienung in der Hand.
+    -- Ist die Hand leer, kommt die Fernbedienung zurück (die Verknüpfungsleiste hilft ohne Forschung nicht).
     local flyer = data.flyer
     if not player.vehicle and flyer and flyer.valid then
+      local ok_give, given = pcall(t12_give_remote, player)
+      if ok_give and given then
+        tb.log(run, "INFO", "Fernbedienung in die leere Hand gelegt")
+      end
       local ok, err = pcall(function() player.spidertron_remote_selection = {flyer} end)
       local count = read(function()
         local list = player.spidertron_remote_selection

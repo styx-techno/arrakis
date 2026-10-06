@@ -1089,6 +1089,14 @@ local function t6_finish(run, tb)
   if not (c and d) or c.samples == 0 or d.samples == 0 then
     tb.log(run, "FEHLER", "Kriterium nicht prüfbar: Bahn C oder D ohne Messung")
     verdict = "Wächter nicht prüfbar"
+  elseif c.rock == 0 and d.rock == 0 and not (c.arrived and d.bite) then
+    -- Kein Fels, aber der Wurm kam gar nicht an der Insel vorbei bzw. nicht zum Ernter: kein Beleg für den Wächter.
+    local missing = {}
+    if not c.arrived then table.insert(missing, "Bahn C kam nicht ans Ziel") end
+    if not d.bite then table.insert(missing, "Bahn D erreichte den Ernter nicht") end
+    tb.log(run, "FEHLER", "Kopf war auf Bahn C und D nie auf Fels, aber " .. table.concat(missing, " und ")
+      .. ": Wächter nicht bestätigt (siehe MESSUNG der Bahnen)")
+    verdict = "Wächter nicht bestätigt"
   elseif c.rock == 0 and d.rock == 0 then
     tb.log(run, "OK", string.format("Kopf war auf Bahn C und D bis zum Biss nie auf Fels (Kopfbox berührte Fels: C %d×, D %d×)", c.touch, d.touch))
     verdict = "Wächter OK"
