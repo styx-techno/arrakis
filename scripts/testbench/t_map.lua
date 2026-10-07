@@ -461,7 +461,7 @@ local function summarize(run, tb, d, variant)
     variant.key, variant.title, pct(rock_low, 1), pct(rock_mean, 1), pct(rock_high, 1), fmt(off_low, 3), fmt(off_high, 3),
     fmt(off_mean, 3), fixed, isl_mean, TARGET, pct(deep_low, 1), pct(deep_mean, 1), fmt(t_low, 3),
     #finite_t > 0 and fmt(t_mean, 3) or "–", common))
-  return {rock = rock_mean, islands = isl_mean, spice = spice_mean, t = step and T_STEPS[step]}
+  return {rock = rock_mean, islands = isl_mean, deep = deep_mean, spice = spice_mean, t = step and T_STEPS[step]}
 end
 
 -- Phasen ---------------------------------------------------------------------------------------
@@ -620,9 +620,9 @@ phases.bericht = function(run, tb, d)
     local short = summarize(run, tb, d, variant)
     if short then
       by_family[variant.family] = by_family[variant.family] or {}
-      table.insert(by_family[variant.family], string.format("%s: Fels %s, %.1f Inseln, Spice %s bei t = %s",
-        variant.label or "Karte", pct(short.rock, 1), short.islands, short.spice and pct(short.spice, 1) or "–",
-        short.t and fmt(short.t) or "–"))
+      table.insert(by_family[variant.family], string.format("%s: Fels %s, %.1f Inseln, Sand ≥ %d vom Fels %s, Spice %s bei t = %s",
+        variant.label or "Karte", pct(short.rock, 1), short.islands, TARGET, pct(short.deep, 1),
+        short.spice and pct(short.spice, 1) or "–", short.t and fmt(short.t) or "–"))
     end
   end
   for _, family in ipairs(FAMILIES) do

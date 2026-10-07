@@ -141,7 +141,7 @@ Ein vierter Flieger wird automatisch auf die Ablage teleportiert (OK/FEHLER: ver
 **Was passiert:** T11 vergleicht die Fels-Verteilung von 0.4.0 mit vier neuen Varianten (je mit mehreren Felsanteilen), auf dem Seed deines Spielstands und acht festen Seeds, je 1600 × 1600 Kacheln.
 **Am besten im Testspielstand vom letzten Mal starten:** Dort hat Arrakis den Seed, bei dem rund um den Start alles Fels war. T11 verändert dort nichts.
 Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei etwa eine halbe Minute.** Du bleibst, wo du bist.
-Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei.
+Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei. (Variante c3 zählt vor allem für Fels und Inseln; ihre Spicefläche ist bauartbedingt klein.)
 
 **Du:** nichts. **Melden:** zwei Dateien, `arrakis-test.txt` und `arrakis-t11-karten.txt` (Kartenbilder als Text, beide im selben Ordner).
 

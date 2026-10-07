@@ -45,7 +45,9 @@ data:extend({
     -- c3: Felsinseln in einem Sandmeer (Muster wie die Inseln auf Fulgora).
     -- Jede Voronoi-Zelle (400 Kacheln) trägt mit 65 % Wahrscheinlichkeit eine Insel um ihren Punkt,
     -- Inselkante bei Kegel = 0,77. Zellen ohne Insel bleiben unter −0,1, damit auch Felsschwellen
-    -- bis −0,05 dort keinen Fels erzeugen.
+    -- bis −0,05 dort keinen Fels erzeugen. Für Spice taugt c3 nur bedingt: Eine leere Zelle kennt
+    -- nur den Abstand zu ihrem eigenen Punkt, ihr Inneres liegt deshalb nie unter t100. c3 zählt
+    -- vor allem für Fels und Inseln; die Spicefläche wäre in der Karte eigens zu regeln.
     type = "noise-expression",
     name = "arrakis_t11_c3",
     expression = "keep * (arrakis_t11_cone - 0.77) + (1 - keep) * min(arrakis_t11_cone - 0.77, -0.1)",
