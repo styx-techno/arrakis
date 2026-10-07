@@ -2,7 +2,7 @@
 Version: 0.4.1
 Date: 2026-10-07
   Changes:
-    - Prüfstand T11 vergleicht jetzt Fels-Varianten über mehrere Seeds, ohne Karte zu erzeugen. Hintergrund: Im Testspielstand war rund um den Start alles Fels. Die Kartenbilder stehen in script-output/arrakis-t11-karten.txt.
+    - Prüfstand T11 vergleicht jetzt die Fels-Verteilung von 0.4.0 mit vier Kandidaten (je mit mehreren Felsanteilen) über neun Seeds, ohne Karte zu erzeugen. Hintergrund: Im Testspielstand war rund um den Start alles Fels. Die Kartenbilder stehen in script-output/arrakis-t11-karten.txt, tools/check/t11_bilder.py macht daraus PNGs.
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.0
 Date: 2026-10-06

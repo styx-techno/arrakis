@@ -4,7 +4,7 @@ Stand: Mod 0.4.1 · Factorio 2.0.77 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
-Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Datei schicken.
+Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schicken.
 
 ## Vorbereitung
 
@@ -46,6 +46,7 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 ## Was du schicken sollst
 
 1. Die Datei `%APPDATA%\Factorio\script-output\arrakis-test.txt`.
+   Nach T11 zusätzlich `arrakis-t11-karten.txt` aus demselben Ordner (Kartenbilder; T11 überschreibt sie bei jedem Lauf).
 2. Deine Antworten auf alle FRAGE-Zeilen, mit Testnummer.
 3. Die erbetenen Screenshots (T1, T5, T6, T9).
 
@@ -137,9 +138,10 @@ Ein vierter Flieger wird automatisch auf die Ablage teleportiert (OK/FEHLER: ver
 
 ### T11 Kartengenerator: Fels-Varianten im Seed-Vergleich (etwa 5 s)
 
-**Was passiert:** T11 vergleicht die Fels-Verteilung von 0.4.0 mit drei neuen Varianten, auf dem Seed deines Spielstands und acht festen Seeds, je 1600 × 1600 Kacheln.
-Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei einige Sekunden.** Du bleibst, wo du bist.
-Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt.
+**Was passiert:** T11 vergleicht die Fels-Verteilung von 0.4.0 mit vier neuen Varianten (je mit mehreren Felsanteilen), auf dem Seed deines Spielstands und acht festen Seeds, je 1600 × 1600 Kacheln.
+**Am besten im Testspielstand vom letzten Mal starten:** Dort hat Arrakis den Seed, bei dem rund um den Start alles Fels war. T11 verändert dort nichts.
+Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei etwa eine halbe Minute.** Du bleibst, wo du bist.
+Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei.
 
 **Du:** nichts. **Melden:** zwei Dateien, `arrakis-test.txt` und `arrakis-t11-karten.txt` (Kartenbilder als Text, beide im selben Ordner).
 

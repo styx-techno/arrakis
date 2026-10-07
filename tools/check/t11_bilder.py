@@ -44,6 +44,10 @@ def read_maps(path):
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.rstrip("\n")
+            if line.startswith("##### T11"):
+                maps = {}   # nur der letzte Lauf zählt
+                current = None
+                continue
             header = re.match(r"=== (\S+) Seed (\d+) \((.*?)\): (.*) ===", line)
             if header:
                 current = {"seed": header.group(2), "label": header.group(3), "info": header.group(4), "rows": []}

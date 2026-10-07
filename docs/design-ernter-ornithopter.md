@@ -753,7 +753,7 @@ Im Container läuft kein Factorio. Deshalb baut Phase 3a einen **Prüfstand**:
 | T8 | Laufzeitkosten | 50 Ernter, 20 Carryalls, 3 Jagden; Debug-Anzeige „show-time-usage“ | Takt strecken, Budget senken |
 | T9 | Schatten: `draw_as_shadow` am Sprite-Prototyp wirkt beim Rendern nicht | Schatten-Sprite unter getragenem Ernter | Schwarz getöntes, halbtransparentes Sprite |
 | T10 | 2.1 lädt keine Mod mit `factorio_version "2.0"` | Nur falls Max 2.1 installiert: 0.3.1 einmal starten | Getrennte Builds per `info.json` |
-| T11 | Die Noise-Schwelle ergibt nicht ≥ 100 Kacheln Sand zwischen Spicefeld und Fels | `/arrakis-test T11` misst in generierten Chunks per Stichprobe den Abstand jedes Felds zum nächsten Fels | Schwelle verschieben, Startwert `arrakis_rock < −0,25` |
+| T11 | Die Noise-Schwelle ergibt nicht ≥ 100 Kacheln Sand zwischen Spicefeld und Fels | `/arrakis-test T11` (ab 0.4.1) rechnet auf leeren Testoberflächen mit 9 Seeds die Rauschwerte auf einem 8-Kachel-Raster aus: Felsanteil, Inseln, euklidischer Felsabstand und die Spice-Schwelle t100 für die Karte von 0.4.0 und vier Kandidaten | Kandidat und Schwellen nach den Messwerten wählen |
 | T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken | Nur über `spidertron_remote_selection` |
 
 Weitere Risiken:
