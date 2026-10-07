@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.4.0 · Factorio 2.0.77 mit Space Age
+Stand: Mod 0.4.1 · Factorio 2.0.77 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -10,7 +10,7 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Datei schick
 
 1. **Einstellung einschalten:** im Hauptmenü *Einstellungen → Mod-Einstellungen → Start* das Häkchen bei **Prüfstand** setzen und bestätigen. Factorio startet neu.
 2. **Wegwerf-Spielstand:** ein neues Spiel mit Space Age starten (oder einen Spielstand, der kaputtgehen darf). Nie den echten Spielstand nehmen.
-   Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 erzeugt aber Kartenbereiche auf Arrakis.
+   Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 legt kurz leere Testoberflächen `arrakis-t11-…` an und löscht sie wieder.
 3. **Alte Ergebnisdatei löschen** (wenn du eine saubere Datei willst): `%APPDATA%\Factorio\script-output\arrakis-test.txt`. Der Prüfstand hängt nur an.
 4. Danach die Einstellung wieder ausschalten, bevor du normal spielst.
 
@@ -135,12 +135,13 @@ Ein vierter Flieger wird automatisch auf die Ablage teleportiert (OK/FEHLER: ver
 
 **Melden:** Welcher Schatten sieht richtig aus, A oder B? Liegt das Panzerbild unter dem Rumpf? Folgt es bei C dem Flug ohne Ruckeln?
 
-### T11 Kartengenerator (etwa 20 s)
+### T11 Kartengenerator: Fels-Varianten im Seed-Vergleich (etwa 5 s)
 
-**Was passiert:** Erzeugt auf Arrakis die Karte im Umkreis von 12 Chunks um (0, 0). **Das Spiel hängt dabei kurz.**
-Danach werden Spicefelder gesucht und ihr Abstand zum Fels gemessen, dazu eine Tabelle für die Noise-Schwelle. Du bleibst, wo du bist.
+**Was passiert:** T11 vergleicht die Fels-Verteilung von 0.4.0 mit drei neuen Varianten, auf dem Seed deines Spielstands und acht festen Seeds, je 1600 × 1600 Kacheln.
+Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei einige Sekunden.** Du bleibst, wo du bist.
+Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt.
 
-**Du:** nichts. **Melden:** nur die Datei.
+**Du:** nichts. **Melden:** zwei Dateien, `arrakis-test.txt` und `arrakis-t11-karten.txt` (Kartenbilder als Text, beide im selben Ordner).
 
 ### T12 Flieger: Rettung aus der Kartenansicht (interaktiv, 3 min)
 
