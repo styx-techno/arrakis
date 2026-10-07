@@ -2,8 +2,10 @@ local spice_tint = {r = 1, g = 0.45, b = 0.15}
 local water_tint = {r = 0.35, g = 0.6, b = 1}
 
 -- Spice-Sand: festes Erz, nur im offenen Sand.
+-- Eigene Ressourcenkategorie (prototypes/harvester.lua): nur Ernter und Hand, kein Bohrer.
 local spice = table.deepcopy(data.raw.resource["iron-ore"])
 spice.name = "spice-sand"
+spice.category = "arrakis-spice-harvest"
 spice.icon = nil
 spice.icons = {{icon = "__base__/graphics/icons/iron-ore.png", tint = spice_tint}}
 spice.minable = {mining_particle = "copper-ore-particle", mining_time = 1, result = "spice-sand"}

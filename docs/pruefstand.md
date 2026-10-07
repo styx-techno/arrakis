@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.4.1 · Factorio 2.0.77 mit Space Age
+Stand: Mod 0.5.0 · Factorio 2.0.77 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -21,8 +21,8 @@ Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin):
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T12`); ein laufender Test wird abgebrochen |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11. Dauer etwa 10 min |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T13` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 15 min |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
 | `/arrakis-test T7 ja` | T7 mit Teil b (kann das Spiel abstürzen lassen) |
@@ -52,7 +52,7 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 
 ## „alle“
 
-`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a) und T11 nacheinander, mit 1 s Abstand.
+`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13 und T2b nacheinander, mit 1 s Abstand.
 Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an.
 Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
@@ -157,8 +157,47 @@ Jeder Druck auf **ALT+O** schreibt eine MESSUNG-Zeile. Der Test endet nach 3 min
 
 **Melden:** ob bei jedem Schritt eine MESSUNG-Zeile kam (die Datei reicht).
 
+### T13 Ernter: echter Code (etwa 2 min)
+
+**Was passiert:** Ab 0.5.0 gibt es den echten Spice-Ernter mit Annahme und Tankstutzen. T13 prüft genau diesen Code, nicht den Nachbau aus T2–T4.
+Auf der Prüfstand-Fläche entstehen nacheinander zwölf kleine Aufbauten: Spice-Teppiche auf Sand, eine Felsinsel mit Annahme, Stutzen, Greifarmen und Kisten, ein Bohrer auf Spice, zwei Bänder und eine Zustandstabelle aus 20 Feldern mit je einem Ernter (dazu drei einzelne Ernter für die Hinweis-Fälle, einer davon auf der Ablage-Oberfläche).
+Der Test bringt dich jeweils zum Zuschauen hin. Die zwölf Schritte:
+
+1. Aufbauen und 15 s Ernten: Ausbeute, Abzug am Feld, Treibstoff und Produktionsstatistik.
+2. Im aufgebauten Ernter gibt eine Puppe 5 s Gas: er darf sich nicht bewegen und lässt sich nicht zum Abriss markieren. Sitzt die Puppe nicht im Ernter, meldet der Schritt FEHLER „nicht prüfbar“.
+3. Laderaum voll, 10 s warten, leeren: danach kein Nachholen.
+4. Einpacken: nach 10 s wieder fahrbereit; auf Sand nicht abbaubar, auf Fels schon.
+5. Zwei Ernter leeren drei kleine Spice-Felder bis zum Ende („Feld erschöpft“).
+6. Andocken an der Annahme, 10 s Greifarme (Spice raus, Kohle rein), Abdocken mit dem Umschalter, wieder Andocken.
+7. Die Annahme wird zerstört, während der Ernter angedockt ist. Dann dockt er an einer neuen Annahme an und wird dort zerstört.
+8. Kopie und Teleport eines aufgebauten Ernters. Die Kopie steht auf Fels und muss fahrbereit und abbaubar sein.
+9. Eine Annahme auf Sand wird zum Abriss markiert und nimmt keinen Ernter an.
+10. Ein Bohrer auf Spice wird gemeldet. Die Chat-Zeile „Arrakis: 1 Bohrer stehen auf Spice-Sand …“ und der Alarm gehören dazu; die Kartenmarkierung entfernt der Test wieder.
+11. Ein Ernter auf einem laufenden Band bleibt stehen; ein normales Auto daneben muss sich bewegen, sonst meldet der Schritt FEHLER „nicht prüfbar“.
+12. Zustandstabelle: fünf Zustände (fahrbereit, baut auf, aufgebaut, packt ein, angedockt) × vier Eingaben (Umschalter, Andocken, Tod, Teleport/Kopie), je ein eigener Ernter. Wo die Eingabe den Ernter von Sand auf Fels bringt (Abbruch des Aufbaus auf Fels, Teleport, Kopie), muss die Abbausperre sofort umspringen. Dazu drei Fälle, in denen der Umschalter nur einen Hinweis gibt: kein Spice im Feld, in Fahrt, nicht auf Arrakis.
+
+Je Schritt kommt genau eine OK- oder FEHLER-Zeile mit den gemessenen Werten; die Einzelwerte stehen nur in der Datei.
+Was sich nicht automatisch prüfen lässt (Fenster, Knopf und Taste `Umschalt+H`, Abbauen von Hand oder per Roboter, Speichern und Laden, Mehrspieler, alter Spielstand), nennt eine INFO-Zeile am Anfang; das bleibt für deine Abnahme.
+Am Ende entfernt der Test seine Ernter. Annahmen, Kisten, Bänder und der Bohrer bleiben auf der Prüfstand-Fläche stehen.
+
+**Du:** nichts, zuschauen. **Melden:** nur die Datei.
+
+### T2b Ernter: Fahrphysik (etwa 3 min)
+
+**Was passiert:** Der echte Spice-Ernter mit einer Puppe am Steuer fährt 14 Läufe zu je 10 oder 15 s:
+mit Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff und legendärem Raketentreibstoff (alle mit Tempo-Ausgleich), nach Westen, Norden, Süden und zweimal schräg, zweimal bei negativen Koordinaten (um −1000, −1000) und einmal mit vollem Laderaum.
+Ein zweiter Ernter, den der Mod absichtlich nicht kennt, fährt mit Raketentreibstoff ohne Ausgleich und ohne Deckel; er wird nur gemessen.
+Je Lauf stehen Tempo (`speed`), Spitze, Bodentempo (zurückgelegte Strecke ab 5 s) und der Ausgleichswert `effectivity_modifier` in der Zeile.
+FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet. Ohne Qualität im Spiel entfällt der legendäre Lauf mit einer INFO-Zeile.
+Am Ende entfernt der Test beide Ernter.
+
+**Du:** nichts, zuschauen (die Ernter fahren an dir vorbei). **Melden:** nur die Datei.
+
 ## Bekannte Grenzen
 
 - Die Flieger-Beine drehen nicht mit der Flugrichtung. T1 fliegt nur nach Osten; die Werte für 1 und 2 Beine gelten für Ost-West-Flug.
 - Der Tempo-Deckel in T2 läuft mit Raketentreibstoff. Fährt der Ernter ohne Deckel nicht schneller als 1,6 Kacheln/s, nimmt der Test einen Ersatzdeckel (70 % seines Höchsttempos), damit der Deckel überhaupt greifen muss.
 - T6, Bahn D: Bewertet wird der Kopf bis zum Biss. Was der Wurm danach tut, steht als MESSUNG/INFO da (im Spiel taucht er beim Biss ab).
+- Im normalen Spiel erntet der Ernter nur auf Arrakis. Die Prüfstand-Fläche gibt dieselbe Einstellung **Prüfstand** frei, die auch den Befehl bringt; nur deshalb kann T13 dort mit dem echten Code ernten.
+- T13, Schritt 11: Bewegt sich auch das normale Auto auf dem Band nicht, sagt die Messung nichts; dann meldet der Schritt FEHLER „nicht prüfbar“. Bitte trotzdem die Datei schicken.
+- T2b liest das Tempo im Prüfstand-Takt, nach dem Tempo-Deckel des Mods. Deshalb zählt jeder Lauf, wie oft der Deckel eingegriffen hat („Deckel n× (ab 1 s m×)“); in der ersten Sekunde ist das nach einem Brennstoffwechsel erlaubt, danach ist es ein FEHLER. Die INFO-Zeile am Ende fasst das zusammen. Die echte Fahrt zeigt in jedem Fall das Bodentempo.

@@ -178,6 +178,62 @@ if not raw["collision-layer"].arrakis_rock then add("FEHLER collision-layer arra
 local rock_tile = raw.tile["arrakis-rock"]
 if not (rock_tile and rock_tile.collision_mask and rock_tile.collision_mask.layers.arrakis_rock) then add("FEHLER tile arrakis-rock ohne Ebene arrakis_rock") end
 
+-- Phase 3b: Spice nur per Ernter und Hand, Ernter-Regeln, Brikett
+local SPICE_CAT = "arrakis-spice-harvest"
+local function has_value(list, value) for _, v in pairs(list or {}) do if v == value then return true end end return false end
+local expected_3b = {
+  ["resource-category"] = {SPICE_CAT},
+  car = {"spice-harvester"},
+  ["proxy-container"] = {"arrakis-spice-intake", "arrakis-fuel-nozzle"},
+  ["item-with-entity-data"] = {"spice-harvester"},
+  item = {"arrakis-spice-intake", "arrakis-fuel-nozzle", "arrakis-spice-briquette"},
+  recipe = {"spice-harvester", "arrakis-spice-intake", "arrakis-fuel-nozzle", "arrakis-spice-briquette"},
+  technology = {"arrakis-spice-harvesting"},
+  ["custom-input"] = {"arrakis-harvester-toggle"},
+}
+for t, names in pairs(expected_3b) do for _, n in ipairs(names) do
+  local p = raw[t] and raw[t][n]
+  if not p then add("FEHLER 3b: " .. t .. " " .. n .. " fehlt")
+  elseif p.hidden then add("FEHLER 3b: " .. t .. " " .. n .. " ist hidden") end
+end end
+local spice_res = raw.resource["spice-sand"]
+if not spice_res or spice_res.category ~= SPICE_CAT then add("FEHLER resource spice-sand Kategorie " .. tostring(spice_res and spice_res.category) .. " statt " .. SPICE_CAT) end
+local hand_miners = {}
+for _, t in ipairs({"character", "god-controller"}) do for n, p in pairs(raw[t] or {}) do
+  local cats = p.mining_categories or {"basic-solid"}
+  if has_value(cats, "basic-solid") then
+    if has_value(cats, SPICE_CAT) then hand_miners[#hand_miners+1] = t .. ":" .. n
+    else add("FEHLER " .. t .. " " .. n .. " baut basic-solid ab, aber nicht " .. SPICE_CAT) end
+  end
+end end
+table.sort(hand_miners)
+if #hand_miners == 0 then add("FEHLER keine Spielfigur baut Spice von Hand ab") end
+add("Spice von Hand: " .. table.concat(hand_miners, ","))
+for n, p in pairs(raw["mining-drill"] or {}) do
+  if has_value(p.resource_categories, SPICE_CAT) then add("FEHLER mining-drill " .. n .. " hat " .. SPICE_CAT) end
+end
+local spice_car = raw.car["spice-harvester"]
+if spice_car then
+  if spice_car.allow_remote_driving ~= false then add("FEHLER car spice-harvester allow_remote_driving " .. tostring(spice_car.allow_remote_driving)) end
+  if spice_car.has_belt_immunity ~= true then add("FEHLER car spice-harvester has_belt_immunity " .. tostring(spice_car.has_belt_immunity)) end
+  if spice_car.guns or spice_car.equipment_grid then add("FEHLER car spice-harvester hat Waffen oder Ausrüstungsgitter") end
+  if spice_car.trash_inventory_size ~= 0 then add("FEHLER car spice-harvester trash_inventory_size " .. tostring(spice_car.trash_inventory_size)) end
+  if spice_car.braking_power or spice_car.friction then add("FEHLER car spice-harvester braking_power/friction (2.1 kennt nur braking_force/friction_force)") end
+end
+local briquette = raw.item["arrakis-spice-briquette"]
+if briquette then
+  if briquette.fuel_value ~= "20MJ" then add("FEHLER item arrakis-spice-briquette fuel_value " .. tostring(briquette.fuel_value)) end
+  for _, key in ipairs({"fuel_acceleration_multiplier", "fuel_top_speed_multiplier", "fuel_acceleration_multiplier_quality_bonus", "fuel_top_speed_multiplier_quality_bonus"}) do
+    if briquette[key] ~= nil then add("FEHLER item arrakis-spice-briquette " .. key .. " gesetzt") end
+  end
+  if not has_value(briquette.fuel_categories or {briquette.fuel_category}, "chemical") then add("FEHLER item arrakis-spice-briquette nicht chemical") end
+end
+local briquette_recipe = raw.recipe["arrakis-spice-briquette"]
+if briquette_recipe then
+  if briquette_recipe.allow_productivity then add("FEHLER recipe arrakis-spice-briquette allow_productivity") end
+  if not has_value(briquette_recipe.categories or {briquette_recipe.category}, "spice-refining") then add("FEHLER recipe arrakis-spice-briquette nicht in spice-refining") end
+end
+
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]
 local tb_on = tb_setting and tb_setting.value

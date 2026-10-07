@@ -6,6 +6,8 @@ require("prototypes.autoplace-controls")
 require("prototypes.noise")
 require("prototypes.collision-layers")
 require("prototypes.tiles")
+-- Vor resources.lua: dort bekommt Spice-Sand die Ressourcenkategorie aus harvester.lua.
+require("prototypes.harvester")
 require("prototypes.resources")
 require("prototypes.windtrap")
 require("prototypes.spice")

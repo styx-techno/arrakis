@@ -1,6 +1,6 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 06.10.2026 · Mod-Stand 0.3.1 · Max spielt Factorio 2.0.77 · Factorio 2.1 (bis 2.1.20) ist berücksichtigt
+Stand: 07.10.2026 · Mod-Stand 0.5.0 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.0.77 · Factorio 2.1 (bis 2.1.20) ist berücksichtigt
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
 1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json.
@@ -53,7 +53,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 2. **Spice-Ernte.** Diese Trigger-Forschung (10 Melange herstellen) schaltet Spice-Ernter, Spice-Annahme und Tankstutzen frei.
 3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger). Ab diesem Moment läuft die **Schonfrist**, sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde.
 4. **Zum Feld bringen.**
-   - Das garantierte Startfeld ist das **Lehrfeld**. Es liegt 40 bis 80 Kacheln vom Inselrand entfernt, dorthin kann man noch kriechen (höchstens 1,5 Kacheln/s).
+   - Das garantierte Startfeld ist das **Lehrfeld**. Es liegt 40 bis 60 Kacheln vom Inselrand entfernt, dorthin kann man noch kriechen (etwa 1,4 Kacheln/s).
    - Alle anderen Felder liegen mindestens 100 Kacheln tief im Sand. Dorthin kommt man praktisch nur mit dem Ornithopter.
 5. **Aufbauen** mit `Umschalt+H` oder dem Knopf im Fahrzeugfenster.
    - Nach 5 s ist der Ernter verankert.
@@ -118,19 +118,19 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 - Was vollständig auf Fels steht oder getragen wird, wird nie gefressen. Vollständig heißt: Unter der Kollisionsbox liegt keine einzige Sandkachel.
 - Würmer betreten nie Fels.
 - Ornithopter und Carryall in der Luft werden vom Wurm weder getroffen noch gebremst.
-- Anheben, Tragen und Absetzen verlieren nichts. Laderaum, Treibstoff, Gesundheit, Qualität, Name und Farbe bleiben erhalten.
+- Anheben, Tragen und Absetzen verlieren nichts. Laderaum, Treibstoff, Gesundheit, Qualität und Farbe bleiben erhalten. (Einen Namen haben Autos nicht; T3 zeigte, dass `entity_label` bei ihnen nicht geht.)
 - Ein Biss kommt nie vor Ablauf des Countdowns.
 
 **Zahlenregeln** (damit der Ornithopter wirklich gebraucht wird)
 
 | Größe | Startwert | Warum |
 |---|---|---|
-| Höchsttempo Ernter | ≤ 1,5 Kacheln/s | Langsamer als der Wurm (3,5 Kacheln/s) |
+| Höchsttempo Ernter | ≤ 1,5 Kacheln/s, real 1,41 (Bodentempo, 6/256 Kachel je Tick) | Langsamer als der Wurm (3,5 Kacheln/s) |
 | Aufbauen / Einpacken | 5 s / 10 s | Flucht per Fahrt kostet Zeit |
 | Ankoppeln am Flieger | 2 s, ohne Einpacken | Fliegen ist der schnelle Weg |
 | Fernsteuerung des Ernters | aus (`allow_remote_driving = false`) | Sonst flieht man aus der Kartenansicht |
 | Vorwarnzeit | 60 s, Lehrjagd 90 s | |
-| Abstand Spicefeld → Fels | ≥ 100 Kacheln Sand; Lehrfeld 40–80 | 10 s + 100 / 1,5 ≈ 77 s > 60 s |
+| Abstand Spicefeld → Fels | ≥ 100 Kacheln Sand; Lehrfeld 40–60 | 10 s + 100 / 1,41 ≈ 81 s > 60 s; Lehrfeld: (60 − 10) · 1,41 ≈ 70 Kacheln |
 | Tempo Ornithopter / Carryall | ≥ 5 / ≥ 6 Kacheln/s (Kriterium T1) | 300 Kacheln in 50 bis 60 s |
 
 **Abnahmekriterium** (Phase 3d1): Auf einem Feld, das nicht das Lehrfeld ist, entkommt ein Ernter ohne Flieger nicht innerhalb der Vorwarnzeit.
@@ -206,13 +206,13 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Aufgeräumt wird über `script.register_on_object_destroyed` und `on_object_destroyed`, auch für `LuaSegmentedUnit` (A20 :500-512).
   - `on_load` schreibt nichts.
   - Zufall kommt aus einem gespeicherten `game.create_random_generator()`, also deterministisch und im Mehrspieler sicher (A20 :16187, :24574).
-- **Takt.** Im Normalbetrieb gibt es kein `on_tick`.
+- **Takt.** `on_tick` gibt es nur für den Tempo-Deckel (4.1). Er steht fest in der `events`-Tabelle und kehrt sofort zurück, wenn kein Ernter gefahren wird; ein eigenes `script.on_event` würde den zusammengefassten Handler von event_handler (auch den des Prüfstands) ersetzen (V20 core/lualib/event_handler.lua:69-76).
   - `on_nth_tick(30)`: Abbau und Auftragsverteilung.
   - `on_nth_tick(60)`: Vibration und Andocken.
-  - `on_nth_tick(10)`: Wurm-Wächter, Ankoppeln und Tempo-Deckel. Er kehrt sofort zurück, wenn nichts läuft.
-  - Jede Schleife hat ein Budget. Jeder Eintrag speichert `last_tick` und rechnet mit Δt = (game.tick − last_tick)/60. So zählt ein übersprungener Ernter beim nächsten Mal voll mit.
-  - Der Rundlauf-Zeiger wird vor dem Löschen eines Eintrags weitergeschoben, damit `next()` nie über einen gelöschten Schlüssel stolpert.
-- **Ereignisfilter.** `on_entity_died`, `on_built_entity`, `on_robot_built_entity` und `on_player_mined_entity` werden mit Filtern auf unsere Namen und Typen registriert. `on_entity_damaged` brauchen wir nicht.
+  - `on_nth_tick(10)`: Fortschrittsringe, Wurm-Wächter und Ankoppeln. Er kehrt sofort zurück, wenn nichts läuft.
+  - Jeder Eintrag speichert `last_tick` und rechnet mit Δt = (game.tick − last_tick)/60, höchstens 2 s. `last_tick` wird bei jedem Zustandswechsel und in jeder Pause neu gesetzt; sonst holt ein Ernter nach einer Pause minutenlange Arbeit auf einmal nach. Budgets kommen erst, wenn T8 sie verlangt.
+  - Gibt es später einen Rundlauf-Zeiger, wird er vor dem Löschen eines Eintrags weitergeschoben, damit `next()` nie über einen gelöschten Schlüssel stolpert.
+- **Ereignisfilter.** event_handler meldet Ereignisse ohne Filter an (V20 core/lualib/event_handler.lua:75). Jeder Handler prüft deshalb zuerst den Namen der Entity und kehrt sonst sofort zurück. `on_entity_damaged` brauchen wir nicht.
 - **Mehrspieler.**
   - Die Logik ist rein ereignisgesteuert und deterministisch.
   - GUIs gibt es pro Spieler über `player.gui.relative`.
@@ -238,9 +238,11 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Kein Ausrüstungsgitter, in keiner Version, denn wir brauchen keins.
   - Leistung, Gewicht und Reibung so wählen, dass das Höchsttempo bei etwa 1,5 Kacheln/s liegt.
 - Bremse und Reibung setzt `compat.vehicle_physics`. Die Funktion löscht `braking_power` und `friction` und setzt nur `braking_force` und `friction_force`, denn 2.1 hat die alten Felder entfernt (CL:740).
-- **Tempo-Deckel als Sicherheitsnetz** [2.0]: Fährt ein mobiler Ernter mit Fahrer schneller als 1,5 Kacheln/s, setzt der 10-Tick-Takt `harvester.speed` zurück. Das Feld ist für Autos schreibbar (A20 :4166-4172). Nötig ist das, weil das Höchsttempo vom Brennstoff abhängt und 2.1.13 diese Modifikatoren geändert hat (CL:244).
+- **Tempo** [2.0]: Hauptmittel ist der Ausgleich je Brennstoff: `effectivity_modifier = min(1, 1/a)` mit a = Beschleunigungsfaktor des brennenden Items samt Qualitätsbonus (A20 :4129-4134). So fährt jeder Brennstoff wie Kohle, mit 330 kW etwa 1,45 Kacheln/s (Modell aus T2). Gesetzt wird er beim Einsteigen, alle 10 Ticks beim Fahren und nach jedem Brennstoffwechsel durch das Skript.
+- **Tempo-Deckel als Sicherheitsnetz** [2.0]: Fährt ein mobiler Ernter schneller als 1,5 Kacheln/s, setzt der `on_tick`-Handler `speed` auf 1,45 zurück, jeden Tick und nur für gefahrene Ernter. Der 10-Tick-Deckel aus T2 reichte nicht (Höchstwert 1,82 mit Raketentreibstoff, ERG). Das Feld ist für Autos schreibbar (A20 :4166-4172). 2.1.13 hat die Brennstoff-Modifikatoren geändert (CL:244), deshalb wird in 2.1 nachgemessen.
+- `has_belt_immunity = true`, sonst trügen Förderbänder den Ernter schneller als der Wurm davon.
 - Das Item ist wie beim Panzer `item-with-entity-data` (V20 base/prototypes/item.lua:1377).
-- **Ressourcenkategorie:** `spice-sand.category = "arrakis-spice-harvest"`. In `data-updates.lua` bekommt jede Spielfigur die Kategorie in `mining_categories` (A20 prototype/generated/prototypes.d.ts:2438). So bleibt Handabbau möglich, und der bestehende Trigger „Spice-Sand abbauen“ feuert weiter. Das Muster gibt es in Vanilla bei Kalzit (V20 space-age/prototypes/technology.lua:611-614).
+- **Ressourcenkategorie:** `spice-sand.category = "arrakis-spice-harvest"`. In `data-final-fixes.lua` bekommt jede Spielfigur und jeder God-Controller mit `basic-solid` die Kategorie in `mining_categories` angehängt (A20 prototype/generated/prototypes.d.ts:2438). So bleibt Handabbau möglich, und der bestehende Trigger „Spice-Sand abbauen“ feuert weiter; ohne Handabbau wäre ein neues Spiel blockiert. Vorbild für den Trigger ist Kalzit (V20 space-age/prototypes/technology.lua:611-614), für das Ändern der Listen space-age/base-data-updates.lua:75-76.
 
 **Zustände**
 ```
@@ -270,7 +272,7 @@ mobil, steht im Andockkreis einer Annahme --> angedockt --Umschalt+H / Anheben /
 
 **Einpacken** [2.0]
 - 10 s Ring; in dieser Zeit vibriert der Ernter weiter mit 30.
-- Danach `disabled_by_script = false`, `minable_flag = true`, Renderings und Status zurücksetzen.
+- Danach `disabled_by_script = false`, Renderings und Status zurücksetzen. `minable_flag` bleibt `false`, solange auf Arrakis Sand unter dem Ernter liegt; erst auf Fels lässt er sich aufheben. Sonst flieht man per Aufheben in 22 s ohne Ornithopter.
 - Vibrationsgewicht: 10, solange er fährt, 0, solange er steht.
 
 **Vorsichtsmodus** [2.0]
@@ -285,7 +287,7 @@ mobil, steht im Andockkreis einer Annahme --> angedockt --Umschalt+H / Anheben /
 - Beide sind `proxy-container` (V20 base/prototypes/entity/entities.lua:10080). `proxy_target_entity` und `proxy_target_inventory` sind schreibbar (A20 :5535-5548).
 - Die Annahme darf nur auf Fels stehen: `tile_buildability_rules = {{area = {{-5,-5},{5,5}}, required_tiles = {layers = {arrakis_rock = true}}}}`. Das Pflichtfeld `area` umfasst hier den ganzen Andockkreis (A20 prototype/generated/types.d.ts:15197-15198). Ob `area` größer als das Gebäude sein darf, prüft T4. Sonst prüft das Skript den Fels beim Bauen und gibt das Gebäude andernfalls zurück.
 - **Andocken** (60-Tick-Takt):
-  - Bedingungen: Der Ernter ist mobil, hat Tempo 0 und steht mit dem Mittelpunkt höchstens 4 Kacheln von der Annahme entfernt.
+  - Bedingungen: Der Ernter ist mobil, steht seit mindestens 2 s still und mit dem Mittelpunkt höchstens 4 Kacheln von der Annahme entfernt. Nach dem Abdocken dockt er an dieser Annahme erst wieder an, wenn er mehr als 5 Kacheln weg war.
   - Dann wird der Ernter gesperrt (`disabled_by_script = true`).
   - Die Annahme bekommt `proxy_target_entity = harvester` und `proxy_target_inventory = defines.inventory.car_trunk`.
   - Jeder Tankstutzen in höchstens 3 Kacheln Abstand bekommt dasselbe Ziel mit `defines.inventory.fuel`.
@@ -546,6 +548,8 @@ Verworfen:
 
 ### 4.5 storage-Struktur
 
+Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2; dort gilt er.
+
 ```lua
 storage = {
   schema = 2,
@@ -586,7 +590,7 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 ### 4.6 Migration und Entfernen der Mod [2.0]
 
 - **0.3.0 → 0.5.0** (`on_configuration_changed`, gesteuert über `storage.schema`):
-  - **Bohrer auf Spice:** Durch die neue Kategorie bauen sie nichts mehr ab. Das Skript sucht auf Arrakis einmal `find_entities_filtered{type = "mining-drill"}`, prüft `mining_target` (A20 :4614) und meldet jeden Treffer mit Alarm und Kartenmarkierung.
+  - **Bohrer auf Spice:** Durch die neue Kategorie bauen sie nichts mehr ab. Das Skript sucht auf Arrakis einmal `find_entities_filtered{type = "mining-drill"}`, prüft `mining_target` (A20 :4614) und zusätzlich, ob in `mining_area` Spice liegt (nach dem Laden ist `mining_target` vermutlich leer), und meldet jeden Treffer mit Alarm und Kartenmarkierung.
   - **Erstbefüllung:** `on_chunk_generated` feuert für alte Chunks nicht noch einmal. Deshalb werden die Positionen aus `surface.get_chunks()` (A20 :31304) einmal in `storage.migration` kopiert und budgetiert abgearbeitet: Spice zählen und feste Vibrationsquellen auf Sand anmelden.
   - **Schonfrist:** Gibt es Arrakis schon, gilt `landed_tick = game.tick`; die Schonfrist beginnt also jetzt.
   - Verwaiste Ernter in der Ablage (ohne Träger) werden an ihren Abhebepunkt zurückgesetzt.

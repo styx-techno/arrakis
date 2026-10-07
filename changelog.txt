@@ -1,4 +1,21 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.0
+Date: 2026-10-07
+  Features:
+    - Spice-Ernter: Raupenfahrzeug, das auf einem Spicefeld aufgebaut wird (5 s) und dann Spice-Sand in seinen Laderaum fördert (5 je Sekunde aus einem Feld von 13×13 Kacheln). Einpacken dauert 10 s. Aufbauen, Einpacken und Abdocken mit Umschalt+H oder dem Knopf im Fahrzeugfenster. Erntet nur auf Arrakis.
+    - Der Ernter fährt mit jedem Brennstoff höchstens 1,5 Kacheln/s; bessere Brennstoffe machen ihn nicht schneller. Auf Sand lässt er sich nicht aufheben, auf Fels schon.
+    - Spice-Annahme (nur auf Fels): Ein Ernter, der daneben 2 s stillsteht, dockt an; Greifarme entladen dann seinen Laderaum. Tankstutzen neben der Annahme füllen über Greifarme Treibstoff nach.
+    - Spice-Brikett: Brennstoff aus 5 Spice-Sand und 1 Kohle (20 MJ), hergestellt in der Spice-Raffinerie.
+    - Forschung „Spice-Ernte“ (Auslöser: 10 Melange herstellen) schaltet Ernter, Annahme, Tankstutzen und Brikett frei.
+    - Mod-Einstellung „Wurmbiss“ (Totalverlust oder schwer beschädigt). Wirkt erst, wenn es Sandwürmer gibt.
+  Changes:
+    - Spice-Sand lässt sich nur noch mit dem Ernter und von Hand abbauen, nicht mehr mit Bohrern. Beim Laden eines älteren Spielstands meldet die Mod Bohrer, die auf Spice stehen (Chat, Alarm, Kartenmarkierung); sie werden weder abgerissen noch erstattet.
+    - Benötigt jetzt Factorio 2.0.67 oder neuer.
+  Modding:
+    - Neue Ressourcenkategorie arrakis-spice-harvest an Spice-Sand. data-final-fixes.lua hängt sie an jede Spielfigur und jeden God-Controller, die basic-solid abbauen; Bohrer bekommen sie nicht.
+    - Laufzeitdaten in storage (Schema 1, angelegt von scripts/migrate.lua). Ernter, Annahme und Stutzen laufen über event_handler (scripts/harvester.lua, harvester-gui.lua, intake.lua, terrain.lua).
+    - Prüfstand: T13 prüft den echten Ernter-Code (Aufbauen, Ernten, Andocken, Zustandstabelle), T2b die Fahrphysik des echten Ernters mit allen Brennstoffen.
+---------------------------------------------------------------------------------------------------
 Version: 0.4.1
 Date: 2026-10-07
   Changes:

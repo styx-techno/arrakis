@@ -1,7 +1,7 @@
 -- Prüfstand (Phase 3a): Befehl /arrakis-test, Ablauf, Protokoll und Hilfsfunktionen.
 -- Nur geladen mit der Startup-Einstellung "arrakis-testbench" (siehe control.lua).
 --
--- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map):
+-- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
 --   Optional: hint (Text für die Testliste), answer_time (Ticks Pause bei „alle“ nach diesem Test,
@@ -27,7 +27,7 @@ local runner = {}
 local SURFACE_NAME = "arrakis-testbench"
 local HOLD_NAME = "arrakis-test-hold"
 local LOG_FILE = "arrakis-test.txt"
-local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12"}
+local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T13", "T2b"}
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60
@@ -44,10 +44,20 @@ local COLORS =
 
 local tests = {}
 for _, module_name in ipairs({"scripts.testbench.t_flyer", "scripts.testbench.t_harvester",
-                              "scripts.testbench.t_worm", "scripts.testbench.t_map"}) do
+                              "scripts.testbench.t_worm", "scripts.testbench.t_map",
+                              "scripts.testbench.t_ernter"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end
+end
+
+-- Test-ID zu einem eingegebenen Wort, ohne Groß-/Kleinschreibung (T2b); nil, wenn es keinen Test gibt.
+local function find_id(word)
+  local key = string.upper(word)
+  for id in pairs(tests) do
+    if string.upper(id) == key then return id end
+  end
+  return nil
 end
 
 -- Test-IDs in fester Reihenfolge, unbekannte (neue) hinten angehängt.
@@ -612,8 +622,8 @@ local function on_command(command)
   elseif key == "alle" then
     start_all(player)
   else
-    local id = string.upper(words[1])
-    local test = tests[id]
+    local id = find_id(words[1])
+    local test = id and tests[id]
     if not test then
       player.print("Unbekannter Test: " .. words[1] .. ". Liste: /arrakis-test")
       return

@@ -93,6 +93,8 @@ WRITE_WHITELIST = {
   "d.groups", "f.grid",
   # t_worm: p/lane/check = Datensätze je Teil (Wurm-Referenz, Weglänge, Höchsttempo, Modusname)
   "p.unit", "p.path", "p.max_speed", "p.mode", "lane.unit", "check.unit",
+  # harvester.lua: h = Ernter-Datensatz in storage.harvesters, Feld status laut Plan 4.2 (kein LuaEntity.status)
+  "h.status",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die
@@ -117,6 +119,9 @@ OWN_RETURNS = {
   "t_worm.lua:create_harvester": "LuaEntity",
   "t_worm.lua:create_flyer": "LuaEntity",
   "t_flyer.lua:create_flyer": "LuaEntity",
+  "t_ernter.lua:create": "LuaEntity",
+  "t_ernter.lua:new_harvester": "LuaEntity",
+  "t_ernter.lua:inserter_between": "LuaEntity",
 }
 
 # Variablennamen -> vermutete API-Klasse, wenn der Typ sonst nicht ableitbar ist (Parameter,
@@ -142,6 +147,16 @@ RECEIVER_HINTS = {
   "t_harvester.lua:burner": "LuaBurner",
   "t_harvester.lua:clone": "LuaEntity",
   "t_worm.lua:unit": "LuaSegmentedUnit",
+  "t_ernter.lua:car": "LuaEntity",
+  "t_ernter.lua:other": "LuaEntity",
+  "t_ernter.lua:raw": "LuaEntity",
+  "t_ernter.lua:driver": "LuaEntity",
+  "t_ernter.lua:clone": "LuaEntity",
+  "t_ernter.lua:drill": "LuaEntity",
+  "t_ernter.lua:target": "LuaEntity",
+  "t_ernter.lua:burner": "LuaBurner",
+  "t_ernter.lua:trunk": "LuaInventory",
+  "t_ernter.lua:stack": "LuaItemStack",
 }
 
 # Parameter-/Variablennamen für Ereignis-Tabellen: Felder müssen in irgendeinem Ereignis vorkommen.
