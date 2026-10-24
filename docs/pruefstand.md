@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.0 · Factorio 2.0.77 mit Space Age
+Stand: Mod 0.5.1 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -14,6 +14,27 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 3. **Alte Ergebnisdatei löschen** (wenn du eine saubere Datei willst): `%APPDATA%\Factorio\script-output\arrakis-test.txt`. Der Prüfstand hängt nur an.
 4. Danach die Einstellung wieder ausschalten, bevor du normal spielst.
 
+## Factorio 2.1
+
+Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisherigen Messwerte stammen aus 2.0.77. Bitte in 2.1.23 neu laufen lassen:
+
+- **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt. Das Modell für den Ernter stammt aus T2 in 2.0.77.
+- **T4 (Annahme und Tankstutzen):** Bauregel auf Fels und Proxy-Container; der Schaltungsanschluss des Proxys ist seit 2.1.21 anders aufgebaut.
+- **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen.
+- **T11 (Kartengenerator):** siehe dort.
+- **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
+
+Von Hand prüfen (2.1.23):
+
+- Spice-Wissenschaftspaket: Tooltip und Factoriopedia-Seite ohne „Unknown key“.
+- Eine Raumplattform über Arrakis zeigt einen Planeten im Hintergrund (Platzhalter: Vulcanus).
+- Arrakis-Fels hat eine eigene Factoriopedia-Seite.
+- `/arrakis` aus der Karte oder der Fernsicht landet bei der Spielfigur auf Arrakis.
+- Ein Spielstand mit 0.5.0 aus 2.0.77 lädt mit 0.5.1.
+
+T10 (lädt 2.1 eine Mod für 2.0?) entfällt: Laut Factorio-Doku lädt 2.1 keine Mods mit `factorio_version "2.0"`.
+In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die beiden legendären Läufe mit je einer INFO-Zeile; der Datenstufen-Test prüft vor der Übergabe auch diesen Fall (`tools/check/datastage.py fd2123 --ohne quality --set arrakis-testbench=true`).
+
 ## Befehle
 
 Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin):
@@ -22,7 +43,7 @@ Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin):
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
 | `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T13` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 15 min |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 16 min |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
 | `/arrakis-test T7 ja` | T7 mit Teil b (kann das Spiel abstürzen lassen) |
@@ -143,6 +164,8 @@ Ein vierter Flieger wird automatisch auf die Ablage teleportiert (OK/FEHLER: ver
 Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei etwa eine halbe Minute.** Du bleibst, wo du bist.
 Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei. (Variante c3 zählt vor allem für Fels und Inseln; ihre Spicefläche ist bauartbedingt klein.)
 
+In der Factorio-Version laufen lassen, in der gespielt wird (jetzt 2.1.23). 2.1.7 hat Voronoi-Rauschen mit hohem jitter korrigiert; c3-Werte aus 2.0.77 gelten dort nicht sicher.
+
 **Du:** nichts. **Melden:** zwei Dateien, `arrakis-test.txt` und `arrakis-t11-karten.txt` (Kartenbilder als Text, beide im selben Ordner).
 
 ### T12 Flieger: Rettung aus der Kartenansicht (interaktiv, 3 min)
@@ -182,13 +205,15 @@ Am Ende entfernt der Test seine Ernter. Annahmen, Kisten, Bänder und der Bohrer
 
 **Du:** nichts, zuschauen. **Melden:** nur die Datei.
 
-### T2b Ernter: Fahrphysik (etwa 3 min)
+### T2b Ernter: Fahrphysik (knapp 4 min)
 
-**Was passiert:** Der echte Spice-Ernter mit einer Puppe am Steuer fährt 14 Läufe zu je 10 oder 15 s:
+**Was passiert:** Zwei Spice-Ernter mit je einer Puppe am Steuer fahren 17 Läufe zu je 10 oder 15 s. Der echte (eingetragene) fährt 13 davon:
 mit Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff und legendärem Raketentreibstoff (alle mit Tempo-Ausgleich), nach Westen, Norden, Süden und zweimal schräg, zweimal bei negativen Koordinaten (um −1000, −1000) und einmal mit vollem Laderaum.
 Ein zweiter Ernter, den der Mod absichtlich nicht kennt, fährt mit Raketentreibstoff ohne Ausgleich und ohne Deckel; er wird nur gemessen.
+In 2.1 wirkt das Höchsttempo der Brennstoffe auch bei Autos (2.1.13). Die Läufe „mit Ausgleich, ohne Deckel“ messen, wie stark: Der zweite Ernter fährt mit Festbrennstoff, Raketentreibstoff und legendärem Raketentreibstoff, den Ausgleich setzt der Test, den Deckel gibt es nicht.
+Ihre MESSUNG-Zeilen nennen zusätzlich den Höchsttempo-Faktor t des Brennstoffs und einen „Faktor“ (Tempo im Verhältnis zu Kohle, geteilt durch das, was das 2.0-Modell ohne t erwartet). Eine INFO-Zeile am Ende fasst die Faktoren zusammen: 1.000 heißt, t wirkt nicht; ein Faktor etwa gleich t heißt, t wirkt linear.
 Je Lauf stehen Tempo (`speed`), Spitze, Bodentempo (zurückgelegte Strecke ab 5 s) und der Ausgleichswert `effectivity_modifier` in der Zeile.
-FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet. Ohne Qualität im Spiel entfällt der legendäre Lauf mit einer INFO-Zeile.
+FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet. Ohne Qualität im Spiel entfallen die beiden legendären Läufe mit je einer INFO-Zeile.
 Am Ende entfernt der Test beide Ernter.
 
 **Du:** nichts, zuschauen (die Ernter fahren an dir vorbei). **Melden:** nur die Datei.

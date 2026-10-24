@@ -21,6 +21,8 @@ local function teleport_command(command)
   end
   local surface = arrakis_surface.get_or_create(8)
   local position = surface.find_non_colliding_position("character", {0, 0}, 32, 1) or {0, 0}
+  -- 2.1 verlässt die Fernsicht beim Teleport nicht mehr selbst.
+  if player.controller_type == defines.controllers.remote then player.exit_remote_view() end
   player.teleport(position, surface)
 end
 

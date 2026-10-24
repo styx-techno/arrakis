@@ -1,14 +1,16 @@
 # Arrakis
 
-Factorio-Mod für **Factorio 2.0 + Space Age** (ab 2.0.67): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Der Code ist auf Factorio 2.1 vorbereitet; dafür muss nur `info.json` umgestellt werden (`"factorio_version": "2.1"`, Abhängigkeiten `>= 2.1.20`).
+Factorio-Mod für **Factorio 2.1 + Space Age** (ab 2.1.23): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Factorio 2.1 lädt keine Mods für 2.0. Für **Factorio 2.0.77** gibt es den Zweig `factorio-2.0` (Mod 0.5.0): im Mod-Ordner `arrakis` einmal `git fetch` und dann `git checkout factorio-2.0` ausführen.
 
-Stand: Phase 3b (0.5.0). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern). Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
+Stand: Phase 3b (0.5.1). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern). Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 
 1. Repo in den Factorio-Mod-Ordner klonen, der Ordner muss `arrakis` heißen:
    - Windows: `%APPDATA%\Factorio\mods\arrakis`
    - Linux: `~/.factorio/mods/arrakis`
+   - Nur für Factorio 2.0.77: danach im Ordner `arrakis` `git fetch` und `git checkout factorio-2.0`.
+   - Aktualisieren: im Ordner `arrakis` `git pull`.
 2. Factorio starten, Mod aktivieren, neues Spiel mit Space Age.
 3. Schnelltest ohne Forschung: im Chat `/arrakis` eingeben (als Admin). Erzeugt die Oberfläche und teleportiert dich hin.
    Alle Arrakis-Forschungen auf einmal freischalten (schaltet Achievements ab):
@@ -23,7 +25,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 3. **Befehle** im Chat (nur Admins; im Einzelspiel ist man Admin):
    - `/arrakis-test`: Liste aller Tests mit Dauer und Hinweisen
    - `/arrakis-test T1` (bzw. `T2` … `T13`, `T2b`): einen Test starten
-   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (etwa 15 min)
+   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (etwa 16 min)
    - `/arrakis-test stop`: laufenden Test abbrechen
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
    - `/arrakis-test T7 ja`: T7 mit Teil b (kann das Spiel abstürzen lassen, nur im Wegwerf-Spielstand)
@@ -42,6 +44,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/harvester.lua` | Spice-Ernter, Spice-Annahme, Tankstutzen, Spice-Brikett, Forschung Spice-Ernte, Taste `Umschalt+H`, Ressourcenkategorie `arrakis-spice-harvest` |
 | `prototypes/windtrap.lua` | Windfalle |
 | `prototypes/spice.lua` | Spice-Raffinerie, Melange, Spice-Essenz, Sand, Spice-Wissenschaft |
+| `prototypes/compat.lua` | Versionsweiche: Prototypen in 2.0-Syntax, unter 2.1 umgeschrieben (bleibt, falls der Zweig `factorio-2.0` noch einmal aus diesem Code gebaut wird) |
 | `data-updates.lua` | Spice-Wissenschaft in die Labore eintragen |
 | `data-final-fixes.lua` | Spice von Hand: Kategorie `arrakis-spice-harvest` an alle Spielfiguren und God-Controller |
 | `docs/design-ernter-ornithopter.md` | Design v0.3: Spice-Ernter, Ornithopter, Sandwürmer, Automatik |
@@ -59,7 +62,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/testbench/` | Test-Prototypen (nur mit Prüfstand) |
 | `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T13 und T2b (`t_ernter.lua`: echter Ernter-Code) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
-| `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen |
+| `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
 
 ## Roadmap
 

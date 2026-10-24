@@ -4,6 +4,8 @@ local rock = table.deepcopy(data.raw.tile["fulgoran-rock"])
 rock.name = "arrakis-rock"
 rock.order = "b[natural]-z[arrakis]-a[rock]"
 rock.sprite_usage_surface = nil
+-- 2.1: kein Verweis auf Fulgora-Staub in der Factoriopedia (2.1.10)
+rock.factoriopedia_alternative = nil
 rock.layer = 11
 rock.map_color = {150, 105, 70}
 rock.autoplace = {probability_expression = "1 + arrakis_rock * 20"}

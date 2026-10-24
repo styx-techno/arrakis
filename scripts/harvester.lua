@@ -284,6 +284,8 @@ local function has_fuel(entity)
 end
 
 -- Tempo-Ausgleich (Plan 4.6): effectivity_modifier = min(1, 1/a) nach currently_burning, schreibt nur bei Änderung.
+-- 2.1: Auch fuel_top_speed_multiplier wirkt bei Autos (2.1.13). Das gleicht die Formel noch nicht aus; wie stark es
+-- wirkt, misst T2b (Läufe „mit Ausgleich, ohne Deckel“). Bis dahin begrenzt der Deckel das Tempo.
 function lib.apply_fuel_normalization(entity)
   if not (entity and entity.valid) then return nil end
   local burner = entity.burner

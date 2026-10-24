@@ -242,10 +242,13 @@ Ausgleich und Deckel (nur gemessen). Richtungen O, W, N, S, schräg, negative Ko
 Erwartung: speed ≈ 1,45, Höchstwert ≤ 1,5, Bodentempo ≤ 1,5 Kacheln/s in jeder Richtung.
 
 ## 7. Prüfung vor der Übergabe
-- `tools/check/datastage.py` mit Vanilla 2.0.77 und 2.1.x, jeweils mit und ohne `arrakis-testbench`; checks.lua prüft
+(Ab 0.5.1 ist 2.1.23 das Ziel; 2.0.77 prüft den Weg für den Zweig `factorio-2.0`.)
+- `tools/check/datastage.py` mit Vanilla 2.1.23 (`fd2123`) und 2.0.77, jeweils mit und ohne `arrakis-testbench`, dazu
+  `datastage.py fd2123 --ohne quality --set arrakis-testbench=true` (Quality ist in 2.1 abschaltbar); checks.lua prüft
   zusätzlich: spice-sand-Kategorie, jede Figur/jeder God-Controller mit basic-solid hat die neue Kategorie, kein Bohrer hat sie,
   Ernter `allow_remote_driving == false` und `has_belt_immunity == true`, Brikett 20 MJ ohne Multiplikatoren, Rezept ohne Produktivität.
-- `tools/check/api_names.py` gegen 2.0.75 und 2.1.20 ohne neue Treffer.
+- `tools/check/api_names.py` gegen 2.0.75 und 2.1.23 (factorio-types 1.2.72) ohne neue Treffer.
+- `tools/check/proto_fields.py` mit den Dumps (`datastage.py --dump`) von 2.1.23 und 2.0.77 ohne Treffer.
 - Statische Regeln: kein `script.on_event`/`script.on_nth_tick` außerhalb von event_handler; keine storage-Schreibzugriffe
   aus `on_load`; keine Nutzung von `event.in_gui`.
 - Lua-Syntaxprüfung aller Dateien.

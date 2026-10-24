@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.1
+Date: 2026-10-24
+  Changes:
+    - Benötigt jetzt Factorio 2.1.23 oder neuer (factorio_version 2.1). Factorio 2.1 lädt keine Mods für 2.0. Für Factorio 2.0.77 gibt es den Zweig factorio-2.0 (Mod 0.5.0): git fetch, dann git checkout factorio-2.0.
+    - Raumplattformen über Arrakis zeigen den Planeten im Hintergrund (Platzhalter-Bild von Vulcanus).
+    - Arrakis-Fels hat in der Factoriopedia eine eigene Seite. Die Vorlage Fulgora-Gestein verweist seit 2.1.10 auf Fulgora-Staub; das erbt der Fels nicht mehr.
+  Bugfixes:
+    - /arrakis verlässt vor dem Teleport die Fernsicht. Factorio 2.1 tut das nicht mehr selbst.
+  Modding:
+    - Prüfstand T2b: drei neue Läufe „mit Ausgleich, ohne Deckel“ messen, wie stark das Höchsttempo der Brennstoffe in 2.1 wirkt (2.1.13). Je Lauf steht ein Faktor in der Datei.
+    - Die Versionsweiche (prototypes/compat.lua) bleibt. Die Prototypen stehen weiter in 2.0-Syntax, damit sich Korrekturen bei Bedarf in den Zweig factorio-2.0 übernehmen lassen.
+    - tools/check: datastage.py kann einzelne Vanilla-Mods weglassen (--ohne quality) und alle eigenen Prototypen ausgeben (--dump). Neu ist proto_fields.py: prüft die Feldnamen der Prototypen gegen die Typdateien. api_names.py nennt die Version der Typdateien (Standard jetzt 2.1.23).
+---------------------------------------------------------------------------------------------------
 Version: 0.5.0
 Date: 2026-10-07
   Features:

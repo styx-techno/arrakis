@@ -1,9 +1,12 @@
 -- Versionsweiche Factorio 2.0 / 2.1.
 --
--- Alle Prototypen der Mod werden in 2.0-Syntax geschrieben. Läuft die Mod
+-- Ziel ist seit 0.5.1 Factorio 2.1 (info.json). 2.0 ist nur noch der
+-- eingefrorene Zweig factorio-2.0 (0.5.0 für 2.0.77).
+-- Deshalb stehen alle Prototypen der Mod weiter in 2.0-Syntax. Läuft die Mod
 -- unter 2.1, schreibt compat.finish() am Ende von data.lua die eigenen
 -- Prototypen auf die 2.1-Syntax um. Vanilla und andere Mods bleiben
--- unberührt. Für einen 2.1-Build muss dann nur info.json angepasst werden.
+-- unberührt. Die Weiche bleibt, falls der 2.0-Zweig noch einmal aus diesem
+-- Code gebaut wird.
 --
 -- helpers.compare_versions gibt es im Data-Stage seit 2.0.55.
 

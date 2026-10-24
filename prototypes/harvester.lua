@@ -39,8 +39,8 @@ local function chest_picture(factor, tint)
   return picture
 end
 
--- Kopie des Vanilla-Proxy-Containers. Schaltungsanschluss bleibt der des Proxys,
--- nie den einer Kiste kopieren (in 2.1 ist der bei Kisten eine Liste).
+-- Kopie des Vanilla-Proxy-Containers. Der Schaltungsanschluss kommt mit dem deepcopy (ab 2.1.21 eine Liste,
+-- vorher ein einzelnes Objekt). Nie den einer Kiste kopieren: 2.0 und 2.1.20 erwarten beim Proxy kein Array.
 local function make_proxy(name, tint)
   local proxy = table.deepcopy(data.raw["proxy-container"]["proxy-container"])
   proxy.name = name

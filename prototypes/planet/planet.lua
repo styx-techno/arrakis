@@ -35,7 +35,9 @@ data:extend({
     asteroid_spawn_influence = 1,
     asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.nauvis_vulcanus, 0.9),
     persistent_ambient_sounds = vulcanus.persistent_ambient_sounds,
-    surface_render_parameters = vulcanus.surface_render_parameters
+    surface_render_parameters = vulcanus.surface_render_parameters,
+    -- 2.1: Planet hinter Raumplattformen (Platzhalter Vulcanus); in 2.0 nil
+    platform_surface_render_parameters = vulcanus.platform_surface_render_parameters
   },
   {
     type = "space-connection",

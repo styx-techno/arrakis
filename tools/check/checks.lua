@@ -80,6 +80,8 @@ for t, ps in pairs(raw) do for n, p in pairs(ps) do if type(p) == "table" and is
   end
 end end end
 
+-- 2.1.10: fulgoran-rock verweist in der Factoriopedia auf fulgoran-dust; die Kopie darf das nicht erben.
+if raw.tile["arrakis-rock"] and raw.tile["arrakis-rock"].factoriopedia_alternative then add("FEHLER tile arrakis-rock factoriopedia_alternative " .. tostring(raw.tile["arrakis-rock"].factoriopedia_alternative)) end
 for n, tile in pairs(raw.tile) do if is_own(n) and tile.collision_mask then for l in pairs(tile.collision_mask.layers or {}) do if not raw["collision-layer"][l] then add("FEHLER tile " .. n .. " layer " .. l) end end end end
 
 -- Referenzen in Trigger-Effekten eigener Prototypen (z. B. kopierte Wurm-Effekte)
@@ -299,6 +301,10 @@ if not pl then add("FEHLER planet fehlt") else
   for n in pairs((mgs.autoplace_settings or {}).entity and mgs.autoplace_settings.entity.settings or {}) do local ok = false for _, ps in pairs(raw) do if ps[n] and ps[n].autoplace then ok = true end end if not ok then add("FEHLER planet entity autoplace " .. n) end end
   for n in pairs((mgs.autoplace_settings or {}).tile and mgs.autoplace_settings.tile.settings or {}) do if not raw.tile[n] then add("FEHLER planet tile " .. n) end end
   for n in pairs(mgs.autoplace_controls or {}) do if not raw["autoplace-control"][n] then add("FEHLER planet control " .. n) end end
+  -- 2.1.7: Planet hinter Raumplattformen; Arrakis hat ihn, wenn Vulcanus ihn hat (in 2.0 keiner von beiden).
+  local vulcanus = raw.planet.vulcanus
+  if vulcanus and (vulcanus.platform_surface_render_parameters ~= nil) ~= (pl.platform_surface_render_parameters ~= nil) then add("FEHLER planet platform_surface_render_parameters") end
+  add("Planet hinter Raumplattformen: " .. (pl.platform_surface_render_parameters and "ja" or "nein"))
 end
 for n, sc in pairs(raw["space-connection"]) do if is_own(n) then if not raw.planet[sc.from] and not raw["space-location"][sc.from] then add("FEHLER connection from") end if not raw.planet[sc.to] and not raw["space-location"][sc.to] then add("FEHLER connection to") end end end
 

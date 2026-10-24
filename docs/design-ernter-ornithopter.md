@@ -1,9 +1,9 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 07.10.2026 · Mod-Stand 0.5.0 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.0.77 · Factorio 2.1 (bis 2.1.20) ist berücksichtigt
+Stand: 24.10.2026 · Mod-Stand 0.5.1 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
-1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json.
+1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json. **Überholt seit 23.10.2026:** 2.1 ist stabil, Max spielt 2.1.23; Ziel ist jetzt 2.1 (5.2).
 2. **Spice-Abbau A:** Spice-Sand nur mit dem Ernter und von Hand (eigene Ressourcenkategorie). Bohrer, die in alten Spielständen auf Spice stehen, werden gemeldet.
 3. **Flucht A:** Ohne Ornithopter kein Entkommen, außer auf dem Lehrfeld. Ernter höchstens 1,5 Kacheln/s, Einpacken 10 s, Spicefelder mindestens 100 Kacheln vom Fels, keine Fernsteuerung.
 4. **Wurmbiss C:** Mod-Einstellung, Standard Totalverlust (Ernter und Ladung weg, Wrack bleibt). Alternative: Ernter überlebt schwer beschädigt, Ladung weg.
@@ -34,13 +34,17 @@ Dieses Dokument ersetzt drei Teile von Konzept v0.1:
 - **A20**: Lua-API 2.0.75 (typed-factorio 3.36.0). Für unsere Zwecke gleich 2.0.77, denn 2.0.76 und 2.0.77 ergänzen nur Prototyp-Lesefelder (CL:1149-1153, CL:1168). Ohne Dateiangabe ist `runtime/generated/classes.d.ts` gemeint.
 - **A21**: Lua-API 2.1.20 (factorio-types 1.2.69, `dist/`).
 - **V20/V21**: Vanilla-Prototypen 2.0.77 (`…/scratchpad/fd2077`) bzw. 2.1.20 (`…/scratchpad/factorio-data`).
+- **CL23**: 2.1-Teil des Changelogs bis 2.1.23 (`…/scratchpad/cl21.txt`, gleich Zeile 1-1266 von `…/scratchpad/fd2123/changelog.txt`).
+- **A23**: Lua-API 2.1.23 (factorio-types 1.2.72, `dist/`).
+- **V23**: Vanilla-Prototypen 2.1.23 (`…/scratchpad/fd2123`).
+- **MS**: Doku zur Mod-Struktur, Feld `factorio_version` (lua-api.factorio.com/latest/auxiliary/mod-structure.html, Stand 2.1.23, online gelesen am 24.10.2026).
 - **Repo**: `/home/claude/arrakis` (Stand 0.3.0).
 
 ---
 
 ## 1. Kurzfassung
 
-Spice gibt es auf Arrakis nur noch mit dem **Spice-Ernter**. Das ist ein schweres, langsames Raupenfahrzeug: Auf einem Spicefeld wird es verankert und fördert dann Spice-Sand in seinen Laderaum. Seine Vibration lockt nach etwa einer Minute einen **Sandwurm** an. Das **Wurmzeichen** warnt 60 Sekunden vorher, aber die Spicefelder liegen weit vom rettenden Fels, und davonfahren kann der Ernter dem Wurm nicht. Retten kann ihn nur der **Ornithopter**, und den erforscht man direkt nach dem ersten Ernter: hinfliegen, ankoppeln, hochziehen, und der Wurm greift ins Leere. Getragen wird immer dasselbe Fahrzeug, deshalb bleiben Ladung, Treibstoff und Zustand erhalten. In Stufe 2 übernimmt eine **Ornithopter-Leitstelle** mit unbemannten **Carryalls** Rettung, Entladen und Tanken. In Stufe 3 führt sie eine ganze Ernter-Flotte mit Feldsuche, Umsetzen und Schaltungssignalen. Das gesamte Spiel läuft mit Factorio 2.0.77; 2.1 bringt nur Komfort. Der Code wird ab sofort so geschrieben, dass der Umstieg auf 2.1 nur noch eine Änderung an info.json und einen Test braucht.
+Spice gibt es auf Arrakis nur noch mit dem **Spice-Ernter**. Das ist ein schweres, langsames Raupenfahrzeug: Auf einem Spicefeld wird es verankert und fördert dann Spice-Sand in seinen Laderaum. Seine Vibration lockt nach etwa einer Minute einen **Sandwurm** an. Das **Wurmzeichen** warnt 60 Sekunden vorher, aber die Spicefelder liegen weit vom rettenden Fels, und davonfahren kann der Ernter dem Wurm nicht. Retten kann ihn nur der **Ornithopter**, und den erforscht man direkt nach dem ersten Ernter: hinfliegen, ankoppeln, hochziehen, und der Wurm greift ins Leere. Getragen wird immer dasselbe Fahrzeug, deshalb bleiben Ladung, Treibstoff und Zustand erhalten. In Stufe 2 übernimmt eine **Ornithopter-Leitstelle** mit unbemannten **Carryalls** Rettung, Entladen und Tanken. In Stufe 3 führt sie eine ganze Ernter-Flotte mit Feldsuche, Umsetzen und Schaltungssignalen. Ziel ist seit 0.5.1 Factorio 2.1 (ab 2.1.23). Das gesamte Spiel läuft auch mit 2.0.77 (Zweig `factorio-2.0`); 2.1 bringt nur Komfort. Der Code bleibt versionsfest, solange der 2.0-Zweig aus demselben Code gebaut wird.
 
 ## 2. Spielablauf aus Spielersicht
 
@@ -239,7 +243,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Leistung, Gewicht und Reibung so wählen, dass das Höchsttempo bei etwa 1,5 Kacheln/s liegt.
 - Bremse und Reibung setzt `compat.vehicle_physics`. Die Funktion löscht `braking_power` und `friction` und setzt nur `braking_force` und `friction_force`, denn 2.1 hat die alten Felder entfernt (CL:740).
 - **Tempo** [2.0]: Hauptmittel ist der Ausgleich je Brennstoff: `effectivity_modifier = min(1, 1/a)` mit a = Beschleunigungsfaktor des brennenden Items samt Qualitätsbonus (A20 :4129-4134). So fährt jeder Brennstoff wie Kohle, mit 330 kW etwa 1,45 Kacheln/s (Modell aus T2). Gesetzt wird er beim Einsteigen, alle 10 Ticks beim Fahren und nach jedem Brennstoffwechsel durch das Skript.
-- **Tempo-Deckel als Sicherheitsnetz** [2.0]: Fährt ein mobiler Ernter schneller als 1,5 Kacheln/s, setzt der `on_tick`-Handler `speed` auf 1,45 zurück, jeden Tick und nur für gefahrene Ernter. Der 10-Tick-Deckel aus T2 reichte nicht (Höchstwert 1,82 mit Raketentreibstoff, ERG). Das Feld ist für Autos schreibbar (A20 :4166-4172). 2.1.13 hat die Brennstoff-Modifikatoren geändert (CL:244), deshalb wird in 2.1 nachgemessen.
+- **Tempo-Deckel als Sicherheitsnetz** [2.0]: Fährt ein mobiler Ernter schneller als 1,5 Kacheln/s, setzt der `on_tick`-Handler `speed` auf 1,45 zurück, jeden Tick und nur für gefahrene Ernter. Der 10-Tick-Deckel aus T2 reichte nicht (Höchstwert 1,82 mit Raketentreibstoff, ERG). Das Feld ist für Autos schreibbar (A20 :4166-4172). 2.1.13 hat die Brennstoff-Modifikatoren geändert (CL:244), deshalb wird in 2.1 nachgemessen. T2b misst seit 0.5.1 auch, wie stark das Höchsttempo der Brennstoffe wirkt (5.1).
 - `has_belt_immunity = true`, sonst trügen Förderbänder den Ernter schneller als der Wurm davon.
 - Das Item ist wie beim Panzer `item-with-entity-data` (V20 base/prototypes/item.lua:1377).
 - **Ressourcenkategorie:** `spice-sand.category = "arrakis-spice-harvest"`. In `data-final-fixes.lua` bekommt jede Spielfigur und jeder God-Controller mit `basic-solid` die Kategorie in `mining_categories` angehängt (A20 prototype/generated/prototypes.d.ts:2438). So bleibt Handabbau möglich, und der bestehende Trigger „Spice-Sand abbauen“ feuert weiter; ohne Handabbau wäre ein neues Spiel blockiert. Vorbild für den Trigger ist Kalzit (V20 space-age/prototypes/technology.lua:611-614), für das Ändern der Listen space-age/base-data-updates.lua:75-76.
@@ -601,18 +605,23 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 ### 5.1 Was belegt ist
 
 **Release-Stand von 2.1**
-- Der 2.1-Teil des Changelogs reicht von 2.1.7 (23.06.2026) bis 2.1.20 (22.09.2026) (CL:2-3, CL:465-466).
+- Der 2.1-Teil des Changelogs reicht von 2.1.7 (23.06.2026) bis 2.1.23 (20.10.2026) (CL23:2-3, CL23:597-598).
+- Seit 23.10.2026 ist 2.1 als stabil markiert; das steht nicht im Changelog. Max hat umgestellt („inzwischen ist das update raus“, 24.10.2026).
 - Dass 2.1 das letzte Update ist, steht dort nicht. Wir übernehmen es als Max' Aussage.
-- Auch späte Patches ändern die Modding-API noch inkompatibel. Beispiel 2.1.20: `fuel_category` wird zu `fuel_categories` (CL:35).
+- Auch späte Patches ändern die Modding-API noch inkompatibel. Beispiel 2.1.20: `fuel_category` wird zu `fuel_categories` (CL:35). Beispiel 2.1.21: `ProxyContainerPrototype::circuit_connector` wird eine Liste (CL23:123).
 
 **Kompatibilität zwischen 2.0 und 2.1**
 - Eine Mod hat genau eine `factorio_version`. 2.0 lehnt eine Mod mit „2.1“ ab; das zeigte sich an Arrakis 0.1.0 (Repo-Commit 6f84fb9).
-- Ob 2.1 eine Mod mit „2.0“ lädt, lässt sich lokal nicht belegen (T10).
+- 2.1 lädt keine Mod mit „2.0“: `factorio_version` gilt nur für die Releases dieser Hauptversion, für eine neuere muss das Feld umgestellt werden (MS). T10 ist damit beantwortet.
 - 2.0-Spielstände werden in 2.1 übernommen (CL:463). Der Weg zurück ist nicht dokumentiert.
 
-**Mindestversion für 2.0**
+**Mindestversion für 2.0** (Zweig `factorio-2.0`)
 - Demolisher-API ab 2.0.61 (CL:1565), `helpers` mit `compare_versions` in der Datenstufe ab 2.0.55 (CL:1758, CL:1761).
-- Deshalb verlangt `info.json` künftig `base >= 2.0.61` statt `>= 2.0.0`. Getestet wird mit 2.0.77.
+- Deshalb verlangt `info.json` künftig `base >= 2.0.61` statt `>= 2.0.0`. Getestet wird mit 2.0.77. Seit 0.5.0 gilt `>= 2.0.67` (plan-3b 1).
+
+**Mindestversion für 2.1** (ab 0.5.1)
+- `info.json` verlangt `base >= 2.1.23` und `space-age >= 2.1.23`. Technisch reicht 2.1.20 (letzter Breaking Change für uns, CL:35); 2.1.23 ist die geprüfte Version, und Max spielt sie.
+- `quality` und `recycler` sind keine Abhängigkeiten: Space Age zieht `recycler` mit, `quality` ist dort nur empfohlen (V23 space-age/info.json, CL23:695-696). Die Mod braucht Quality nicht; T2b lässt die beiden legendären Läufe ohne Quality aus.
 
 **Welche Fehlerbehebungen von 2.1 uns betreffen** (gegenüber v0.2 präzisiert)
 - *Belegter 2.0-Fehler:* Sortierfehler zwischen Latenzausgleich und Render-Objekten (CL:1004; Forum-IDs aus der 2.0-Zeit). Er ist nur kosmetisch.
@@ -621,18 +630,23 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
   - Absturz bei kleiner Knotenzahl (CL:77, T7),
   - Desync, wenn Spinnen getötet und neu gebaut werden (CL:81, Mehrspieler-Test),
   - Ausrüstungsbonus beim Teleport (CL:337). Der ist für uns egal, denn wir bauen kein Gitter ein.
-- *Fehler, den es nur in 2.1 gab:* Spinnenbeine, behoben in 2.1.9 (CL:425). Er betrifft uns nicht, weil der 2.1-Build ohnehin mindestens 2.1.20 verlangt.
+- *Fehler, den es nur in 2.1 gab:* Spinnenbeine, behoben in 2.1.9 (CL:425). Er betrifft uns nicht, weil der 2.1-Build ohnehin mindestens 2.1.23 verlangt.
 
-**Fazit:** Alle Kernmechaniken laufen mit 2.0.77. Ein technischer Zwang zum Umstieg besteht nicht.
+**Nachgeprüft für 2.1.23 (0.5.1)**
+- Neu in 2.1.21 bis 2.1.23: Der Schaltungsanschluss des Proxy-Containers ist eine Liste (CL23:123). Der deepcopy bringt sie mit (V23 base/prototypes/entity/entities.lua:10519); nichts zu tun. FluidBox-Temperaturen, `WaterTileEffectParameters`, `build_preview_tints` und die Auswahl-Ereignisse betreffen uns nicht.
+- Aus 2.1.7 bis 2.1.10, bisher übersehen und in 0.5.1 behoben: Fulgora-Gestein verweist in der Factoriopedia auf Fulgora-Staub (CL23:462, V23 space-age/prototypes/tile/tiles-fulgora.lua:391), Arrakis-Fels löscht das. Raumplattformen zeigen den Planeten (CL23:730, :859, :873), Arrakis übernimmt `platform_surface_render_parameters` von Vulcanus. `LuaPlayer::teleport` verlässt die Fernsicht nicht mehr (CL23:1002), `/arrakis` tut es vorher selbst.
+- **Offen:** Seit 2.1 wirkt `fuel_top_speed_multiplier` (t) auch bei Autos, 2.1.13 hat das verbessert (CL23:376). Der Ausgleich rechnet nur mit a (4.1). Eine Formel steht nirgends; A23 classes.d.ts:14576-14580 nennt nur das Feld. Wirkt t linear, käme der Ernter ohne Deckel auf etwa 1,53 (Festbrennstoff), 1,67 (Raketen- und Atomtreibstoff) und 2,0 Kacheln/s (legendärer Raketentreibstoff). T2b misst das in 2.1.23 als Faktor je Brennstoff. Erst danach wird die Formel angepasst (hinter der Laufzeit-Weiche, 5.3).
 
-### 5.2 Empfehlung
+**Fazit:** Alle Kernmechaniken laufen mit 2.0.77 und 2.1.23. Umgestiegen wird, weil Max jetzt 2.1 spielt und 2.1 keine 2.0-Mods lädt.
+
+### 5.2 Empfehlung (umgesetzt in 0.5.1)
 
 1. **Ab sofort versionsfest bauen (Phase 3.0).** Eine Quelle, eine kleine Weiche, keine API, die in 2.1 fehlt.
-2. **Release-Ziel bleibt 2.0, solange Max 2.0.77 spielt.** Getestet wird in 2.0.77.
-3. **Umstieg auf 2.1, sobald Max' übrige Mods 2.1 unterstützen.**
-   - Gründe sind Komfort und eine ruhigere Mehrspieler-Basis, nicht fehlende Technik.
-   - Beim Umstieg wird `info.json` umgestellt und der 2.0-Zweig eingefroren. Zwei Versionen dauerhaft zu pflegen, lohnt sich nicht.
-4. **2.1-Extras nur hinter der Weiche.** Das Spiel ist ohne sie vollständig.
+2. ~~Release-Ziel bleibt 2.0, solange Max 2.0.77 spielt.~~ **Seit 23.10.2026 ist 2.1 das Ziel.** Getestet wird in 2.1.23.
+3. **Umstieg auf 2.1 ist erfolgt (0.5.1).**
+   - `info.json` ist umgestellt. Der Zweig `factorio-2.0` bleibt bei 0.5.0 für 2.0.77 und ist eingefroren. Zwei Versionen dauerhaft zu pflegen, lohnt sich nicht.
+   - Die Weiche bleibt, solange der 2.0-Zweig noch einmal aus demselben Code gebaut werden soll. Wird er aufgegeben, können Weiche und 2.0-Syntax weg.
+4. **2.1-Extras hinter der Weiche**, solange die Weiche bleibt. Das Spiel ist ohne sie vollständig.
 
 ### 5.3 Die Weiche
 
@@ -656,7 +670,8 @@ local V21 = helpers.compare_versions(script.active_mods["base"], "2.1.0") >= 0
 ```
 - Fahrzeuge setzen nach dem deepcopy `compat.vehicle_physics(p, bremskraft, reibung)`: Die Funktion löscht `braking_power` und `friction` und schreibt `braking_force` und `friction_force`. Das versteht 2.0 wie 2.1 (CL:740, A20 prototypes.d.ts:16902-16909).
 - Der Lua-Mock prüft beide Versionen (`mock.py <mod> 2.0.77` und `mock.py <mod> 2.1.20`), auch mit Gegenprobe ohne `compat.finish()`.
-- Für den 2.1-Build wird `info.json` umgestellt: `"factorio_version": "2.1"` und die Abhängigkeiten `"base >= 2.1.20"` und `"space-age >= 2.1.20"`. Ein 2.1.x vor 2.1.20 kommt damit nie zum Zug, und alle [2.1]-Funktionen sind sicher vorhanden (die spätesten kamen mit 2.1.18 und 2.1.20).
+- Seit 0.5.1 hat `info.json` `"factorio_version": "2.1"` und die Abhängigkeiten `"base >= 2.1.23"` und `"space-age >= 2.1.23"`. Ein 2.1.x vor 2.1.23 kommt damit nie zum Zug, und alle [2.1]-Funktionen sind sicher vorhanden (die spätesten kamen mit 2.1.18 und 2.1.20). Der Zweig `factorio-2.0` behält `"2.0"` und `>= 2.0.67`.
+- `datastage.py` prüft beide Wege der Weiche (Vanilla 2.1.23 und 2.0.77, je mit und ohne Prüfstand) und 2.1.23 ohne Quality (`--ohne quality`).
 - Unbekannte Prototyp-Felder meldet Factorio nur mit `--check-unused-prototype-data` (CL:13997). Trotzdem stehen 2.1-Felder nur hinter der Weiche.
 
 ### 5.4 Breaking Changes im bestehenden Code (Stand 0.3.0, erledigt in 0.3.1)
@@ -669,7 +684,7 @@ local V21 = helpers.compare_versions(script.active_mods["base"], "2.1.0") >= 0
 | `prototypes/windtrap.lua:58` | `category = "arrakis-windtrap"` | `categories = {…}` | Wasserrezept in „crafting“, Ladefehler zu erwarten |
 | `prototypes/resources.lua:26` | `probability = 1` | ersetzt durch `independent_probability` (CL:766) | Keine Wirkung. Streichen, Standardwert ist 1 |
 | `info.json` (2.0-Build) | `base >= 2.0.0` | – | Unter 2.0.61 fehlt die Demolisher-API, also `>= 2.0.61` |
-| `info.json` (2.1-Build) | `factorio_version "2.0"` | `"2.1"`, `>= 2.1.20` | Mod wird vermutlich nicht geladen (T10) |
+| `info.json` (2.1-Build) | `factorio_version "2.0"` | `"2.1"`, `>= 2.1.23` | Mod wird nicht geladen (MS, T10 beantwortet). Umgestellt in 0.5.1 |
 
 Unverändert laufen `control.lua`, `data-updates.lua` (`LabPrototype.inputs` gibt es weiter), das Spice-Wissenschaftspaket als `tool` und alle per deepcopy übernommenen Vanilla-Prototypen.
 
@@ -680,18 +695,20 @@ Unverändert laufen `control.lua`, `data-updates.lua` (`LabPrototype.inputs` gib
 - `defines.inventory.crafter_*` statt `assembling_machine_*` oder `furnace_*` (CL:923).
 - Kein `LuaEntity.fluidbox` (CL:786), kein `create_cargo_pod` (CL:805), Display-Panel-Text nur als String (CL:806).
 - Spinnen-Ziele setzen statt anhängen (CL:1035).
+- Vor `player.teleport` die Fernsicht verlassen (`exit_remote_view`); 2.1 tut das nicht mehr (CL:870).
 
 **Prototypen**
 - Fahrzeuge nur mit `braking_force` und `friction_force`.
 - Brennstoff-Items mit `fuel_category` schreiben; `compat.finish()` stellt unter 2.1.20 um.
 - Beute per Skript statt über `loot` (CL:669).
-- Container per deepcopy; `circuit_connector` ist in 2.1 ein Array (CL:661).
+- Container per deepcopy; `circuit_connector` ist in 2.1 ein Array (CL:661), beim Proxy-Container erst ab 2.1.21 (CL23:123).
+- Nach jedem deepcopy prüfen, welche 2.1-Felder die Vorlage mitbringt, z. B. `factoriopedia_alternative` (CL23:462) oder `platform_surface_render_parameters` (CL23:859).
 - In `key_sequence` nur dokumentierte Tastennamen (CL:646).
-- Das Höchsttempo des Ernters in jeder getesteten Version kalibrieren (CL:244).
+- Das Höchsttempo des Ernters in jeder getesteten Version kalibrieren (CL:244). Für 2.1.23 offen (T2b, 5.1).
 
 ### 5.6 Was 2.1 zusätzlich bringt
 
-Die [2.1]-Punkte stehen in 4.1 bis 4.4. Kurz zusammengefasst:
+Die [2.1]-Punkte stehen in 4.1 bis 4.4. Seit 0.5.1 ist 2.1 das Ziel, sie können also kommen (Phase 3g); hinter der Weiche bleiben sie trotzdem (5.2). Kurz zusammengefasst:
 - **Warnungen:** für die ganze Force (CL:841), LuaPin (CL:381-383), Musik (CL:897).
 - **Anzeige:** Tooltip-Felder (CL:797), Inventar-GUI (CL:848), Cursor-Vorschau (CL:902-903).
 - **Flug:** Patrouille (CL:495, CL:804), Pin-Rechtsklick (CL:504), leichteres Anklicken in der Karte (CL:536).
@@ -734,7 +751,7 @@ Ersetzt die alte Phase 3 und holt den Ornithopter aus Phase 5 nach vorn. Jede Ph
 | 3d3 | 0.9.0 | Thumper (Ablenkung/Köder), Beute und Wurmzahn, großer Wurm, Mod-Einstellungen, Balancing-Runde | Ein Thumper lenkt eine laufende Jagd um. Ein getöteter Wurm wirft Zähne. 1 Ernter liefert im Wurm-Rhythmus etwa 15 Pakete/min |
 | 3e | 0.10.0 | Leitstelle, Carryall, RETTUNG (Schweben), TANKEN, ENTLADEN, RÜCKKEHR, Alarm „Rettung nicht möglich“ | 3 Ernter, eine Leitstelle, 2 Carryalls, Kohle in der Leitstelle: 60 min ohne Eingriff, kein Ernter verloren, kein Ernter ohne Treibstoff |
 | 3f | 0.11.0 | Flottenleitung: EINSATZ, UMSETZEN, RÜCKRUF, Feldsuche, Schaltung, Bereitschaftsflug, Frühwarnung, Ernte-Dämpfung | Mit 5 Ernter im Inventar und Signal H = 3 laufen drei Ernter. R holt alle zurück. Die Statussignale stimmen |
-| 3g | optional | 2.1-Komfortschicht (5.6) | Nur bei Umstieg: Alle [2.1]-Punkte sind sichtbar, der 2.0-Build bleibt unverändert |
+| 3g | optional | 2.1-Komfortschicht (5.6) | Umstieg ist erfolgt (0.5.1): Alle [2.1]-Punkte sind sichtbar, der Zweig `factorio-2.0` bleibt bei 0.5.0 |
 | 4 | 0.12 | Coriolis-Stürme (Rückruf-Signal, Flugwarnung), Todesdestille, Plast-Stahl, Suspensor-Dämpfung | Ein Sturm kommt mit Vorwarnung, und die Leitstelle ruft auf Signal alle Ernter zurück |
 | 5 | 0.13 | Endgame: Spice-Navigation, Holtzman-Schild, Mentat-Kern, Prescience, Carryall Mk2 | Die Endlos-Forschungen laufen |
 | 6 | 1.0 | Eigene Grafiken (Wurm als Sandwelle, Ernter, Ornithopter), Balancing, Mod-Portal | Release-Kandidat |
@@ -756,7 +773,7 @@ Im Container läuft kein Factorio. Deshalb baut Phase 3a einen **Prüfstand**:
 | T7 | Absturz bei kleiner Knotenzahl in 2.0.77; die Körperprüfung findet Fels nicht | `extended = false` einmal probieren; Spawn neben einer Felskante | Immer `extended = true`; Prüfung dichter |
 | T8 | Laufzeitkosten | 50 Ernter, 20 Carryalls, 3 Jagden; Debug-Anzeige „show-time-usage“ | Takt strecken, Budget senken |
 | T9 | Schatten: `draw_as_shadow` am Sprite-Prototyp wirkt beim Rendern nicht | Schatten-Sprite unter getragenem Ernter | Schwarz getöntes, halbtransparentes Sprite |
-| T10 | 2.1 lädt keine Mod mit `factorio_version "2.0"` | Nur falls Max 2.1 installiert: 0.3.1 einmal starten | Getrennte Builds per `info.json` |
+| T10 | 2.1 lädt keine Mod mit `factorio_version "2.0"` | Entfällt: beantwortet aus der Doku (MS), 2.1 lädt sie nicht | Getrennte Builds per `info.json`: Hauptzweig 2.1, Zweig `factorio-2.0` |
 | T11 | Die Noise-Schwelle ergibt nicht ≥ 100 Kacheln Sand zwischen Spicefeld und Fels | `/arrakis-test T11` (ab 0.4.1) rechnet auf leeren Testoberflächen mit 9 Seeds die Rauschwerte auf einem 8-Kachel-Raster aus: Felsanteil, Inseln, euklidischer Felsabstand und die Spice-Schwelle t100 für die Karte von 0.4.0 und vier Kandidaten | Kandidat und Schwellen nach den Messwerten wählen |
 | T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken | Nur über `spidertron_remote_selection` |
 
@@ -774,9 +791,9 @@ Das hier ist geplant, aber erst ein Test im Spiel kann es klären. Alles andere 
 - **Wurm-KI (T5).** Die Doku beschreibt die KI-Zustände, nicht ihr genaues Verhalten. Offen ist, ob ein Wurm ein Auto als Angriffsziel hält, was er nach der Ankunft tut und wie gut sich sein Tempo drosseln lässt.
 - **Ascheeffekte (T5).** Ob nach dem Entfernen wirklich nichts mehr Flieger bremst.
 - **Proxy-Container (T4).** Ob sie mit Kofferraum und Treibstoffinventar eines Autos für Greifarme funktionieren und ob die Bauregel eine Fläche größer als das Gebäude zulässt.
-- **Ernter-Tempo (T2).** Welches Höchsttempo der Panzer-Abkömmling mit welchem Brennstoff erreicht; 2.1.13 hat das geändert (CL:244).
+- **Ernter-Tempo (T2, T2b).** Welches Höchsttempo der Panzer-Abkömmling mit welchem Brennstoff erreicht; 2.1.13 hat das geändert (CL:244). In 2.1.23 ist offen, wie stark `fuel_top_speed_multiplier` wirkt (5.1); T2b misst es.
 - **Kartengenerator (T11).** Wie weit Spicefelder bei einer Noise-Schwelle tatsächlich vom Fels entfernt liegen.
 - **Fehler aus 2.1.18 in 2.0.77 (T7, Mehrspieler-Test).** Ob 2.0.77 von den dort behobenen Fehlern betroffen ist: Absturz bei kleiner Knotenzahl, Spinnen-Desync.
-- **2.1 und alte Mods (T10).** Ob 2.1 Mods mit `factorio_version "2.0"` lädt.
+- ~~**2.1 und alte Mods (T10).**~~ Beantwortet: 2.1 lädt keine Mods mit `factorio_version "2.0"` (MS).
 - **Leistung (T8).** Die Kosten bei großen Flotten.
 - **Spielspaß.** Ob 55 s bis zum Wurmzeichen, 60 s Vorwarnung, 2 bis 4 Minuten Ruhe und etwa 15 Pakete/min pro Ernter sich gut anfühlen, zeigt nur Spielen.

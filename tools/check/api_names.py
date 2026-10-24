@@ -4,14 +4,14 @@
 Liest control.lua und scripts/**/*.lua als Text (es wird nichts ausgeführt) und vergleicht
 die benutzten Namen mit den Typdefinitionen der Factorio-Laufzeit-API:
 
-  1. defines-Pfade, die es in 2.0.75 (bzw. 2.1.20) nicht gibt
+  1. defines-Pfade, die es in 2.0.75 (bzw. 2.1.23) nicht gibt
   2. defines.events.X, die es in 2.0.75 nicht gibt; dazu Felder von event.X
   3. Methodenaufrufe x.name(...), x.name{...}, x.name"...", deren Name weder ein Member
      einer Lua*-Klasse noch eine Lua-Standardfunktion noch eine eigene Funktion ist
      (außerdem: Stdlib-Module, Doppelpunkt-Aufrufe, eigene Modultabellen wie tb)
   4. Schreibzugriffe x.name = ..., wenn name in JEDER Klasse schreibgeschützt ist
-     (2.0.75; zusätzlich: erst in 2.1.20 schreibgeschützt; und wo der Typ bekannt ist)
-  5. Member, die es in 2.0.75 gibt, in 2.1.20 aber in keiner Klasse mehr
+     (2.0.75; zusätzlich: erst in 2.1.23 schreibgeschützt; und wo der Typ bekannt ist)
+  5. Member, die es in 2.0.75 gibt, in 2.1.23 aber in keiner Klasse mehr
   6. Globale Einstiegspunkte (game.*, script.*, rendering.*, helpers.*, commands.*,
      settings.*, prototypes.*, remote.*, rcon.*, storage) und unbekannte Namen darin
   7. Typ-Plausibilität: Wo sich der Typ des Empfängers ableiten lässt (game.surfaces[…] →
@@ -22,6 +22,10 @@ die benutzten Namen mit den Typdefinitionen der Factorio-Laufzeit-API:
   8. Tabellen-Argumente: Bei x.methode{…} / x.methode(…, {…}) und x.attr = {…} mit bekanntem
      Typ müssen die Schlüssel im Parametertyp vorkommen (z. B. create_entity{positon = …}).
 
+Die Versionsnummern in der Ausgabe liest das Skript aus den Typdateien (factorioVersion in
+package.json, sonst die Kopfzeile "// Factorio version X" in classes.d.ts). Ziel ist 2.1
+(ab Mod 0.5.1); 2.0.75 bleibt für den Zweig factorio-2.0 dabei.
+
 Treffer sind Kandidaten für eine Prüfung von Hand (Datei:Zeile). Bestätigte Fehlalarme
 kommen in die Listen unten (CALL_WHITELIST, WRITE_WHITELIST, DATA_ROOTS). Grenzen: Felder
 eigener Datentabellen (run.data …) und Variablen ohne ableitbaren Typ prüfen nur 3–5 nach
@@ -30,19 +34,21 @@ Namen; Werte, Einheiten und nil-Zugriffe prüft das Skript nicht.
 Einrichtung (einmalig; npm nur zum Herunterladen der Typdateien, nicht zum Ausführen):
   cd tools/check && mkdir api && cd api      # Standardort, wird automatisch gefunden
   npm pack typed-factorio@3.36.0      # API 2.0.75 → package/runtime/generated/*.d.ts
-  npm pack factorio-types@1.2.69      # API 2.1.20 → package/dist/*.d.ts
-  mkdir typed-factorio-3.36.0 factorio-types-1.2.69
+  npm pack factorio-types@1.2.72      # API 2.1.23 → package/dist/*.d.ts
+  mkdir typed-factorio-3.36.0 factorio-types-1.2.72
   tar xzf typed-factorio-3.36.0.tgz -C typed-factorio-3.36.0
-  tar xzf factorio-types-1.2.69.tgz -C factorio-types-1.2.69
+  tar xzf factorio-types-1.2.72.tgz -C factorio-types-1.2.72
   # optional (für require("util") und __core__/lualib/event_handler), wie bei datastage.py:
-  git clone --depth 1 --branch 2.0.77 https://github.com/wube/factorio-data fd2077
+  git clone --depth 1 --branch 2.1.23 https://github.com/wube/factorio-data fd2123
+  # (event_handler.lua ist in 2.0.77 und 2.1.23 gleich; fd2077 geht auch)
 
 Aufruf (aus dem Repo-Root; nur Python-Standardbibliothek):
   python3 tools/check/api_names.py [--api20 PFAD] [--api21 PFAD] [--fd PFAD] [-v]
     --api20  Ordner mit classes.d.ts, defines.d.ts, events.d.ts, concepts.d.ts
              von typed-factorio 3.36.0 (…/package/runtime/generated)
-    --api21  dasselbe von factorio-types 1.2.69 (…/package/dist)
-    --fd     Vanilla-Daten 2.0.77 (Ordner mit core/lualib), optional
+    --api21  dasselbe von factorio-types 1.2.72 (…/package/dist); ältere 2.1-Typdateien
+             (z. B. 1.2.69 = API 2.1.20) gehen auch, die Ausgabe nennt dann deren Version
+    --fd     Vanilla-Daten 2.1.23 oder 2.0.77 (Ordner mit core/lualib), optional
     --repo   anderer Mod-Ordner (z. B. eine Kopie mit absichtlichen Fehlern zum Testen)
     -v       zusätzlich jeden Zugriff mit abgeleitetem Typ und jeden ohne Typ auflisten
 
@@ -52,6 +58,7 @@ import argparse
 import bisect
 import difflib
 import glob
+import json
 import os
 import re
 import sys
@@ -75,10 +82,38 @@ def _first_existing(*paths):
 
 DEFAULT_API20 = _first_existing(os.path.join(_HERE, "api", "typed-factorio-3.36.0", "package", "runtime", "generated"),
                                 _SCRATCH + "/api/typed-factorio-3.36.0/package/runtime/generated")
-DEFAULT_API21 = _first_existing(os.path.join(_HERE, "api", "factorio-types-1.2.69", "package", "dist"),
-                                _SCRATCH + "/api/factorio-types-1.2.69/package/dist")
-DEFAULT_FD = _first_existing(os.path.join(os.path.dirname(os.path.dirname(_HERE)), "fd2077"),
-                             "/tmp/claude-0/-home-claude/9eef4ee3-2856-53aa-b01e-e92827ccbebf/scratchpad/fd2077")
+DEFAULT_API21 = _first_existing(os.path.join(_HERE, "api", "factorio-types-1.2.72", "package", "dist"),
+                                _SCRATCH + "/api/factorio-types-1.2.72/package/dist")
+DEFAULT_FD = _first_existing(os.path.join(os.path.dirname(os.path.dirname(_HERE)), "fd2123"),
+                             os.path.join(os.path.dirname(os.path.dirname(_HERE)), "fd2077"),
+                             _SCRATCH + "/fd2123")
+
+
+def api_version(folder, fallback):
+  """Factorio-Version der Typdateien in folder: factorioVersion aus der package.json des Pakets
+  (folder oder bis zu drei Ordner darüber), sonst die Kopfzeile "// Factorio version X" in
+  classes.d.ts (factorio-types), sonst fallback."""
+  path = os.path.abspath(folder)
+  for _ in range(4):
+    package = os.path.join(path, "package.json")
+    if os.path.exists(package):
+      try:
+        with open(package, encoding="utf-8") as f:
+          version = json.load(f).get("factorioVersion")
+      except (OSError, ValueError):
+        version = None
+      if version:
+        return str(version)
+    path = os.path.dirname(path)
+  try:
+    with open(os.path.join(folder, "classes.d.ts"), encoding="utf-8") as f:
+      for _, line in zip(range(20), f):
+        m = re.match(r"\s*//\s*Factorio version\s+(\S+)", line)
+        if m:
+          return m.group(1)
+  except OSError:
+    pass
+  return fallback
 
 # Namen, die als Methodenaufruf erlaubt sind, obwohl der Prüfer sie nirgends findet.
 CALL_WHITELIST = set()
@@ -1573,8 +1608,8 @@ def self_test(api20, api21):
 def main():
   ap = argparse.ArgumentParser(description="Statische Prüfung der Factorio-API-Namen (Laufzeitcode).")
   ap.add_argument("--api20", default=DEFAULT_API20, help="typed-factorio 3.36.0 runtime/generated (API 2.0.75)")
-  ap.add_argument("--api21", default=DEFAULT_API21, help="factorio-types 1.2.69 dist (API 2.1.20)")
-  ap.add_argument("--fd", default=DEFAULT_FD, help="Vanilla-Daten 2.0.77 (für __core__/lualib), optional")
+  ap.add_argument("--api21", default=DEFAULT_API21, help="factorio-types 1.2.72 dist (API 2.1.23) oder andere 2.1-Typdateien")
+  ap.add_argument("--fd", default=DEFAULT_FD, help="Vanilla-Daten 2.1.23 oder 2.0.77 (für __core__/lualib), optional")
   ap.add_argument("--repo", default=None, help="Mod-Ordner (Standard: der Ordner, in dem tools/ liegt)")
   ap.add_argument("-v", "--verbose", action="store_true", help="alle Zugriffe mit abgeleitetem Typ auflisten")
   args = ap.parse_args()
@@ -1586,8 +1621,10 @@ def main():
     if not os.path.exists(os.path.join(folder, "classes.d.ts")):
       sys.exit("Keine classes.d.ts in %s (siehe Einrichtung oben in der Datei)." % folder)
 
-  api20 = Api("2.0.75", args.api20, r"(GuiSpec|SurfaceCreateEntity|SurfaceCreateSegmentedUnit|ControlSetGuiArrow)$|^GuiElementIndexer$")
-  api21 = Api("2.1.20", args.api21, r"Params")
+  V20 = api_version(args.api20, "2.0")
+  V21 = api_version(args.api21, "2.1")
+  api20 = Api(V20, args.api20, r"(GuiSpec|SurfaceCreateEntity|SurfaceCreateSegmentedUnit|ControlSetGuiArrow)$|^GuiElementIndexer$")
+  api21 = Api(V21, args.api21, r"Params")
   if not self_test(api20, api21):
     print("Selbsttest gescheitert: Parser passt nicht zu den d.ts-Dateien.")
     return 2
@@ -1653,18 +1690,19 @@ def main():
       collect_field_types(typer20, lf)
 
   rep = Report()
-  S1, S1b = "1. defines-Pfade, die in 2.0.75 fehlen", "1b. defines-Pfade, die in 2.1.20 fehlen"
-  S2, S2b = "2. defines.events, die in 2.0.75 fehlen", "2b. Ereignisfelder event.X, die es in keinem Ereignis gibt"
+  S1, S1b = "1. defines-Pfade, die in %s fehlen" % V20, "1b. defines-Pfade, die in %s fehlen" % V21
+  S2, S2b = "2. defines.events, die in %s fehlen" % V20, "2b. Ereignisfelder event.X, die es in keinem Ereignis gibt"
   S3, S3b = "3. Methodenaufrufe mit unbekanntem Namen", "3b. Lua-Standardbibliothek: unbekannt oder in Factorio nicht verfügbar"
   S3c, S3d = "3c. Doppelpunkt-Aufrufe (API-Methoden wollen '.')", "3d. Zugriffe auf eigene Modultabellen ohne Definition"
   S3e = "3e. Attribut wird als Funktion aufgerufen"
-  S4, S4b = "4. Schreibzugriffe: in 2.0.75 in jeder Klasse readonly", "4b. Schreibzugriffe: erst in 2.1.20 überall readonly"
+  S4, S4b = "4. Schreibzugriffe: in %s in jeder Klasse readonly" % V20, "4b. Schreibzugriffe: erst in %s überall readonly" % V21
   S4c = "4c. Schreibzugriffe: auf der abgeleiteten Klasse readonly"
-  S5, S5b = "5. Member aus 2.0.75, die es in 2.1.20 in keiner Klasse gibt", "5b. Member, die es in 2.1.20 auf der abgeleiteten Klasse nicht mehr gibt (oder dort readonly sind)"
+  S5, S5b = "5. Member aus %s, die es in %s in keiner Klasse gibt" % (V20, V21), \
+    "5b. Member, die es in %s auf der abgeleiteten Klasse nicht mehr gibt (oder dort readonly sind)" % V21
   S6 = "6. Globale Einstiegspunkte: unbekannte Namen, global statt storage, überdeckte Globals"
-  S7 = "7. Typ-Plausibilität: Member fehlt auf der abgeleiteten Klasse (2.0.75)"
-  S8 = "8. Tabellen-Argumente: Schlüssel, die der Parametertyp nicht kennt (2.0.75)"
-  S8b = "8b. Tabellen-Argumente: Schlüssel, die es erst in 2.1.20 nicht mehr gibt"
+  S7 = "7. Typ-Plausibilität: Member fehlt auf der abgeleiteten Klasse (%s)" % V20
+  S8 = "8. Tabellen-Argumente: Schlüssel, die der Parametertyp nicht kennt (%s)" % V20
+  S8b = "8b. Tabellen-Argumente: Schlüssel, die es erst in %s nicht mehr gibt" % V21
   for s in (S1, S1b, S2, S2b, S3, S3b, S3c, S3d, S3e, S4, S4b, S4c, S5, S5b, S6, S7, S8, S8b):
     rep.sections[s] = []
 
@@ -1794,9 +1832,9 @@ def main():
       # Ereignistabellen
       if single and root in EVENT_NAMES and use == "read":
         if name not in api20.event_fields:
-          rep.add(S2b, "%s: %s – Feld gibt es in keinem Ereignis (2.0.75)" % (where, full))
+          rep.add(S2b, "%s: %s – Feld gibt es in keinem Ereignis (%s)" % (where, full, V20))
         elif name not in api21.event_fields:
-          rep.add(S2b, "%s: %s – Feld gibt es in 2.1.20 in keinem Ereignis mehr" % (where, full))
+          rep.add(S2b, "%s: %s – Feld gibt es in %s in keinem Ereignis mehr" % (where, full, V21))
         continue
 
       typ, tsrc = typer20.eval(lf, toks, p) if toks else (None, None)
@@ -1833,8 +1871,8 @@ def main():
           known20 = {(k[0], k[2]) for k in probs20}
           for kpos, path_, key, allowed in (probs21 if ok21 else []):
             if (kpos, key) not in known20:
-              rep.add(S8b, "%s: %s{… %s%s …} – Schlüssel '%s' kennt 2.1.20 nicht [%s]" % (
-                lf.where(kpos), full, path_, key, key, tsrc), error=False)
+              rep.add(S8b, "%s: %s{… %s%s …} – Schlüssel '%s' kennt %s nicht [%s]" % (
+                lf.where(kpos), full, path_, key, key, V21, tsrc), error=False)
       stats["zugriffe"] += 1
       if typ is not None and typ[0] == "obj":
         stats[tsrc] += 1
@@ -1849,11 +1887,11 @@ def main():
         cls = GLOBAL_ROOTS[root]
         mem20, mem21 = api20.member(cls, name), api21.member(cls, name)
         if mem20 is None:
-          rep.add(S6, "%s: %s – %s hat kein '%s' (2.0.75)" % (where, full, cls, name))
+          rep.add(S6, "%s: %s – %s hat kein '%s' (%s)" % (where, full, cls, name, V20))
         elif mem21 is None:
-          rep.add(S5b, "%s: %s – %s hat in 2.1.20 kein '%s' mehr" % (where, full, cls, name), error=False)
+          rep.add(S5b, "%s: %s – %s hat in %s kein '%s' mehr" % (where, full, cls, V21, name), error=False)
         if use == "write" and mem20 is not None and not mem20.writable:
-          rep.add(S4c, "%s: %s = … – %s.%s ist readonly (2.0.75, %s:%d)" % (where, full, cls, name, "classes.d.ts", mem20.line))
+          rep.add(S4c, "%s: %s = … – %s.%s ist readonly (%s, %s:%d)" % (where, full, cls, name, V20, "classes.d.ts", mem20.line))
         if use == "call" and mem20 is not None and not mem20.method:
           rep.add(S3e, "%s: %s(…) – %s.%s ist ein Attribut" % (where, full, cls, name))
         continue
@@ -1877,12 +1915,12 @@ def main():
           rep.add(S4, "%s: %s = … – '%s' ist readonly in: %s" % (where, full, name, decl))
         elif (api20.writable_anywhere(name) and api21.attr_anywhere(name) and not api21.writable_anywhere(name)
               and not wl):
-          rep.add(S4b, "%s: %s = … – '%s' ist in 2.1.20 in jeder Klasse readonly" % (where, full, name), error=False)
+          rep.add(S4b, "%s: %s = … – '%s' ist in %s in jeder Klasse readonly" % (where, full, name, V21), error=False)
 
       # 5: in 2.1 entfernte Namen
       if not data_root and api20.has_name(name) and not api21.has_name(name):
         decl = ", ".join(sorted({m_.cls for m_ in api20.by_name[name]})[:4])
-        rep.add(S5, "%s: %s (%s) – 2.0.75: %s; 2.1.20: in keiner Klasse" % (where, full, use, decl), error=False)
+        rep.add(S5, "%s: %s (%s) – %s: %s; %s: in keiner Klasse" % (where, full, use, V20, decl, V21), error=False)
 
       # 7: Typ der Kette bekannt
       if typ is not None and typ[0] == "obj":
@@ -1897,19 +1935,19 @@ def main():
           continue
         mem = next(mm for mm in mems if mm is not None)
         if use == "write" and not any(mm is not None and mm.writable for mm in mems):
-          rep.add(S4c, "%s: %s = … – %s.%s ist readonly (2.0.75, classes.d.ts:%d) [%s]" % (
-            where, full, mem.cls, name, mem.line, tsrc))
+          rep.add(S4c, "%s: %s = … – %s.%s ist readonly (%s, classes.d.ts:%d) [%s]" % (
+            where, full, mem.cls, name, V20, mem.line, tsrc))
         if use == "call" and not any(mm is not None and mm.method for mm in mems):
           rep.add(S3e, "%s: %s(…) – %s.%s ist ein Attribut, keine Methode [%s]" % (where, full, mem.cls, name, tsrc))
         m21 = [api21.member_or_sub(c, name)[0] for c in classes]
         if all(mm is None for mm in m21):
-          rep.add(S5b, "%s: %s (%s) – %s.%s fehlt in 2.1.20 [%s]" % (where, full, use, "/".join(classes), name, tsrc),
+          rep.add(S5b, "%s: %s (%s) – %s.%s fehlt in %s [%s]" % (where, full, use, "/".join(classes), name, V21, tsrc),
                   error=False)
         elif use == "write" and any(mm is not None and mm.writable for mm in mems) and \
             not any(mm is not None and mm.writable for mm in m21):
           mm21 = next(mm for mm in m21 if mm is not None)
-          rep.add(S5b, "%s: %s = … – %s.%s ist in 2.1.20 readonly (%s:%d) [%s]" % (
-            where, full, mm21.cls, name, "classes.d.ts", mm21.line, tsrc), error=False)
+          rep.add(S5b, "%s: %s = … – %s.%s ist in %s readonly (%s:%d) [%s]" % (
+            where, full, mm21.cls, name, V21, "classes.d.ts", mm21.line, tsrc), error=False)
 
   # 1/2 auswerten ------------------------------------------------------------------------------
   for path_, wheres in defines_used.items():
@@ -1922,7 +1960,7 @@ def main():
     if st20 != "ok":
       rep.add(S2 if is_event else S1, "%s: %s – gültig nur bis defines.%s" % (loc, text, ".".join(st20[1]) or "(nichts)"))
     if st21 != "ok":
-      rep.add(S1b, "%s: %s – in 2.1.20 gültig nur bis defines.%s" % (loc, text, ".".join(st21[1]) or "(nichts)"), error=False)
+      rep.add(S1b, "%s: %s – in %s gültig nur bis defines.%s" % (loc, text, V21, ".".join(st21[1]) or "(nichts)"), error=False)
 
   # Ausgabe --------------------------------------------------------------------------------------
   print("== Benutzte defines (%d verschiedene) ==" % len([p for p in defines_used if p]))
@@ -1930,7 +1968,7 @@ def main():
     if path_:
       st = "ok" if api20.define_status(path_) == "ok" else "FEHLT"
       st21 = "ok" if api21.define_status(path_) == "ok" else "FEHLT"
-      print("  defines.%-58s 2.0.75 %-5s 2.1.20 %-5s %dx" % (".".join(path_), st, st21, len(wheres)))
+      print("  defines.%-58s %s %-5s %s %-5s %dx" % (".".join(path_), V20, st, V21, st21, len(wheres)))
   print()
   print("== Globale Einstiegspunkte (%d verschiedene) ==" % len(entry_used))
   for (root, name), wheres in sorted(entry_used.items()):
@@ -1939,7 +1977,7 @@ def main():
     b = "ok" if api21.member(cls, name) else "FEHLT"
     mem = api20.member(cls, name)
     kind = mem.describe() if mem else "-"
-    print("  %-40s 2.0.75 %-5s 2.1.20 %-5s %-24s %dx" % (root + "." + name, a, b, kind, len(wheres)))
+    print("  %-40s %s %-5s %s %-5s %-24s %dx" % (root + "." + name, V20, a, V21, b, kind, len(wheres)))
   print("  storage: %dx%s" % (len(storage_uses), " (erste: %s)" % storage_uses[0] if storage_uses else ""))
   for w in global_uses:
     rep.add(S6, "%s: global.… – in 2.0 heißt die Tabelle storage" % w)
