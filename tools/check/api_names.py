@@ -130,6 +130,8 @@ WRITE_WHITELIST = {
   "p.unit", "p.path", "p.max_speed", "p.mode", "lane.unit", "check.unit",
   # harvester.lua: h = Ernter-Datensatz in storage.harvesters, Feld status laut Plan 4.2 (kein LuaEntity.status)
   "h.status",
+  # runner.lua: all = storage.testbench.all („alle“), Spieler, der es gestartet hat
+  "all.player_index",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die

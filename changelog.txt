@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.2
+Date: 2026-10-24
+  Modding:
+    - Der Prüfstand startet jetzt auch ohne Spieler: /arrakis-test geht von der Serverkonsole und über RCON und gilt dort als Admin. Die Antworten kommen dann über RCON und ins Log (status nur über RCON). Interaktive Tests (T9, T12) lehnt er ohne Spieler ab, „zurück“ gibt es nur für Spieler.
+    - Neu ist /arrakis-test status: eine STATUS-Zeile (bereit, läuft oder wartet, mit Tick) und je Test das letzte Ergebnis als ERGEBNIS-Zeile. Das Format ist fest, damit ein Programm es lesen kann (docs/pruefstand.md).
+    - T2 ohne Spieler: Geht die Skriptfahrt nicht, entfällt die Messung von Hand. Der Test meldet das als FEHLER und wertet gleich aus.
+    - „alle“ ohne Spieler wartet nach einer FRAGE nicht 30 s, denn niemand antwortet. Die Zusammenfassung lässt dann den Hinweis auf „zurück“ weg.
+    - Neu ist tools/pc/pruefstand.py: richtet in einem eigenen Ordner einen Factorio-Server ohne Spieler ein (nur 127.0.0.1), lässt die Tests über RCON laufen, holt die Ergebnisdateien ab und beendet den Server wieder. Dazu tools/pc/rcon.py (RCON-Client) und tools/pc/mod_settings.py (liest und schreibt mod-settings.dat). Im selben Arbeitsordner läuft immer nur ein Lauf (Sperrdatei pruefstand.lock); steht der Tick während eines Tests länger als 90 s still, bricht es mit Rückgabewert 2 ab. Nur Python-Standardbibliothek, Windows und Linux.
+---------------------------------------------------------------------------------------------------
 Version: 0.5.1
 Date: 2026-10-24
   Changes:

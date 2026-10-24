@@ -1,5 +1,8 @@
 -- Prüfstand (Phase 3a): Befehl /arrakis-test, Ablauf, Protokoll und Hilfsfunktionen.
 -- Nur geladen mit der Startup-Einstellung "arrakis-testbench" (siehe control.lua).
+-- Auch von der Serverkonsole oder über RCON (ohne Spieler, gilt als Admin): Antworten per rcon.print
+-- und log (status nur per rcon.print); interaktive Tests nur mit Spieler. /arrakis-test status gibt den Stand in festen
+-- ASCII-Zeilen (STATUS …, ERGEBNIS …) für tools/pc/pruefstand.py aus.
 --
 -- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
@@ -7,6 +10,7 @@
 --   Optional: hint (Text für die Testliste), answer_time (Ticks Pause bei „alle“ nach diesem Test,
 --   damit Max eine FRAGE vom Testende vor Ort beantworten kann).
 --   run = storage.testbench.run = {id, player_index, started, data = {}, args = {…}, counts = {…}}, nur Daten.
+--     player_index ist nil, wenn ohne Spieler gestartet (dann tb.player(run) == nil).
 --     run.data gehört dem Test; Schlüssel mit "tb_" benutzt der Runner (z. B. tb_protect).
 --   tb = diese Bibliothek (Funktionen unten), liegt nie in storage.
 --   Weitergeleitete Ereignisse (name): spider_command_completed, test_key, entity_died,
@@ -15,8 +19,8 @@
 -- storage.testbench = {
 --   run = run | nil,                         -- laufender Test (höchstens einer)
 --   queue = {id…} | nil,                     -- restliche Tests bei „alle“
---   all = {started, list = {…}} | nil,       -- Ergebnisse von „alle“
---   pending = {tick, id, player_index} | nil, -- nächster Test bei „alle“
+--   all = {started, list = {…}, skipped, player_index} | nil, -- Ergebnisse von „alle“
+--   pending = {tick, id, player_index} | nil, -- nächster Test bei „alle“ (player_index wie bei run)
 --   back = {[player_index] = {surface, position}}, -- für /arrakis-test zurück
 --   results = {[id] = {summary, tick, counts}},
 -- }
@@ -174,9 +178,11 @@ local function report_all()
     chat(line, COLORS.FRAGE)
     write(line)
   end
-  local back = "Zurück zu deiner Position vor dem Test: /arrakis-test zurück"
-  chat(back, COLORS.INFO)
-  write(back)
+  if all.player_index then
+    local back = "Zurück zu deiner Position vor dem Test: /arrakis-test zurück"
+    chat(back, COLORS.INFO)
+    write(back)
+  end
 end
 
 -- Ablauf -----------------------------------------------------------------------------------
@@ -397,7 +403,8 @@ function tb.finish(run, summary)
     if #s.queue > 0 then
       local delay = NEXT_TEST_DELAY
       local answer_time = test and test.answer_time
-      if type(answer_time) == "number" and answer_time > delay and (counts.FRAGE or 0) > 0 then
+      -- Pause für die FRAGE nur mit Spieler; ohne Spieler antwortet niemand.
+      if type(answer_time) == "number" and answer_time > delay and (counts.FRAGE or 0) > 0 and run.player_index then
         delay = answer_time
       end
       local next_id = table.remove(s.queue, 1)
@@ -531,9 +538,21 @@ end
 
 -- Befehl ------------------------------------------------------------------------------------
 
+-- Antwort an den Aufrufer: Spieler im Chat; ohne Spieler (Serverkonsole, RCON) per rcon.print
+-- (laut API nur, wenn der Befehl über RCON kam, sonst ohne Wirkung) und ins Log.
+-- no_log: nicht ins Log (status, das der Treiber alle paar Sekunden abfragt).
+local function reply(player, text, no_log)
+  if player then
+    player.print(text, {skip = defines.print_skip.never})
+  else
+    rcon.print(text)
+    if not no_log then log(text) end
+  end
+end
+
 local function list_tests(player)
   local s = state()
-  player.print("Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück")
+  reply(player, "Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück | status")
   for _, id in ipairs(ordered_ids()) do
     local test = tests[id]
     local notes = {seconds(test.timeout or DEFAULT_TIMEOUT)}
@@ -542,32 +561,63 @@ local function list_tests(player)
     if test.hint then table.insert(notes, test.hint) end
     local last = s.results[id]
     if last then table.insert(notes, "zuletzt: " .. last.summary) end
-    player.print(id .. " – " .. test.title .. " (" .. table.concat(notes, "; ") .. ")")
+    reply(player, id .. " – " .. test.title .. " (" .. table.concat(notes, "; ") .. ")")
   end
-  player.print("Ergebnisse stehen im Chat und in script-output/" .. LOG_FILE .. ".")
-  if s.run then player.print("Läuft gerade: " .. s.run.id) end
+  reply(player, "Ergebnisse stehen im Chat und in script-output/" .. LOG_FILE .. ".")
+  if s.run then reply(player, "Läuft gerade: " .. s.run.id) end
+end
+
+-- Stand für Mensch und Treiber: Zeile 1 STATUS (bereit | laeuft | wartet), dann ERGEBNIS je
+-- gespeichertem Ergebnis in fester Reihenfolge. Schlüsselwörter ASCII, nicht übersetzen.
+local function show_status(player)
+  local s = state()
+  local line
+  if s.run then
+    line = string.format("STATUS laeuft %s +%.1f s | Tick %d", s.run.id, (game.tick - s.run.started) / 60, game.tick)
+  elseif s.pending then
+    line = string.format("STATUS wartet %s | Tick %d", s.pending.id, game.tick)
+  else
+    line = string.format("STATUS bereit | Tick %d", game.tick)
+  end
+  if s.queue then
+    line = line .. string.format(" | alle, danach noch %d", #s.queue)
+  end
+  reply(player, line, true)
+  for _, id in ipairs(ordered_ids()) do
+    local result = s.results[id]
+    if result then
+      local counts = result.counts or {}
+      local summary = string.gsub(tostring(result.summary or "-"), "[\r\n]+", " ")
+      reply(player, string.format("ERGEBNIS %s | Tick %d | OK %d FEHLER %d FRAGE %d | %s", id, result.tick or 0,
+        counts.OK or 0, counts.FEHLER or 0, counts.FRAGE or 0, summary), true)
+    end
+  end
 end
 
 local function go_back(player)
+  if not player then
+    reply(nil, "„zurück“ gibt es nur für Spieler im Spiel.")
+    return
+  end
   local s = state()
   local back = s.back[player.index]
   if not back then
-    player.print("Keine gemerkte Position.")
+    reply(player, "Keine gemerkte Position.")
     return
   end
   local surface = game.get_surface(back.surface)
   if not surface then
     s.back[player.index] = nil
-    player.print("Die Oberfläche " .. back.surface .. " gibt es nicht mehr.")
+    reply(player, "Die Oberfläche " .. back.surface .. " gibt es nicht mehr.")
     return
   end
   leave_vehicle(player)
   local target = surface.find_non_colliding_position("character", back.position, 10, 0.5) or back.position
   if player.teleport(target, surface) then
     s.back[player.index] = nil
-    player.print("Zurück auf " .. surface.name .. ".")
+    reply(player, "Zurück auf " .. surface.name .. ".")
   else
-    player.print("Teleport zurück ging nicht.")
+    reply(player, "Teleport zurück ging nicht.")
   end
 end
 
@@ -584,21 +634,25 @@ local function start_all(player)
     end
   end
   if #queue == 0 then
-    player.print("Keine Tests für „alle“.")
+    reply(player, "Keine Tests für „alle“.")
     return
   end
+  local list = table.concat(queue, ", ")
   write("")
-  write(string.format("=== alle: %s | Tick %d ===", table.concat(queue, ", "), game.tick))
+  write(string.format("=== alle: %s | Tick %d ===", list, game.tick))
   s.queue = queue
-  s.all = {started = game.tick, list = {}, skipped = skipped}
-  start_test(table.remove(s.queue, 1), player.index, {})
+  s.all = {started = game.tick, list = {}, skipped = skipped, player_index = player and player.index}
+  start_test(table.remove(s.queue, 1), player and player.index, {})
+  -- Ohne Spieler sieht der Aufrufer den Chat nicht: kurze Bestätigung.
+  if not player then reply(nil, "„alle“ gestartet: " .. list .. ". Stand: /arrakis-test status") end
 end
 
 local function on_command(command)
+  -- Ohne player_index kommt der Befehl von der Serverkonsole oder über RCON: gilt als Admin.
   local player = command.player_index and game.get_player(command.player_index)
-  if not player then return end
-  if not player.admin then
-    player.print("Nur Admins dürfen /arrakis-test benutzen.")
+  if command.player_index and not player then return end
+  if player and not player.admin then
+    reply(player, "Nur Admins dürfen /arrakis-test benutzen.")
     return
   end
   local words = {}
@@ -614,28 +668,44 @@ local function on_command(command)
     local s = state()
     if s.run or s.queue then
       abort_running("stop")
+      if not player then reply(nil, "Gestoppt.") end
     else
-      player.print("Es läuft kein Test.")
+      reply(player, "Es läuft kein Test.")
     end
   elseif key == "zurück" or key == "zurueck" then
     go_back(player)
   elseif key == "alle" then
     start_all(player)
+  elseif key == "status" then
+    show_status(player)
   else
     local id = find_id(words[1])
     local test = id and tests[id]
     if not test then
-      player.print("Unbekannter Test: " .. words[1] .. ". Liste: /arrakis-test")
+      reply(player, "Unbekannter Test: " .. words[1] .. ". Liste: /arrakis-test")
+      return
+    end
+    -- Vor abort_running: ein laufender Test bleibt dann unberührt.
+    if test.interactive and not player then
+      reply(nil, id .. " braucht einen Spieler im Spiel (interaktiv).")
       return
     end
     local args = {}
     for i = 2, #words do table.insert(args, words[i]) end
     if test.confirm and args[1] ~= test.confirm then
-      player.print(id .. " startet nur mit /arrakis-test " .. id .. " " .. test.confirm .. " (nur in einem Wegwerf-Spielstand).")
+      reply(player, id .. " startet nur mit /arrakis-test " .. id .. " " .. test.confirm .. " (nur in einem Wegwerf-Spielstand).")
       return
     end
     abort_running("neuer Test " .. id)
-    start_test(id, player.index, args)
+    start_test(id, player and player.index, args)
+    if not player then
+      local s = state()
+      if s.run and s.run.id == id then
+        reply(nil, "Gestartet: " .. id .. ". Stand: /arrakis-test status")
+      else
+        reply(nil, id .. " gleich beim Start beendet: " .. tostring((s.results[id] or {}).summary or "-"))
+      end
+    end
   end
 end
 
@@ -697,11 +767,17 @@ runner.on_init = function()
 end
 
 runner.on_configuration_changed = function()
-  state()
+  local s = state()
+  -- Bis 0.5.1 startete „alle“ immer ein Spieler; s.all hatte noch kein player_index.
+  local all = s.all
+  if all and all.player_index == nil then
+    local from = s.run or s.pending
+    all.player_index = from and from.player_index
+  end
 end
 
 runner.add_commands = function()
-  commands.add_command("arrakis-test", "Prüfstand (nur Admins): /arrakis-test [Tn [Argument] | alle | stop | zurück]", on_command)
+  commands.add_command("arrakis-test", "Prüfstand (nur Admins): /arrakis-test [Tn [Argument] | alle | stop | zurück | status]", on_command)
 end
 
 runner.tb = tb

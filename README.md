@@ -2,7 +2,7 @@
 
 Factorio-Mod für **Factorio 2.1 + Space Age** (ab 2.1.23): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Factorio 2.1 lädt keine Mods für 2.0. Für **Factorio 2.0.77** gibt es den Zweig `factorio-2.0` (Mod 0.5.0): im Mod-Ordner `arrakis` einmal `git fetch` und dann `git checkout factorio-2.0` ausführen.
 
-Stand: Phase 3b (0.5.1). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern). Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
+Stand: Phase 3b (0.5.2). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern). Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 
@@ -30,6 +30,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
    - `/arrakis-test T7 ja`: T7 mit Teil b (kann das Spiel abstürzen lassen, nur im Wegwerf-Spielstand)
 4. **Ergebnisse** stehen im Chat und in der Datei `%APPDATA%\Factorio\script-output\arrakis-test.txt` (Linux: `~/.factorio/script-output/arrakis-test.txt`). Die Datei wird fortgeschrieben, nie geleert. Bitte die Datei schicken, nach T11 auch `arrakis-t11-karten.txt` aus demselben Ordner, dazu die Antworten auf die FRAGE-Zeilen und Screenshots.
+5. **Ohne Spieler:** `tools/pc/pruefstand.py` lässt die nicht-interaktiven Tests auf einem eigenen Factorio-Server über RCON laufen (dazu `/arrakis-test status`), siehe [Automatisch ohne Spieler](docs/pruefstand.md#automatisch-ohne-spieler-server-und-rcon).
 
 ## Aufbau
 
@@ -63,6 +64,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T13 und T2b (`t_ernter.lua`: echter Ernter-Code) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
 | `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
+| `tools/pc/` | Prüfstand ohne Spieler: `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |
 
 ## Roadmap
 

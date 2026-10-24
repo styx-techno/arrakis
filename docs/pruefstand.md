@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.1 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.5.2 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -37,7 +37,8 @@ In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die
 
 ## Befehle
 
-Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin):
+Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin).
+Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, T9 und T12), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
 
 | Befehl | Wirkung |
 |---|---|
@@ -45,11 +46,118 @@ Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin):
 | `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T13` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 16 min |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
+| `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
 | `/arrakis-test T7 ja` | T7 mit Teil b (kann das Spiel abstürzen lassen) |
 
 Die meisten Tests bringen dich zum Zuschauen an den Testaufbau. Mit `/arrakis-test zurück` kommst du zurück.
 Jeder Test hat ein Zeitlimit; danach meldet er „Zeitüberschreitung“ und räumt auf.
+
+## Automatisch ohne Spieler (Server und RCON)
+
+Ab 0.5.2 nimmt der Prüfstand Befehle auch ohne Spieler an: an der Konsole eines Factorio-Servers oder über RCON. Ein solcher Aufrufer gilt als Admin.
+Die Antworten gehen dann an RCON und ins Log des Servers (`factorio-current.log`), nicht in den Chat; `status` antwortet nur über RCON, an der Konsole des Servers selbst also womöglich gar nicht. Die Testzeilen stehen wie immer in `script-output/arrakis-test.txt`.
+Ein eigener Server braucht in `server-settings.json` `"auto_pause": false`, sonst steht er ohne Spieler still und kein Test kommt voran.
+Am einfachsten macht das alles das Werkzeug [`tools/pc/pruefstand.py`](#werkzeug-toolspcpruefstandpy).
+
+**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13 und T2b.
+T9 und T12 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt beide wie immer aus.
+`/arrakis-test zurück` gibt es nur für Spieler.
+Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gestartet: T13. Stand: /arrakis-test status`, `„alle“ gestartet: …` oder `Gestoppt.` Endet ein Test schon beim Start (etwa mit Skriptfehler), steht dort `T13 gleich beim Start beendet: …`.
+
+**Was ohne Spieler anders ist:**
+
+- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13 und T2b fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
+- `alle` wartet ohne Spieler nach einer FRAGE nicht (mit Spieler nach T2 und T4 je 30 s).
+- Die Zusammenfassung von `alle` lässt den Hinweis auf `/arrakis-test zurück` weg.
+- T2: Geht die Skriptfahrt nicht, setzt der Test sonst dich in den Ernter. Ohne Spieler entfällt das: FEHLER „Manuelle Messung entfällt: kein Spieler im Spiel“, dann wertet der Test gleich aus.
+- T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Ohne Zuschauer rechnet Factorio die Würmer womöglich sparsamer (T5 a, c, d und T6 Bahn A bis C). Die Kriterien bleiben gleich, die Messwerte können aber von einem Lauf im Spiel abweichen.
+- Die Karte wird nicht aufgedeckt. In T13 Schritt 10 steht dann „Kartenmarkierungen entfernt 0“; das zählt nicht für OK oder FEHLER.
+
+### `/arrakis-test status`
+
+Geht im Chat und ohne Spieler. Die erste Zeile ist genau eine dieser drei:
+
+```
+STATUS bereit | Tick <n>
+STATUS laeuft <id> +<s> s | Tick <n>
+STATUS wartet <id> | Tick <n>
+```
+
+- `bereit`: Es läuft kein Test.
+- `laeuft`: Test `<id>` läuft seit `<s>` Sekunden Spielzeit, mit einer Nachkommastelle (z. B. `+12.5 s`).
+- `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s).
+- Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
+
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b):
+
+```
+ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
+```
+
+`<tick>` ist der Tick am Testende, `<a>`, `<b>` und `<c>` zählen die Zeilen dieser Art. Die Zusammenfassung ist die der ENDE-Zeile, ohne Zeilenumbrüche; sie kann selbst ` | ` enthalten.
+Die Ergebnisse bleiben im Spielstand, auch die von früheren Läufen. `status` schreibt nichts ins Log, damit häufiges Abfragen es nicht füllt. Neu ist ein Ergebnis, wenn sein Tick nicht kleiner ist als der Tick der STATUS-Zeile vor dem Start. Ein Test, der schon beim Start endet (etwa mit Skriptfehler), kann denselben Tick haben.
+Die Schlüsselwörter sind ASCII (`laeuft` ohne Umlaut), damit ein Programm sie sicher lesen kann.
+Beispiel bei `alle`: `STATUS wartet T3 | Tick 11500 | alle, danach noch 7` (T3 kommt gleich, danach noch 7 Tests).
+
+### Werkzeug `tools/pc/pruefstand.py`
+
+Das Werkzeug richtet einen eigenen Factorio-Server ein, lässt die Tests ohne Spieler laufen und holt die Ergebnisse ab.
+Es braucht nur Python 3 (ab 3.8) ohne Zusatzpakete und läuft unter Windows und Linux (unter Windows geht auch `py` statt `python`).
+Aufruf im Repo-Ordner, zum Beispiel mit Factorio aus Steam:
+
+```
+python tools/pc/pruefstand.py --factorio "C:\Program Files (x86)\Steam\steamapps\common\Factorio\bin\x64\factorio.exe" T2b T13
+```
+
+Oder mit einer anderen Factorio-Kopie und allen Tests:
+
+```
+python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe" alle
+```
+
+| Angabe | Bedeutung |
+|---|---|
+| `--factorio PFAD` | Pflicht: `bin\x64\factorio.exe` einer Factorio-Installation ab 2.1.23 mit Space Age (daneben liegt `data\`) |
+| `--ordner ORDNER` | Arbeitsordner, Standard `%TEMP%\arrakis-pruefstand` (Linux meist `/tmp/arrakis-pruefstand`) |
+| `--mod ORDNER` | Mod-Ordner, Standard: dieses Repo |
+| `--rcon-port N`, `--port N` | Ports auf 127.0.0.1, Standard 27115 (RCON) und 34297 (Spiel) |
+| `--zeitlimit MIN` | Minuten je Test, Standard 30, bei `alle` 90 |
+| `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
+| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`. T9 und T12 nicht angeben. |
+
+**Was es tut:**
+
+1. Eigener Arbeitsordner mit eigener `config.ini`: Factorio liest seine Daten aus der Installation und schreibt nur in diesen Ordner. Einen fremden Ordner, der nicht leer ist, nimmt es nicht.
+2. Frische Kopie der Mod nach `mods\arrakis` (ohne `.git`), dazu `mod-list.json` mit den Vanilla-Mods und arrakis. In `mod-settings.dat` setzt es die Startup-Einstellung **Prüfstand**.
+3. Frischer Spielstand (`factorio --create`).
+4. Server nur auf 127.0.0.1 (Spiel-Port 34297, RCON-Port 27115), nicht öffentlich, mit Zufallspasswort für RCON und ohne Auto-Pause.
+5. Je Test `/arrakis-test <id>`, dann alle 5 s `/arrakis-test status`, bis das neue ERGEBNIS da ist (bei `alle`: bis der Stand wieder `bereit` ist). Der Fortschritt steht in der Konsole. Steht der Tick während eines Tests länger als 90 s still, bricht es ab (Rückgabewert 2).
+6. Am Ende `/quit`, auch nach einem Fehler oder Strg+C. Reagiert der Server nicht, beendet es ihn hart.
+7. Es kopiert die Ergebnisdateien und zeigt alle ERGEBNIS-Zeilen.
+
+Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bleiben unberührt, auch die Einstellung **Prüfstand** in deinem Spiel. Die Factorio-Installation und die Mod im Repo liest es nur.
+Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
+Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
+`alle` dauert gut 15 min. Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+
+**Ergebnisse:**
+
+- `<Arbeitsordner>\ergebnisse\arrakis-test-<Datum>-<Uhrzeit>.txt` (z. B. `arrakis-test-20261024-153012.txt`), nach T11 auch `arrakis-t11-karten-<Datum>-<Uhrzeit>.txt`. Diese Dateien bitte schicken, dazu die Ausgabe des Werkzeugs.
+- Ergebnisdateien eines früheren Laufs legt es vorher als `…-vorher-<Datum>-<Uhrzeit>.txt` dorthin, denn die Mod hängt nur an.
+- Das Log des Servers steht in `<Arbeitsordner>\factorio-current.log`, die Ausgabe des Prozesses in `server.log`, das Anlegen des Spielstands in `create.log`. Unter Windows können `server.log` und `create.log` leer bleiben (factorio.exe hängt sich an die Konsole des Aufrufers); `factorio-current.log` gibt es immer, das Werkzeug zeigt dann dessen Ende.
+- Solange der Server läuft, stehen Port und RCON-Passwort in `<Arbeitsordner>\server.json`. Damit lässt sich von Hand fragen: `python tools/pc/rcon.py --port 27115 --passwort <Passwort> arrakis-test status` (den `/` ergänzt das Werkzeug; in Git Bash würde aus `"/arrakis-test"` sonst ein Pfad).
+  Bricht ein Lauf hart ab, beendet der nächste Lauf im selben Ordner den übrig gebliebenen Server. Reagiert der nicht auf `/quit`, bricht der neue Lauf mit dessen PID ab; dann den Server im Task-Manager beenden.
+
+**Rückgabewert:**
+
+| Wert | Bedeutung |
+|---|---|
+| 0 | kein FEHLER (offene FRAGEn zählen nicht) |
+| 1 | mindestens ein FEHLER, oder ein Test lief ins Zeitlimit. Dann schickt das Werkzeug `/arrakis-test stop`, die übrigen Tests laufen nicht. |
+| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
+
+Mit `T7:ja` trifft ein Absturz nur den Server, nicht dein Spiel; das Ende des Server-Logs steht dann in der Ausgabe.
 
 ## Was die Zeilen bedeuten
 

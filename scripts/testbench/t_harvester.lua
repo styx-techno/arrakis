@@ -392,11 +392,15 @@ local function t2_go_manual(run, tb, moved, speed)
   if d.driver and d.driver.valid then d.driver.destroy() end
   d.driver = nil
   local player = tb.player(run)
-  local ok, err = false, "kein Spieler"
-  if player and player.character then
+  -- Start ohne Spieler (Serverkonsole, RCON): keine Handfahrt möglich, gleich auswerten.
+  if not player then
+    tb.log(run, "FEHLER", "Manuelle Messung entfällt: kein Spieler im Spiel (Start ohne Spieler)")
+    t2_final(run, tb)
+    return
+  end
+  local ok, err = false, "Spieler hat keine Spielfigur"
+  if player.character then
     ok, err = pcall(function() car.set_driver(player) end)
-  elseif player then
-    err = "Spieler hat keine Spielfigur"
   end
   local seated = ok and car.get_driver() ~= nil
   if not seated then
