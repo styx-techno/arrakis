@@ -1,0 +1,10 @@
+# Prüfstand-Ergebnisse
+
+Automatische Läufe von tools/pc/pruefstand.py (alle) auf Max' PC, Factorio 2.1.23 (Steam, headless, ohne Spieler).
+Ein Ordner je Lauf: ergebnisse/<Datum>_<Mod-Version>_<Commit>/ mit arrakis-test-*.txt und arrakis-t11-karten-*.txt.
+Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
+
+| Lauf | Mod | Commit | Rückgabewert |
+|---|---|---|---|
+| 2026-10-25 01:46 | 0.5.2 | 8d76e05 | 1 (FEHLER in T2, T2b, T3, T6) |
+| 2026-10-25 02:36 | 0.5.3 | bdd616b | 0 (kein FEHLER) |
