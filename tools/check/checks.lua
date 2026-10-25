@@ -236,13 +236,168 @@ if briquette_recipe then
   if not has_value(briquette_recipe.categories or {briquette_recipe.category}, "spice-refining") then add("FEHLER recipe arrakis-spice-briquette nicht in spice-refining") end
 end
 
+-- Phase 3c (docs/plan-3c.md 3 und 7): Ornithopter, Forschung, Taste, Verknüpfungen, Sticker, Lastbild, Probe
+local expected_3c = {
+  ["spider-vehicle"] = {"arrakis-ornithopter"},
+  ["item-with-entity-data"] = {"arrakis-ornithopter"},
+  recipe = {"arrakis-ornithopter"},
+  technology = {"arrakis-ornithopter"},
+  ["custom-input"] = {"arrakis-carry-toggle"},
+  shortcut = {"arrakis-carry", "arrakis-give-remote"},
+}
+for t, names in pairs(expected_3c) do for _, n in ipairs(names) do
+  local p = raw[t] and raw[t][n]
+  if not p then add("FEHLER 3c: " .. t .. " " .. n .. " fehlt")
+  elseif p.hidden then add("FEHLER 3c: " .. t .. " " .. n .. " ist hidden") end
+end end
+local expected_3c_hidden = {
+  ["spider-leg"] = {"arrakis-flyer-leg"},
+  sticker = {"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"},
+  ["simple-entity-with-owner"] = {"arrakis-harvester-probe"},
+}
+for t, names in pairs(expected_3c_hidden) do for _, n in ipairs(names) do
+  local p = raw[t] and raw[t][n]
+  if not p then add("FEHLER 3c: " .. t .. " " .. n .. " fehlt")
+  elseif p.hidden ~= true then add("FEHLER 3c: " .. t .. " " .. n .. " nicht hidden") end
+end end
+local function same_list(a, b)
+  if #a ~= #b then return false end
+  for i = 1, #a do if a[i] ~= b[i] then return false end end
+  return true
+end
+local orni = raw["spider-vehicle"]["arrakis-ornithopter"]
+if orni then
+  if orni.allow_remote_driving ~= true then add("FEHLER 3c: arrakis-ornithopter allow_remote_driving " .. tostring(orni.allow_remote_driving)) end
+  local legs = orni.spider_engine and orni.spider_engine.legs or {}
+  if #legs ~= 4 then add("FEHLER 3c: arrakis-ornithopter hat " .. #legs .. " Beine statt 4") end
+  local seen_legs = {}
+  for i, leg in ipairs(legs) do
+    if leg.leg ~= "arrakis-flyer-leg" then add("FEHLER 3c: arrakis-ornithopter Bein " .. i .. " ist " .. tostring(leg.leg)) end
+    local lp = raw["spider-leg"][leg.leg or ""]
+    if lp and not seen_legs[leg.leg] then
+      seen_legs[leg.leg] = true
+      local mask = lp.collision_mask
+      if not (mask and mask.layers and next(mask.layers) == nil) then add("FEHLER 3c: Bein " .. leg.leg .. " ohne leere Kollisionsmaske") end
+      if lp.graphics_set then add("FEHLER 3c: Bein " .. leg.leg .. " hat Grafik") end
+    end
+    if leg.leg_hit_the_ground_trigger then add("FEHLER 3c: arrakis-ornithopter Bein " .. i .. " mit Bodenstaub-Trigger") end
+  end
+  local es = orni.energy_source or {}
+  if es.type ~= "burner" or not same_list(es.fuel_categories or {}, {"chemical"}) or es.fuel_inventory_size ~= 2 then
+    add("FEHLER 3c: arrakis-ornithopter Brenner " .. tostring(es.type) .. " " .. table.concat(es.fuel_categories or {}, ",") .. " Slots " .. tostring(es.fuel_inventory_size))
+  end
+  if orni.movement_energy_consumption ~= "800kW" then add("FEHLER 3c: arrakis-ornithopter movement_energy_consumption " .. tostring(orni.movement_energy_consumption)) end
+  if orni.guns or orni.equipment_grid then add("FEHLER 3c: arrakis-ornithopter hat Waffen oder Ausrüstungsgitter") end
+  if orni.trash_inventory_size ~= 0 then add("FEHLER 3c: arrakis-ornithopter trash_inventory_size " .. tostring(orni.trash_inventory_size)) end
+  if not (orni.minable and orni.minable.result == "arrakis-ornithopter") then add("FEHLER 3c: arrakis-ornithopter minable.result " .. tostring(orni.minable and orni.minable.result)) end
+  -- Körper ohne eigene Maske: Vorgabe nur trigger_target, der Ernter fährt darunter durch (Plan 3, U21).
+  if orni.collision_mask ~= nil then add("FEHLER 3c: arrakis-ornithopter hat eine collision_mask") end
+  if orni.tall then add("FEHLER 3c: arrakis-ornithopter tall gesetzt") end
+  if orni.icon ~= nil or not orni.icons then add("FEHLER 3c: arrakis-ornithopter icon statt icons") end
+  if orni.height ~= 3 or not (orni.graphics_set and orni.graphics_set.render_layer == "air-object") then add("FEHLER 3c: arrakis-ornithopter Flughöhe/render_layer") end
+  -- Kein Feld, das auf den Spidertron zeigt, außer den gewollten (Leiche, Explosion; DOC 5.5).
+  for _, key in ipairs({"factoriopedia_alternative", "factoriopedia_simulation", "fast_replaceable_group", "next_upgrade", "placeable_by"}) do
+    if orni[key] ~= nil then add("FEHLER 3c: arrakis-ornithopter " .. key .. " geerbt") end
+  end
+end
+local orni_item = raw["item-with-entity-data"]["arrakis-ornithopter"]
+if orni_item then
+  -- Ohne icon_tintable* zeigte ein Item mit gespeicherter Farbe das getönte Spidertron-Bild (Plan 3).
+  if orni_item.icon ~= nil or not orni_item.icons then add("FEHLER 3c: item arrakis-ornithopter icon statt icons") end
+  for _, key in ipairs({"icon_tintable", "icon_tintable_mask", "icon_tintable_size", "icon_tintable_mask_size", "icon_tintables", "icon_tintable_masks"}) do
+    if orni_item[key] ~= nil then add("FEHLER 3c: item arrakis-ornithopter " .. key .. " gesetzt") end
+  end
+  if orni_item.place_result ~= "arrakis-ornithopter" then add("FEHLER 3c: item arrakis-ornithopter place_result " .. tostring(orni_item.place_result)) end
+end
+local orni_tech = raw.technology["arrakis-ornithopter"]
+if orni_tech then
+  local tr = orni_tech.research_trigger or {}
+  local it = type(tr.item) == "table" and tr.item.name or tr.item
+  if tr.type ~= "craft-item" or it ~= "spice-harvester" or (tr.count or 1) ~= 1 then add("FEHLER 3c: tech arrakis-ornithopter Trigger " .. tostring(tr.type) .. " " .. tostring(it) .. " " .. tostring(tr.count)) end
+  if not has_value(orni_tech.prerequisites, "arrakis-spice-harvesting") then add("FEHLER 3c: tech arrakis-ornithopter ohne Voraussetzung arrakis-spice-harvesting") end
+  if orni_tech.unit then add("FEHLER 3c: tech arrakis-ornithopter hat Paketkosten") end
+  local unlocks = false
+  for _, e in ipairs(orni_tech.effects or {}) do if e.type == "unlock-recipe" and e.recipe == "arrakis-ornithopter" then unlocks = true end end
+  if not unlocks then add("FEHLER 3c: tech arrakis-ornithopter schaltet das Rezept nicht frei") end
+end
+local orni_recipe = raw.recipe["arrakis-ornithopter"]
+if orni_recipe and orni_recipe.enabled ~= false then add("FEHLER 3c: recipe arrakis-ornithopter von Anfang an frei") end
+local sticker_modifiers = {["arrakis-ornithopter-empty"] = 0.52, ["arrakis-ornithopter-loaded"] = 0.364}
+for n, modifier in pairs(sticker_modifiers) do
+  local s = raw.sticker[n]
+  if s and (type(s.vehicle_speed_modifier) ~= "number" or math.abs(s.vehicle_speed_modifier - modifier) > 1e-9) then add("FEHLER 3c: sticker " .. n .. " vehicle_speed_modifier " .. tostring(s.vehicle_speed_modifier)) end
+  if s and s.duration_in_ticks ~= 216000 then add("FEHLER 3c: sticker " .. n .. " duration_in_ticks " .. tostring(s.duration_in_ticks)) end
+end
+-- Lastbild: 16 Richtungen, je Bild und Schatten zwei Ebenen mit scale 0.5 (HR-Bilder wie Vanilla; ohne gälte 1).
+local sprite_count = 0
+for i = 0, 15 do
+  for _, kind in ipairs({"image", "shadow"}) do
+    local n = kind == "image" and ("arrakis-harvester-carried-" .. i) or ("arrakis-harvester-carried-shadow-" .. i)
+    local sp = raw.sprite[n]
+    if not sp then add("FEHLER 3c: sprite " .. n .. " fehlt") else
+      sprite_count = sprite_count + 1
+      local layers = sp.layers or {}
+      if #layers ~= 2 then add("FEHLER 3c: sprite " .. n .. " hat " .. #layers .. " Ebenen statt 2") end
+      for j, layer in ipairs(layers) do
+        if layer.scale ~= 0.5 then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " scale " .. tostring(layer.scale)) end
+        if (layer.draw_as_shadow == true) ~= (kind == "shadow") then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " draw_as_shadow " .. tostring(layer.draw_as_shadow)) end
+        if layer.apply_runtime_tint then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " mit Farbmaske") end
+        if kind == "shadow" and layer.tint then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " Schatten getönt") end
+        if not (layer.filename and layer.width and layer.height and layer.x and layer.y) then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " ohne Ausschnitt") end
+      end
+    end
+  end
+end
+-- Probe: Kasten ±1,6, Maske gleich der des Ernters (der hat keine eigene, dann gilt die Vorgabe für car).
+local probe = raw["simple-entity-with-owner"]["arrakis-harvester-probe"]
+if probe then
+  local box = probe.collision_box or {}
+  local lt, rb = box[1] or {}, box[2] or {}
+  if lt[1] ~= -1.6 or lt[2] ~= -1.6 or rb[1] ~= 1.6 or rb[2] ~= 1.6 then add("FEHLER 3c: Probe collision_box nicht ±1,6") end
+  if probe.minable then add("FEHLER 3c: Probe abbaubar") end
+  local car = raw.car["spice-harvester"]
+  if car then
+    -- Ohne eigene Maske gilt beim Ernter die Vorgabe für car (V23 core/lualib/collision-mask-defaults.lua:174). Mit
+    -- --ohne ist der Vanilla-Ordner hier schon gelöscht und collision-mask-util nicht mehr ladbar; dann die Vorgabe von Hand.
+    local ok, cmu = pcall(require, "collision-mask-util")
+    local want = car.collision_mask or (ok and cmu.get_default_mask("car"))
+      or {layers = {player = true, car = true, train = true, is_object = true}, consider_tile_transitions = true}
+    local got = probe.collision_mask
+    local function same_layers(a, b)
+      for l, v in pairs(a.layers or {}) do if v and not (b.layers or {})[l] then return false end end
+      for l, v in pairs(b.layers or {}) do if v and not (a.layers or {})[l] then return false end end
+      return true
+    end
+    if not (got and same_layers(want, got)) then add("FEHLER 3c: Probe-Maske ungleich der des Ernters") end
+    for _, flag in ipairs({"consider_tile_transitions", "colliding_with_tiles_only", "not_colliding_with_itself"}) do
+      if got and (got[flag] or false) ~= (want[flag] or false) then add("FEHLER 3c: Probe-Maske " .. flag .. " ungleich der des Ernters") end
+    end
+  end
+end
+-- Verknüpfungen: Verweise vorhanden, Fernbedienung ohne Vanilla-Taste
+for n, sc in pairs(raw.shortcut or {}) do if is_own(n) then
+  if sc.technology_to_unlock and not raw.technology[sc.technology_to_unlock] then add("FEHLER shortcut " .. n .. " technology_to_unlock " .. sc.technology_to_unlock) end
+  if sc.item_to_spawn and not item_exists(sc.item_to_spawn) then add("FEHLER shortcut " .. n .. " item_to_spawn " .. sc.item_to_spawn) end
+  if sc.action == "spawn-item" and not sc.item_to_spawn then add("FEHLER shortcut " .. n .. " spawn-item ohne item_to_spawn") end
+  local ci = sc.associated_control_input
+  if ci and is_own(ci) and not raw["custom-input"][ci] then add("FEHLER shortcut " .. n .. " associated_control_input " .. ci) end
+  if not sc.localised_name then add("FEHLER shortcut " .. n .. " ohne localised_name") end
+end end
+local carry = raw.shortcut["arrakis-carry"]
+if carry and (carry.action ~= "lua" or carry.associated_control_input ~= "arrakis-carry-toggle" or carry.technology_to_unlock ~= "arrakis-ornithopter") then add("FEHLER 3c: shortcut arrakis-carry action/Taste/Forschung") end
+local give_remote = raw.shortcut["arrakis-give-remote"]
+if give_remote and (give_remote.action ~= "spawn-item" or give_remote.item_to_spawn ~= "spidertron-remote" or give_remote.associated_control_input ~= nil or give_remote.technology_to_unlock ~= "arrakis-ornithopter") then add("FEHLER 3c: shortcut arrakis-give-remote action/Item/Taste/Forschung") end
+local carry_key = raw["custom-input"]["arrakis-carry-toggle"]
+if carry_key and (carry_key.key_sequence ~= "SHIFT + C" or carry_key.consuming ~= "none") then add("FEHLER 3c: custom-input arrakis-carry-toggle " .. tostring(carry_key.key_sequence) .. " / " .. tostring(carry_key.consuming)) end
+add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Lastbild " .. sprite_count .. "/32 Sprites")
+
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]
 local tb_on = tb_setting and tb_setting.value
 local tb_expected = {
   ["spider-leg"] = {"arrakis-test-flyer-leg", "arrakis-test-flyer-leg-fast"},
   ["spider-vehicle"] = {"arrakis-test-flyer-1", "arrakis-test-flyer-2", "arrakis-test-flyer-4", "arrakis-test-flyer-4-fast"},
-  sticker = {"arrakis-test-load-sticker", "arrakis-test-load-sticker-move"},
+  sticker = {"arrakis-test-load-sticker", "arrakis-test-load-sticker-move", "arrakis-test-speed-max-tick", "arrakis-test-speed-max-second"},
   car = {"arrakis-test-harvester"},
   ["proxy-container"] = {"arrakis-test-intake", "arrakis-test-nozzle"},
   ["segmented-unit"] = {"arrakis-test-worm", "arrakis-test-worm-rockmask"},
@@ -266,7 +421,8 @@ if tb_on then
   -- Keine Prototypen (z. B. Oberflächen) hier eintragen:
   local not_prototypes = {["arrakis-test-hold"] = true}
   local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua", "scripts/testbench/t_flyer.lua",
-    "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua"}
+    "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua",
+    "scripts/testbench/t_ornithopter.lua"}
   local read = 0
   for _, file in ipairs(files) do
     local f = io.open(file, "r")
