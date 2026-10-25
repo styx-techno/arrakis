@@ -3,8 +3,9 @@
 --        (terrain.harvest_allowed erlaubt sie mit der Startup-Einstellung). Zwölf Schritte, je eine
 --        OK/FEHLER-Zeile mit Werten; Einzelwerte als MESSUNG nur in der Datei.
 --   T2b: Fahrphysik des echten spice-harvester: Brennstoffe mit Ausgleich, Raketentreibstoff ohne
---        Ausgleich und Deckel, Richtungen, negative Koordinaten, voller Laderaum. Dazu drei Läufe
---        „mit Ausgleich, ohne Deckel“: Sie messen, wie stark das Höchsttempo der Brennstoffe wirkt (2.1.13).
+--        Ausgleich und Deckel, Richtungen, negative Koordinaten, voller Laderaum. Dazu Läufe ohne Deckel:
+--        drei mit dem alten Ausgleich 1/a (sie messen, wie stark das Höchsttempo t wirkt, 2.1.13) und ab
+--        2.1.13 drei mit dem neuen Ausgleich 1/(a · t²) (sie zeigen das Tempo, das der Deckel sonst verdeckt).
 -- Ernter entstehen mit raise_built = true (script_raised_built trägt sie ein). Ausnahme: der Vergleichsernter
 -- in T2b, der bewusst nie eingetragen wird (kein Deckel; den Ausgleich setzt der Test).
 -- Zustand nur in run.data (Zahlen, Texte, Positionen, LuaEntity-Referenzen; vor jeder Benutzung prüfen).
@@ -1463,12 +1464,24 @@ end
 -- Weil speed nach dem Deckel gelesen wird, zählt jeder Eingriff des Deckels (speed genau 1.45): Er heißt, das
 -- Tempo war davor über 1.5. In der ersten Sekunde ist er erlaubt (neuer Brennstoff, Ausgleich folgt im
 -- 10-Tick-Takt), danach ist er ein FEHLER.
--- In 2.1 wirkt auch fuel_top_speed_multiplier (t) bei Autos (2.1.13), der Ausgleich rechnet nur mit a. Mit Ausgleich
--- zeigt sich t daher nur als Eingriff des Deckels. Die Läufe mit norm (Vergleichsernter, Ausgleich, ohne Deckel)
--- messen es als Zahl: Faktor = Tempo / (Tempo mit Kohle · √(a · Ausgleich)), das 2.0-Modell ohne t (v ∝ √a).
+-- Ab 2.1.13 wirkt auch fuel_top_speed_multiplier (t) bei Autos, und zwar linear: T2 und T2b unter 2.1.23 (0.5.2)
+-- passen zu Endtempo ∝ √(a · Ausgleich) · t. Der Ausgleich ist deshalb ab 2.1.13 min(1, 1/(a · t²)), davor
+-- min(1, 1/a) (Plan 4.6, scripts/harvester.lua); die eingetragenen Läufe erwarten die Formel der laufenden Version.
+-- Die Läufe ohne Deckel (Vergleichsernter, nur MESSUNG) halten beides auseinander:
+--   norm = "old": alter Ausgleich min(1, 1/a), wie bis 0.5.2. Sie messen t weiter als Zahl: Faktor = Tempo /
+--     (Tempo mit Kohle · √(a · Ausgleich)), das 2.0-Modell ohne t. Faktor 1.000 heißt keine Wirkung, Faktor ≈ t
+--     heißt linear; Exponent p = ln(Faktor) / ln(t), also p = 1 linear, p = 0 keine Wirkung.
+--   norm = "new" (nur ab 2.1.13; davor gleich "old"): neuer Ausgleich. Tempo / Kohle soll 1.000 sein, dann bleibt der
+--     Deckel frei. Weicht es ab, zeigt p (dieselbe Rechnung), um wie viel: passend wäre dann 1/(a · t^(2p)).
+
+-- Ab dieser base-Version wirkt t bei Autos (Changelog 2.1.13: „Improved fuel top speed modifies with cars/tanks“).
+local T2B_TOP_SPEED_FROM = "2.1.13"
 
 local T2B_BACK = 30
 local T2B_PAUSE = 30
+-- Zu viel ausgeglichen? Eingetragene Läufe mit anderem Brennstoff und gleicher Dauer wie Kohle: Mittel ab 5 s
+-- mindestens 97 % des Mittels mit Kohle, sonst FEHLER (bei der neuen Formel hieße das: t wirkt schwächer als linear).
+local T2B_SLOWER = 0.97
 local T2B_WINDOW = 5 * 60
 local T2B_NEGATIVE = {x = -1000, y = -1000}
 local T2B_DIRS =
@@ -1488,9 +1501,12 @@ local T2B_RUNS =
   {key = "nuclear", label = "Atomtreibstoff", fuel = "nuclear-fuel", count = 1, dir = "O", ticks = 15 * 60},
   {key = "legendary", label = "Raketentreibstoff legendär", fuel = "rocket-fuel", quality = "legendary", count = 3, dir = "O", ticks = 15 * 60},
   {key = "plain", label = "Raketentreibstoff ohne Ausgleich und Deckel", fuel = "rocket-fuel", count = 3, dir = "O", ticks = 15 * 60, raw = true},
-  {key = "norm_solid", label = "Festbrennstoff mit Ausgleich, ohne Deckel", fuel = "solid-fuel", count = 10, raw = true, norm = true, dir = "O", ticks = 15 * 60},
-  {key = "norm_rocket", label = "Raketentreibstoff mit Ausgleich, ohne Deckel", fuel = "rocket-fuel", count = 3, raw = true, norm = true, dir = "O", ticks = 15 * 60},
-  {key = "norm_legendary", label = "Raketentreibstoff legendär mit Ausgleich, ohne Deckel", fuel = "rocket-fuel", quality = "legendary", count = 3, raw = true, norm = true, dir = "O", ticks = 15 * 60},
+  {key = "norm_solid", label = "Festbrennstoff mit altem Ausgleich 1/a, ohne Deckel", fuel = "solid-fuel", count = 10, raw = true, norm = "old", dir = "O", ticks = 15 * 60},
+  {key = "norm_rocket", label = "Raketentreibstoff mit altem Ausgleich 1/a, ohne Deckel", fuel = "rocket-fuel", count = 3, raw = true, norm = "old", dir = "O", ticks = 15 * 60},
+  {key = "norm_legendary", label = "Raketentreibstoff legendär mit altem Ausgleich 1/a, ohne Deckel", fuel = "rocket-fuel", quality = "legendary", count = 3, raw = true, norm = "old", dir = "O", ticks = 15 * 60},
+  {key = "new_solid", label = "Festbrennstoff mit neuem Ausgleich 1/(a · t²), ohne Deckel", short = "Festbrennstoff", fuel = "solid-fuel", count = 10, raw = true, norm = "new", dir = "O", ticks = 15 * 60},
+  {key = "new_rocket", label = "Raketentreibstoff mit neuem Ausgleich 1/(a · t²), ohne Deckel", short = "Raketentreibstoff", fuel = "rocket-fuel", count = 3, raw = true, norm = "new", dir = "O", ticks = 15 * 60},
+  {key = "new_legendary", label = "Raketentreibstoff legendär mit neuem Ausgleich 1/(a · t²), ohne Deckel", short = "Raketentreibstoff legendär", fuel = "rocket-fuel", quality = "legendary", count = 3, raw = true, norm = "new", dir = "O", ticks = 15 * 60},
   {key = "west", label = "Raketentreibstoff nach W", fuel = "rocket-fuel", count = 3, dir = "W", ticks = 10 * 60},
   {key = "north", label = "Raketentreibstoff nach N", fuel = "rocket-fuel", count = 3, dir = "N", ticks = 10 * 60},
   {key = "south", label = "Raketentreibstoff nach S", fuel = "rocket-fuel", count = 3, dir = "S", ticks = 10 * 60},
@@ -1501,22 +1517,33 @@ local T2B_RUNS =
   {key = "full", label = "voller Laderaum", fuel = "rocket-fuel", count = 3, dir = "O", ticks = 15 * 60, full = true}
 }
 
--- Ausgleich laut Plan 4.6: min(1, 1/a), a = Beschleunigung des Brennstoffs plus Qualitätsbonus.
-local function expected_modifier(fuel, quality)
+-- Wirkt t in der laufenden Version (base ≥ 2.1.13)? Selbst gelesen, nicht aus scripts/harvester.lua.
+local function top_speed_acts()
+  return helpers.compare_versions(script.active_mods["base"], T2B_TOP_SPEED_FROM) >= 0
+end
+
+-- Formel des Ausgleichs als Text; old: der alte Ausgleich (bis 0.5.2, vor 2.1.13 auch der aktuelle).
+local function formula_text(old)
+  if old or not top_speed_acts() then return "min(1, 1/a)" end
+  return "min(1, 1/(a · t²))"
+end
+
+-- Ausgleich laut Plan 4.6: min(1, 1/(a · t²)) ab 2.1.13, davor min(1, 1/a); old: immer min(1, 1/a).
+-- a = Beschleunigung, t = Höchsttempo des Brennstoffs, je plus Qualitätsbonus. Gibt Ausgleich, a, t zurück.
+local function expected_modifier(fuel, quality, old)
   local item = prototypes.item[fuel]
   local level = quality and prototypes.quality[quality] and prototypes.quality[quality].level or 0
   local a = item.fuel_acceleration_multiplier + level * item.fuel_acceleration_multiplier_quality_bonus
-  if a <= 0 then return 1, a end
-  return math.min(1, 1 / a), a
+  local t = item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus
+  local k = a
+  if not old and top_speed_acts() then k = a * t * t end
+  if k <= 0 then return 1, a, t end
+  return math.min(1, 1 / k), a, t
 end
 
--- Höchsttempo-Faktor t = fuel_top_speed_multiplier plus Qualitätsbonus; nil, wenn nicht lesbar.
-local function top_speed(fuel, quality)
-  return read(function()
-    local item = prototypes.item[fuel]
-    local level = quality and prototypes.quality[quality].level or 0
-    return item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus
-  end)
+-- Läuft spec in dieser Version? Die Läufe mit neuem Ausgleich entfallen vor 2.1.13 (dort gleich dem alten).
+local function t2b_planned(spec)
+  return not (spec.norm == "new" and not top_speed_acts())
 end
 
 local function t2b_park(d, which)
@@ -1539,9 +1566,30 @@ local function t2b_summary(run)
       if r.ground and r.ground > ground then ground = r.ground end
     end
   end
+  -- Exponent p aller Läufe ohne Deckel (Bereich) und die Läufe mit neuem Ausgleich (Spitze ab 1 s, Tempo/Kohle).
+  local p_low, p_high, new_peak, new_ratio
+  for _, spec in ipairs(T2B_RUNS) do
+    local r = d.results[spec.key]
+    if r and spec.raw then
+      if r.p then
+        p_low = math.min(p_low or r.p, r.p)
+        p_high = math.max(p_high or r.p, r.p)
+      end
+      if spec.norm == "new" then
+        new_peak = math.max(new_peak or 0, r.max_late or 0)
+        if r.ratio then new_ratio = math.max(new_ratio or 0, r.ratio) end
+      end
+    end
+  end
   local raw_result = d.results.plain
-  return string.format("%d Läufe OK, %d FEHLER; mit Ausgleich höchstens speed %.2f, Bodentempo %.2f Kacheln/s; ohne Ausgleich und Deckel %s",
-    ok, wrong, peak, ground, raw_result and raw_result.max and string.format("speed %.2f, Bodentempo %.2f", raw_result.max, raw_result.ground or 0) or "–")
+  local p_text = p_low and (string.format("%.2f", p_low) .. (p_high - p_low >= 0.005 and string.format("–%.2f", p_high) or "")) or "–"
+  local new_text = new_peak and string.format("ab 1 s bis speed %.2f, Tempo/Kohle bis %s", new_peak,
+    new_ratio and string.format("%.3f", new_ratio) or "–")
+    or (top_speed_acts() and "–" or "entfällt (vor 2.1.13)")
+  return string.format("%d Läufe OK, %d FEHLER; mit Ausgleich höchstens speed %.2f, Bodentempo %.2f Kacheln/s; ohne Ausgleich und Deckel %s; "
+    .. "Höchsttempo t wirkt mit p %s (1 linear, 0 nicht); neuer Ausgleich ohne Deckel %s",
+    ok, wrong, peak, ground, raw_result and raw_result.max and string.format("speed %.2f, Bodentempo %.2f", raw_result.max, raw_result.ground or 0) or "–",
+    p_text, new_text)
 end
 
 local function t2b_finish(run, tb)
@@ -1563,16 +1611,48 @@ local function t2b_finish(run, tb)
   tb.log(run, "INFO", "Deckel-Rücksetzwert 1.45 im Prüfstand-Tick gesehen: " .. hits .. "×, davon ab 1 s " .. late .. "×"
     .. (hits > 0 and " (speed wird also nach dem Deckel gelesen; ab 1 s ist jeder Eingriff im Lauf mit Ausgleich ein FEHLER)"
       or " (der Deckel griff nicht ein oder speed wird vor ihm gelesen; dann ist die Spitze das Tempo vor dem Deckel)"))
+  -- Ohne Ausgleich und mit altem Ausgleich 1/a: Wirkt t, und wie (Faktor, Exponent p)?
   local factors = {}
+  -- Mit neuem Ausgleich 1/(a · t²): Bleibt das Tempo ohne Deckel unter 1.5?
+  local news, holds, p_sum, p_n, worst = {}, true, 0, 0, nil
   for _, spec in ipairs(T2B_RUNS) do
     local r = d.results[spec.key]
-    if spec.raw and r and r.factor then
-      table.insert(factors, string.format("%s: t = %s, Faktor %s", spec.label, tb.num(r.t, 3), tb.num(r.factor, 3)))
+    if spec.raw and r and spec.norm ~= "new" and r.factor then
+      table.insert(factors, string.format("%s: t = %s, Faktor %s, p = %s", spec.label, tb.num(r.t, 3), tb.num(r.factor, 3), tb.num(r.p, 2)))
+    elseif spec.raw and r and spec.norm == "new" then
+      table.insert(news, string.format("%s: Tempo/Kohle %s, Spitze ab 1 s %s, p = %s", spec.short or spec.label, tb.num(r.ratio, 3),
+        tb.num(r.max_late, 3), tb.num(r.p, 2)))
+      if not (r.max_late and r.max_late <= CAP + 1e-6) then holds = false end
+      if r.ratio and (not worst or math.abs(r.ratio - 1) > math.abs(worst - 1)) then worst = r.ratio end
+      if r.p then
+        p_sum = p_sum + r.p
+        p_n = p_n + 1
+      end
     end
   end
   if #factors > 0 then
-    tb.log(run, "INFO", "Höchsttempo der Brennstoffe (2.1.13), Faktor gegenüber dem 2.0-Modell √(a · Ausgleich): "
-      .. table.concat(factors, "; ") .. ". 1.000 heißt keine Wirkung, Faktor ≈ t heißt linear.")
+    tb.log(run, "INFO", "Höchsttempo t der Brennstoffe (2.1.13), Faktor gegenüber dem 2.0-Modell √(a · Ausgleich) mit Ausgleich 1"
+      .. " oder altem Ausgleich 1/a: " .. table.concat(factors, "; ")
+      .. ". Faktor 1.000 (p = 0) heißt keine Wirkung, Faktor ≈ t (p = 1) heißt linear, wie der neue Ausgleich annimmt.")
+  end
+  local coal = d.results.coal and d.results.coal.mean
+  if d.results.coal and (d.results.coal.cap_late or 0) > 0 then
+    tb.log(run, "INFO", "Bezug Kohle: Der Deckel griff auch dort ein, Tempo/Kohle, Faktor und p der Läufe ohne Deckel sind deshalb zu hoch.")
+  end
+  if #news > 0 then
+    local verdict = holds and "hält ohne Deckel (Spitze ab 1 s ≤ 1.5)" or "hält NICHT ohne Deckel"
+    -- Ab 1 % Abweichung (auch nach unten) die Formel nennen, die zu den Messungen passt.
+    if p_n > 0 and (not holds or (worst and math.abs(worst - 1) > 0.01)) then
+      verdict = verdict .. string.format("; passend wäre min(1, 1/(a · t^(2p))) mit p = %.2f", p_sum / p_n)
+    end
+    tb.log(run, "INFO", "Neuer Ausgleich min(1, 1/(a · t²)) ohne Deckel: " .. table.concat(news, "; ")
+      .. ". Soll Tempo/Kohle 1.000; der Deckel bleibt frei bis " .. tb.num(coal and coal > 0 and CAP / coal or nil, 3)
+      .. " (1.5 / Tempo mit Kohle). Größte Abweichung "
+      .. (worst and (math.abs(worst - 1) < 0.0005 and "0.0 %" or string.format("%+.1f %%", (worst - 1) * 100)) or "–")
+      .. ", Ergebnis: " .. verdict .. ".")
+  elseif not top_speed_acts() then
+    tb.log(run, "INFO", "Neuer Ausgleich: base " .. tostring(script.active_mods["base"]) .. " ist älter als "
+      .. T2B_TOP_SPEED_FROM .. ", dort ist er gleich dem alten min(1, 1/a); die Läufe mit neuem Ausgleich entfielen.")
   end
   tb.finish(run, t2b_summary(run))
 end
@@ -1589,10 +1669,11 @@ local function t2b_next(run, tb)
 end
 
 -- Ernter für einen Lauf herrichten: anhalten, an den Start, Brennstoff und Brenner neu, Laderaum leer oder voll.
--- Der Vergleichsernter bekommt den Ausgleich vom Test: mit norm wie im Mod, sonst 1.
+-- Der Vergleichsernter bekommt den Ausgleich vom Test: norm = "old" der alte 1/a, "new" wie im Mod, sonst 1.
 local function t2b_reset(car, start, orientation, spec)
   if spec.raw then
-    local modifier = spec.norm and expected_modifier(spec.fuel, spec.quality) or 1
+    local modifier = 1
+    if spec.norm then modifier = expected_modifier(spec.fuel, spec.quality, spec.norm == "old") end
     pcall(function() car.effectivity_modifier = modifier end)
   end
   pcall(function() car.speed = 0 end)
@@ -1621,6 +1702,8 @@ end
 local function t2b_begin(run, tb)
   local d = run.data
   local spec = T2B_RUNS[d.run_index]
+  -- Vor 2.1.13 entfallen die Läufe mit neuem Ausgleich ohne eigene Zeile (die Start-INFO nennt es).
+  if not t2b_planned(spec) then return t2b_next(run, tb) end
   if spec.quality and not quality_exists(spec.quality) then
     tb.log(run, "INFO", spec.label .. ": Qualität " .. spec.quality .. " gibt es nicht, Lauf entfällt")
     return t2b_next(run, tb)
@@ -1674,38 +1757,53 @@ local function t2b_end(run, tb)
   local mean = cur.n > 0 and cur.sum / cur.n or nil
   local distance = tb.distance(car.position, cur.start_pos)
   local modifier = car.effectivity_modifier
-  local expected, a = expected_modifier(spec.fuel, spec.quality)
+  local old = spec.norm == "old"
+  local expected, a, t = expected_modifier(spec.fuel, spec.quality, old)
   if spec.raw and not spec.norm then expected = 1 end
   local burning = read(function()
     local pair = car.burner.currently_burning
     return pair and (pair.name.name .. "@" .. pair.quality.name)
   end) or "–"
   pcall(function() car.speed = 0 end)
-  local result = {max = cur.max, ground = ground, mean = mean, cap_hits = cur.cap_hits, cap_late = cur.cap_late}
+  local result = {max = cur.max, ground = ground, mean = mean, cap_hits = cur.cap_hits, cap_late = cur.cap_late,
+    ticks = spec.ticks}
   local values = string.format("speed %s (Mittel ab 5 s), Spitze %.3f (ab 1 s %.3f), Bodentempo %s (Strecke ab 5 s), "
     .. "Schritt je Tick bis %d/256 (%.2f), Weg %.1f in %d s, Deckel %d× (ab 1 s %d×), brennt %s, effectivity_modifier %.3f",
     tb.num(mean, 3), cur.max, cur.max_late, tb.num(ground, 3), cur.max_step, cur.max_step * 60 / 256, distance,
     spec.ticks / 60, cur.cap_hits, cur.cap_late, burning, modifier)
   if spec.raw then
     local registered = harvester.get(car) ~= nil
-    -- Faktor gegenüber dem 2.0-Modell ohne t: Tempo / (Tempo mit Kohle · √(a · Ausgleich)).
+    -- Faktor gegenüber dem 2.0-Modell ohne t: Tempo / (Tempo mit Kohle · √(a · Ausgleich)); Faktor = t^p.
+    -- Mit neuem Ausgleich ist √(a · Ausgleich) = 1/t, dort heißt Tempo/Kohle 1.000 genau p = 1.
     local coal = d.results.coal and d.results.coal.mean
-    result.t = top_speed(spec.fuel, spec.quality)
+    result.t = t
     result.ratio = mean and coal and coal > 0 and mean / coal or nil
+    result.max_late = cur.max_late
     local model = a and a > 0 and math.sqrt(a * modifier) or nil
-    result.factor = result.ratio and model and result.ratio / model or nil
+    result.factor = result.ratio and model and model > 0 and result.ratio / model or nil
+    result.p = result.factor and result.factor > 0 and math.abs(t - 1) > 1e-3 and math.log(result.factor) / math.log(t) or nil
+    -- Faktor knapp unter 1 (2.0: t wirkt nicht) ergäbe sonst „p = -0.00“.
+    if result.p and math.abs(result.p) < 0.005 then result.p = 0 end
+    local formula = spec.norm and formula_text(old) or "keiner"
+    local goal = spec.norm == "new" and string.format("; Soll Tempo/Kohle 1.000, Deckel frei bis %s", tb.num(coal and coal > 0 and CAP / coal or nil, 3)) or ""
     tb.log(run, "MESSUNG", spec.label .. " (nur gemessen, Ernter nicht eingetragen" .. (registered and ": DOCH EINGETRAGEN" or "")
-      .. "): " .. values .. string.format(", Ausgleich gesetzt %.3f, a = %s, t = %s; Tempo/Kohle %s, ohne t erwartet %s, Faktor %s",
-      expected, tb.num(a, 2), tb.num(result.t, 3), tb.num(result.ratio, 3), tb.num(model, 3), tb.num(result.factor, 3)))
+      .. "): " .. values .. string.format(", Ausgleich gesetzt %.3f (%s), a = %s, t = %s; Tempo/Kohle %s, 2.0-Modell ohne t erwartet %s, "
+      .. "Faktor %s, p = %s%s", expected, formula, tb.num(a, 2), tb.num(t, 3), tb.num(result.ratio, 3), tb.num(model, 3),
+      tb.num(result.factor, 3), tb.num(result.p, 2), goal))
   else
     local failed = {}
     check(failed, cur.max_late <= CAP + 1e-6, "Spitze ab 1 s ≤ 1.5")
     check(failed, cur.cap_late == 0, "Deckel griff ab 1 s nie (Tempo vor dem Deckel ≤ 1.5)")
     check(failed, ground ~= nil and ground <= CAP, "Bodentempo ≤ 1.5")
     check(failed, math.abs(modifier - expected) <= 1e-3, "Ausgleich " .. string.format("%.3f", expected))
+    local coal = d.results.coal
+    if spec.fuel ~= "coal" and coal and coal.mean and coal.mean > 0 and coal.ticks == spec.ticks then
+      check(failed, mean ~= nil and mean >= T2B_SLOWER * coal.mean, string.format("Mittel ≥ %d %% von Kohle (%s), nicht zu viel ausgeglichen",
+        math.floor(T2B_SLOWER * 100 + 0.5), tb.num(T2B_SLOWER * coal.mean, 3)))
+    end
     result.ok = #failed == 0
     local text = spec.label .. " (" .. spec.dir .. (spec.negative and ", negative Koordinaten" or "") .. "): " .. values
-      .. string.format(" (erwartet %.3f, a = %s)", expected, tb.num(a, 2))
+      .. string.format(" (erwartet %.3f = %s, a = %s, t = %s)", expected, formula_text(false), tb.num(a, 2), tb.num(t, 3))
     if #failed > 0 then text = text .. " | nicht erfüllt: " .. table.concat(failed, "; ") end
     tb.log(run, result.ok and "OK" or "FEHLER", text)
     if mean and (mean < 1.40 or mean > CAP) then
@@ -1742,10 +1840,22 @@ local function t2b_start(run, tb)
   local seated = car.get_driver() ~= nil and raw.get_driver() ~= nil
   tb.log(run, (h and seated) and "INFO" or "FEHLER", string.format("Ernter Nr. %d eingetragen %s, im Tempo-Deckel %s; Vergleichsernter Nr. %d eingetragen %s; Dummy-Fahrer sitzen %s",
     car.unit_number, tostring(h ~= nil), tostring(driven), raw.unit_number, tostring(harvester.get(raw) ~= nil), tostring(seated)))
-  tb.log(run, "INFO", #T2B_RUNS .. " Läufe je 10–15 s, Dauer knapp 4 min. Kriterium mit Ausgleich: ab 1 s Spitze ≤ 1.5 Kacheln/s"
-    .. " und kein Eingriff des Tempo-Deckels, Bodentempo ≤ 1.5 Kacheln/s, effectivity_modifier = min(1, 1/a)."
+  local planned, ticks = 0, 0
+  for _, spec in ipairs(T2B_RUNS) do
+    if t2b_planned(spec) and not (spec.quality and not quality_exists(spec.quality)) then
+      planned = planned + 1
+      ticks = ticks + spec.ticks + T2B_PAUSE
+    end
+  end
+  local acts = top_speed_acts()
+  tb.log(run, "INFO", string.format("%d Läufe je 10–15 s, Dauer etwa %.1f min. Kriterium mit Ausgleich: ab 1 s Spitze ≤ 1.5 Kacheln/s"
+    .. " und kein Eingriff des Tempo-Deckels, Bodentempo ≤ 1.5 Kacheln/s, effectivity_modifier = %s (base %s, Höchsttempo t wirkt %s %s),"
+    .. " bei anderem Brennstoff und gleicher Dauer wie Kohle Mittel ≥ 97 %% von Kohle (nicht zu viel ausgeglichen)."
     .. " speed wird nach dem Deckel des Laufzeitcodes gelesen; ein Eingriff heißt, das Tempo war davor über 1.5."
-    .. " Die Läufe „ohne Deckel“ fährt der Vergleichsernter; sie werden nur gemessen.")
+    .. " Die Läufe „ohne Deckel“ fährt der Vergleichsernter; sie werden nur gemessen: ohne Ausgleich und mit altem Ausgleich 1/a"
+    .. " zeigen sie, wie t wirkt, mit neuem Ausgleich das Tempo, das sonst der Deckel verdeckt.%s",
+    planned, ticks / 3600, formula_text(false), tostring(script.active_mods["base"]), acts and "ab" or "erst ab", T2B_TOP_SPEED_FROM,
+    acts and "" or (" Die Läufe mit neuem Ausgleich entfallen (vor " .. T2B_TOP_SPEED_FROM .. " gleich dem alten).")))
   tb.watch(run, nil, at(d.track_center, 12, 12))
   d.run_index = 1
   d.phase = "wait"
@@ -1829,7 +1939,7 @@ return
   T2b =
   {
     title = "Ernter: Fahrphysik",
-    timeout = 6 * 60 * 60,
+    timeout = 8 * 60 * 60,
     interactive = false,
     confirm = nil,
     start = t2b_start,

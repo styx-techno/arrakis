@@ -1,5 +1,5 @@
 -- Prüfstand: Ernter-Tests T2, T3, T4 (Vertrag siehe runner.lua).
---   T2: Skriptfahrt, Höchsttempo je Brennstoff, Tempo-Deckel, Sperre (disabled_by_script), Status.
+--   T2: Skriptfahrt, Höchsttempo je Brennstoff, Tempo-Deckel alle 10 Ticks (nur Messung), Sperre (disabled_by_script), Status.
 --   T3: Teleport zur Ablage-Oberfläche und zurück, Zustandsvergleich, Gegenprobe mit clone.
 --   T4: Annahme und Tankstutzen (proxy-container) mit Greifarmen, Schaltung und Bauregel.
 -- Zustand nur in run.data (Zahlen, Texte, Positionen, LuaEntity-Referenzen; vor jeder Benutzung prüfen).
@@ -100,6 +100,8 @@ end
 -- Deckel-Durchgang: mit Raketentreibstoff (schnellster Brennstoff, der Fall, für den der Deckel gedacht ist).
 -- Der Deckel ist 1.5 Kacheln/s, wenn der Ernter ohne Deckel schneller als 1.6 fuhr; sonst 70 % seines
 -- Höchsttempos, damit der Deckel wirklich greifen muss (siehe t2_cap).
+-- Die Frage aus 3a (reicht Rücksetzen alle 10 Ticks?) ist seit 0.4.0 beantwortet: nein. Der echte Ernter
+-- deckelt jeden Tick (T2b zählt seine Eingriffe). Der Durchgang wird deshalb nur noch gemessen, ohne OK/FEHLER.
 local T2_PASSES =
 {
   {key = "coal", label = "Kohle", fuel = "coal", count = 10, ticks = 15 * 60},
@@ -112,7 +114,7 @@ local T2_SAMPLES = {[5 * 60] = "s5", [10 * 60] = "s10", [15 * 60] = "s15"}
 local T2_PAUSE = 30            -- Ticks zwischen zwei Durchgängen
 local T2_PROBE = 60            -- nach so vielen Ticks muss die Skriptfahrt etwas bewegt haben
 local T2_CAP = 1.5             -- Tempo-Deckel (Kacheln/s), Design 4.1
-local T2_CAP_MARGIN = 0.1      -- Kriterium: Höchsttempo ≤ Deckel + 0.1 (bei 1.5 also ≤ 1.6)
+local T2_CAP_MARGIN = 0.1      -- Vergleichswert der Messung: Deckel + 0.1 (bei 1.5 also 1.6); auch Grenze für den Ersatzdeckel
 local T2_CAP_FACTOR = 0.7      -- Ersatzdeckel: 70 % des Höchsttempos ohne Deckel
 local T2_MANUAL_LEAD = 5 * 60  -- Vorlauf, bis Max nach dem Umschalten W drückt
 local T2_ORIENTATION = 0.25    -- Osten
@@ -230,6 +232,15 @@ local function t2_verdict(result)
   return result.ok and "OK" or "FEHLER"
 end
 
+-- Deckel-Durchgang für die Kurzfassung (nur Messung, siehe T2_PASSES).
+local function t2_cap_text(tb, result)
+  if not result then return "Deckel –" end
+  local cap = result.cap and (tb.num(result.cap) .. " ") or ""
+  if result.max < 0.05 then return "Deckel " .. cap .. "nicht aussagekräftig" end
+  if result.cap_resets == 0 then return "Deckel " .. cap .. "nicht gefordert" end
+  return "Deckel " .. cap .. "alle 10 Ticks: Spitze " .. tb.num(result.max, 2) .. " (Messung)"
+end
+
 local function t2_summary(run, tb)
   local d = run.data
   local r = d.results
@@ -243,7 +254,7 @@ local function t2_summary(run, tb)
   end
   table.insert(parts, string.format("max Kohle %s / Festbrennstoff %s / Raketentreibstoff %s Kacheln/s",
     tb.num(r.coal and r.coal.max), tb.num(r.solid and r.solid.max), tb.num(r.rocket and r.rocket.max)))
-  table.insert(parts, "Deckel " .. (r.cap and r.cap.cap and (tb.num(r.cap.cap) .. " ") or "") .. t2_verdict(r.cap))
+  table.insert(parts, t2_cap_text(tb, r.cap))
   table.insert(parts, "Sperre " .. t2_verdict(r.disabled))
   table.insert(parts, "Status " .. (d.status_ok == nil and "–" or (d.status_ok and "OK" or "FEHLER")))
   return table.concat(parts, ", ")
@@ -363,9 +374,12 @@ local function t2_end_pass(run, tb)
         tb.log(run, "INFO", string.format("Tempo-Deckel %s nicht gefordert: Höchsttempo %s Kacheln/s, speed nie zurückgesetzt",
           tb.num(cap), tb.num(cur.max, 2)))
       else
-        result.ok = cur.max <= limit
-        tb.log(run, result.ok and "OK" or "FEHLER", string.format("Tempo-Deckel %s: Höchsttempo %s Kacheln/s %s %s (speed %d-mal zurückgesetzt)",
-          tb.num(cap), tb.num(cur.max, 2), result.ok and "≤" or ">", tb.num(limit), cur.cap_resets))
+        -- Nur Messung (siehe T2_PASSES): result.ok bleibt nil, der Durchgang zählt weder OK noch FEHLER.
+        tb.log(run, "MESSUNG", string.format("Tempo-Deckel %s, Rücksetzen alle 10 Ticks: Höchsttempo %s Kacheln/s %s %s (speed %d-mal zurückgesetzt)",
+          tb.num(cap), tb.num(cur.max, 2), cur.max <= limit and "≤" or ">", tb.num(limit), cur.cap_resets))
+        tb.log(run, "INFO", "Tempo-Deckel alle 10 Ticks: seit 0.4.0 bekannt, dass das nicht reicht (2.0.77: Spitze 1.82 > 1.6 mit Raketentreibstoff)"
+          .. (cur.max <= limit and "; diesmal blieb die Spitze darunter." or ", diesmal wieder darüber.")
+          .. " Der echte Ernter deckelt deshalb jeden Tick; T2b zählt seine Eingriffe. Hier nur Messung, kein FEHLER.")
       end
     end
   end
@@ -523,9 +537,15 @@ end
 -- T3 Teleport zur Ablage -----------------------------------------------------------------------
 -- Ein voll ausgestatteter Ernter wird mit und ohne Fahrer auf die versteckte Ablage-Oberfläche
 -- teleportiert und zurück; der Zustand wird je Feld mit dem Vorher-Datensatz verglichen.
+-- Vorher-Datensatz (d.before) ist der Zustand, nachdem der Dummy-Fahrer eingestiegen ist: Das Auto übernimmt
+-- beim Einsteigen die Farbe des Fahrers (0.4.0: Puppe ohne Spieler = Standard-Orange). Das ist keine Folge des
+-- Teleports; der Zustand vom Aufbau steht in d.before_seat und in der MESSUNG „Aufbau (noch ohne Fahrer)“.
+-- Danach bekommt das Auto wieder T3_COLOR: Mit Standard-Orange als Vorher fiele ein Teleport, der die Farbe auf
+-- Standard zurückstellt, nicht auf.
 
 local T3_STEP = 30
 local T3_ORIENTATION = 0.375
+local T3_COLOR = {r = 0.2, g = 0.7, b = 1, a = 1}
 
 -- Felder des Zustandsvergleichs. tolerance für Zahlen, kilo = Anzeige in kJ.
 -- unsupported = Schlüssel in run.data: ist er gesetzt, kann das Auto das Feld nicht tragen (nur INFO, nicht gezählt).
@@ -701,16 +721,49 @@ end
 
 local t3_steps = {}
 
--- a) Teleport mit Dummy-Fahrer.
+-- a) Dummy-Fahrer einsteigen lassen. Teleport erst im nächsten Schritt: Der Vorher-Datensatz soll den Zustand
+-- mit Fahrer zeigen, auch falls das Auto die Farbe des Fahrers erst im nächsten Tick übernimmt.
 t3_steps[1] = function(run, tb)
+  local d = run.data
+  local car = t3_car(run, tb)
+  if not car then return false end
+  d.driver = tb.dummy_driver(car)
+  return true
+end
+
+-- a) Vorher-Datensatz mit Fahrer (Farbe vor und nach dem Einsteigen als INFO), dann Teleport mit Fahrer.
+t3_steps[2] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
   local hold = t3_hold(run, tb)
   if not hold then return false end
-  local driver = tb.dummy_driver(car)
-  d.driver = driver
+  local driver = d.driver
   local seated = driver and driver.valid and car.get_driver() ~= nil
+  local seat = d.before_seat
+  local seated_color = color_text(read(function() return car.color end))
+  local recolored = ""
+  if seated_color ~= seat.color then
+    local ok_color = pcall(function() car.color = T3_COLOR end)
+    recolored = ok_color and ", danach wieder auf " .. color_text(read(function() return car.color end)) .. " gesetzt"
+      or ", wieder setzen ging nicht"
+  end
+  d.before = t3_snapshot(car)
+  tb.log(run, "INFO", "a) Farbe vor dem Einsteigen " .. seat.color .. ", mit Dummy-Fahrer " .. seated_color
+    .. (seated_color == seat.color and " (gleich)" or " (das Auto übernimmt die Farbe des Fahrers)") .. recolored
+    .. "; „vorher“ heißt ab hier: Zustand mit Fahrer, vor dem Teleport")
+  local others = {}
+  for _, field in ipairs(T3_FIELDS) do
+    if field.key ~= "color" and not (field.unsupported and d[field.unsupported])
+      and not t3_same(field, seat[field.key], d.before[field.key]) then
+      table.insert(others, field.label .. " " .. t3_value_text(tb, field, seat[field.key]) .. " → "
+        .. t3_value_text(tb, field, d.before[field.key]))
+    end
+  end
+  if #others > 0 then
+    tb.log(run, "INFO", "a) Mit Fahrer außerdem anders als beim Aufbau (vor dem Teleport, steckt damit im Vorher-Datensatz): "
+      .. table.concat(others, ", "))
+  end
   local ok, result = t3_teleport(car, {x = -5, y = -5}, hold)
   d.a_result = ok and tostring(result) or "Fehler"
   tb.log(run, "MESSUNG", "a) Teleport mit Dummy-Fahrer (" .. (seated and "sitzt" or "sitzt NICHT") .. ") zur Ablage (-5, -5): "
@@ -723,7 +776,7 @@ t3_steps[1] = function(run, tb)
 end
 
 -- a) 0,5 s später erneut ansehen, Fahrer entfernen, Ernter zurück auf die Testoberfläche.
-t3_steps[2] = function(run, tb)
+t3_steps[3] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
@@ -741,7 +794,7 @@ t3_steps[2] = function(run, tb)
 end
 
 -- b) Ohne Fahrer auf Stellplatz (5, 5) der Ablage.
-t3_steps[3] = function(run, tb)
+t3_steps[4] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
@@ -758,7 +811,7 @@ t3_steps[3] = function(run, tb)
 end
 
 -- b) Vergleich auf der Ablage, dann zurück.
-t3_steps[4] = function(run, tb)
+t3_steps[5] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
@@ -774,7 +827,7 @@ t3_steps[4] = function(run, tb)
 end
 
 -- b) Vergleich zurück auf der Testoberfläche.
-t3_steps[5] = function(run, tb)
+t3_steps[6] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
@@ -787,7 +840,7 @@ t3_steps[5] = function(run, tb)
 end
 
 -- c) Gegenprobe mit clone statt Teleport (nur INFO), Klon danach zerstören.
-t3_steps[6] = function(run, tb)
+t3_steps[7] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
@@ -878,14 +931,16 @@ local function t3_start(run, tb)
     tb.log(run, "INFO", "entity_label am Auto: " .. (ok_label and ("Lesewert " .. tostring(label_now)) or tostring(err_label))
       .. " (API: nur für Spinnenfahrzeuge dokumentiert); das Feld Label wird nicht verglichen")
   end
-  local ok_color, err_color = pcall(function() car.color = {r = 0.2, g = 0.7, b = 1, a = 1} end)
+  local ok_color, err_color = pcall(function() car.color = T3_COLOR end)
   if not ok_color then tb.log(run, "INFO", "Farbe setzen ging nicht: " .. tostring(err_color)) end
   pcall(function() car.orientation = T3_ORIENTATION end)
 
-  d.before = t3_snapshot(car)
+  -- Zustand vom Aufbau; Vergleichsgrundlage wird erst der Zustand mit Fahrer (t3_steps[2]).
+  d.before_seat = t3_snapshot(car)
+  d.before = d.before_seat
   tb.log(run, "INFO", string.format("Aufbau: Qualität %s, Kofferraum %d Spice-Sand, %d Eisenplatten, %d Eisenplatten rare; %d Kohle",
-    d.before.quality, n_spice, n_iron, n_rare, n_coal))
-  tb.log(run, "MESSUNG", "Vorher: " .. t3_snapshot_text(tb, d.before))
+    d.before_seat.quality, n_spice, n_iron, n_rare, n_coal))
+  tb.log(run, "MESSUNG", "Aufbau (noch ohne Fahrer): " .. t3_snapshot_text(tb, d.before_seat))
   tb.watch(run, nil, {x = d.home.x, y = d.home.y + 8})
   d.step = 1
   d.next_tick = game.tick + T3_STEP

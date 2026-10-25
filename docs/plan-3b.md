@@ -25,7 +25,7 @@ Texte gelten so, wie sie hier stehen. Wo der Plan von DOC abweicht, gilt der Pla
 
 | Punkt | Festlegung | Grund |
 |---|---|---|
-| Tempo | `consumption = 330kW`, Ausgleich `effectivity_modifier = min(1, 1/a_eff)`, Deckel jeden Tick bei 1,5 Kacheln/s, Rücksetzen auf 1,45 | Modell aus T2 sagt für jeden Brennstoff 1,453 voraus, Bodentempo 1,406 (6/256 je Tick) |
+| Tempo | `consumption = 330kW`, Ausgleich `effectivity_modifier = min(1, 1/a_eff)`, ab 2.1.13 `min(1, 1/(a_eff · t_eff²))` (0.5.3), Deckel jeden Tick bei 1,5 Kacheln/s, Rücksetzen auf 1,45 | Modell aus T2 sagt für jeden Brennstoff 1,453 voraus, Bodentempo 1,406 (6/256 je Tick). Ab 2.1.13 wirkt auch das Höchsttempo t linear (T2b 25.10.: Raketentreibstoff ohne Ausgleich 2,24 statt der 1,95 Kacheln/s des 2.0-Modells, Faktor ≈ t = 1,15) |
 | Deckel-Werte | Konstanten im Code, keine Mod-Einstellung | Eine Einstellung würde die Fluchtregel aushebeln; Balancing-Runde 3d3 |
 | Brikett | ohne Produktivität: 5 Spice-Sand + 1 Kohle → 1 Brikett (20 MJ), 4 s | Entscheidung 5 sagt 20 MJ; mit Produktivität wären es 30 MJ |
 | Brikett-Gewicht | 10 kg (100 je Rakete) | bleibt lokaler Brennstoff |
@@ -168,6 +168,7 @@ erste Bibliothek. `on_load` schreibt nie. Schlüssel sind `unit_number`; keine F
 ### 4.6 Tempo-Ausgleich
 `apply_fuel_normalization(entity)`: `cb = entity.burner.currently_burning`; ohne `cb` nichts ändern. `a = cb.name.fuel_acceleration_multiplier + cb.quality.level · cb.name.fuel_acceleration_multiplier_quality_bonus`;
 `entity.effectivity_modifier = math.min(1, 1 / a)`; Schlüssel `name/quality` merken. Nie `fuel_category` lesen (2.1).
+Ab base 2.1.13 (0.5.3): `t = cb.name.fuel_top_speed_multiplier + cb.quality.level · cb.name.fuel_top_speed_multiplier_quality_bonus`, `entity.effectivity_modifier = math.min(1, 1 / (a · t²))`. Grund: Seit 2.1.13 wirkt t bei Autos, laut T2b in 2.1.23 (25.10.) linear (Raketentreibstoff ohne Ausgleich 2,24 statt der 1,95 Kacheln/s des 2.0-Modells, Faktor ≈ t = 1,15). Weiche: `helpers.compare_versions(script.active_mods["base"], "2.1.13") >= 0`, einmal je Lua-Sitzung gelesen, nicht in storage.
 Aufrufe: Einsteigen, alle 10 Ticks für gefahrene Ernter, nach `consume`, nach Teleport/Klon/Bauen.
 
 ### 4.7 Abbausperre (gegen Flucht per Aufheben)

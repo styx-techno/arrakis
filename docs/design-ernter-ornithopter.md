@@ -1,6 +1,6 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 24.10.2026 · Mod-Stand 0.5.1 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
+Stand: 25.10.2026 · Mod-Stand 0.5.3 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
 1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json. **Überholt seit 23.10.2026:** 2.1 ist stabil, Max spielt 2.1.23; Ziel ist jetzt 2.1 (5.2).
@@ -242,7 +242,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Kein Ausrüstungsgitter, in keiner Version, denn wir brauchen keins.
   - Leistung, Gewicht und Reibung so wählen, dass das Höchsttempo bei etwa 1,5 Kacheln/s liegt.
 - Bremse und Reibung setzt `compat.vehicle_physics`. Die Funktion löscht `braking_power` und `friction` und setzt nur `braking_force` und `friction_force`, denn 2.1 hat die alten Felder entfernt (CL:740).
-- **Tempo** [2.0]: Hauptmittel ist der Ausgleich je Brennstoff: `effectivity_modifier = min(1, 1/a)` mit a = Beschleunigungsfaktor des brennenden Items samt Qualitätsbonus (A20 :4129-4134). So fährt jeder Brennstoff wie Kohle, mit 330 kW etwa 1,45 Kacheln/s (Modell aus T2). Gesetzt wird er beim Einsteigen, alle 10 Ticks beim Fahren und nach jedem Brennstoffwechsel durch das Skript.
+- **Tempo** [2.0]: Hauptmittel ist der Ausgleich je Brennstoff: `effectivity_modifier = min(1, 1/a)` mit a = Beschleunigungsfaktor des brennenden Items samt Qualitätsbonus (A20 :4129-4134). So fährt jeder Brennstoff wie Kohle, mit 330 kW etwa 1,45 Kacheln/s (Modell aus T2). Gesetzt wird er beim Einsteigen, alle 10 Ticks beim Fahren und nach jedem Brennstoffwechsel durch das Skript. Ab 2.1.13 wirkt auch das Höchsttempo t des Brennstoffs (`fuel_top_speed_multiplier` samt Qualitätsbonus), und zwar linear; der Ausgleich ist dort `min(1, 1/(a · t²))` (0.5.3, Laufzeit-Weiche 5.3), unter 2.0 bleibt er `min(1, 1/a)`. Grund: T2b unter 2.1.23 (25.10., Max' PC) maß mit Raketentreibstoff ohne Ausgleich und Deckel 2,24 Kacheln/s statt der 1,95 des 2.0-Modells (√a), Faktor 1,149 ≈ t = 1,15.
 - **Tempo-Deckel als Sicherheitsnetz** [2.0]: Fährt ein mobiler Ernter schneller als 1,5 Kacheln/s, setzt der `on_tick`-Handler `speed` auf 1,45 zurück, jeden Tick und nur für gefahrene Ernter. Der 10-Tick-Deckel aus T2 reichte nicht (Höchstwert 1,82 mit Raketentreibstoff, ERG). Das Feld ist für Autos schreibbar (A20 :4166-4172). 2.1.13 hat die Brennstoff-Modifikatoren geändert (CL:244), deshalb wird in 2.1 nachgemessen. T2b misst seit 0.5.1 auch, wie stark das Höchsttempo der Brennstoffe wirkt (5.1).
 - `has_belt_immunity = true`, sonst trügen Förderbänder den Ernter schneller als der Wurm davon.
 - Das Item ist wie beim Panzer `item-with-entity-data` (V20 base/prototypes/item.lua:1377).
@@ -621,7 +621,7 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 
 **Mindestversion für 2.1** (ab 0.5.1)
 - `info.json` verlangt `base >= 2.1.23` und `space-age >= 2.1.23`. Technisch reicht 2.1.20 (letzter Breaking Change für uns, CL:35); 2.1.23 ist die geprüfte Version, und Max spielt sie.
-- `quality` und `recycler` sind keine Abhängigkeiten: Space Age zieht `recycler` mit, `quality` ist dort nur empfohlen (V23 space-age/info.json, CL23:695-696). Die Mod braucht Quality nicht; T2b lässt die beiden legendären Läufe ohne Quality aus.
+- `quality` und `recycler` sind keine Abhängigkeiten: Space Age zieht `recycler` mit, `quality` ist dort nur empfohlen (V23 space-age/info.json, CL23:695-696). Die Mod braucht Quality nicht; T2b lässt die legendären Läufe ohne Quality aus.
 
 **Welche Fehlerbehebungen von 2.1 uns betreffen** (gegenüber v0.2 präzisiert)
 - *Belegter 2.0-Fehler:* Sortierfehler zwischen Latenzausgleich und Render-Objekten (CL:1004; Forum-IDs aus der 2.0-Zeit). Er ist nur kosmetisch.
@@ -635,7 +635,7 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 **Nachgeprüft für 2.1.23 (0.5.1)**
 - Neu in 2.1.21 bis 2.1.23: Der Schaltungsanschluss des Proxy-Containers ist eine Liste (CL23:123). Der deepcopy bringt sie mit (V23 base/prototypes/entity/entities.lua:10519); nichts zu tun. FluidBox-Temperaturen, `WaterTileEffectParameters`, `build_preview_tints` und die Auswahl-Ereignisse betreffen uns nicht.
 - Aus 2.1.7 bis 2.1.10, bisher übersehen und in 0.5.1 behoben: Fulgora-Gestein verweist in der Factoriopedia auf Fulgora-Staub (CL23:462, V23 space-age/prototypes/tile/tiles-fulgora.lua:391), Arrakis-Fels löscht das. Raumplattformen zeigen den Planeten (CL23:730, :859, :873), Arrakis übernimmt `platform_surface_render_parameters` von Vulcanus. `LuaPlayer::teleport` verlässt die Fernsicht nicht mehr (CL23:1002), `/arrakis` tut es vorher selbst.
-- **Offen:** Seit 2.1 wirkt `fuel_top_speed_multiplier` (t) auch bei Autos, 2.1.13 hat das verbessert (CL23:376). Der Ausgleich rechnet nur mit a (4.1). Eine Formel steht nirgends; A23 classes.d.ts:14576-14580 nennt nur das Feld. Wirkt t linear, käme der Ernter ohne Deckel auf etwa 1,53 (Festbrennstoff), 1,67 (Raketen- und Atomtreibstoff) und 2,0 Kacheln/s (legendärer Raketentreibstoff). T2b misst das in 2.1.23 als Faktor je Brennstoff. Erst danach wird die Formel angepasst (hinter der Laufzeit-Weiche, 5.3).
+- **Erledigt (0.5.3):** Seit 2.1 wirkt `fuel_top_speed_multiplier` (t) auch bei Autos, 2.1.13 hat das verbessert (CL23:376); eine Formel steht nirgends (A23 classes.d.ts:14576-14580 nennt nur das Feld). T2 und T2b unter 2.1.23 (25.10.) zeigen Endtempo ∝ √(a · Ausgleich) · t: Raketentreibstoff ohne Ausgleich und Deckel 2,24 statt der 1,95 Kacheln/s des 2.0-Modells (Faktor 1,149 ≈ t = 1,15); in T2 ohne Deckel Festbrennstoff 1,6 statt 1,5 und Raketentreibstoff 2,1 statt 1,9 (0.4.0 in 2.0.77). Mit dem alten Ausgleich (nur a) musste in T2b ab 1 s der Deckel eingreifen (12 Läufe FEHLER). Der Ausgleich rechnet ab 2.1.13 mit `min(1, 1/(a · t²))` (Laufzeit-Weiche über `script.active_mods["base"]`, 5.3). T2b prüft das mit Vergleichsläufen ohne Deckel: Der alte Ausgleich misst t, der neue soll etwa 1,45 Kacheln/s ohne Deckel halten.
 
 **Fazit:** Alle Kernmechaniken laufen mit 2.0.77 und 2.1.23. Umgestiegen wird, weil Max jetzt 2.1 spielt und 2.1 keine 2.0-Mods lädt.
 
@@ -668,6 +668,7 @@ compat.v2120 = helpers.compare_versions(base_version, "2.1.20") >= 0
 -- scripts/compat.lua (Laufzeit, ab Phase 3a)
 local V21 = helpers.compare_versions(script.active_mods["base"], "2.1.0") >= 0
 ```
+- Erste Weiche zur Laufzeit (0.5.3): Der Tempo-Ausgleich in `scripts/harvester.lua` (4.1) prüft `helpers.compare_versions(script.active_mods["base"], "2.1.13") >= 0`, einmal je Lua-Sitzung und nicht in storage. Ein eigenes `scripts/compat.lua` gibt es dafür noch nicht.
 - Fahrzeuge setzen nach dem deepcopy `compat.vehicle_physics(p, bremskraft, reibung)`: Die Funktion löscht `braking_power` und `friction` und schreibt `braking_force` und `friction_force`. Das versteht 2.0 wie 2.1 (CL:740, A20 prototypes.d.ts:16902-16909).
 - Der Lua-Mock prüft beide Versionen (`mock.py <mod> 2.0.77` und `mock.py <mod> 2.1.20`), auch mit Gegenprobe ohne `compat.finish()`.
 - Seit 0.5.1 hat `info.json` `"factorio_version": "2.1"` und die Abhängigkeiten `"base >= 2.1.23"` und `"space-age >= 2.1.23"`. Ein 2.1.x vor 2.1.23 kommt damit nie zum Zug, und alle [2.1]-Funktionen sind sicher vorhanden (die spätesten kamen mit 2.1.18 und 2.1.20). Der Zweig `factorio-2.0` behält `"2.0"` und `>= 2.0.67`.
@@ -704,7 +705,7 @@ Unverändert laufen `control.lua`, `data-updates.lua` (`LabPrototype.inputs` gib
 - Container per deepcopy; `circuit_connector` ist in 2.1 ein Array (CL:661), beim Proxy-Container erst ab 2.1.21 (CL23:123).
 - Nach jedem deepcopy prüfen, welche 2.1-Felder die Vorlage mitbringt, z. B. `factoriopedia_alternative` (CL23:462) oder `platform_surface_render_parameters` (CL23:859).
 - In `key_sequence` nur dokumentierte Tastennamen (CL:646).
-- Das Höchsttempo des Ernters in jeder getesteten Version kalibrieren (CL:244). Für 2.1.23 offen (T2b, 5.1).
+- Das Höchsttempo des Ernters in jeder getesteten Version kalibrieren (CL:244). Für 2.1.23 neu gerechnet (0.5.3); Bestätigung durch den nächsten T2b-Lauf (5.1).
 
 ### 5.6 Was 2.1 zusätzlich bringt
 
@@ -791,7 +792,7 @@ Das hier ist geplant, aber erst ein Test im Spiel kann es klären. Alles andere 
 - **Wurm-KI (T5).** Die Doku beschreibt die KI-Zustände, nicht ihr genaues Verhalten. Offen ist, ob ein Wurm ein Auto als Angriffsziel hält, was er nach der Ankunft tut und wie gut sich sein Tempo drosseln lässt.
 - **Ascheeffekte (T5).** Ob nach dem Entfernen wirklich nichts mehr Flieger bremst.
 - **Proxy-Container (T4).** Ob sie mit Kofferraum und Treibstoffinventar eines Autos für Greifarme funktionieren und ob die Bauregel eine Fläche größer als das Gebäude zulässt.
-- **Ernter-Tempo (T2, T2b).** Welches Höchsttempo der Panzer-Abkömmling mit welchem Brennstoff erreicht; 2.1.13 hat das geändert (CL:244). In 2.1.23 ist offen, wie stark `fuel_top_speed_multiplier` wirkt (5.1); T2b misst es.
+- **Ernter-Tempo (T2, T2b).** Welches Höchsttempo der Panzer-Abkömmling mit welchem Brennstoff erreicht; 2.1.13 hat das geändert (CL:244). In 2.1.23 wirkt `fuel_top_speed_multiplier` linear (T2, T2b am 25.10.); ob der Ausgleich `min(1, 1/(a · t²))` aus 0.5.3 das Tempo ohne Deckel hält, zeigt der nächste T2b-Lauf (5.1).
 - **Kartengenerator (T11).** Wie weit Spicefelder bei einer Noise-Schwelle tatsächlich vom Fels entfernt liegen.
 - **Fehler aus 2.1.18 in 2.0.77 (T7, Mehrspieler-Test).** Ob 2.0.77 von den dort behobenen Fehlern betroffen ist: Absturz bei kleiner Knotenzahl, Spinnen-Desync.
 - ~~**2.1 und alte Mods (T10).**~~ Beantwortet: 2.1 lädt keine Mods mit `factorio_version "2.0"` (MS).

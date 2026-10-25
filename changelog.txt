@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.3
+Date: 2026-10-25
+  Bugfixes:
+    - Ernter: Der Tempo-Ausgleich rechnet ab Factorio 2.1.13 auch mit dem Höchsttempo des Brennstoffs (fuel_top_speed_multiplier, t): effectivity_modifier = min(1, 1/(a · t²)) statt min(1, 1/a). Seit 2.1.13 wirkt t auch bei Autos, laut Messung in 2.1.23 linear. Mit dem alten Ausgleich fuhr der Ernter mit Festbrennstoff, Raketen- und Atomtreibstoff schneller als 1,5 Kacheln/s; nur der Tempo-Deckel hielt ihn (Prüfstand T2b unter 2.1.23: 12 Läufe FEHLER). Unter 2.0 bleibt min(1, 1/a).
+  Modding:
+    - Prüfstand T2: Der Tempo-Deckel mit Rücksetzen alle 10 Ticks ist nur noch Messung (MESSUNG und eine INFO-Zeile statt FEHLER). Die Frage ist seit 0.4.0 beantwortet: Mit Raketentreibstoff reicht das nicht, deshalb deckelt der echte Ernter jeden Tick (T2b zählt seine Eingriffe). Die Höchsttempi je Brennstoff stehen weiter als MESSUNG da.
+    - Prüfstand T2b: Die Läufe mit dem eingetragenen Ernter erwarten den Ausgleich der laufenden Version. Die drei Vergleichsläufe fahren jetzt ausdrücklich „mit altem Ausgleich 1/a, ohne Deckel“ und messen weiter, wie t wirkt (Faktor und Exponent p, 1 = linear). Neu sind drei Läufe „mit neuem Ausgleich 1/(a · t²), ohne Deckel“ (nur ab 2.1.13): Sie zeigen das Tempo, das sonst der Deckel verdeckt (Tempo/Kohle soll 1,000 sein), und nennen bei einer Abweichung die passende Formel. Neues Kriterium gegen zu viel Ausgleich: Festbrennstoff, Raketen- und Atomtreibstoff müssen im Mittel mindestens 97 % des Tempos mit Kohle fahren. 20 Läufe, knapp 5 min (vor 2.1.13 17 Läufe); die Start-INFO zählt ohne Quality die legendären Läufe nicht mit.
+    - Prüfstand T3: Verglichen wird mit dem Zustand, nachdem die Puppe eingestiegen ist. Ein Auto übernimmt die Farbe seines Fahrers; das war kein Fehler des Teleports. Eine INFO-Zeile nennt die Farbe vor und nach dem Einsteigen. Danach bekommt der Ernter wieder seine Testfarbe (Hellblau), damit ein Teleport, der die Farbe auf Standard-Orange zurückstellt, auffällt. Die Puppe steigt jetzt 0,5 s vor dem Teleport ein, T3 dauert 4 s.
+    - Prüfstand T5 und T6: Die Testwürmer laufen mit minimum_activity_mode = full (bisher T5 c, d und T6 Bahn A bis C auf minimal). Ohne Spieler rechnet Factorio Würmer sonst sparsamer; im ersten Lauf ohne Spieler kam T6 Bahn C vermutlich deshalb nicht an. Mit Spieler liefen sie schon bisher als full. T5 a bleibt auf minimal wie echte Würmer und misst so ohne Spieler, wie weit ein unbeobachteter Wurm kommt.
+    - Prüfstand T6, Bahn D: Der Wurm bekommt den Ernter per investigating als Ziel statt per attacking, das bei Fahrzeugen nicht hält (T5 b). Erst so kann die Bahn den Wächter prüfen.
+---------------------------------------------------------------------------------------------------
 Version: 0.5.2
 Date: 2026-10-24
   Modding:

@@ -2,7 +2,7 @@
 -- T5 Wurm-KI: a) investigating zu einem Punkt 20 Kacheln hinter einem Ernter, b) attacking auf einen Ernter,
 --    c) Drosselung per speed, d) Flieger 3 s über dem Kopf (Gesundheit, Sticker, Tempo danach).
 -- T6 Fels-Ebene und Wächter: vier Bahnen mit Felsinsel (ohne Ebene, mit Ebene arrakis_rock, mit Mini-Wächter,
---    Angriff auf einen Ernter vor dem Felsrand).
+--    Angriff auf einen Ernter vor dem Felsrand; Ziel per investigating, attacking hält bei Fahrzeugen nicht, T5 b).
 -- T7 Körperprüfung (jeder vierte Körperknoten auf Fels?) und, nur mit "/arrakis-test T7 ja", extended = false.
 --    T7 hat kein confirm: Teil a läuft immer (auch bei „alle“), Teil b nur mit Argument "ja".
 -- Zustand nur in run.data: Zahlen, Texte, Positionen {x, y}, LuaEntity- und LuaSegmentedUnit-Referenzen
@@ -18,6 +18,13 @@ local FLYER_FUEL_COUNT = 5
 local SAND = {["sand-1"] = true, ["sand-2"] = true, ["sand-3"] = true}
 -- Biss-Reichweite: Kopf näher als 3 Kacheln plus Zielradius (Design 4.3, BISS).
 local REACH = 3
+-- minimum_activity_mode aller Testwürmer. Laut API rechnet die Engine Würmer ohne möglichen Zuschauer sparsamer
+-- (minimal: weniger Bewegung und Trigger-Effekte); full heißt „wie beobachtet“. Mit Zuschauer blieben sie in 0.4.0
+-- ohnehin full, so sind Läufe ohne Spieler (Serverkonsole, RCON) vergleichbar. Die Würmer leben nur im Test.
+local MIN_ACTIVITY = "full"
+-- Ausnahme T5 a: misst die Annäherung mit Minimum minimal, wie es echte Würmer haben (Design 4.3). Ohne Zuschauer
+-- zeigt a also, wie weit ein unbeobachteter Wurm kommt; nur MESSUNG, T5 hat kein OK/FEHLER.
+local T5A_ACTIVITY = "minimal"
 
 -- Hilfen ------------------------------------------------------------------------------------
 
@@ -391,7 +398,7 @@ function t5.a_start(run, tb, p)
   p.target = at(o, T5_START_X + T5_A_DISTANCE, y)
   p.unit = create_worm(run, tb, WORM, at(o, T5_START_X, y), defines.direction.east, true)
   if not p.unit then return false end
-  set_activity(run, tb, p.unit, "minimal")
+  set_activity(run, tb, p.unit, T5A_ACTIVITY)
   investigate(run, tb, p.unit, p.target, "Punkt hinter dem Ernter")
   local head = head_of(p.unit)
   p.last = head
@@ -452,7 +459,7 @@ function t5.a_done(run, tb, p)
     summary = "a keine Ankunft (min. " .. tb.num(p.min_dist) .. " Kacheln)"
   end
   tb.log(run, "MESSUNG", "a) Zustände bis zur Ankunft (vision_distance 0, Ernter im Weg): " .. counts_text(p.states_before))
-  tb.log(run, "MESSUNG", "a) activity_mode (Minimum minimal gesetzt): " .. counts_text(p.modes))
+  tb.log(run, "MESSUNG", "a) activity_mode (Minimum " .. T5A_ACTIVITY .. " gesetzt, wie bei echten Würmern): " .. counts_text(p.modes))
   local death = death_of(run, p.harvester_number)
   if death then
     tb.log(run, "MESSUNG", string.format("a) Ernter im Weg: zerstört nach %s s (Ursache: %s)",
@@ -476,7 +483,7 @@ function t5.b_start(run, tb, p)
   p.reach = REACH + entity_radius(harvester)
   p.unit = create_worm(run, tb, WORM, at(o, T5_START_X, y), defines.direction.east, true)
   if not p.unit then return false end
-  set_activity(run, tb, p.unit, "full")
+  set_activity(run, tb, p.unit, MIN_ACTIVITY)
   p.set_ok = attack(run, tb, p.unit, harvester, "Ernter")
   p.held = 0
   p.samples = 0
@@ -546,7 +553,7 @@ function t5.b_done(run, tb, p)
     tb.log(run, "MESSUNG", string.format("b) Schaden: Ernter-Gesundheit %s → %s (%s)", tb.num(p.health0),
       health_text(tb, p.harvester), (p.health0 and health) and ("−" .. tb.num(p.health0 - health)) or "–"))
   end
-  tb.log(run, "MESSUNG", "b) activity_mode (Minimum full gesetzt): " .. counts_text(p.modes))
+  tb.log(run, "MESSUNG", "b) activity_mode (Minimum " .. MIN_ACTIVITY .. " gesetzt): " .. counts_text(p.modes))
   return string.format("b Ziel %d/%d s, erreicht %s", p.held, p.samples, p.reached and "ja" or "nein")
 end
 
@@ -557,7 +564,7 @@ function t5.c_start(run, tb, p)
   local y = T5_LANE.c
   p.unit = create_worm(run, tb, WORM, at(o, T5_START_X, y), defines.direction.east, true)
   if not p.unit then return false end
-  set_activity(run, tb, p.unit, "minimal")
+  set_activity(run, tb, p.unit, MIN_ACTIVITY)
   p.target = at(o, T5_FAR_X, y)
   investigate(run, tb, p.unit, p.target, "fernes Ziel")
   p.last = head_of(p.unit)
@@ -611,8 +618,9 @@ function t5.c_done(run, tb, p)
   tb.log(run, "MESSUNG", string.format("c) gedrosselt (5 s, alle 10 Ticks speed = 1 Kachel/s): tatsächlich %s Kacheln/s (Weg %s Kacheln), speed vor dem Zurücksetzen im Mittel %s Kacheln/s%s",
     tb.num(throttled), tb.num(p.dist[2]), tb.num(average(2)),
     p.throttle_errors > 0 and string.format(", %d Fehler beim Setzen", p.throttle_errors) or ""))
-  tb.log(run, "MESSUNG", string.format("c) danach frei (5 s): %s Kacheln/s (Weg %s Kacheln), speed im Mittel %s, am Ende %s Kacheln/s; activity_mode %s (Minimum minimal)",
-    tb.num(released), tb.num(p.dist[3]), tb.num(average(3)), tb.num(tb.speed_tps(p.unit)), activity_mode(tb, p.unit)))
+  tb.log(run, "MESSUNG", string.format("c) danach frei (5 s): %s Kacheln/s (Weg %s Kacheln), speed im Mittel %s, am Ende %s Kacheln/s; activity_mode %s (Minimum %s)",
+    tb.num(released), tb.num(p.dist[3]), tb.num(average(3)), tb.num(tb.speed_tps(p.unit)), activity_mode(tb, p.unit),
+    MIN_ACTIVITY))
   return "c gedrosselt " .. tb.num(throttled) .. ", frei " .. tb.num(released) .. " Kacheln/s"
 end
 
@@ -633,7 +641,7 @@ function t5.d_start(run, tb, p)
   local y = T5_LANE.d
   p.unit = create_worm(run, tb, WORM, at(o, T5_START_X, y), defines.direction.east, true)
   if not p.unit then return false end
-  set_activity(run, tb, p.unit, "minimal")
+  set_activity(run, tb, p.unit, MIN_ACTIVITY)
   investigate(run, tb, p.unit, at(o, T5_FAR_X, y), "fernes Ziel")
   p.flyer = create_flyer(run, tb, at(o, T5_START_X + 10, y + 12), "d) Flieger")
   if not p.flyer then return false end
@@ -818,15 +826,14 @@ local function heading(nodes)
 end
 
 -- Soll-Zustand der Bahn: Umweg-Wegpunkt, Angriff auf den Ernter oder Ziel. nil: nichts mehr zu tun.
+-- Angriff per investigating auf die Position des Ernters (Design 4.3), bei jedem Nachsetzen neu gelesen;
+-- attacking hält bei Fahrzeugen kein Ziel (T5 b, 0.4.0: sofort patrolling).
 local function t6_wanted(lane)
   local investigating = defines.segmented_unit_ai_state.investigating
   if lane.detour then return {type = investigating, destination = lane.detour} end
   if lane.attack then
     if not valid(lane.harvester) then return nil end
-    if lane.attack_ok then
-      return {type = defines.segmented_unit_ai_state.attacking, target = lane.harvester}
-    end
-    return {type = investigating, destination = lane.harvester_pos}
+    return {type = investigating, destination = copy_position(lane.harvester.position)}
   end
   return {type = investigating, destination = lane.target}
 end
@@ -880,13 +887,9 @@ local function t6_lane_start(run, tb, def)
     return lane
   end
   lane.half = head_half_size(lane.unit)
-  set_activity(run, tb, lane.unit, def.attack and "full" or "minimal")
+  set_activity(run, tb, lane.unit, MIN_ACTIVITY)
   if def.attack then
-    lane.attack_ok = attack(run, tb, lane.unit, lane.harvester, "Bahn D")
-    if not lane.attack_ok then
-      tb.log(run, "INFO", "Bahn D: Ersatz investigating zum Ernter")
-      investigate(run, tb, lane.unit, lane.harvester_pos, "Bahn D")
-    end
+    lane.set_ok = investigate(run, tb, lane.unit, lane.harvester_pos, "Bahn D: Ernter")
   else
     investigate(run, tb, lane.unit, lane.target, "Bahn " .. def.key)
   end
@@ -1050,7 +1053,7 @@ local function t6_report(run, tb, lane)
     else
       table.insert(parts, "Ernter-Gesundheit " .. tb.num(lane.health0) .. " → " .. health_text(tb, lane.harvester))
     end
-    table.insert(parts, "set_ai_state attacking " .. (lane.attack_ok and "ok" or "Fehler (Ersatz investigating)"))
+    table.insert(parts, "Ziel per investigating zum Ernter " .. (lane.set_ok and "ok" or "Fehler"))
   else
     table.insert(parts, lane.arrived and ("Ankunft ja nach " .. tb.num(lane.arrived) .. " s")
       or ("Ankunft nein (kleinster Abstand " .. tb.num(lane.min_dist) .. " Kacheln)"))
@@ -1065,7 +1068,7 @@ local function t6_report(run, tb, lane)
     table.insert(parts, string.format("Umwege %d, kein Umweg gefunden %d×", lane.detours, lane.no_detour))
   end
   table.insert(parts, "Zustand nachgeführt " .. lane.reasserts .. "×")
-  table.insert(parts, "activity_mode " .. counts_text(lane.modes))
+  table.insert(parts, "activity_mode " .. counts_text(lane.modes) .. " (Minimum " .. MIN_ACTIVITY .. ")")
   tb.log(run, "MESSUNG", name .. ": " .. table.concat(parts, "; "))
   local short = lane.key .. " Fels " .. lane.rock .. "×"
   if lane.stalls > 0 then short = short .. " Stillstand" end
@@ -1348,7 +1351,7 @@ local function t7_tick(run, tb)
     local nodes = body_nodes(unit)
     data.b_nodes0 = nodes and #nodes or nil
     tb.log(run, "MESSUNG", "b) extended = false, sofort: " .. t7_unit_text(tb, unit))
-    set_activity(run, tb, unit, "full")
+    set_activity(run, tb, unit, MIN_ACTIVITY)
     investigate(run, tb, unit, at(o, T7_FREE_TARGET.x, T7_FREE_TARGET.y), "Teil b")
   elseif data.step == "drive" then
     if tick < data.b_tick + T7_DRIVE then return end

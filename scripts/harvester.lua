@@ -283,9 +283,21 @@ local function has_fuel(entity)
   return not burner.inventory.is_empty()
 end
 
--- Tempo-Ausgleich (Plan 4.6): effectivity_modifier = min(1, 1/a) nach currently_burning, schreibt nur bei Änderung.
--- 2.1: Auch fuel_top_speed_multiplier wirkt bei Autos (2.1.13). Das gleicht die Formel noch nicht aus; wie stark es
--- wirkt, misst T2b (Läufe „mit Ausgleich, ohne Deckel“). Bis dahin begrenzt der Deckel das Tempo.
+-- Wirkt fuel_top_speed_multiplier bei Autos (ab 2.1.13)? Einmal je Lua-Sitzung aus script.active_mods gelesen,
+-- nie in storage: Die base-Version ändert sich nur, wenn die Mods neu geladen werden.
+local top_speed_acts
+
+local function fuel_top_speed_acts()
+  if top_speed_acts == nil then
+    top_speed_acts = helpers.compare_versions(script.active_mods["base"], "2.1.13") >= 0
+  end
+  return top_speed_acts
+end
+
+-- Tempo-Ausgleich (Plan 4.6) nach currently_burning, schreibt nur bei Änderung. Modell aus T2/T2b: Endtempo
+-- ∝ √(a · effectivity_modifier) · t mit a = Beschleunigung, t = Höchsttempo des Brennstoffs (je plus Qualitätsbonus).
+-- t wirkt bei Autos erst ab 2.1.13 linear (vorher wie t = 1). Ausgleich min(1, 1/(a · t²)), vor 2.1.13 min(1, 1/a):
+-- Kein Brennstoff fährt schneller als Kohle (a = t = 1, etwa 1.45 Kacheln/s); der Deckel bleibt nur die Sicherung.
 function lib.apply_fuel_normalization(entity)
   if not (entity and entity.valid) then return nil end
   local burner = entity.burner
@@ -294,7 +306,12 @@ function lib.apply_fuel_normalization(entity)
   local item, quality = burning.name, burning.quality
   local level = quality and quality.level or 0
   local a = item.fuel_acceleration_multiplier + level * item.fuel_acceleration_multiplier_quality_bonus
-  local target = a > 0 and math.min(1, 1 / a) or 1
+  local k = a
+  if fuel_top_speed_acts() then
+    local t = item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus
+    k = a * t * t
+  end
+  local target = k > 0 and math.min(1, 1 / k) or 1
   local harvesters = storage.harvesters
   local h = harvesters and harvesters[entity.unit_number]
   if h then h.fuel_key = item.name .. "/" .. (quality and quality.name or "normal") end

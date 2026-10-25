@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.2 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.5.3 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -18,7 +18,7 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 
 Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisherigen Messwerte stammen aus 2.0.77. Bitte in 2.1.23 neu laufen lassen:
 
-- **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt. Das Modell für den Ernter stammt aus T2 in 2.0.77.
+- **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt: Es wirkt jetzt linear (Endtempo ∝ √(a · Ausgleich) · t, gemessen in 2.1.23). Seit 0.5.3 rechnet der Ausgleich ab 2.1.13 deshalb mit min(1, 1/(a · t²)), davor mit min(1, 1/a) (Modell aus T2 in 2.0.77). Der nächste T2b-Lauf soll das bestätigen.
 - **T4 (Annahme und Tankstutzen):** Bauregel auf Fels und Proxy-Container; der Schaltungsanschluss des Proxys ist seit 2.1.21 anders aufgebaut.
 - **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen.
 - **T11 (Kartengenerator):** siehe dort.
@@ -33,7 +33,7 @@ Von Hand prüfen (2.1.23):
 - Ein Spielstand mit 0.5.0 aus 2.0.77 lädt mit 0.5.1.
 
 T10 (lädt 2.1 eine Mod für 2.0?) entfällt: Laut Factorio-Doku lädt 2.1 keine Mods mit `factorio_version "2.0"`.
-In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die beiden legendären Läufe mit je einer INFO-Zeile; der Datenstufen-Test prüft vor der Übergabe auch diesen Fall (`tools/check/datastage.py fd2123 --ohne quality --set arrakis-testbench=true`).
+In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die drei legendären Läufe mit je einer INFO-Zeile; der Datenstufen-Test prüft vor der Übergabe auch diesen Fall (`tools/check/datastage.py fd2123 --ohne quality --set arrakis-testbench=true`).
 
 ## Befehle
 
@@ -44,7 +44,7 @@ Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
 | `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T13` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 16 min |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 13 min |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
@@ -71,7 +71,7 @@ Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gesta
 - `alle` wartet ohne Spieler nach einer FRAGE nicht (mit Spieler nach T2 und T4 je 30 s).
 - Die Zusammenfassung von `alle` lässt den Hinweis auf `/arrakis-test zurück` weg.
 - T2: Geht die Skriptfahrt nicht, setzt der Test sonst dich in den Ernter. Ohne Spieler entfällt das: FEHLER „Manuelle Messung entfällt: kein Spieler im Spiel“, dann wertet der Test gleich aus.
-- T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Ohne Zuschauer rechnet Factorio die Würmer womöglich sparsamer (T5 a, c, d und T6 Bahn A bis C). Die Kriterien bleiben gleich, die Messwerte können aber von einem Lauf im Spiel abweichen.
+- T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Seit 0.5.3 laufen die fahrenden Testwürmer (T5 b, c, d, T6, T7 b) mit `minimum_activity_mode = full`. Factorio rechnet sie dann auch ohne Zuschauer so, als sähe jemand zu. Bis 0.5.2 standen T5 c, d und T6 Bahn A bis C auf `minimal`; im ersten Lauf ohne Spieler kam Bahn C vermutlich deshalb nicht an. Nur T5 a bleibt auf `minimal`, wie echte Würmer (Design 4.3): Ohne Spieler misst a also, wie weit ein unbeobachteter Wurm kommt. Mit Spieler ändert sich nichts, dort liefen die Würmer schon immer als `full`.
 - Die Karte wird nicht aufgedeckt. In T13 Schritt 10 steht dann „Kartenmarkierungen entfernt 0“; das zählt nicht für OK oder FEHLER.
 
 ### `/arrakis-test status`
@@ -139,7 +139,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bleiben unberührt, auch die Einstellung **Prüfstand** in deinem Spiel. Die Factorio-Installation und die Mod im Repo liest es nur.
 Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
 Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
-`alle` dauert gut 15 min. Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+`alle` dauert etwa 13 min (erster Lauf ohne Spieler, 0.5.2: 12 min). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
 
 **Ergebnisse:**
 
@@ -203,6 +203,7 @@ Du stehst am Ostende des Sandstegs durchs Wasser, direkt vor dem Gebäuderaster 
 
 **Was passiert:** Ein Test-Ernter fährt mit einer Puppe am Steuer fünfmal je 15 s nach Osten: mit Kohle, Festbrennstoff, Raketentreibstoff, mit Tempo-Deckel und gesperrt (`disabled_by_script`).
 Am Ende bleibt er stehen, nicht abbaubar und mit dem Status „Prüfstand: aufgebaut“.
+Der Durchgang mit Tempo-Deckel (Rücksetzen alle 10 Ticks) ist nur noch Messung, ohne OK oder FEHLER. Seit 0.4.0 ist klar, dass das mit Raketentreibstoff nicht reicht. Deshalb deckelt der echte Ernter jeden Tick; T2b zählt, wie oft dieser Deckel eingreift. Eine INFO-Zeile sagt das.
 
 **Falls die Skriptfahrt nicht geht:** Der Chat meldet FEHLER „Skriptfahrt geht nicht“ und setzt dich selbst in den Ernter.
 Dann **W gedrückt halten, bis die Meldung „W loslassen“ kommt** (etwa 75 s). Aussteigen nur, wenn der Chat es sagt.
@@ -214,7 +215,7 @@ Dann **W gedrückt halten, bis die Meldung „W loslassen“ kommt** (etwa 75 s)
 ### T3 Ernter: Teleport zur Ablage (etwa 4 s)
 
 **Was passiert:** Ein voll beladener Ernter (Qualität, Ladung, Treibstoff, Brennvorgang, 60 % Gesundheit, Farbe) wird auf eine versteckte Ablage-Oberfläche `arrakis-test-hold` teleportiert und zurück.
-Jedes Feld wird mit dem Zustand vorher verglichen (etwa 24 OK/FEHLER-Zeilen). Die Ablage bleibt im Spielstand und wird wiederverwendet.
+Zuerst steigt eine Puppe ein. Dabei übernimmt der Ernter ihre Farbe (Orange); das ist kein Fehler, eine INFO-Zeile nennt die Farbe vor und nach dem Einsteigen. Danach färbt der Test ihn wieder hellblau, damit auffällt, falls der Teleport die Farbe zurücksetzt. Verglichen wird mit dem Zustand danach, jedes Feld einzeln (22 OK-Zeilen, wenn alles erhalten bleibt). Die Gegenprobe mit `clone` (Teil c) steht nur als INFO da. Die Ablage bleibt im Spielstand und wird wiederverwendet.
 
 **Du:** nichts. **Melden:** nur die Datei.
 
@@ -239,7 +240,7 @@ Deine Spielfigur ist dabei unverwundbar und steht südlich der Bahnen.
 
 ### T6 Fels-Ebene und Wächter (bis 110 s)
 
-**Was passiert:** Vier Würmer gleichzeitig auf vier Bahnen, jede mit einer Felsinsel: A ohne Schutz, B mit Fels-Kollisionsebene, C mit Fels-Wächter, D greift einen Ernter vor dem Fels an.
+**Was passiert:** Vier Würmer gleichzeitig auf vier Bahnen, jede mit einer Felsinsel: A ohne Schutz, B mit Fels-Kollisionsebene, C mit Fels-Wächter, D greift einen Ernter vor dem Fels an (Ziel per `investigating` auf den Ernter; `attacking` hält bei Fahrzeugen nicht, siehe T5 b).
 Du stehst zwischen B und C und bist unverwundbar.
 
 **Du:** Bahn B (nördlich von dir) und Bahn C (südlich) beobachten, ein Screenshot.
@@ -313,15 +314,18 @@ Am Ende entfernt der Test seine Ernter. Annahmen, Kisten, Bänder und der Bohrer
 
 **Du:** nichts, zuschauen. **Melden:** nur die Datei.
 
-### T2b Ernter: Fahrphysik (knapp 4 min)
+### T2b Ernter: Fahrphysik (knapp 5 min)
 
-**Was passiert:** Zwei Spice-Ernter mit je einer Puppe am Steuer fahren 17 Läufe zu je 10 oder 15 s. Der echte (eingetragene) fährt 13 davon:
+**Was passiert:** Zwei Spice-Ernter mit je einer Puppe am Steuer fahren 20 Läufe zu je 10 oder 15 s (vor 2.1.13: 17). Der echte (eingetragene) fährt 13 davon:
 mit Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff und legendärem Raketentreibstoff (alle mit Tempo-Ausgleich), nach Westen, Norden, Süden und zweimal schräg, zweimal bei negativen Koordinaten (um −1000, −1000) und einmal mit vollem Laderaum.
 Ein zweiter Ernter, den der Mod absichtlich nicht kennt, fährt mit Raketentreibstoff ohne Ausgleich und ohne Deckel; er wird nur gemessen.
-In 2.1 wirkt das Höchsttempo der Brennstoffe auch bei Autos (2.1.13). Die Läufe „mit Ausgleich, ohne Deckel“ messen, wie stark: Der zweite Ernter fährt mit Festbrennstoff, Raketentreibstoff und legendärem Raketentreibstoff, den Ausgleich setzt der Test, den Deckel gibt es nicht.
-Ihre MESSUNG-Zeilen nennen zusätzlich den Höchsttempo-Faktor t des Brennstoffs und einen „Faktor“ (Tempo im Verhältnis zu Kohle, geteilt durch das, was das 2.0-Modell ohne t erwartet). Eine INFO-Zeile am Ende fasst die Faktoren zusammen: 1.000 heißt, t wirkt nicht; ein Faktor etwa gleich t heißt, t wirkt linear.
+Ab 2.1.13 wirkt das Höchsttempo t der Brennstoffe auch bei Autos, und zwar linear. Der Ausgleich ist dort min(1, 1/(a · t²)), davor min(1, 1/a); die Läufe mit dem eingetragenen Ernter erwarten die Formel der laufenden Version (die Start-INFO nennt sie und die base-Version).
+Der zweite Ernter fährt dazu ohne Deckel, den Ausgleich setzt der Test: dreimal „mit altem Ausgleich 1/a“ (Festbrennstoff, Raketentreibstoff, legendärer Raketentreibstoff) und ab 2.1.13 dreimal „mit neuem Ausgleich 1/(a · t²)“ mit denselben Brennstoffen. Vor 2.1.13 entfallen die drei neuen Läufe, denn dort ist der neue Ausgleich gleich dem alten.
+Die MESSUNG-Zeilen dieser Läufe nennen a, t, Tempo im Verhältnis zu Kohle, einen „Faktor“ (Tempo/Kohle geteilt durch das, was das 2.0-Modell ohne t erwartet) und den Exponenten p (Faktor = t^p).
+Am Ende fassen zwei INFO-Zeilen zusammen. Die erste zeigt, wie t wirkt (Faktor 1.000 bzw. p = 0 heißt keine Wirkung, Faktor ≈ t bzw. p = 1 heißt linear). Die zweite zeigt, ob der neue Ausgleich das Tempo ohne Deckel unter 1,5 Kacheln/s hält („hält ohne Deckel“ / „hält NICHT ohne Deckel“), die größte Abweichung von Tempo/Kohle = 1,000 in Prozent und ab 1 % Abweichung die Formel, die zu den Messungen passen würde (min(1, 1/(a · t^(2p)))); vor 2.1.13 sagt sie nur, dass der neue Ausgleich dort gleich dem alten ist. Griff der Deckel schon im Lauf mit Kohle ein, warnt eine weitere INFO-Zeile: Dann sind Tempo/Kohle, Faktor und p zu hoch.
+Die ENDE-Zeile nennt zusätzlich den Bereich von p und das höchste Tempo mit neuem Ausgleich ohne Deckel.
 Je Lauf stehen Tempo (`speed`), Spitze, Bodentempo (zurückgelegte Strecke ab 5 s) und der Ausgleichswert `effectivity_modifier` in der Zeile.
-FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet. Ohne Qualität im Spiel entfallen die beiden legendären Läufe mit je einer INFO-Zeile.
+FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet (min(1, 1/(a · t²)) ab 2.1.13, sonst min(1, 1/a)). Dazu gegen zu viel Ausgleich: Festbrennstoff, Raketen- und Atomtreibstoff (je 15 s wie Kohle) müssen im Mittel mindestens 97 % des Tempos mit Kohle fahren. Ohne Qualität im Spiel entfallen die legendären Läufe (drei, vor 2.1.13 zwei) mit je einer INFO-Zeile.
 Am Ende entfernt der Test beide Ernter.
 
 **Du:** nichts, zuschauen (die Ernter fahren an dir vorbei). **Melden:** nur die Datei.
@@ -329,7 +333,7 @@ Am Ende entfernt der Test beide Ernter.
 ## Bekannte Grenzen
 
 - Die Flieger-Beine drehen nicht mit der Flugrichtung. T1 fliegt nur nach Osten; die Werte für 1 und 2 Beine gelten für Ost-West-Flug.
-- Der Tempo-Deckel in T2 läuft mit Raketentreibstoff. Fährt der Ernter ohne Deckel nicht schneller als 1,6 Kacheln/s, nimmt der Test einen Ersatzdeckel (70 % seines Höchsttempos), damit der Deckel überhaupt greifen muss.
+- Der Tempo-Deckel in T2 läuft mit Raketentreibstoff. Fährt der Ernter ohne Deckel nicht schneller als 1,6 Kacheln/s, nimmt der Test einen Ersatzdeckel (70 % seines Höchsttempos), damit der Deckel überhaupt greifen muss. Der Durchgang zählt nicht für OK oder FEHLER (siehe T2).
 - T6, Bahn D: Bewertet wird der Kopf bis zum Biss. Was der Wurm danach tut, steht als MESSUNG/INFO da (im Spiel taucht er beim Biss ab).
 - Im normalen Spiel erntet der Ernter nur auf Arrakis. Die Prüfstand-Fläche gibt dieselbe Einstellung **Prüfstand** frei, die auch den Befehl bringt; nur deshalb kann T13 dort mit dem echten Code ernten.
 - T13, Schritt 11: Bewegt sich auch das normale Auto auf dem Band nicht, sagt die Messung nichts; dann meldet der Schritt FEHLER „nicht prüfbar“. Bitte trotzdem die Datei schicken.
