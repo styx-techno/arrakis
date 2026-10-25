@@ -45,7 +45,9 @@
 -- Spalten der Abstandstransformation. Der Zustand liegt als reine Daten in run.data.
 -- Die Dauer misst ein LuaProfiler. Er lässt sich nicht speichern und liegt deshalb nur in einer
 -- Modulvariable (nur für die Ausgabe, nichts davon geht nach run.data); wird mitten im Test ein
--- Spielstand geladen, fehlt die Zeitangabe.
+-- Spielstand geladen, fehlt die Zeitangabe. Er läuft nur um force_generate_chunk_requests (restart davor,
+-- stop danach, im selben Tick) und misst so echte Rechenzeit ohne die Zeit zwischen den Ticks: Der
+-- Zeitraffer (/arrakis-test tempo, game.speed) ändert die Dauer nicht.
 
 local CHUNK_RADIUS = 12                  -- Chunks −12 … 12 in x und y
 local SIZE0_RADIUS = 9                   -- Durchgang „groesse0“: Chunks −9 … 9 (Kacheln −288 … 319)

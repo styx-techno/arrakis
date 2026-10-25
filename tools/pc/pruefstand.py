@@ -8,6 +8,7 @@ Aufruf (aus dem Repo-Root; --factorio zeigt auf bin/x64/factorio(.exe) einer ent
   python tools/pc/pruefstand.py --factorio "C:\Factorio-2.1.23\bin\x64\factorio.exe" T2b T13
   python tools/pc/pruefstand.py --factorio ... alle
   python tools/pc/pruefstand.py --factorio ... --ordner D:\pruefstand --zeitlimit 45 T11 T7:ja
+  python tools/pc/pruefstand.py --factorio ... --tempo 1 alle      (echte Zeit wie vor 0.5.5)
 
 Ablauf:
   1. Arbeitsordner (Standard: <System-Temp>/arrakis-pruefstand) einrichten: config/config.ini
@@ -19,14 +20,18 @@ Ablauf:
      Solange er läuft, stehen PID, Port und Passwort in <ordner>/server.json (von Hand fragen:
      python tools/pc/rcon.py --passwort … arrakis-test status). Bleibt nach einem harten
      Abbruch ein Server übrig, beendet ihn der nächste Lauf damit.
-  4. Je Test: /arrakis-test <id> senden, alle 5 s /arrakis-test status abfragen, bis das
+  4. Zeitraffer: /arrakis-test tempo N (--tempo, Standard 10) senden und die Antwort prüfen. Kennt die
+     Mod den Befehl nicht (vor 0.5.5), geht es nur mit --tempo 1 weiter. Die Tests zählen Ticks, ihre
+     Ergebnisse hängen nicht am Tempo; alle Zeitgrenzen hier (--zeitlimit, --abfrage, STALL …) sind echte
+     Zeit und gelten unverändert, mit Zeitraffer enden die Tests nur früher.
+  5. Je Test: /arrakis-test <id> senden, alle 5 s /arrakis-test status abfragen, bis das
      ERGEBNIS da ist (bei „alle“: bis der Stand wieder „bereit“ ist).
-  5. /quit, Server beenden (auch bei Fehlern und Strg+C), script-output/arrakis-test.txt
+  6. /quit, Server beenden (auch bei Fehlern und Strg+C), script-output/arrakis-test.txt
      (und arrakis-t11-karten.txt) mit Zeitstempel nach <ordner>/ergebnisse/ kopieren.
 
 Rückgabewert: 0 = kein FEHLER, 1 = mindestens ein FEHLER oder Zeitlimit, 2 = Einrichtung oder
-Infrastruktur (Factorio startet nicht, RCON, Prüfstand-Einstellung nicht aktiv, Test nicht
-gestartet, Ordner schon in Benutzung, Server tickt nicht mehr). Interaktive Tests (T9, T12) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
+Infrastruktur (Factorio startet nicht, RCON, Prüfstand-Einstellung nicht aktiv, Zeitraffer nicht
+einstellbar, Test nicht gestartet, Ordner schon in Benutzung, Server tickt nicht mehr). Interaktive Tests (T9, T12) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
 """
 import argparse
 import errno
@@ -59,6 +64,7 @@ COMMAND_TIMEOUT = 30       # s für eine RCON-Antwort
 QUIT_WAIT = 60             # s, bis der Server nach /quit weg sein muss
 HEARTBEAT = 60             # s: Fortschritt auch ohne Änderung
 STALL = 90                 # s: so lange darf der Tick während eines Tests stehen
+TEMPO_MIN, TEMPO_MAX = 1, 50   # --tempo, wie /arrakis-test tempo in runner.lua
 LOCK = "pruefstand.lock"
 _lock = None               # offene Sperrdatei, solange der Lauf geht (unlock_folder in main)
 COPY_IGNORE = (".git", "__pycache__", "*.pyc", "*.zip", ".vscode", ".DS_Store")
@@ -67,6 +73,10 @@ STATUS_RE = re.compile(r"^STATUS (?:(bereit)|(laeuft) (\S+) \+(\d+(?:\.\d+)?) s|
                        r"(?: \| alle, danach noch (\d+))?$")
 # Zusammenfassung darf leer sein (Zeile endet dann auf "|", strip() nimmt das Leerzeichen).
 RESULT_RE = re.compile(r"^ERGEBNIS (\S+) \| Tick (\d+) \| OK (\d+) FEHLER (\d+) FRAGE (\d+) \|(?: (.*))?$")
+# Antwort auf /arrakis-test tempo N (ab 0.5.5): TEMPO <neu> | vorher <alt>.
+TEMPO_RE = re.compile(r"^TEMPO (\d+(?:\.\d+)?) \| vorher (\d+(?:\.\d+)?(?:e[-+]?\d+)?)$")
+# Antwort einer Mod ohne tempo (0.5.2 bis 0.5.4): „tempo“ gilt dort als Test-ID.
+OLD_MOD_PREFIX = "Unbekannter Test: tempo"
 
 
 class Abbruch(Exception):
@@ -640,6 +650,36 @@ def collect_files(paths):
   return copied
 
 
+def tempo_text(tempo):
+  """Faktor wie im Befehl: 10, 2.5 (%g; zwischen 1 und 50 nie mit Exponent)."""
+  return "%g" % tempo
+
+
+def set_tempo(link, tempo):
+  """Zeitraffer vor dem ersten Test: /arrakis-test tempo N senden und die Antwort prüfen. Eine Mod vor
+  0.5.5 kennt den Befehl nicht (antwortet „Unbekannter Test: tempo …“, ohne etwas zu ändern); mit ihr
+  geht es nur mit --tempo 1 weiter, sonst Abbruch."""
+  text = tempo_text(tempo)
+  reply = ask(link, "/arrakis-test tempo " + text)
+  lines = [line.strip() for line in reply.splitlines() if line.strip()]
+  first = lines[0] if lines else "(leere Antwort)"
+  match = TEMPO_RE.match(first)
+  if match:
+    new = float(match.group(1))
+    # game.speed ist ein float: 2.3 kommt etwa als 2.3 zurück, nie weiter weg als ein Promille.
+    if abs(new - tempo) > tempo / 1000:
+      raise Abbruch("Zeitraffer: game.speed steht nach /arrakis-test tempo %s auf %s (Antwort %r)" % (text, match.group(1), first))
+    say("%s: game.speed %s (vorher %s)" % ("Zeitraffer aus" if tempo == 1 else "Zeitraffer", match.group(1), match.group(2)))
+    return
+  if first.startswith(OLD_MOD_PREFIX):
+    if tempo == 1:
+      say("Zeitraffer: Die Mod kennt /arrakis-test tempo nicht (vor 0.5.5); die Tests laufen wie bisher in echter Zeit.")
+      return
+    raise Abbruch("Die Mod kennt /arrakis-test tempo nicht (vor 0.5.5, Antwort %r). Mit --tempo 1 laufen die Tests "
+                  "ohne Zeitraffer wie bisher." % first)
+  raise Abbruch("Antwort auf /arrakis-test tempo %s nicht im vereinbarten Format: %r" % (text, first))
+
+
 def first_status(link):
   """Erste Statusabfrage; eine leere Antwort (Server noch nicht ganz bereit) kurz wiederholen."""
   for _ in range(5):
@@ -663,6 +703,7 @@ def run(args):
     wait_for_rcon(link, args.startzeit)
     first = first_status(link)
     say("Prüfstand antwortet: %s" % first["zeile"])
+    set_tempo(link, args.tempo)
     for test in args.tests:
       limit = args.zeitlimit or (90 if test.lower() == "alle" else 30)
       current = test
@@ -730,9 +771,12 @@ def parse_args(argv):
   ap.add_argument("--mod", metavar="ORDNER", help="Mod-Ordner (Standard: dieses Repo)")
   ap.add_argument("--rcon-port", type=int, default=27115, metavar="N", help="RCON-Port auf 127.0.0.1 (Standard 27115)")
   ap.add_argument("--port", type=int, default=34297, metavar="N", help="Spiel-Port auf 127.0.0.1 (Standard 34297)")
-  ap.add_argument("--zeitlimit", type=float, metavar="MIN", help="Minuten je Test (Standard 30, bei „alle“ 90)")
+  ap.add_argument("--zeitlimit", type=float, metavar="MIN", help="Minuten je Test in echter Zeit (Standard 30, bei „alle“ 90)")
   ap.add_argument("--startzeit", type=float, default=180, metavar="SEK", help="Sekunden, die der Server bis RCON brauchen darf (Standard 180)")
   ap.add_argument("--abfrage", type=float, default=5, metavar="SEK", help="Sekunden zwischen zwei Statusabfragen (Standard 5)")
+  ap.add_argument("--tempo", type=float, default=10, metavar="N",
+                  help="Zeitraffer: game.speed während der Tests, %d bis %d (Standard 10; 1 = echte Zeit wie vor 0.5.5). "
+                       "Die Ergebnisse hängen nicht davon ab." % (TEMPO_MIN, TEMPO_MAX))
   ap.add_argument("tests", nargs="+", metavar="TEST",
                   help="Test-IDs wie T2b T13, oder alle; mit Argument nach Doppelpunkt, z. B. T7:ja")
   args = ap.parse_args(argv)
@@ -743,6 +787,9 @@ def parse_args(argv):
     ap.error("--zeitlimit muss größer als 0 sein")
   if args.startzeit <= 0 or args.abfrage <= 0:
     ap.error("--startzeit und --abfrage müssen größer als 0 sein")
+  # So geschrieben, dass auch nan und inf durchfallen.
+  if not TEMPO_MIN <= args.tempo <= TEMPO_MAX:
+    ap.error("--tempo muss zwischen %d und %d liegen (1 = echte Zeit)" % (TEMPO_MIN, TEMPO_MAX))
   return args
 
 

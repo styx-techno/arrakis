@@ -31,12 +31,13 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 3. **Befehle** im Chat (nur Admins; im Einzelspiel ist man Admin):
    - `/arrakis-test`: Liste aller Tests mit Dauer und Hinweisen
    - `/arrakis-test T1` (bzw. `T2` … `T14`, `T2b`): einen Test starten; `T11 lang` und `T14 lang` mit 30 statt 9 Seeds
-   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (geschätzt etwa 13 min)
+   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (ohne Zeitraffer gut 12 min)
    - `/arrakis-test stop`: laufenden Test abbrechen
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
+   - `/arrakis-test tempo 10`: Zeitraffer (`game.speed`, 1 bis 50), die Ergebnisse bleiben gleich; `/arrakis-test tempo 1` stellt zurück, im eigenen Spielstand bitte vor dem Ausschalten der Einstellung ([Zeitraffer](docs/pruefstand.md#zeitraffer-arrakis-test-tempo))
    - `/arrakis-test T7 ja`: T7 mit Teil b (kann das Spiel abstürzen lassen, nur im Wegwerf-Spielstand)
 4. **Ergebnisse** stehen im Chat und in der Datei `%APPDATA%\Factorio\script-output\arrakis-test.txt` (Linux: `~/.factorio/script-output/arrakis-test.txt`). Die Datei wird fortgeschrieben, nie geleert. Bitte die Datei schicken, nach T11 auch `arrakis-t11-karten.txt` aus demselben Ordner, dazu die Antworten auf die FRAGE-Zeilen und Screenshots.
-5. **Ohne Spieler:** `tools/pc/pruefstand.py` lässt die nicht-interaktiven Tests auf einem eigenen Factorio-Server über RCON laufen (dazu `/arrakis-test status`), siehe [Automatisch ohne Spieler](docs/pruefstand.md#automatisch-ohne-spieler-server-und-rcon).
+5. **Ohne Spieler:** `tools/pc/pruefstand.py` lässt die nicht-interaktiven Tests auf einem eigenen Factorio-Server über RCON laufen (dazu `/arrakis-test status`), standardmäßig mit Zeitraffer 10 (`--tempo`), siehe [Automatisch ohne Spieler](docs/pruefstand.md#automatisch-ohne-spieler-server-und-rcon).
 
 ## Aufbau
 

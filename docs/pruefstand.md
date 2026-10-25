@@ -45,9 +45,10 @@ Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
 | `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T14` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14. Dauer geschätzt etwa 13 min ([„alle“](#alle)) |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14. Dauer ohne Zeitraffer gut 12 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
+| `/arrakis-test tempo 10` | Zeitraffer: das Spiel läuft bis zu 10-mal so schnell (`game.speed`, Zahlen von 1 bis 50); `tempo` ohne Zahl zeigt den Stand, `tempo 1` stellt auf echte Zeit zurück. Die Ergebnisse ändern sich nicht ([Zeitraffer](#zeitraffer-arrakis-test-tempo)) |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
 | `/arrakis-test T7 ja` | T7 mit Teil b (kann das Spiel abstürzen lassen) |
 
@@ -87,7 +88,7 @@ STATUS wartet <id> | Tick <n>
 
 - `bereit`: Es läuft kein Test.
 - `laeuft`: Test `<id>` läuft seit `<s>` Sekunden Spielzeit, mit einer Nachkommastelle (z. B. `+12.5 s`).
-- `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s).
+- `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s Spielzeit (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo)).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
 Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14):
@@ -100,6 +101,33 @@ ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
 Die Ergebnisse bleiben im Spielstand, auch die von früheren Läufen. `status` schreibt nichts ins Log, damit häufiges Abfragen es nicht füllt. Neu ist ein Ergebnis, wenn sein Tick nicht kleiner ist als der Tick der STATUS-Zeile vor dem Start. Ein Test, der schon beim Start endet (etwa mit Skriptfehler), kann denselben Tick haben.
 Die Schlüsselwörter sind ASCII (`laeuft` ohne Umlaut), damit ein Programm sie sicher lesen kann.
 Beispiel bei `alle`: `STATUS wartet T3 | Tick 11500 | alle, danach noch 7` (T3 kommt gleich, danach noch 7 Tests).
+
+### Zeitraffer (`/arrakis-test tempo`)
+
+Ab 0.5.5. `/arrakis-test tempo 10` setzt `game.speed` auf 10: Das Spiel rechnet dann bis zu 10-mal so viele Ticks je Sekunde (600 statt 60), soweit der Rechner mitkommt.
+Erlaubt sind Zahlen von 1 bis 50, auch mit Nachkommastellen (`2.5` oder `2,5`). `/arrakis-test tempo` ohne Zahl zeigt den Stand, `/arrakis-test tempo 1` stellt auf echte Zeit zurück.
+Es gelten dieselben Rechte wie für die anderen Befehle (nur Admins; Serverkonsole und RCON gelten als Admin). Den Befehl gibt es wie alle anderen nur mit der Einstellung **Prüfstand**. Ein laufender Test läuft einfach weiter.
+
+Die Antwort ist eine feste ASCII-Zeile, damit ein Programm sie lesen kann:
+
+```
+TEMPO <neu> | vorher <alt>
+TEMPO <jetzt>
+```
+
+Die zweite Form kommt ohne Zahl. Die Werte stehen wie `game.speed` selbst, mit Dezimalpunkt (`TEMPO 2.5 | vorher 1`). Eine falsche Eingabe (`tempo 0`, `tempo 51`, `tempo abc`) ändert nichts; die Antwort beginnt dann mit `Zeitraffer:` statt `TEMPO` und nennt den Stand.
+Jeder Test schreibt am Anfang eine INFO-Zeile `Zeitraffer: game.speed 10`, bei 1 `Zeitraffer: game.speed 1 (aus)`. Ändert sich das Tempo mitten im Test, steht dort `Zeitraffer geändert: game.speed 2 (vorher 10)`. So lässt sich jedes Ergebnis einem Tempo zuordnen. Die STATUS- und ERGEBNIS-Zeilen bleiben, wie sie sind.
+
+**Die Ergebnisse hängen nicht vom Tempo ab:** Alle Tests zählen Ticks, und ein Tick rechnet bei jedem Tempo dasselbe. Wartezeiten und Messdauern in den Tests, ihre Zeitlimits, die Pause von 1 s zwischen den Tests bei `alle` und alle Sekundenangaben in Chat und Datei (`+12.5s`, ENDE-Zeile, Zusammenfassung von `alle`, STATUS) sind Spielzeit aus dem Tick.
+Durchgesehen für 0.5.5, wo echte Zeit eine Rolle spielt:
+
+- **T14, Dauer der Chunk-Erzeugung:** die einzige Messung in echter Zeit. Ihr Profiler läuft nur, während Factorio im selben Tick die Chunks erzeugt (`force_generate_chunk_requests`), nie zwischen zwei Ticks. Die Dauer ist also reine Rechenzeit und mit und ohne Zeitraffer vergleichbar. T11 misst keine Zeit.
+- **Pause für die FRAGE nach T2 und T4 bei `alle`** (nur mit Spieler): Das ist Zeit für dich, sie gilt deshalb in echter Zeit. Bei Tempo 10 sind es weiter 30 s, also 18 000 Ticks statt 1800. Ohne Spieler gibt es diese Pause nicht.
+- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9 und T12 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
+
+**Im eigenen Spielstand:** `game.speed` bleibt im Spielstand; sonst speichert der Befehl nichts. Zurück geht es mit `/arrakis-test tempo 1`, und zwar bevor du die Einstellung **Prüfstand** ausschaltest. Danach gibt es den Befehl nicht mehr; zurückstellen ginge dann nur noch mit `/c game.speed = 1`, und `/c` schaltet in diesem Spielstand die Errungenschaften ab.
+Solange das Tempo nicht 1 ist, erinnern die Liste (`/arrakis-test`) und, wenn du `alle` gestartet hast, auch dessen Zusammenfassung daran.
+`tools/pc/pruefstand.py` stellt das Tempo selbst ein (Standard 10, `--tempo`); sein Server ist nach dem Lauf ohnehin weg.
 
 ### Werkzeug `tools/pc/pruefstand.py`
 
@@ -123,8 +151,9 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 | `--ordner ORDNER` | Arbeitsordner, Standard `%TEMP%\arrakis-pruefstand` (Linux meist `/tmp/arrakis-pruefstand`) |
 | `--mod ORDNER` | Mod-Ordner, Standard: dieses Repo |
 | `--rcon-port N`, `--port N` | Ports auf 127.0.0.1, Standard 27115 (RCON) und 34297 (Spiel) |
-| `--zeitlimit MIN` | Minuten je Test, Standard 30, bei `alle` 90 |
+| `--zeitlimit MIN` | Minuten je Test in echter Zeit, Standard 30, bei `alle` 90 |
 | `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
+| `--tempo N` | [Zeitraffer](#zeitraffer-arrakis-test-tempo) während der Tests, 1 bis 50, Standard 10. `--tempo 1` läuft in echter Zeit wie vor 0.5.5 und geht als Einziges auch mit einer älteren Mod |
 | `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9 und T12 nicht angeben. |
 
 **Was es tut:**
@@ -133,14 +162,16 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 2. Frische Kopie der Mod nach `mods\arrakis` (ohne `.git`), dazu `mod-list.json` mit den Vanilla-Mods und arrakis. In `mod-settings.dat` setzt es die Startup-Einstellung **Prüfstand**.
 3. Frischer Spielstand (`factorio --create`).
 4. Server nur auf 127.0.0.1 (Spiel-Port 34297, RCON-Port 27115), nicht öffentlich, mit Zufallspasswort für RCON und ohne Auto-Pause.
-5. Je Test `/arrakis-test <id>`, dann alle 5 s `/arrakis-test status`, bis das neue ERGEBNIS da ist (bei `alle`: bis der Stand wieder `bereit` ist). Der Fortschritt steht in der Konsole. Steht der Tick während eines Tests länger als 90 s still, bricht es ab (Rückgabewert 2).
-6. Am Ende `/quit`, auch nach einem Fehler oder Strg+C. Reagiert der Server nicht, beendet es ihn hart.
-7. Es kopiert die Ergebnisdateien und zeigt alle ERGEBNIS-Zeilen.
+5. Sobald der Server über RCON antwortet, vor dem ersten Test: `/arrakis-test tempo 10` (bzw. der Wert von `--tempo`). Es prüft die Antwort und zeigt das Tempo in einer eigenen Zeile, etwa `Zeitraffer: game.speed 10 (vorher 1)`. Kennt die Mod den Befehl nicht (vor 0.5.5), bricht es ab (Rückgabewert 2), außer mit `--tempo 1`.
+6. Je Test `/arrakis-test <id>`, dann alle 5 s `/arrakis-test status`, bis das neue ERGEBNIS da ist (bei `alle`: bis der Stand wieder `bereit` ist). Der Fortschritt steht in der Konsole. Steht der Tick während eines Tests länger als 90 s still, bricht es ab (Rückgabewert 2).
+7. Am Ende `/quit`, auch nach einem Fehler oder Strg+C. Reagiert der Server nicht, beendet es ihn hart.
+8. Es kopiert die Ergebnisdateien und zeigt alle ERGEBNIS-Zeilen.
 
 Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bleiben unberührt, auch die Einstellung **Prüfstand** in deinem Spiel. Die Factorio-Installation und die Mod im Repo liest es nur.
 Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
 Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
-`alle` dauert geschätzt etwa 13 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 90 s Stillstand) sind echte Zeit. Mit Zeitraffer gelten sie unverändert, die Tests enden nur früher; eine Mindestdauer setzt das Werkzeug nicht voraus.
+`alle` dauert ohne Zeitraffer gut 12 min, mit dem Standard `--tempo 10` geschätzt etwa 2 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
 
 **Ergebnisse:**
 
@@ -156,7 +187,7 @@ Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem 
 |---|---|
 | 0 | kein FEHLER (offene FRAGEn zählen nicht) |
 | 1 | mindestens ein FEHLER, oder ein Test lief ins Zeitlimit. Dann schickt das Werkzeug `/arrakis-test stop`, die übrigen Tests laufen nicht. |
-| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
+| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
 
 Mit `T7:ja` trifft ein Absturz nur den Server, nicht dein Spiel; das Ende des Server-Logs steht dann in der Ausgabe.
 
@@ -183,15 +214,15 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 ## „alle“
 
 `/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b und T14 nacheinander, mit 1 s Abstand.
-Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an.
+Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an. Die 30 s gelten in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo).
 Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
 T9 und T12 brauchen dich und laufen nur einzeln.
 
-**Dauer (Schätzung, mit 0.5.4 noch nicht gemessen): etwa 13 min.**
-- Gemessen ist der Lauf mit 0.5.3 ohne Spieler: 724,7 s Spielzeit, also gut 12 min (Zusammenfassung der Ergebnisdatei vom 25.10.2026; 0.5.2: 723,2 s). Die größten Teile sind T2b mit 275 s, T13 mit 104 s und T5 mit 102 s.
-- Neu in 0.5.4 sind T14 mit etwa 11 s Spielzeit (je Seed etwa 70 Ticks, dazu die beiden Zusatzdurchgänge) und ein längeres T11 mit 6,0 s statt 4,7 s (40 statt 31 Ticks je Seed). Zusammen mit dem Abstand von 1 s sind das etwa 13 s Spielzeit mehr. Die Spielzeit beider Tests hängt nur an der Zahl der Ticks, nicht an der Rechenlast.
-- In echter Zeit kommt dazu, dass T11 und T14 das Spiel ausbremsen. T14 erzeugt dabei rund 6600 Chunks; wie lange das dauert, misst erst der nächste Lauf (T14 schreibt die Dauer selbst in die Datei).
+**Dauer ohne Zeitraffer: gut 12 min, mit Tempo 10 geschätzt etwa 2 min.**
+- Gemessen mit 0.5.4 ohne Spieler: 44 352 Ticks (739,2 s Spielzeit), in echter Zeit 12,3 min bei 60 Ticks je Sekunde. Die größten Teile in echter Zeit: T2b 4,6 min, T13 und T5 je 1,7 min, T4 1,2 min, T2 und T6 je 1,1 min, alle übrigen unter 30 s. Die Simulation braucht dabei nur etwa 0,1 ms je Tick, das Spiel wartet fast die ganze Zeit auf den nächsten Tick. (0.5.3: 724,7 s Spielzeit; in 0.5.4 kamen T14 und das längere T11 dazu.)
+- Die Spielzeit hängt nur an der Zahl der Ticks, auch bei T11 und T14, nicht an der Rechenlast.
+- Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks sind das gut 1 min, dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
 
 ## Die Tests
 
@@ -396,5 +427,5 @@ Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine IN
 - T14 kennt nur Fels im erzeugten Gebiet (800 × 800 Kacheln). Spice-Kacheln, die weniger als 100 Kacheln vom Gebietsrand liegen und deren nächster Fels im Gebiet mindestens 100 Kacheln weg ist, gelten als „nicht gewertet“, nicht als FEHLER.
 - Auch die Felder zählt T14 nur im Gebiet: Ein am Gebietsrand angeschnittenes Feld zählt mit seinen Kacheln im Gebiet, ein Feld knapp außerhalb gar nicht. „Felder“ und „Feldgröße“ messen also die Umgebung des Starts, nicht den ganzen Planeten.
 - T11 und T14 lesen die Kartengenerator-Einstellungen des Planeten-Prototyps. Was ein vor 0.5.4 begonnener Spielstand erzeugt, in dem Arrakis noch nicht angelegt ist (Karte 1 oder Karte 2), zeigen sie nicht; das zeigt erst ein Ladetest mit einer Kopie (die Mod meldet die alte Karte beim Anlegen).
-- T14 misst die Zeit mit einem Profiler, den Factorio nicht speichert. Wird mitten im Test ein Spielstand geladen, steht bei der Dauer „nicht messbar“.
+- T14 misst die Zeit mit einem Profiler, den Factorio nicht speichert. Wird mitten im Test ein Spielstand geladen, steht bei der Dauer „nicht messbar“. Er misst echte Rechenzeit, aber nur während der Chunk-Erzeugung im Tick; der Zeitraffer ändert die Dauer deshalb nicht.
 - T2b liest das Tempo im Prüfstand-Takt, nach dem Tempo-Deckel des Mods. Deshalb zählt jeder Lauf, wie oft der Deckel eingegriffen hat („Deckel n× (ab 1 s m×)“); in der ersten Sekunde ist das nach einem Brennstoffwechsel erlaubt, danach ist es ein FEHLER. Die INFO-Zeile am Ende fasst das zusammen. Die echte Fahrt zeigt in jedem Fall das Bodentempo.

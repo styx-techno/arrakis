@@ -3,6 +3,9 @@
 -- Auch von der Serverkonsole oder über RCON (ohne Spieler, gilt als Admin): Antworten per rcon.print
 -- und log (status nur per rcon.print); interaktive Tests nur mit Spieler. /arrakis-test status gibt den Stand in festen
 -- ASCII-Zeilen (STATUS …, ERGEBNIS …) für tools/pc/pruefstand.py aus.
+-- /arrakis-test tempo <faktor> (ab 0.5.5) stellt game.speed für den Zeitraffer, Antwort in einer festen ASCII-Zeile
+-- (TEMPO …). Die Tests zählen Ticks; ihre Ergebnisse hängen nicht vom Tempo ab (docs/pruefstand.md, „Zeitraffer“).
+-- Gespeichert wird dafür nichts außer game.speed selbst; zurück auf echte Zeit mit /arrakis-test tempo 1.
 --
 -- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
@@ -35,6 +38,7 @@ local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T1
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60
+local TEMPO_MIN, TEMPO_MAX = 1, 50       -- /arrakis-test tempo: erlaubte Werte für game.speed
 
 local COLORS =
 {
@@ -132,6 +136,11 @@ local function seconds(ticks)
   return string.format("%.1f s", ticks / 60)
 end
 
+-- game.speed als Text (float, deshalb %g): 10, 2.5, 1.
+local function speed_text(speed)
+  return string.format("%g", speed or game.speed)
+end
+
 -- Fehler in Testcode abfangen: melden statt das Spiel anzuhalten.
 local function call(run, what, fn, ...)
   if not fn then return true end
@@ -182,6 +191,11 @@ local function report_all()
     local back = "Zurück zu deiner Position vor dem Test: /arrakis-test zurück"
     chat(back, COLORS.INFO)
     write(back)
+    if game.speed ~= 1 then
+      local speed = "Zeitraffer noch an (game.speed " .. speed_text() .. "), zurück auf echte Zeit: /arrakis-test tempo 1"
+      chat(speed, COLORS.INFO)
+      write(speed)
+    end
   end
 end
 
@@ -206,6 +220,8 @@ local function start_test(id, player_index, args)
     id, test.title, game.tick, script.active_mods["arrakis"] or "?", script.active_mods["base"] or "?",
     player and player.name or "-", #run.args > 0 and (" | Argumente: " .. table.concat(run.args, " ")) or ""))
   tb.log(run, "INFO", "Start: " .. test.title)
+  -- Einmal je Lauf, damit sich jedes Ergebnis einem Tempo zuordnen lässt (die Messwerte hängen nicht davon ab).
+  tb.log(run, "INFO", "Zeitraffer: game.speed " .. speed_text() .. (game.speed == 1 and " (aus)" or ""))
   if not call(run, "start", test.start, run, tb) then
     tb.finish(run, "abgebrochen (Skriptfehler)")
   end
@@ -403,15 +419,17 @@ function tb.finish(run, summary)
     if #s.queue > 0 then
       local delay = NEXT_TEST_DELAY
       local answer_time = test and test.answer_time
-      -- Pause für die FRAGE nur mit Spieler; ohne Spieler antwortet niemand.
-      if type(answer_time) == "number" and answer_time > delay and (counts.FRAGE or 0) > 0 and run.player_index then
-        delay = answer_time
+      -- Pause für die FRAGE nur mit Spieler; ohne Spieler antwortet niemand. Sie ist Zeit für Max und gilt
+      -- deshalb in echter Zeit: mit Zeitraffer entsprechend mehr Ticks (bei game.speed 1 genau answer_time).
+      local answer_ticks = type(answer_time) == "number" and math.ceil(answer_time * game.speed) or 0
+      if answer_ticks > delay and (counts.FRAGE or 0) > 0 and run.player_index then
+        delay = answer_ticks
       end
       local next_id = table.remove(s.queue, 1)
       s.pending = {tick = game.tick + delay, id = next_id, player_index = run.player_index}
       if delay > NEXT_TEST_DELAY then
         emit(nil, "INFO", string.format("Nächster Test (%s) in %s: Zeit für die FRAGE von %s. /arrakis-test stop hält „alle“ an.",
-          next_id, seconds(delay), run.id))
+          next_id, seconds(answer_time), run.id))
       end
     else
       report_all()
@@ -552,7 +570,7 @@ end
 
 local function list_tests(player)
   local s = state()
-  reply(player, "Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück | status")
+  reply(player, "Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück | status | tempo [" .. TEMPO_MIN .. "–" .. TEMPO_MAX .. "]")
   for _, id in ipairs(ordered_ids()) do
     local test = tests[id]
     local notes = {seconds(test.timeout or DEFAULT_TIMEOUT)}
@@ -564,6 +582,9 @@ local function list_tests(player)
     reply(player, id .. " – " .. test.title .. " (" .. table.concat(notes, "; ") .. ")")
   end
   reply(player, "Ergebnisse stehen im Chat und in script-output/" .. LOG_FILE .. ".")
+  if game.speed ~= 1 then
+    reply(player, "Zeitraffer an: game.speed " .. speed_text() .. ", zurück auf echte Zeit mit /arrakis-test tempo 1")
+  end
   if s.run then reply(player, "Läuft gerade: " .. s.run.id) end
 end
 
@@ -592,6 +613,32 @@ local function show_status(player)
         counts.OK or 0, counts.FEHLER or 0, counts.FRAGE or 0, summary), true)
     end
   end
+end
+
+-- Zeitraffer: ohne Faktor den Stand, mit Faktor (Zahl von TEMPO_MIN bis TEMPO_MAX, auch 2.5 oder 2,5) game.speed
+-- setzen. Antwort in einer festen ASCII-Zeile für Mensch und Treiber: TEMPO <jetzt> bzw. TEMPO <neu> | vorher <alt>;
+-- alles andere (falsche Eingabe) beginnt nicht mit TEMPO. Gespeichert wird nur game.speed selbst.
+local function set_tempo(player, word, extra)
+  local old = game.speed
+  if not word then
+    reply(player, "TEMPO " .. speed_text(old))
+    return
+  end
+  local factor = not extra and (string.match(word, "^%d+$") or string.match(word, "^%d+[.,]%d+$"))
+  factor = factor and tonumber((string.gsub(factor, ",", ".")))
+  if not factor or factor < TEMPO_MIN or factor > TEMPO_MAX then
+    reply(player, string.format("Zeitraffer: nur eine Zahl von %d bis %d, z. B. /arrakis-test tempo 10 (1 = echte Zeit). "
+      .. "game.speed bleibt %s.", TEMPO_MIN, TEMPO_MAX, speed_text(old)))
+    return
+  end
+  game.speed = factor
+  local new = game.speed
+  -- Ändert sich das Tempo mitten in einem Test, steht das bei ihm (die Start-Zeile nennt nur das alte).
+  local run = state().run
+  if run and new ~= old then
+    tb.log(run, "INFO", string.format("Zeitraffer geändert: game.speed %s (vorher %s)", speed_text(new), speed_text(old)))
+  end
+  reply(player, string.format("TEMPO %s | vorher %s", speed_text(new), speed_text(old)))
 end
 
 local function go_back(player)
@@ -678,6 +725,8 @@ local function on_command(command)
     start_all(player)
   elseif key == "status" then
     show_status(player)
+  elseif key == "tempo" then
+    set_tempo(player, words[2], words[3])
   else
     local id = find_id(words[1])
     local test = id and tests[id]
@@ -777,7 +826,8 @@ runner.on_configuration_changed = function()
 end
 
 runner.add_commands = function()
-  commands.add_command("arrakis-test", "Prüfstand (nur Admins): /arrakis-test [Tn [Argument] | alle | stop | zurück | status]", on_command)
+  commands.add_command("arrakis-test", "Prüfstand (nur Admins): /arrakis-test [Tn [Argument] | alle | stop | zurück | status | tempo ["
+    .. TEMPO_MIN .. "–" .. TEMPO_MAX .. "]]", on_command)
 end
 
 runner.tb = tb
