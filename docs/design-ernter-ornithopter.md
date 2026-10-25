@@ -1,6 +1,6 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 25.10.2026 · Mod-Stand 0.5.5 (Bauplan der Phase 3b: docs/plan-3b.md) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
+Stand: 25.10.2026 · Mod-Stand 0.6.0 (Baupläne: Phase 3b docs/plan-3b.md, Phase 3c docs/plan-3c.md; wo ein Plan abweicht, gilt der Plan, und dieses Dokument ist ihm angeglichen) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
 1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json. **Überholt seit 23.10.2026:** 2.1 ist stabil, Max spielt 2.1.23; Ziel ist jetzt 2.1 (5.2).
@@ -55,7 +55,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 0. **Briefing.** Mit der Forschung „Entdeckung Arrakis“ erscheint ein Tipps-und-Tricks-Eintrag: Fels ist sicher, Sand lebt, Maschinen auf Sand erzeugen Vibration, Wurmzeichen bedeutet Lebensgefahr.
 1. **Erster Spice.** Spice-Sand wird von Hand abgebaut. Das löst wie bisher „Spice-Verarbeitung“ aus. Normale Bohrer bauen Spice nicht ab (Entscheidung 2).
 2. **Spice-Ernte.** Diese Trigger-Forschung (10 Melange herstellen) schaltet Spice-Ernter, Spice-Annahme und Tankstutzen frei.
-3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger). Ab diesem Moment läuft die **Schonfrist**, sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde.
+3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger, gebaut in 0.6.0). Ab diesem Moment läuft die **Schonfrist** (kommt mit 3d1), sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde.
 4. **Zum Feld bringen.**
    - Das garantierte Startfeld ist das **Lehrfeld**. Es liegt 40 bis 60 Kacheln vom Inselrand entfernt (Karte 0.5.4: 41 bis 59, siehe 2.4), dorthin kann man noch kriechen (etwa 1,4 Kacheln/s).
    - Alle anderen Felder liegen mindestens 100 Kacheln tief im Sand. Dorthin kommt man praktisch nur mit dem Ornithopter.
@@ -70,11 +70,12 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
    - Alarm am Ernter, Kartenmarkierung, Warnton, roter Gefahrenring,
    - Countdown 60 s. Die allererste Jagd ist eine **Lehrjagd** mit 90 s.
 8. **Rettung.**
-   - *Mit Ornithopter:* über den Ernter fliegen und `Umschalt+C` drücken.
-     - Nach 2 s Ankoppeln wird der Ernter samt Verankerung herausgerissen; ein Einpacken ist nicht nötig.
-     - Wer im Ernter sitzt, wird Beifahrer des Ornithopters.
-     - Danach schwebt man einfach über der Stelle oder fliegt weg. Mit derselben Taste wird der Ernter wieder abgesetzt.
-   - *Aus der Kartenansicht:* Den Ornithopter mit der Spidertron-Fernbedienung hinschicken und die Taste drücken, solange er ausgewählt ist. Alternativ fährt man ihn ferngesteuert hin, falls T12 das bestätigt.
+   - *Mit Ornithopter:* über den Ernter fliegen und `Umschalt+C` drücken. Gleichwertig sind die Verknüpfung „Ernter anheben oder absetzen“ in der Leiste (`arrakis-carry`, geht auch in der Kartenansicht) und der Knopf im Ornithopter-Fenster. Die Taste ist nie der einzige Weg: `ALT+O` kam in T12 nie an.
+     - Nach 2 s Ankoppeln wird der Ernter samt Verankerung herausgerissen; ein Einpacken ist nicht nötig (Notstart aus Aufbau, aufgebaut, Einpacken; ein angedockter wird abgedockt). Der Ernter darf während des Ankoppelns weiterfahren.
+     - Wer im Ernter sitzt, fliegt mit: Der Fahrer bekommt den ersten freien Sitz des Ornithopters, Pilot zuerst; Beifahrer wird er nur, wenn schon ein Pilot an Bord ist. Der Beifahrer des Ernters bekommt den übrigen Sitz. Greift das Setzen nicht, stellt das Skript die Figur an den Ornithopter und setzt sie noch einmal; erst wenn auch das scheitert oder kein Sitz frei ist, bleibt sie am Boden und bekommt einen Hinweis. Beim Fernflug ist der Pilotensitz leer; als Beifahrer könnte der Gerettete nicht wegfliegen.
+     - Danach schwebt man einfach über der Stelle oder fliegt weg. Mit denselben Wegen wird der Ernter wieder abgesetzt; die Insassen bleiben dabei im Ornithopter, und der Knopf „In den Ernter steigen“ setzt einen zurück ans Steuer.
+   - *Aus der Kartenansicht:* Den Ornithopter mit der Spidertron-Fernbedienung hinschicken und Taste oder Verknüpfung drücken, solange er ausgewählt ist. Die Fernbedienung gibt die eigene Verknüpfung „Fernbedienung für Ornithopter“ (`arrakis-give-remote`, frei mit „Ornithopter“; die Vanilla-Verknüpfung erst mit „Spidertron“) oder der Knopf „Fernbedienung“ im Ornithopter-Fenster, der den Ornithopter gleich auswählt. Alternativ fährt man ihn aus der Karte fern (`allow_remote_driving = true`) und drückt dort die Taste. Ob Taste, Auswahl und Fernfahren in der Kartenansicht so wirken, ist noch ungeprüft (T17, docs/plan-3c.md 4.16 U1 bis U5).
+   - *Solo-Rettung:* im Ernter sitzen, den Ornithopter per Fernbedienung herholen und die Taste drücken. Danach sitzt man als Pilot im Ornithopter, der Ernter hängt dran.
    - *Ohne Ornithopter:* einpacken (10 s) und auf Fels kriechen. Das gelingt nur auf dem Lehrfeld.
 9. **Der Wurm kommt an.**
    - *Ziel weg:* Er sucht 10 s und taucht ab.
@@ -135,7 +136,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 | Fernsteuerung des Ernters | aus (`allow_remote_driving = false`) | Sonst flieht man aus der Kartenansicht |
 | Vorwarnzeit | 60 s, Lehrjagd 90 s | |
 | Abstand Spicefeld → Fels | ≥ 100 Kacheln Sand; Lehrfeld 40–60 | 10 s + 100 / 1,41 ≈ 81 s > 60 s; Lehrfeld: (60 − 10) · 1,41 ≈ 70 Kacheln |
-| Tempo Ornithopter / Carryall | ≥ 5 / ≥ 6 Kacheln/s (Kriterium T1) | 300 Kacheln in 50 bis 60 s |
+| Tempo Ornithopter / Carryall | Ornithopter leer 8, beladen 5,6 Kacheln/s (0,7 × leer; 0.6.0, je ein eigener Sticker); Carryall ≥ 6 | 300 Kacheln in 50 bis 60 s: beladen 54 s, leer 38 s. Kriterium aus T1 war ≥ 5 bzw. ≥ 6 Kacheln/s |
 
 **Abnahmekriterium** (Phase 3d1): Auf einem Feld, das nicht das Lehrfeld ist, entkommt ein Ernter ohne Flieger nicht innerhalb der Vorwarnzeit.
 
@@ -184,9 +185,11 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 | Spice-Ernter (`spice-harvester`) | `car`, Item `item-with-entity-data` | Fahrbarer Abbau, Laderaum = Kofferraum | 1 | Panzer orange-sand getönt; Staub (`trivial-smoke`) und Feldrahmen per Rendering |
 | Spice-Annahme (`arrakis-spice-intake`) | `proxy-container` 2×2, nur auf Fels | Zeigt den Laderaum des angedockten Ernters | 1 | Stahlkiste getönt; Andockkreis gezeichnet |
 | Tankstutzen (`arrakis-fuel-nozzle`) | `proxy-container` 1×1 | Zeigt das Treibstoff-Inventar des angedockten Ernters | 1 | Kleine Kiste, rot getönt |
-| Ornithopter (`arrakis-ornithopter`) | `spider-vehicle` | Bemannter Flieger, trägt einen Ernter | 1 | Spidertron-Rumpf sand-getönt, keine Beine sichtbar |
-| Flieger-Bein (`arrakis-flyer-leg`) | `spider-leg` | Unsichtbares, kollisionsfreies Trägerbein | – | keine |
-| Getragener Ernter (`arrakis-harvester-carried`, `-shadow`) | `sprite` | Bild unter dem Flieger | 1 | Erster Frame von `__base__/graphics/entity/tank/tank-base-1.png`, getönt; Schatten-Sprite |
+| Ornithopter (`arrakis-ornithopter`) | `spider-vehicle`, Item `item-with-entity-data` | Bemannter Flieger, trägt einen Ernter | 1 | Spidertron-Rumpf sand-getönt, keine Beine sichtbar |
+| Flieger-Bein (`arrakis-flyer-leg`) | `spider-leg`, versteckt | Unsichtbares, kollisionsfreies Trägerbein; der Carryall (3e) nutzt es mit | – | keine |
+| Getragener Ernter (`arrakis-harvester-carried-<i>`, `arrakis-harvester-carried-shadow-<i>`, i = 0 … 15) | `sprite`, 32 Stück | Bild und Schatten unter dem Flieger, 16 Richtungen (i = 0 Nord, im Uhrzeigersinn; Richtung beim Anheben fest) | 1 | Rumpf und Turm aus den Panzer-Sheets (`tank-base-<n>.png`, `tank-turret.png`, Richtung d = 4 · i), getönt wie der Ernter, ohne Farbmaske; Schatten aus `tank-base-shadow-<n>.png` und `tank-turret-shadow.png` mit `draw_as_shadow`; alle Ebenen `scale = 0.5` |
+| Ornithopter-Drossel (`arrakis-ornithopter-empty`, `-loaded`) | `sticker`, versteckt | Genau einer hängt am Ornithopter: `vehicle_speed_modifier` 0,52 leer, 0,364 beladen | 1 | keine |
+| Absetz-Probe (`arrakis-harvester-probe`) | `simple-entity-with-owner`, versteckt | Nie gebaut, nur für Platzprüfungen beim Absetzen und Landen: Kasten ±1,6 (jede Ausrichtung des Ernters), Kollisionsmaske des Ernters | 1 | – |
 | Thumper (`arrakis-thumper`) | `simple-entity-with-owner`, nur auf Sand | Ablenkung/Köder, 60 s | 1 | Verkleinerte Pumpjack-Animation per Rendering |
 | Spice-Brikett (`arrakis-spice-briquette`), Entscheidung 5 | `item` mit Brennwert | Lokaler Brennstoff | 1 | Kohle-Icon orange getönt |
 | Ornithopter-Leitstelle (`arrakis-ornithopter-control`) | `container` 4×4 auf Fels + versteckter `constant-combinator` | Basis für Carryalls, Treibstoff, Ersatz-Ernter, Schaltung | 2/3 | Roboport getönt |
@@ -199,7 +202,8 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 | Wurmzahn (`arrakis-worm-tooth`) | `item` | Beute, Zutat für Mk2 | – | Getöntes Icon |
 | Fels-Ebene (`arrakis_rock`) | `collision-layer` an Kachel `arrakis-rock` | Bauregeln, Wurmrouten | – | – |
 | Spice-Abbau (`arrakis-spice-harvest`) | `resource-category` | Nur Ernter und Hand | – | – |
-| Tasten (`arrakis-harvester-toggle`, `arrakis-carry-toggle`) | `custom-input` | Aufbauen/Einpacken/Abdocken, Anheben/Absetzen | 1 | – |
+| Tasten (`arrakis-harvester-toggle`, `arrakis-carry-toggle`) | `custom-input` | Aufbauen/Einpacken/Abdocken (`Umschalt+H`), Anheben/Absetzen (`Umschalt+C`) | 1 | – |
+| Verknüpfungen (`arrakis-carry`, `arrakis-give-remote`) | `shortcut`, frei mit „Ornithopter“ | Anheben/Absetzen wie die Taste (`action = "lua"`, auch in der Kartenansicht); Spidertron-Fernbedienung in die Hand (`spawn-item`) | 1 | Panzer-Icon in Ernter-Tönung; Vanilla-Fernbedienungs-Icon |
 | Vibrationsanzeige (`arrakis-vibration-overlay`) | `shortcut` | Zeigt dem Spieler die Wärme pro Chunk | 1 | Getöntes Icon |
 | Briefings (`arrakis-briefing`, `arrakis-wormsign-tip`) | `tips-and-tricks-item` | Einführung der Gefahr | 1 | nur Text |
 | Ablage (`arrakis-hold`) | Oberfläche, per Skript erzeugt | Stellplätze für getragene Ernter | 1 | Laborkacheln, versteckt |
@@ -232,7 +236,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Zufall kommt aus einem gespeicherten `game.create_random_generator()`, also deterministisch und im Mehrspieler sicher (A20 :16187, :24574).
 - **Takt.** `on_tick` gibt es nur für den Tempo-Deckel (4.1). Er steht fest in der `events`-Tabelle und kehrt sofort zurück, wenn kein Ernter gefahren wird; ein eigenes `script.on_event` würde den zusammengefassten Handler von event_handler (auch den des Prüfstands) ersetzen (V20 core/lualib/event_handler.lua:69-76).
   - `on_nth_tick(30)`: Abbau und Auftragsverteilung.
-  - `on_nth_tick(60)`: Vibration und Andocken.
+  - `on_nth_tick(60)`: Vibration, Andocken, Pflege der Ornithopter (Sticker, Bilder, Last) und die Warteliste `storage.stranded` (0.6.0).
   - `on_nth_tick(10)`: Fortschrittsringe, Wurm-Wächter und Ankoppeln. Er kehrt sofort zurück, wenn nichts läuft.
   - Jeder Eintrag speichert `last_tick` und rechnet mit Δt = (game.tick − last_tick)/60, höchstens 2 s. `last_tick` wird bei jedem Zustandswechsel und in jeder Pause neu gesetzt; sonst holt ein Ernter nach einer Pause minutenlange Arbeit auf einmal nach. Budgets kommen erst, wenn T8 sie verlangt.
   - Gibt es später einen Rundlauf-Zeiger, wird er vor dem Löschen eines Eintrags weitergeschoben, damit `next()` nie über einen gelöschten Schlüssel stolpert.
@@ -240,7 +244,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 - **Mehrspieler.**
   - Die Logik ist rein ereignisgesteuert und deterministisch.
   - GUIs gibt es pro Spieler über `player.gui.relative`.
-  - Render-Objekte sieht nur die eigene Force, die Vibrationsanzeige nur der jeweilige Spieler.
+  - Render-Objekte sieht nur die eigene Force, die Vibrationsanzeige nur der jeweilige Spieler. Ausnahme (docs/plan-3c.md 1): Bild und Schatten eines getragenen Ernters sehen alle Forces, sonst verschwände ein Ernter für andere spurlos; den Ankoppelring sieht nur die eigene.
   - Spielwerte sind globale Mod-Einstellungen.
 - **Debug.**
   - `/arrakis` gibt es schon.
@@ -271,7 +275,7 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 **Zustände**
 ```
 mobil --Aufbauen 5 s--> aufgebaut --Einpacken 10 s--> mobil
-mobil/aufgebaut --Anheben (2 s Ankoppeln, Notstart ohne Einpacken)--> getragen --Absetzen--> mobil
+mobil/aufbauend/aufgebaut/einpackend/angedockt --Anheben (2 s Ankoppeln, Notstart ohne Einpacken, angedockt: abdocken)--> getragen --Absetzen--> mobil
 mobil, steht im Andockkreis einer Annahme --> angedockt --Umschalt+H / Anheben / Automatik--> mobil
 ```
 
@@ -335,18 +339,20 @@ Gründe:
 - Der Spinnenkörper kollidiert nur mit `trigger_target` (V20 core/lualib/collision-mask-defaults.lua:190). Den Kontaktschaden des Wurms gibt es nur für Masken mit player, train, rail, transport_belt, is_object oder is_lower_object (V20 space-age/prototypes/entity/enemies.lua:1015-1027). Der Flieger wird davon also nicht getroffen, ein `car` dagegen schon (collision-mask-defaults.lua:174).
 - **Wichtige Einschränkung (aus dem Review, geprüft):** Die Ascheeffekte des Demolishers ignorieren Kollisionsmasken. Sie treffen alle Feinde im Umkreis mit einem Sticker, der Fahrzeuge auf 40 % Tempo bremst (enemies.lua:1934-1938, :2942-2946). Der Spidertron nimmt Sticker an (`sticker_box`, V20 entities.lua:9621). „Luftsicher“ gilt deshalb nur, weil die Wurm-Kopie diese Effekte nicht mehr hat (4.3).
 
-**Prototypen** [2.0]
+**Prototypen** [2.0] (gebaut in 0.6.0, `prototypes/ornithopter.lua`; Werte aus docs/plan-3c.md 3)
 - `arrakis-ornithopter` ist eine deepcopy des Spidertrons:
-  - Rumpf getönt, `graphics_set.render_layer = "air-object"`, `height` etwa 3, kleines `torso_bob_speed`.
-  - `spider_engine.legs`: 1 bis 4 Beine `arrakis-flyer-leg`. Das ist ein `spider-leg` ohne Grafik mit `collision_mask = {layers = {}}`; ein einzelnes Bein ist erlaubt (A20 prototype/generated/types.d.ts:13487). Die beste Zahl klärt T1.
-  - Energie: Der Vanilla-Spidertron fährt ohne Brennstoff (`type = "void"`, V20 entities.lua:9676-9680). Unser Flieger bekommt `BurnerEnergySource` mit `fuel_categories = {"chemical"}`, 2 Slots und `movement_energy_consumption` von etwa 800 kW (A20 prototype/generated/prototypes.d.ts:13503). Die Engine verbraucht den Treibstoff also selbst.
+  - Rumpf sand-getönt, `graphics_set.render_layer = "air-object"`, `height = 3`, `torso_bob_speed = 0.4` (die Optik prüft Max in T17).
+  - `spider_engine.legs`: 4 Beine `arrakis-flyer-leg` im Trab (Vanilla-Positionen 1 und 8, 5 und 4), wie der T1-Prüfling. Das Bein ist ein `spider-leg` ohne Grafik mit `collision_mask = {layers = {}}`; ein einzelnes Bein wäre erlaubt (A20 prototype/generated/types.d.ts:13487). Die Beine sind keine Stellschraube fürs Tempo: Doppelte Beinwerte ergaben 19,6 statt 15,4 Kacheln/s, nicht das Doppelte (RUN055 T1, docs/plan-3c.md 1).
+  - Energie: Der Vanilla-Spidertron fährt ohne Brennstoff (`type = "void"`, V20 entities.lua:9676-9680). Der Ornithopter hat `BurnerEnergySource` mit `fuel_categories = {"chemical"}`, 2 Slots und `movement_energy_consumption = "800kW"` (A20 prototype/generated/prototypes.d.ts:13503). Die Engine verbraucht den Treibstoff also selbst.
   - Keine Waffen, `trash_inventory_size = 0`, 10 Kofferraum-Slots, kein Gitter, 2 Sitze (Pilot und Beifahrer).
   - `chunk_exploration_radius = 2`: Der Flieger kartiert im Vorbeiflug (A20 prototype/generated/prototypes.d.ts:16969). Der Spidertron hat 3.
   - `allow_remote_driving` bleibt `true` (Spidertron-Wert, V20 entities.lua:9746).
-- `arrakis-carryall`: dasselbe Gerüst, größer, schneller, ohne Pilot; gehört zur Leitstelle.
+  - Geerbt und so gewollt: 3000 Lebenspunkte, Resistenzen, Leiche, `is_military_target`, Schwerkraft ≥ 1 (setzt Space Age, V23 space-age/base-data-updates.lua:192), Kollision ±1, `sticker_box` ±1,5, kein eigenes `collision_mask` (Vorgabe nur `trigger_target`). Der Dump (`tools/check/datastage.py --dump`) zeigt kein 2.1-Feld, das auf den Spidertron verweist (5.5). Geerbt ist auch `selection_priority = 60` (Ernter: Vorgabe 50); schwebt der Ornithopter über einem Ernter, ist `player.selected` deshalb der Ornithopter, und die Ernter-Suche greift über den nächsten Ernter (Anheben, Punkt 2).
+- **Tempo:** genau ein eigener Sticker je Ornithopter, `arrakis-ornithopter-empty` mit `vehicle_speed_modifier = 0.52` (8 / 15,4, also 8 Kacheln/s) und `arrakis-ornithopter-loaded` mit `0.364` (0,7 · 0,52, also 5,6 Kacheln/s). Getauscht wird beim Anheben und Absetzen, geprüft im 60-Tick-Takt (ein zweiter eigener Sticker ergäbe etwa 2,9 Kacheln/s). Gemessen ist bisher nur 0,7 → 70,1 % (RUN055 T1); ob 0,52 und 0,364 linear wirken, misst T16 (docs/plan-3c.md 4.9).
+- `arrakis-carryall`: dasselbe Gerüst, größer, schneller, ohne Pilot; gehört zur Leitstelle (3e).
 - `tall` wird nicht gesetzt. In 2.1 macht `tall` eine Entity im Modus „Hohe Objekte ausblenden“ unanwählbar (A21 prototypes.d.ts:3143-3145), und dann könnte man nicht mehr einsteigen.
 
-**Ablage-Oberfläche** [2.0]
+**Ablage-Oberfläche** [2.0] (`scripts/hold.lua`, angelegt beim ersten Anheben)
 ```lua
 local hold = game.create_surface("arrakis-hold")
 hold.generate_with_lab_tiles = true        -- Eigenschaft der Oberfläche, kein create_surface-Parameter (A20 :16143, :32108-32112)
@@ -354,29 +360,38 @@ hold.request_to_generate_chunks({0, 0}, 2) -- fester Block 5×5 Chunks
 hold.force_generate_chunk_requests()
 for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus on_force_created (A20 :15277)
 ```
-- Die Stellplätze liegen im Raster von 10 Kacheln, das sind 256 Plätze. Freie Plätze stehen in einer Liste und werden wiederverwendet. Neue, ungenerierte Chunks entstehen so nie.
+- Die Stellplätze liegen im Raster von 10 Kacheln (x, y ∈ {−60, −50, …, 90}), das sind 256 Plätze, alle in den erzeugten Chunks. Neue, ungenerierte Chunks entstehen so nie.
+- Eine Liste freier Plätze gibt es nicht (docs/plan-3c.md 4.11): Frei ist ein Platz, auf dem im Umkreis von 4 Kacheln nichts steht. Fehlt ein Datensatz oder laufen Handler in anderer Reihenfolge, geht so kein Platz verloren, und ein wartender Ernter (`storage.stranded`) belegt seinen einfach weiter.
 - Beim Teleport über Oberflächen prüft Factorio keine Kollision (`build_check_type` wird ignoriert, A20 :1735). Darum braucht es eigene, garantiert freie Plätze.
+- Auch eine vorgefundene Oberfläche `arrakis-hold` wird so vorbereitet und versteckt: Wird die Mod ohne `/arrakis-uninstall` entfernt, bleibt die leere Ablage im Spielstand (4.6).
 
-**Anheben** [2.0] (Taste `arrakis-carry-toggle`)
-1. *Welcher Flieger?* Der, den der Spieler fährt, oder der in der Fernbedienung ausgewählte (`player.spidertron_remote_selection`, A20 :23539).
-2. *Welcher Ernter?* `player.selected`, sonst `find_entities_filtered{position, radius = 4, name = "spice-harvester", limit = 1}`.
-3. 2 s Ankoppeln mit Fortschrittsring. Entfernt sich der Flieger mehr als 4 Kacheln, bricht der Vorgang ab.
-4. Dann:
-   - Ein aufgebauter Ernter wird per Notstart sofort eingepackt; ein angedockter wird abgedockt.
-   - **Insassen:** Fahrer und Beifahrer des Ernters werden mit `set_driver(nil)` und `set_passenger(nil)` herausgenommen. Der Fahrer wird mit `flyer.set_passenger(…)` Beifahrer im Flieger; das geht für Spider-Vehicles (A20 :3425). Ist der Sitz belegt (nur im Mehrspieler möglich), bleibt der Insasse neben dem Flieger stehen und bekommt eine Warnung.
-   - `harvester.teleport(slot, hold)`; der Rückgabewert wird geprüft.
-   - Bild und Schatten werden mit `rendering.draw_sprite{target = {entity = flyer, offset = {0, 0.5}}, render_layer = "smoke", …}` am **Flieger** gezeichnet. Render-Objekte verschwinden, sobald ihr Ziel die Oberfläche wechselt (A20 :27115). Stirbt der Flieger, verschwindet das Bild also von selbst.
-   - `flyer.minable_flag = false`, der Ernter wird „getragen“, Jagden auf ihn enden als ENTKOMMEN.
-5. **Last kostet Treibstoff.** Das Tempo einer Spinne ist nicht schreibbar (A20 :4166-4172). Deshalb zieht das Skript im Flug mit Last zusätzlich Brennwert ab. Optional (T1) heftet ein eigener Sticker mit `vehicle_speed_modifier = 0.7` die Last an; ob das bei Spider-Vehicles wirkt, ist nicht belegt.
+**Anheben** [2.0] (Taste `arrakis-carry-toggle`, Verknüpfung `arrakis-carry` oder Knopf im Ornithopter-Fenster; alle drei rufen dieselbe Funktion, docs/plan-3c.md 4.5)
+1. *Welcher Flieger?* Nur eigene Ornithopter, die erste Stufe mit Treffer gilt: `player.vehicle` (auch beim Fernfahren); dann aus `player.spidertron_remote_selection` (A20 :23539) der, der dem Bezugspunkt am nächsten ist (ausgewählter Ernter, sonst Mauszeiger, sonst Spielerposition); dann `player.selected`; dann der nächste eigene Ornithopter ohne Last höchstens 4 Kacheln um den Ernter, in dem der Spieler sitzt (`player.physical_vehicle`) oder auf den er zeigt. Die letzte Stufe ist die Solo-Rettung. Beim Fensterknopf ist es der Ornithopter des offenen Fensters, ohne Suche.
+2. *Welcher Ernter?* Eigene Force, höchstens 4 Kacheln vom Flieger, nicht getragen, nicht in einer Kopplung: `player.selected`, dann das Fahrzeug des Spielers, dann der nächste `spice-harvester` per `find_entities_filtered{position, radius = 4, name = "spice-harvester", force}`. Ein Ernter je Flieger, keine anderen Fahrzeuge.
+3. 2 s Ankoppeln (120 Ticks, geprüft im 10-Tick-Takt) mit Fortschrittsring, den nur die eigene Force sieht. Der Ernter darf dabei fahren. Mehr als 4 Kacheln Abstand oder ein zweiter Druck brechen ab; ein Druck innerhalb von 15 Ticks nach dem letzten zählt nicht.
+4. Dann, in fester Reihenfolge (docs/plan-3c.md 4.6):
+   - Stellplatz auf der Ablage nehmen; sind alle 256 belegt, Hinweis und Ende.
+   - Fenster des Ernters schließen.
+   - **Insassen:** Fahrer und Beifahrer werden mit `set_driver(nil)` und `set_passenger(nil)` herausgenommen, sonst reisten sie mit auf die Ablage.
+   - Notstart: Aufbauend, aufgebaut oder einpackend wird der Ernter sofort mobil, ein angedockter wird abgedockt. Danach ist er „getragen“ (gesperrt, nicht abbaubar, ohne Tempo-Deckel).
+   - `harvester.teleport(slot, hold)`; der Rückgabewert wird geprüft. Bei false wird der Ernter wieder mobil, die Insassen steigen wieder ein, und es gibt einen Hinweis.
+   - **Sitze:** Der Fahrer des Ernters bekommt den ersten freien Sitz des Fliegers, Pilot zuerst, der Beifahrer den übrigen (`set_driver`/`set_passenger`, für Spider-Vehicles erlaubt, A20 :3425). Ist der Spieler in der Fernsicht, verlässt er sie vorher (5.5); fuhr er den Flieger fern, ist der Pilotensitz danach frei. Sitzt eine Figur nicht, wird sie an den Flieger gestellt und noch einmal gesetzt. Erst wenn auch das scheitert oder kein Sitz frei ist, bleibt sie am Boden und bekommt eine Warnung.
+   - Bild und Schatten werden am **Flieger** gezeichnet: `rendering.draw_sprite{sprite = "arrakis-harvester-carried-<i>", target = {entity = flyer, offset = {0, -1.5}}, render_layer = "smoke", …}` mit i = floor(Ausrichtung · 16 + 0,5) mod 16, der Schatten mit `{1, 1}` auf `"floor"`. Kein `forces`: Alle sehen es (4.0). Der Offset gilt ab dem Bodenpunkt des Spider-Vehicles, den Rumpf zeichnet die Engine um `height` = 3 höher; mit `{0, 0.5}` lägen Bild und Schatten fast an derselben Stelle am Boden. Beide Werte sind Konstanten, Max beurteilt sie in T17. Render-Objekte verschwinden, sobald ihr Ziel die Oberfläche wechselt (A20 :27115); stirbt der Flieger, verschwindet das Bild also von selbst, und nach einem Teleport zeichnet die Pflege es neu.
+   - `flyer.minable_flag = false`, Sticker „beladen“. Jagden auf einen getragenen Ernter enden ab 3d1 als ENTKOMMEN.
+5. **Last kostet Treibstoff von selbst.** Das Tempo einer Spinne ist nicht schreibbar (A20 :4166-4172), deshalb drosselt der Sticker. RUN055 T1 maß mit und ohne Sticker konstant etwa 810 kW, also kostet jede Kachel mit Last mehr (bei 800 kW 100 kJ je Kachel leer, 143 beladen; 100 Kohle reichen für etwa 500 s Flug). Einen Abzug per Skript gibt es deshalb nicht.
 
 **Absetzen** [2.0]
-- Platz prüfen mit `surface.can_place_entity{…, build_check_type = defines.build_check_type.manual}`, sonst `find_non_colliding_position("spice-harvester", pos, 6, 0.5)`, sonst Hinweis „Kein Platz“.
-- `harvester.teleport(pos, flyer.surface)`, Bild löschen, `minable_flag = true`. Der Beifahrer darf wieder einsteigen, wenn er möchte; ein Knopf im GUI erledigt das.
+- Platz prüfen mit der Probe `arrakis-harvester-probe` (Kasten ±1,6, deckt jede Ausrichtung des Ernters, halbe Diagonale 1,58; Maske des Ernters): `surface.can_place_entity{name = "arrakis-harvester-probe", position, force, build_check_type = defines.build_check_type.manual}` an der Fliegerposition, sonst `find_non_colliding_position("arrakis-harvester-probe", pos, 6, 0.5)` mit einem Ergebnis in einem erzeugten Chunk, sonst Hinweis „Kein Platz“; die Last bleibt dran.
+- `harvester.teleport(pos, flyer.surface)` (Ausrichtung bleibt), Bild löschen, Sticker „leer“, `minable_flag = true`. Steht der Ernter höchstens 4 Kacheln an einer freien Annahme, dockt er nach 2 s Stillstand an.
+- Die Insassen bleiben im Flieger. Der Knopf „In den Ernter steigen“ im Ornithopter-Fenster setzt den Spieler in den zuletzt abgesetzten Ernter, wenn der höchstens 6 Kacheln entfernt steht und sein Fahrersitz frei ist.
 
-**Sonderfälle** [2.0]
-- **Flieger zerstört** (`on_entity_died`): Der Ernter fällt an der nächsten freien Stelle herunter und nimmt 30 % Schaden.
-- **Flieger anders entfernt** (`on_object_destroyed`): Der Ernter kommt an seinen Abhebepunkt zurück.
-- **Treibstoff leer:** Der Flieger bleibt in der Luft, die Last hängt weiter dran. Für Carryalls gibt es TANKEN und Notregeln (4.4).
+**Sonderfälle** [2.0] (docs/plan-3c.md 4.10)
+- **Landesuche** für jeden Ernter, der seinen Träger verliert: mit der Probe um die Absturzstelle (nur beim Absturz, Radius 6, 16, 32), dann ebenso um den Abhebepunkt, dann um den Startpunkt der Force (Radius 6, 16, 32, 64; die Chunks dort werden vorher erzeugt). Weil ein Teleport zwischen Oberflächen keine Kollision prüft, sucht die Probe auch am Startpunkt; sonst stünde der Ernter womöglich in den Gebäuden. Kein Suchradius 0: Die Engine sucht dann ohne Ende (A23 classes.d.ts:20536).
+- **Flieger zerstört** (`on_entity_died`): Der Ernter landet nach der Landesuche und verliert 30 % seiner Höchstgesundheit, direkt geschrieben, mindestens 1 LP. `damage()` ginge durch die Panzer-Resistenzen (statt 600 LP, also 30 %, kämen nur 110 an); Totalverlust bleibt dem Wurm vorbehalten (3d1). Die Meldung an die Force nennt den Ort.
+- **Flieger anders entfernt** (`on_object_destroyed`, `script_raised_destroy`, Abbau per Skript): Der Ernter kommt ohne Schaden an seinen Abhebepunkt zurück (dieselben Stufen ohne Absturzstelle; landet er erst am Startpunkt, sagt die Meldung das).
+- **Kein Landeplatz:** Scheitern alle Stufen, bleibt der Ernter getragen auf der Ablage, ohne Träger in `storage.stranded`, und wird jede Sekunde neu versucht; die Force bekommt eine Meldung. So geht kein Ernter verloren.
+- **Treibstoff leer:** Der Flieger bleibt in der Luft, die Last hängt weiter dran, Absetzen geht. Für Carryalls gibt es TANKEN und Notregeln (4.4).
+- **Klon, Teleport, Abriss, gelöschte Oberflächen:** Ein Klon des Ornithopters ist leer, das Original behält die Last. Nach einem Teleport auf eine andere Oberfläche zeichnet die Pflege Bild und Schatten neu, abgesetzt wird dann dort. Ein beladener Ornithopter lässt sich weder aufheben (`minable_flag = false`) noch abreißen (`cancel_deconstruction`). Wird die Ablage gelöscht, holt die Mod vorher jeden Ernter auf ihr herunter. Ernter auf der Ablage ohne Träger (Waisen, etwa nach einem Fehler) landen beim nächsten `on_configuration_changed` und bei `/arrakis-uninstall`.
 - **Bereitschaftsflug und neue Ziele:** Nach `follow_target` setzen wir neue Ziele nur über `autopilot_destination` und hängen nie Wegpunkte an. Einen Fehler beim Anhängen nach einem Folgebefehl behebt erst 2.1.7 (CL:1035). Die Forum-ID liegt vor dem Stand von 2.0.77, deshalb ist 2.0.77 wahrscheinlich betroffen.
 
 **Ausweichplan, falls T1 scheitert:**
@@ -572,22 +587,28 @@ Verworfen:
 
 ### 4.5 storage-Struktur
 
-Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2; dort gilt er.
+Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2, der für Phase 3c (Ornithopter, Ablage) in docs/plan-3c.md, Abschnitt 4.2; dort gelten sie. Die Schema-Nummer zählt je Phase hoch: 3b = 1, 3c = 2 (0.6.0), 3d1 = 3. Der Block unten zeigt das Gesamtbild nach Phase 3f; seine Schema-Nummer steht deshalb nicht fest.
 
 ```lua
 storage = {
-  schema = 2,
+  schema = …,                           -- je Phase hochgezählt (3c: 2)
   rng   = LuaRandomGenerator,
-  hold  = {surface = LuaSurface, free = {MapPosition...}},
+  hold  = {surface = LuaSurface|nil},    -- keine Liste freier Plätze: frei ist, worauf nichts steht (0.6.0)
   grace = {landed_tick = nil, ornithopter_tick = nil, active_from = nil, first_hunt_done = false},
   harvesters = { [un] = {entity, state = "mobile"|"deploying"|"deployed"|"packing"|"carried"|"docked",
                  timer_tick = nil, careful = false, resources = {LuaEntity...}, progress = 0,
                  drain_rest = 0, prod_rest = 0, last_tick = 0, renders = {...},
-                 home = MapPosition|nil, lift_pos = MapPosition|nil, hold_slot = MapPosition|nil,
+                 home = MapPosition|nil, carried_by = flyer_un|nil, lift_pos = {surface, x, y}|nil,
                  dock = un|nil, hangar = un|nil, job = id|nil} },
-  flyers     = { [un] = {entity, kind = "ornithopter"|"carryall", cargo = un|nil,
-                 docking = {harvester = un, done_tick = tick}|nil, renders = {...},
-                 hangar = un|nil, job = id|nil, manual = false, last_tick = 0} },
+  flyers     = { [un] = {un, entity, kind = "ornithopter"|"carryall", cargo = un|nil,
+                 coupling = {harvester = un, start_tick, done_tick, player_index}|nil,
+                 renders = {image, shadow, ring}, sticker = LuaEntity|nil, image_index = 0..15|nil,
+                 last_cargo = LuaEntity|nil, last_toggle_tick = 0,
+                 hangar = un|nil, job = id|nil, manual = false, last_tick = 0} },  -- hangar, job, manual, last_tick ab 3e
+  couplings  = { [flyer_un] = true },  -- laufende Kopplungen (10-Tick-Takt, 0.6.0)
+  stranded   = { [harvester_un] = {crash_pos = {surface, x, y}|nil, damage = true|nil, reason = "crash"|"returned"} },
+                                     -- getragen, ohne Träger und ohne Landeplatz; neuer Versuch jede Sekunde (0.6.0)
+  flyer_gui_open = { [player_index] = flyer_un },
   intakes    = { [un] = {entity, docked = un|nil, nozzles = {un...}} },
   nozzles    = { [un] = {entity, intake = un|nil} },
   hangars    = { [un] = {entity, out = LuaEntity, range = 300, target_count = 0, slots = {...}} },
@@ -605,7 +626,7 @@ storage = {
   sector_cooldown = { [sector_key] = tick },
   spice_chunks    = { [chunk_key] = {count, reserved_by = un|nil} },
   thumpers        = { [un] = {entity, until_tick} },
-  reg             = { [registration_number] = {kind, un} },
+  reg             = { [registration_number] = {kind = "harvester"|"intake"|"nozzle"|"flyer"|…, un} },
   migration       = { pending_chunks = {ChunkPosition...}, done = false },
 }
 ```
@@ -617,7 +638,6 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
   - **Bohrer auf Spice:** Durch die neue Kategorie bauen sie nichts mehr ab. Das Skript sucht auf Arrakis einmal `find_entities_filtered{type = "mining-drill"}`, prüft `mining_target` (A20 :4614) und zusätzlich, ob in `mining_area` Spice liegt (nach dem Laden ist `mining_target` vermutlich leer), und meldet jeden Treffer mit Alarm und Kartenmarkierung.
   - **Erstbefüllung:** `on_chunk_generated` feuert für alte Chunks nicht noch einmal. Deshalb werden die Positionen aus `surface.get_chunks()` (A20 :31304) einmal in `storage.migration` kopiert und budgetiert abgearbeitet: Spice zählen und feste Vibrationsquellen auf Sand anmelden.
   - **Schonfrist:** Gibt es Arrakis schon, gilt `landed_tick = game.tick`; die Schonfrist beginnt also jetzt.
-  - Verwaiste Ernter in der Ablage (ohne Träger) werden an ihren Abhebepunkt zurückgesetzt.
 - **0.5.3 → 0.5.4** (Karte, 2.4):
   - Die neue Karte hängt sich nur über die `map_gen_settings` des Planeten ein. Eine schon angelegte Arrakis-Oberfläche behält ihre gespeicherten Einstellungen und erzeugt weiter die alte Karte, auch in neu erkundeten Gebieten, ohne Kanten zwischen alten und neuen Chunks (gefolgert, A23 classes.d.ts:21036-21039; im Spiel noch nicht geprüft). Die alten Ausdrücke `arrakis_*` und die Autoplace-Regeln der Prototypen bleiben dafür unverändert.
   - Ein vor 0.5.4 begonnener Spielstand, in dem Arrakis noch nicht angelegt ist: Ob die Oberfläche beim ersten Anlegen Karte 2 oder Karte 1 bekommt, ist ungeprüft. `planet.create_surface()` (`scripts/arrakis-surface.lua:8`) nimmt die Einstellungen des Planeten, und der Planet hält eigene, die vom Prototyp abweichen können (`LuaPlanet::reset_map_gen_settings`, A23 classes.d.ts:15857-15860; gefolgert). T11 und T14 lesen immer die Einstellungen des Prototyps und zeigen diesen Fall nicht. Möglich wäre `planet.reset_map_gen_settings()` in `on_configuration_changed`, solange `planet.surface == nil`; das setzt aber auch die Regler aus dem Fenster „Neues Spiel“ zurück. Entscheidung bei Max, bis dahin nicht eingebaut.
@@ -626,7 +646,13 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 - **0.5.4 → 0.5.5** (reguläre Spicefelder, 2.4):
   - Eine in 0.5.4 angelegte Arrakis-Oberfläche behält die Namen `arrakis_v2_spice_*` und damit ihre wenigen kleinen Felder, auch in neu erkundeten Gebieten. Die neuen Felder (`arrakis_v3_spice_*`) gibt es nur auf einer neu angelegten Oberfläche; für einen Spielstand ohne Arrakis-Oberfläche gilt dieselbe offene Frage wie beim Schritt davor.
   - Keine Migration und kein Hinweis im Spiel: Oberflächen aus 0.5.4 gab es bisher nur zum Testen. `scripts/migrate.lua` erkennt Karte 2 weiter am Felsschlüssel (`arrakis_v2_rock_tile`), also auch eine Oberfläche aus 0.5.5.
-- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bleibt nur die leere Oberfläche `arrakis-hold`; der Admin-Befehl `/arrakis-uninstall` löscht sie vorher mit `game.delete_surface`. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
+- **0.5.x → 0.6.0** (Ornithopter, gebaut nach docs/plan-3c.md 4.15):
+  - Schema 2: `migrate.init()` legt `flyers`, `couplings`, `stranded`, `hold` und `flyer_gui_open` an.
+  - **Forschung:** Der Trigger „ersten Spice-Ernter herstellen“ feuert nicht für früher hergestellte Ernter. `migrate.ornithopter_research(force)` setzt „Ornithopter“ deshalb auf erforscht, wenn „Spice-Ernte“ erforscht ist und die Force einen Ernter hat (Datensatz in `storage.harvesters`) oder je einen hergestellt hat (Produktionsstatistik irgendeiner Oberfläche). Es setzt nur, was fehlt.
+  - **Waisen:** Ein Ernter auf der Ablage ohne gültigen Träger und ohne Eintrag in `storage.stranded` geht an die Landesuche (4.2, ohne Absturzstelle, also Abhebepunkt, sonst Startpunkt). Fehlt sein Datensatz, wird er vorher eingetragen und wieder als getragen gesperrt; ohne Abhebepunkt gilt nur der Startpunkt.
+  - Die Schonfrist speichert 3c noch nicht; die Migration von 3d1 startet sie beim Laden, wenn „Ornithopter“ schon erforscht ist.
+  - **Herunterstufen** auf 0.5.x mit getragenem Ernter ist nicht unterstützt: vorher absetzen. 0.5.x kennt den Zustand `carried` nicht.
+- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bliebe die leere Oberfläche `arrakis-hold`. Dafür gibt es seit 0.6.0 den Admin-Befehl `/arrakis-uninstall` (zweistufig: ohne Argument eine Warnung mit der Zahl der getragenen Ernter, dann mit `ja`, englisch auch `yes`): Er setzt jeden Ernter auf der Ablage ab, mit Träger an diesem, sonst über die Landesuche, und löscht die Ablage dann mit `game.delete_surface`. Findet ein Ernter keinen Platz, bleibt die Ablage, der Ernter wartet in `storage.stranded`, und der Befehl kann wiederholt werden. Hebt vorher jemand wieder an, legt die Mod die Ablage neu an. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
 
 ## 5. Versionsstrategie 2.0 und 2.1
 
@@ -751,7 +777,7 @@ Die [2.1]-Punkte stehen in 4.1 bis 4.4. Seit 0.5.1 ist 2.1 das Ziel, sie können
 |---|---|---|---|---|
 | Spice-Verarbeitung (besteht) | Entdeckung Arrakis | Trigger: Spice-Sand abbauen | Raffinerie, Melange, Sandziegel | [2.0/2.1] Triggerschreibweise |
 | **Spice-Ernte** (neu) | Spice-Verarbeitung | Trigger: 10 Melange herstellen | Ernter, Annahme, Tankstutzen, ggf. Spice-Brikett; Briefing „Wurmzeichen“ | [2.0] |
-| **Ornithopter** (neu, war Endgame) | Spice-Ernte | Trigger `craft-item`: Spice-Ernter (A20 prototype/generated/types.d.ts:4083) | Ornithopter; startet die Schonfrist | [2.0] |
+| **Ornithopter** (gebaut in 0.6.0, war Endgame) | Spice-Ernte | Trigger `craft-item`: Spice-Ernter, Anzahl 1 (A20 prototype/generated/types.d.ts:4083); alte Spielstände holt die Migration nach (4.6) | Ornithopter, die Verknüpfungen „Ernter anheben oder absetzen“ und „Fernbedienung für Ornithopter“; startet ab 3d1 die Schonfrist | [2.0] |
 | **Thumper** (neu) | Spice-Ernte | Trigger `scripted`: erste Jagd überstanden, ausgelöst mit `force.script_trigger_research` (A20 :15550) | Thumper | [2.0] |
 | Spice-Wissenschaft (besteht) | Spice-Verarbeitung | Trigger: 20 Melange | Spice-Essenz, Spice-Paket | [2.0] |
 | **Ornithopter-Leitstelle** (Stufe 2) | Spice-Wissenschaft, Ornithopter | 300 × Automatisierung, Logistik, Chemie, Weltraum, Spice | Leitstelle, Carryall, Rettung, Entladen, Tanken | [2.0] |
@@ -768,13 +794,14 @@ Die [2.1]-Punkte stehen in 4.1 bis 4.4. Seit 0.5.1 ist 2.1 das Ziel, sie können
 ## 7. Roadmap ab Phase 3
 
 Ersetzt die alte Phase 3 und holt den Ornithopter aus Phase 5 nach vorn. Jede Phase endet mit einem Test, den Max im Spiel machen kann.
+Gebaut sind 3.0 bis 3c (Stand 0.6.0); 3c nach dem Bauplan docs/plan-3c.md, die Abnahme durch Max steht dort in Abschnitt 8.
 
 | Phase | Version | Inhalt | Testbares Ergebnis |
 |---|---|---|---|
 | 3.0 | 0.3.1 | Versionsweiche, Breaking Changes aus 5.4, `probability` gestrichen, `base >= 2.0.61` | Ein 0.3.0-Spielstand lädt in 2.0.77 unverändert. Optional: Mit 2.1-`info.json` startet die Mod in 2.1.20 |
 | 3a | 0.4.0 | Prüfstand `/arrakis-test` mit Test-Prototypen: T1–T7, T9, T11, T12 | Protokoll entscheidet: Spider oder Auto als Flieger, Proxy oder Skript, wie der Wurm gesteuert wird, Ernter-Tempo, Noise-Schwelle |
 | 3b | 0.5.0, Karte 0.5.4 | Ernter (Abbau, Aufbauen/Einpacken, Tempo-Deckel, Vorsichtsmodus), Ressourcenkategorie samt Migration, Annahme und Tankstutzen, Forschung „Spice-Ernte“, Spice-Brikett, Mod-Einstellung Wurmbiss; Kartengenerator (Startinsel, Graben, Lehrfeld, Mindestabstand, steile Felskante) erst in 0.5.4, nur für neue Spiele (2.4) | Ernter fährt höchstens 1,5 Kacheln/s, erntet 2000 Spice-Sand, die Annahme leert ihn per Greifarm, der Tankstutzen tankt; die Statistik zeigt Spice. Ein 0.3.0-Spielstand meldet Bohrer auf Spice. Karte: T11 bestätigt Regel B (sonst Regel A), T14 findet auf allen Seeds kein reguläres Spice näher als 100 Kacheln am Fels und alle Lehrfeld-Kacheln 40–60 Kacheln vom Fels, ab 0.5.5 auch genug nutzbare reguläre Felder („Felder“, „Feldgröße“) |
-| 3c | 0.6.0 | Ornithopter mit Trigger-Forschung, Ablage, Anheben/Absetzen per Taste und Fernbedienung, Fahrer als Beifahrer, Absturzregeln | Vollen Ernter von Feld A nach B tragen, Inhalt identisch; der Fahrer fliegt mit. Ornithopter mit Last zerstören: Der Ernter fällt mit 30 % Schaden |
+| 3c | 0.6.0, **gebaut** | Ornithopter mit Trigger-Forschung, Ablage, Anheben/Absetzen per Taste, Verknüpfung und Fensterknopf, eigene Fernbedienungs-Verknüpfung und Fernfahren aus der Karte, Insassen fliegen mit (Pilot zuerst), Absturzregeln mit Landesuche und Warteliste, `/arrakis-uninstall`; Prüfstand T15–T17 | Vollen Ernter von Feld A nach B tragen, Inhalt identisch; der Fahrer fliegt mit. Ornithopter mit Last zerstören: Der Ernter fällt mit 30 % Schaden |
 | 3d1 | 0.7.0 | Vibration, Wärme, Unruhe, Wurmzeichen, Countdown, Schonfrist, Briefings, Vibrationsanzeige; **geskripteter Biss mit Eruption, noch ohne Wurm-Entity** | Ein einzelner Ernter: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s; Lehrjagd 90 s. Mit Rettung bleibt er heil, ohne Rettung kommt der Biss genau bei 0. Auf einem Nicht-Lehrfeld scheitert die Flucht per Fahrt |
 | 3d2 | 0.8.0 | Wurm-Entity mit verzögertem Spawn, Körperprüfung, Route/ROUTING, Fels-Wächter, Abtauchen, ohne Ascheeffekte (T5–T7) | Biss höchstens 3 s nach Countdown-Ende. Vor einer Felsinsel biegt der Wurm ab. Ein Ernter 10 Kacheln vor Fels wird trotzdem gebissen. Ein Ornithopter über dem Kopf verliert kein Tempo |
 | 3d3 | 0.9.0 | Thumper (Ablenkung/Köder), Beute und Wurmzahn, großer Wurm, Mod-Einstellungen, Balancing-Runde | Ein Thumper lenkt eine laufende Jagd um. Ein getöteter Wurm wirft Zähne. 1 Ernter liefert im Wurm-Rhythmus etwa 15 Pakete/min |
@@ -805,7 +832,8 @@ Im Container läuft kein Factorio. Deshalb baut Phase 3a einen **Prüfstand**:
 | T10 | 2.1 lädt keine Mod mit `factorio_version "2.0"` | Entfällt: beantwortet aus der Doku (MS), 2.1 lädt sie nicht | Getrennte Builds per `info.json`: Hauptzweig 2.1, Zweig `factorio-2.0` |
 | T11 | Die Spice-Regel ergibt nicht ≥ 100 Kacheln Sand zwischen Spicefeld und Fels. Regel B (2.4) ist nur gefolgert: Sie setzt voraus, dass `spot_noise` das Maximum linearer Kegel ist, dass verzerrter und unverzerrter Aufruf dieselben Kegelmitten setzen und dass `clamp` die Verzerrung begrenzt | `/arrakis-test T11` (ab 0.4.1) rechnet auf leeren Testoberflächen mit 9 Seeds (`lang`: 30) die Rauschwerte auf einem 8-Kachel-Raster aus: Felsanteil, Inseln, euklidischer Felsabstand und die Spice-Schwelle t100 für die Karte 0.5.4, die von 0.4.0 und die Kandidaten. Lauf vom 25.10.2026 (0.5.3): c4 mit Felsschwelle 0 gewählt. Seit 0.5.4 die Prüfungen „Zone“ (Spicezone nach Regel B ≥ 100 Kacheln vom Fels auf dem Raster) und „Kegel“ (t100 von `c4u` ≥ −1,53 auf jedem Seed); leere Zone bzw. kein c4-Fels auf allen Seeds ist ein FEHLER „nicht prüfbar“ | „Kegel“ scheitert: Regel A einhängen (`SPICE_RULE` in `prototypes/planet/planet-map-gen.lua`), Spicezone etwa ein Viertel so groß. „Zone“ scheitert: Ausdruck anpassen (nach der Veröffentlichung von 0.5.4 unter neuen Namen) |
 | T14 | Die erzeugte Karte hält die Regeln nicht ein (Fels zwischen den Rasterpunkten, Lehrfeld, Startinsel); der Schlüssel `tile:arrakis-rock:probability` wirkt in den `map_gen_settings` des Planeten nicht (in Vanilla nicht benutzt) | `/arrakis-test T14` (ab 0.5.4) erzeugt die Karte auf Testoberflächen (9 Seeds, `lang` 30, je 800 × 800 Kacheln) und prüft auf Kacheln: reguläres Spice ≥ 100 Kacheln vom Fels (auf keinem Seed reguläres Spice: FEHLER „nicht prüfbar“), Lehrfeld 40–60 Kacheln vom Fels mit 100 000 Spice-Sand ± 5 % (auch bei Spice-Größe 0), bei Spice-Größe 0 kein reguläres Spice, kein Spice auf Fels, kein Erz auf Sand, Tiefenwasser mit allen 3 × 3 Kacheln auf Fels, Graben bis 220 Kacheln, Startinsel mit allen Erzen und einem Tiefenbrunnen. Seit 0.5.5 über alle Seeds: im Mittel mindestens 2 nutzbare reguläre Felder (ab 300 Kacheln) je Seed und höchstens ein Neuntel der Seeds ohne („Felder“), Median der nutzbaren Felder mindestens 500 Kacheln („Feldgröße“). Lauf mit 0.5.4 im Spiel: alles bestanden, aber nur 0,9 Felder je Seed, Median 134 Kacheln (Anlass für 0.5.5). Misst die Dauer der Chunk-Erzeugung gegen die alte Karte | Ausdruck anpassen (unter neuen Namen); kein Laufzeit-Skript, das die Karte nachträglich repariert |
-| T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken | Nur über `spidertron_remote_selection` |
+| T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken. Ergebnis 0.4.0: `ALT+O` kam nie an | Seit 0.6.0 ist die Taste nie der einzige Weg: Verknüpfung `arrakis-carry` (auch in der Karte) und Fensterknopf rufen dieselbe Funktion, die eigene Verknüpfung `arrakis-give-remote` gibt die Fernbedienung schon mit „Ornithopter“. Die Suche nach dem Flieger hat vier Stufen (4.2). T17 prüft das am echten Ornithopter |
+| T15–T17 | Der echte Ornithopter (0.6.0) hängt an 28 ungeprüften Engine-Annahmen U1 bis U28 (docs/plan-3c.md 4.16): etwa Taste und Fernbedienung in der Kartenansicht, Sitzwechsel aus einigen Kacheln Abstand, lineare Wirkung des Tempo-Stickers, Probe gleich Ernter-Maske, Teleport nach dem Notstart verlustfrei | T15 echter Code (automatisch), T16 Flugphysik (automatisch), T17 Bedienung (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3c.md 4.16, z. B. Modifier aus der T16-INFO, Teleport der Figur an den Flieger, Absetzen per `clone` |
 
 Weitere Risiken:
 - **Spielgefühl und Balancing.** Alle Zeiten und Schwellen sind Mod-Einstellungen. 3d1 testet das Timing früh, noch ohne Wurm-Technik, und 3d3 enthält eine eigene Balancing-Runde.
@@ -825,5 +853,6 @@ Das hier ist geplant, aber erst ein Test im Spiel kann es klären. Alles andere 
 - **Kartengenerator (T11, T14).** Ob Regel B hält (T11 „Kegel“), ob die Felskachel über `tile:arrakis-rock:probability` in den Planeten-Einstellungen wirklich steil wird und ob die echte Karte die Abstände auf Kacheln einhält (T14). Ob die regulären Felder von 0.5.5 so zahlreich und groß werden wie geschätzt (T14 „Felder“, „Feldgröße“). Ob eine alte Arrakis-Oberfläche ihre gespeicherten Einstellungen behält (Ladetest mit einer Kopie des Hauptspiels). Was zwei `spot_noise`-Aufrufe bei der Chunk-Erzeugung kosten (T14 misst es).
 - **Fehler aus 2.1.18 in 2.0.77 (T7, Mehrspieler-Test).** Ob 2.0.77 von den dort behobenen Fehlern betroffen ist: Absturz bei kleiner Knotenzahl, Spinnen-Desync.
 - ~~**2.1 und alte Mods (T10).**~~ Beantwortet: 2.1 lädt keine Mods mit `factorio_version "2.0"` (MS).
+- **Ornithopter (T15–T17).** Die 28 Engine-Annahmen aus docs/plan-3c.md 4.16, auf denen 0.6.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob `Umschalt+C` im Ornithopter, in der Kartenansicht und beim Fernfahren ankommt (U1 bis U4), ob die eigene Fernbedienung ohne „Spidertron“ steuert (U5), ob die Sticker linear wirken (U6) und ob das Lastbild aus den Panzer-Sheets richtig erscheint (U27).
 - **Leistung (T8).** Die Kosten bei großen Flotten.
 - **Spielspaß.** Ob 55 s bis zum Wurmzeichen, 60 s Vorwarnung, 2 bis 4 Minuten Ruhe und etwa 15 Pakete/min pro Ernter sich gut anfühlen, zeigt nur Spielen.

@@ -1,9 +1,9 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.5 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.6.0 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
-Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
+Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8) und ab 0.6.0 die Engine-Annahmen des Ornithopters (`docs/plan-3c.md`, Abschnitt 4.16).
 Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schicken.
 
 ## Vorbereitung
@@ -11,6 +11,7 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 1. **Einstellung einschalten:** im Hauptmenü *Einstellungen → Mod-Einstellungen → Start* das Häkchen bei **Prüfstand** setzen und bestätigen. Factorio startet neu.
 2. **Wegwerf-Spielstand:** ein neues Spiel mit Space Age starten (oder einen Spielstand, der kaputtgehen darf). Nie den echten Spielstand nehmen.
    Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 legt kurz leere Testoberflächen `arrakis-t11-…` an und löscht sie wieder. T14 erzeugt die Karte von Arrakis nacheinander auf Testoberflächen `arrakis-t14-…` und löscht auch diese wieder; die Oberfläche Arrakis selbst fasst er nicht an.
+   T15 benutzt die echte Ablage `arrakis-hold`, setzt am Ende alle getragenen Ernter ab und löscht sie. Das trifft auch Ernter, die ein Ornithopter deines Spielstands gerade trägt: Sie stehen danach am Boden bei ihrem Ornithopter. T16 hebt ebenfalls echte Ernter auf diese Ablage und entfernt am Ende seine eigenen.
 3. **Alte Ergebnisdatei löschen** (wenn du eine saubere Datei willst): `%APPDATA%\Factorio\script-output\arrakis-test.txt`. Der Prüfstand hängt nur an.
 4. Danach die Einstellung wieder ausschalten, bevor du normal spielst.
 
@@ -20,9 +21,10 @@ Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisher
 
 - **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt: Es wirkt jetzt linear (Endtempo ∝ √(a · Ausgleich) · t, gemessen in 2.1.23). Seit 0.5.3 rechnet der Ausgleich ab 2.1.13 deshalb mit min(1, 1/(a · t²)), davor mit min(1, 1/a) (Modell aus T2 in 2.0.77). Bestätigt am 25.10.2026 mit 0.5.3: In T2b fuhren alle 13 Läufe des echten Ernters speed 1,453 wie Kohle, ab 1 s griff der Deckel nie ein.
 - **T4 (Annahme und Tankstutzen):** Bauregel auf Fels und Proxy-Container; der Schaltungsanschluss des Proxys ist seit 2.1.21 anders aufgebaut.
-- **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen.
+- **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen. `Umschalt+C` (Ornithopter, ab 0.6.0) prüft T17.
 - **T11 und T14 (Kartengenerator 0.5.4, Spicefelder 0.5.5):** Die neue Karte ist gebaut, aber noch nicht im Spiel abgenommen. T11 entscheidet über die Spice-Regel (B oder A), T14 prüft die erzeugte Karte auf Kacheln. Beide zusammen laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T11 T14`; siehe dort. T14 lief mit 0.5.4 auf 9 Seeds ohne FEHLER, fand aber im Mittel nur 0,9 reguläre Felder je Seed (5 Seeds ohne, Median 134 Kacheln). 0.5.5 macht die Felder dichter und größer, T14 prüft jetzt auch Zahl und Größe („Felder“, „Feldgröße“); bitte mit 0.5.5 noch einmal laufen lassen.
 - **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
+- **T15, T16 und T17 (Ornithopter, neu in 0.6.0):** T15 und T16 ohne Spieler laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T15 T16` (beide sollen ohne FEHLER enden), T17 mit dir im Spiel. Sie entscheiden die noch ungeprüften Engine-Annahmen U1 bis U28 aus `docs/plan-3c.md`, Abschnitt 4.16; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8.
 
 Von Hand prüfen (2.1.23):
 
@@ -38,14 +40,14 @@ In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die
 ## Befehle
 
 Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin).
-Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, T9 und T12), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
+Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, T9, T12 und T17), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
 
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T14` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T17` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14. Dauer ohne Zeitraffer gut 12 min ([„alle“](#alle)) |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16. Dauer ohne Zeitraffer geschätzt gut 16 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test tempo 10` | Zeitraffer: das Spiel läuft bis zu 10-mal so schnell (`game.speed`, Zahlen von 1 bis 50); `tempo` ohne Zahl zeigt den Stand, `tempo 1` stellt auf echte Zeit zurück. Die Ergebnisse ändern sich nicht ([Zeitraffer](#zeitraffer-arrakis-test-tempo)) |
@@ -62,14 +64,14 @@ Die Antworten gehen dann an RCON und ins Log des Servers (`factorio-current.log`
 Ein eigener Server braucht in `server-settings.json` `"auto_pause": false`, sonst steht er ohne Spieler still und kein Test kommt voran.
 Am einfachsten macht das alles das Werkzeug [`tools/pc/pruefstand.py`](#werkzeug-toolspcpruefstandpy).
 
-**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b und T14.
-T9 und T12 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt beide wie immer aus.
+**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b, T14, T15 und T16.
+T9, T12 und T17 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt sie wie immer aus.
 `/arrakis-test zurück` gibt es nur für Spieler.
 Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gestartet: T13. Stand: /arrakis-test status`, `„alle“ gestartet: …` oder `Gestoppt.` Endet ein Test schon beim Start (etwa mit Skriptfehler), steht dort `T13 gleich beim Start beendet: …`.
 
 **Was ohne Spieler anders ist:**
 
-- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13, T2b und T14 fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
+- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13, T2b, T14, T15 und T16 fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
 - `alle` wartet ohne Spieler nach einer FRAGE nicht (mit Spieler nach T2 und T4 je 30 s).
 - Die Zusammenfassung von `alle` lässt den Hinweis auf `/arrakis-test zurück` weg.
 - T2: Geht die Skriptfahrt nicht, setzt der Test sonst dich in den Ernter. Ohne Spieler entfällt das: FEHLER „Manuelle Messung entfällt: kein Spieler im Spiel“, dann wertet der Test gleich aus.
@@ -91,7 +93,7 @@ STATUS wartet <id> | Tick <n>
 - `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s Spielzeit (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo)).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
-Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14):
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17):
 
 ```
 ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
@@ -123,7 +125,7 @@ Durchgesehen für 0.5.5, wo echte Zeit eine Rolle spielt:
 
 - **T14, Dauer der Chunk-Erzeugung:** die einzige Messung in echter Zeit. Ihr Profiler läuft nur, während Factorio im selben Tick die Chunks erzeugt (`force_generate_chunk_requests`), nie zwischen zwei Ticks. Die Dauer ist also reine Rechenzeit und mit und ohne Zeitraffer vergleichbar. T11 misst keine Zeit.
 - **Pause für die FRAGE nach T2 und T4 bei `alle`** (nur mit Spieler): Das ist Zeit für dich, sie gilt deshalb in echter Zeit. Bei Tempo 10 sind es weiter 30 s, also 18 000 Ticks statt 1800. Änderst du das Tempo während der Pause, rechnet der Prüfstand die restlichen Ticks um; die restliche Zeit bleibt dieselbe. Ohne Spieler gibt es diese Pause nicht.
-- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9 und T12 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
+- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9, T12 und T17 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s; T17 nach 6 min, also nach 36 s). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
 
 **Im eigenen Spielstand:** `game.speed` bleibt im Spielstand; sonst speichert der Befehl nichts. Zurück geht es mit `/arrakis-test tempo 1`, und zwar bevor du die Einstellung **Prüfstand** ausschaltest. Danach gibt es den Befehl nicht mehr; zurückstellen ginge dann nur noch mit `/c game.speed = 1`, und `/c` schaltet in diesem Spielstand die Errungenschaften ab.
 Solange das Tempo nicht 1 ist, erinnern die Liste (`/arrakis-test`) und, wenn du `alle` gestartet hast, auch dessen Zusammenfassung daran.
@@ -154,7 +156,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 | `--zeitlimit MIN` | Minuten je Test in echter Zeit, Standard 30, bei `alle` 90 |
 | `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
 | `--tempo N` | [Zeitraffer](#zeitraffer-arrakis-test-tempo) während der Tests, 1 bis 50, Standard 10. `--tempo 1` läuft in echter Zeit wie vor 0.5.5 und geht als Einziges auch mit einer älteren Mod |
-| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9 und T12 nicht angeben. |
+| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9, T12 und T17 nicht angeben. |
 
 **Was es tut:**
 
@@ -187,7 +189,7 @@ Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 9
 |---|---|
 | 0 | kein FEHLER (offene FRAGEn zählen nicht) |
 | 1 | mindestens ein FEHLER, oder ein Test lief ins Zeitlimit. Dann schickt das Werkzeug `/arrakis-test stop`, die übrigen Tests laufen nicht. |
-| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
+| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, T17, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
 
 Mit `T7:ja` trifft ein Absturz nur den Server, nicht dein Spiel; das Ende des Server-Logs steht dann in der Ausgabe.
 
@@ -209,20 +211,21 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 1. Die Datei `%APPDATA%\Factorio\script-output\arrakis-test.txt`.
    Nach T11 zusätzlich `arrakis-t11-karten.txt` aus demselben Ordner (Kartenbilder; T11 überschreibt sie bei jedem Lauf).
 2. Deine Antworten auf alle FRAGE-Zeilen, mit Testnummer.
-3. Die erbetenen Screenshots (T1, T5, T6, T9).
+3. Die erbetenen Screenshots (T1, T5, T6, T9, T17).
 
 ## „alle“
 
-`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b und T14 nacheinander, mit 1 s Abstand.
+`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b, T14, T15 und T16 nacheinander, mit 1 s Abstand.
 Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an. Die 30 s gelten in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo).
 Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
-T9 und T12 brauchen dich und laufen nur einzeln.
+T9, T12 und T17 brauchen dich und laufen nur einzeln.
 
-**Dauer ohne Zeitraffer: gut 12 min, mit Tempo 10 geschätzt etwa 2 min.**
+**Dauer ohne Zeitraffer: geschätzt gut 16 min, mit Tempo 10 geschätzt etwa 2,5 min.**
 - Gemessen mit 0.5.4 ohne Spieler: 44 352 Ticks (739,2 s Spielzeit), in echter Zeit 12,3 min bei 60 Ticks je Sekunde. Die größten Teile in echter Zeit: T2b 4,6 min, T13 und T5 je 1,7 min, T4 1,2 min, T2 und T6 je 1,1 min, alle übrigen unter 30 s. Die Simulation braucht dabei nur etwa 0,1 ms je Tick, das Spiel wartet fast die ganze Zeit auf den nächsten Tick. (0.5.3: 724,7 s Spielzeit; in 0.5.4 kamen T14 und das längere T11 dazu.)
+- Mit 0.6.0 kommen T15 (etwa 3 min Spielzeit) und T16 (etwa 45 s) dazu, mit den Pausen gut 13 600 Ticks. Zusammen sind das geschätzt etwa 58 000 Ticks, gut 16 min ohne Zeitraffer. Gemessen ist das noch nicht.
 - Die Spielzeit hängt nur an der Zahl der Ticks, auch bei T11 und T14, nicht an der Rechenlast.
-- Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks sind das gut 1 min, dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
+- Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks von 0.5.4 sind das gut 1 min, mit T15 und T16 etwa 1,6 min; dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2,5 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
 
 ## Die Tests
 
@@ -339,7 +342,7 @@ Jeder Druck auf **ALT+O** schreibt eine MESSUNG-Zeile. Der Test endet nach 3 min
 
 **Du, in drei Schritten:**
 1. In den Flieger einsteigen (Enter), Karte öffnen (M), den Flieger aus der Karte steuern (WASD) und ALT+O drücken.
-2. Aussteigen, die Fernbedienung in die Hand nehmen (ist sie weg: noch einmal ein- und mit leerer Hand aussteigen, dann legt der Test sie dir in die Hand; die Verknüpfungsleiste gibt sie erst nach der Forschung „Spidertron“), damit auf den Flieger klicken, Karte öffnen (M) und ALT+O drücken.
+2. Aussteigen, die Fernbedienung in die Hand nehmen (ist sie weg: noch einmal ein- und mit leerer Hand aussteigen, dann legt der Test sie dir in die Hand; die Vanilla-Verknüpfung gibt sie erst nach der Forschung „Spidertron“, die Verknüpfung „Fernbedienung für Ornithopter“ ab 0.6.0 schon nach „Ornithopter“), damit auf den Flieger klicken, Karte öffnen (M) und ALT+O drücken.
 3. Karte schließen und in der normalen Ansicht ALT+O drücken.
 
 **Melden:** ob bei jedem Schritt eine MESSUNG-Zeile kam (die Datei reicht).
@@ -416,9 +419,74 @@ Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine IN
 
 **Du:** nichts. **Melden:** nur die Datei.
 
+### T15 Ornithopter: echter Code (etwa 3 min Spielzeit, ab 0.6.0)
+
+**Was passiert:** Ab 0.6.0 gibt es den echten Ornithopter. T15 prüft genau diesen Code (Anheben, Tragen, Absetzen, Absturz, Ablage, Migration), nicht die Testflieger aus T1, T9 und T12.
+Er baut auf einer eigenen Fläche der Prüfstand-Oberfläche: Sand mit zwei Spice-Teppichen A und B, 150 Kacheln auseinander, eine Felsinsel mit Annahme, ein Wasser- und ein Mauerfeld. Ornithopter und Ernter entstehen wie gebaut; Piloten und Fahrer sind Puppen. Er braucht keinen Spieler, läuft mit Zeitraffer (bei Tempo 10 etwa 18 s) und hat ein Zeitlimit von 4 min Spielzeit.
+T15 hebt echte Ernter auf die echte Ablage `arrakis-hold`. Vor dem Start und am Ende (auch nach Zeitüberschreitung oder Skriptfehler) räumt er seine Reste dort und auf seiner Fläche ab. Zahlen zur Ablage prüft er nur gegen den Stand vor dem Schritt, denn der Spielstand kann selbst Ernter tragen.
+In eckigen Klammern steht die Annahme aus `docs/plan-3c.md` 4.16, die der Schritt klärt. Die 17 Schritte:
+
+1. Prototypen: Ornithopter (Spider-Vehicle, 4 Beine, Brenner für chemischen Brennstoff mit 2 Slots, Fernfahren an), beide Tempo-Sticker, die 32 Bilder der Last, Absetz-Probe, Taste und beide Verknüpfungen. FEHLER nennt das fehlende Stück.
+2. Forschung [U11]: Eine eigene Force `arrakis-t15` (bleibt im Spielstand und wird wiederverwendet) stellt einen Spice-Ernter her, zuerst eine Puppe von Hand (600 Ticks), sonst eine Montagemaschine 3 (480 Ticks). OK, wenn „Ornithopter“ höchstens 60 Ticks nach dem Ernter-Item erforscht ist. Kommt auch aus der Maschine kein Item, steht dort nur eine MESSUNG; dann prüfst du die Forschung von Hand (Abnahme).
+3. Anheben mit Insassen [U14]: ein Ernter mit Fahrer- und Beifahrer-Puppe, 2 Kacheln vom Ornithopter. a) Mit Pilot an Bord wird der Fahrer Beifahrer, der Beifahrer bleibt am Boden (höchstens 6 Kacheln entfernt). b) Ohne Pilot wird der Fahrer Pilot und der Beifahrer Beifahrer. OK, wenn der Ernter auf einem Stellplatz der Ablage steht, getragen, gesperrt und nicht abbaubar, und der Ornithopter beladen, nicht abbaubar, mit Sticker „beladen“, Bild und Schatten. Nach dem Absetzen sitzen alle wie vorher. MESSUNG je Insasse: gleich gesetzt oder erst nach dem Teleport an den Ornithopter.
+4. Ankoppeln: Fliegt der Ornithopter 10 Kacheln weg oder kommt ein zweiter Aufruf, bricht die Kopplung ab (Ring weg). Ein zweiter Aufruf nach 5 Ticks wird ignoriert (Entprellen). Stirbt der Ernter beim Ankoppeln, gibt es keinen Skriptfehler. Ein zweiter Ornithopter auf denselben Ernter bekommt „schon angekoppelt“.
+5. Notstart [U13]: je ein Ernter beim Aufbauen, aufgebaut, beim Einpacken und angedockt wird angehoben. OK, wenn er danach getragen ist, ohne laufende Aufbau- oder Einpack-Uhr, ohne Feldrahmen und Ring, und die Annahme nicht mehr auf ihn zeigt. Den angedockten setzt der Test über derselben Annahme ab: Nach höchstens 180 Ticks ist er wieder angedockt.
+6. Voller Ernter von Feld A nach B [U13, U28]: Qualität „ungewöhnlich“ (mit Quality), Ausrichtung 0,375, 60 % Gesundheit, 20 Kohle (eine brennt), Farbe wie in T3. Auf A aufgebaut, Kofferraum voll (40 Slots: 1900 Spice-Sand, 100 Eisenplatten, 10 Eisenplatten „selten“; ohne Quality 2000 Spice-Sand). Anheben aus dem aufgebauten Zustand, der Ornithopter fliegt per Autopilot über B (höchstens 40 s), Absetzen. OK, wenn alles aus T3 gleich ist (Kofferraum, Treibstoff, Restbrennwert, brennendes Item, Gesundheit, Qualität, Farbe, unit_number, Ausrichtung), der Ernter höchstens 1,5 Kacheln von der Ankunftsstelle steht, der Fahrer noch im Ornithopter sitzt („der Fahrer fliegt mit“) und auf der Ablage wieder so viele Plätze frei sind wie vorher. Danach erntet der Ernter auf B: Sein Erntefeld liegt um die neue Stelle, und nach 60 Ticks ist mehr Spice-Sand im Kofferraum. MESSUNG: Flugzeit, Tempo, Brennwert.
+7. Absturz [U17, U23, U24]: Ein beladener Ornithopter wird zerstört. OK im selben Tick: Der Ernter steht höchstens 6 Kacheln von der Absturzstelle, fahrbereit und entsperrt, mit 30 % der Höchstgesundheit weniger (± 0,5); der Ornithopter ist ausgetragen, die Ablage hat ihren Platz wieder. 2 Ticks später hat sich nichts verändert (keine Doppelbehandlung). Ein Ernter mit 20 % Gesundheit behält 1 Lebenspunkt. Mit Pilot an Bord: MESSUNG, wie weit die Figur vom Ernter landet.
+8. Anders entfernt: Ein beladener Ornithopter 30 Kacheln vom Abhebepunkt verschwindet per Skript. Nach höchstens 2 Ticks steht der Ernter höchstens 6 Kacheln vom Abhebepunkt, Gesundheit unverändert; mit `raise_destroy` sofort.
+9. Kein Platz [U19]: Über einem Feld aus Steinmauern (13 × 13) und über Wasser (15 × 15) geht Absetzen nicht („Kein Platz“), der Ernter bleibt dran; 20 Kacheln weiter geht es. Ein Absturz über dem Mauerfeld landet den Ernter im Radius 16. Dazu die Probe an einer Klippe, wenn die Fläche eine erzeugen kann, sonst INFO. Zuletzt „kein Landeplatz“: Sandinsel in einem See, der Startpunkt der Force liegt im Wasser; der Test macht die Insel zu Wasser und lässt den beladenen Ornithopter abstürzen. Der Ernter wartet dann auf der Ablage (Warteliste, Schaden steht aus). Wird die Insel wieder Sand, landet er nach höchstens 60 Ticks dort, mit 30 % Schaden. Am Ende stellt der Test den Startpunkt zurück.
+10. Leerer Tank [U10]: Ein beladener Ornithopter ohne Treibstoff mit Ziel 50 Kacheln steht nach 3 s noch an seiner Stelle (± 0,1), beladen, mit Bild; Absetzen geht.
+11. Abbausperre [U26]: Beladen ist der Ornithopter nicht abbaubar und lässt sich nicht zum Abriss markieren, leer ist er abbaubar.
+12. Ablage [U25]: Sie ist für alle Forces versteckt, auch für eine eben angelegte (`arrakis-t15n`, am Ende mit `neutral` verschmolzen). Drei Ornithopter heben im selben Tick an und bekommen drei verschiedene Plätze. Danach vergisst der Test die Ablage, wie nach dem Wiederhinzufügen der Mod, und hebt noch einmal an: geht, die Ablage ist wieder eingetragen und versteckt.
+13. Zustandstabellen: jede Eingabe aus `docs/plan-3c.md` 4.3 in jedem Zustand von Ernter und Ornithopter. Dazu `Umschalt+H` am getragenen Ernter (nur Hinweis), ein Teleport des getragenen Ernters auf der Ablage (bleibt getragen) und von ihr weg (landet dort, sofort mit `raise_teleported`, sonst nach höchstens 60 Ticks), Tod und spurloses Verschwinden des getragenen Ernters (der Ornithopter ist danach leer) und je ein Klon des getragenen Ernters (Klon fahrbereit, Original getragen) und des beladenen Ornithopters (Klon leer).
+14. Migration: Für die Force mit Ernter holt die Mod „Ornithopter“ nach, ein zweiter Aufruf ändert nichts, ohne erforschte „Spice-Ernte“ auch nicht. Am Ende stehen beide Forschungen wieder wie vorher.
+15. Pflege [U9, U16]: Der Test zerstört den Sticker des beladenen Ornithopters, heftet einen zweiten eigenen an, zerstört das Bild und teleportiert den Ornithopter auf `arrakis-test-hold` und zurück. Jedes Mal ist nach höchstens 60 Ticks wieder genau ein Sticker „beladen“ dran, und Bild und Schatten sind da. MESSUNG: Zahl der eigenen Sticker.
+16. Fremde Force und Unterflug [U21]: Einen Ernter einer anderen Force hebt der Ornithopter nicht an. MESSUNG: Ein Ernter fährt 3 s unter einem stehenden Ornithopter durch; Gesundheit beider vorher und nachher.
+17. Entfernen (immer zuletzt): zwei beladene Ornithopter und eine Waise, also ein Ernter auf der Ablage ohne Träger. Der Test ruft das auf, was hinter `/arrakis-uninstall ja` steht: Die beiden Ernter stehen danach höchstens 6 Kacheln neben ihrem Ornithopter, die Waise höchstens 6 Kacheln von ihrem Abhebepunkt; einen Tick später gibt es `arrakis-hold` nicht mehr. Trägt der Spielstand selbst Ernter, werden auch diese abgesetzt. Der nächste Lauf legt die Ablage neu an.
+
+Je Schritt kommt eine OK- oder FEHLER-Zeile mit den gemessenen Werten; die Einzelwerte stehen nur in der Datei.
+
+**Du:** nichts. **Melden:** nur die Datei.
+
+### T16 Ornithopter: Flugphysik (etwa 45 s, ab 0.6.0)
+
+**Was passiert:** Echte Ornithopter mit ihrem echten Tempo-Sticker fliegen wie in T1 auf parallelen Bahnen je 400 Kacheln weit, jeder mit einer Puppe als Pilot. Gemessen wird zwischen 5 s und 15 s nach dem Start. Eigene Fläche, kein Spieler nötig, Zeitlimit 90 s Spielzeit.
+- Leer: mit Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff, Spice-Brikett und legendärem Raketentreibstoff (wenn Quality); mit Kohle nach Osten, Westen, Norden, Süden und Nordosten; Ornithopter in Qualität „ungewöhnlich“ und „legendär“ (wenn Quality).
+- Beladen (echtes Anheben): mit Kohle und Raketentreibstoff, nach Osten und Norden.
+- Zum Vergleich drei Ornithopter, die die Mod nicht kennt: einer ohne Sticker mit Raketentreibstoff (Rohwert) und zwei mit je einem Test-Sticker `vehicle_speed_max` (8/60 bzw. 8, weil die Einheit nicht dokumentiert ist) [U22].
+- Schweben [U10]: beladen, mit Kohle, ohne Ziel, 10 s.
+
+**FEHLER** heißt: leer außerhalb 7,0–9,0 Kacheln/s auf einer Bahn; beladen außerhalb 5,0–6,5; beladen zu leer (gleicher Brennstoff, gleiche Richtung) außerhalb 0,65–0,75; die schnellste leere Brennstoff-Bahn mehr als 1,10-mal so schnell wie die langsamste [U7]; Qualität ändert das Tempo um mehr als 10 % [U8].
+**MESSUNG:** Tempo, kJ je Kachel und kW je Bahn, der Rohwert ohne Sticker, die beiden `vehicle_speed_max`-Bahnen, beim Schweben Restbrennwert und Zahl der Brennstoffe vorher und nachher. Verbraucht der schwebende Ornithopter etwas, steht dort die INFO „U10 hält nicht: Schweben kostet x kW“; das ist kein FEHLER.
+Am Ende schlägt eine INFO-Zeile Modifier für die beiden Sticker vor (0,52 · 8 / v_leer und 0,364 · 5,6 / v_beladen, aus den Ost-Bahnen mit Kohle) [U6]. Liegt das Tempo daneben, übernimmt 0.6.x diese Werte. Zuletzt entfernt T16 seine Ornithopter und Ernter, auch die auf der Ablage.
+
+**Du:** nichts. **Melden:** nur die Datei.
+
+### T17 Ornithopter: Bedienung (interaktiv, 6 min, ab 0.6.0)
+
+**Was passiert:** Neben dir stehen ein Ornithopter mit Kohle und ein Spice-Ernter mit 500 Spice-Sand, 30 Kacheln weiter eine Spice-Annahme auf Fels. Jeder Druck auf `Umschalt+C` und jeder Klick auf eine Verknüpfung schreibt eine MESSUNG-Zeile, jeder Zustandswechsel eine INFO-Zeile.
+T17 geht nur mit dir im Spiel; `alle` lässt ihn aus. Er endet nach 6 min Spielzeit oder mit `/arrakis-test stop`. Mit Zeitraffer läuft auch diese Zeit schneller (bei Tempo 10 nach 36 s), also vorher `/arrakis-test tempo 1`.
+
+**Du, in acht Schritten:**
+1. In den Ornithopter einsteigen, über den Ernter fliegen, `Umschalt+C`: Ein Ring läuft um den Ernter, nach 2 s hängt er dran. Noch einmal `Umschalt+C`: abgesetzt [U1, U14].
+2. Wieder anheben. Dann fliegt der Test den Ornithopter 20 s im Kreis (wie T9 C). FRAGE: „Hängt der Ernter sichtbar unter dem Ornithopter, und liegt der Schatten passend am Boden?“ [U27]
+3. Die Verknüpfung „Ernter anheben oder absetzen“ in der Leiste klicken: absetzen, noch einmal: anheben.
+4. Das Fahrzeugfenster des Ornithopters öffnen; rechts daneben hängt das Ornithopter-Fenster [U18]. Dort „Absetzen“, dann „In den Ernter steigen“.
+5. Aussteigen, die Verknüpfung „Fernbedienung für Ornithopter“ klicken [U5], mit der Fernbedienung den Ornithopter auswählen, Karte öffnen (M), Rechtsklick auf den Ernter. Wenn er angekommen ist, in der Karte `Umschalt+C` drücken, danach die Verknüpfung „Ernter anheben oder absetzen“ klicken [U3, U4].
+6. Den Ornithopter aus der Karte fernfahren (WASD) und `Umschalt+C` drücken [U2].
+7. FRAGE: „Ist Umschalt+C unter Einstellungen → Steuerung doppelt belegt?“ [U1]
+8. Solo-Rettung: in den Ernter steigen, den Ornithopter per Fernbedienung herholen, die Karte offen lassen, `Umschalt+C`. Erwartet: Du sitzt danach als Pilot im Ornithopter, und der Ernter hängt dran [U15]. Über der Annahme absetzen: Nach 2 s dockt er an.
+
+**Mit dem Auge prüfen** (hier und bei der Abnahme): Lastbild und Schatten (Lage, Tönung, Richtung), den Ankoppelring, das Fenster am Ornithopter, das Tempogefühl leer und beladen, das Wippen des Rumpfs und die Icons der beiden Verknüpfungen. „Ernter anheben oder absetzen“ hat vorerst das bunte Panzer-Icon; die Vanilla-Icons der Leiste sind weiß. Sag, ob es stört.
+
+**Melden:** die Datei, deine Antworten auf beide FRAGEn, was dir beim Hinsehen auffällt, und einen Screenshot vom Lastbild im Flug.
+
 ## Bekannte Grenzen
 
 - Die Flieger-Beine drehen nicht mit der Flugrichtung. T1 fliegt nur nach Osten; die Werte für 1 und 2 Beine gelten für Ost-West-Flug.
+- Auch beim echten Ornithopter drehen die Beine nicht mit der Flugrichtung. T16 misst Norden und Süden deshalb getrennt von Osten und Westen.
+- Das Lastbild dreht nicht mit der Flugrichtung: Es zeigt den Ernter in der Richtung, die er beim Anheben hatte (16 Richtungen). Mitdrehen kommt erst mit eigener Grafik (Phase 6).
+- T15 und T16 prüfen den Ornithopter mit Puppen über dieselben Funktionen, die Taste, Verknüpfung und Fensterknopf aufrufen. Ob diese Wege im Spiel ankommen (Taste in der Kartenansicht, beim Fernfahren, Fernbedienung ohne „Spidertron“), zeigt nur T17.
 - Der Tempo-Deckel in T2 läuft mit Raketentreibstoff. Fährt der Ernter ohne Deckel nicht schneller als 1,6 Kacheln/s, nimmt der Test einen Ersatzdeckel (70 % seines Höchsttempos), damit der Deckel überhaupt greifen muss. Der Durchgang zählt nicht für OK oder FEHLER (siehe T2).
 - T6, Bahn D: Bewertet wird der Kopf bis zum Biss. Was der Wurm danach tut, steht als MESSUNG/INFO da (im Spiel taucht er beim Biss ab).
 - Im normalen Spiel erntet der Ernter nur auf Arrakis. Die Prüfstand-Fläche gibt dieselbe Einstellung **Prüfstand** frei, die auch den Befehl bringt; nur deshalb kann T13 dort mit dem echten Code ernten.
