@@ -8,3 +8,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 |---|---|---|---|
 | 2026-10-25 01:46 | 0.5.2 | 8d76e05 | 1 (FEHLER in T2, T2b, T3, T6) |
 | 2026-10-25 02:36 | 0.5.3 | bdd616b | 0 (kein FEHLER) |
+| 2026-10-25 17:20 | 0.5.4 | d10cf33 | 0 (kein FEHLER, T14 neu: 9 Seeds bestanden) |
