@@ -1,6 +1,7 @@
 -- Relatives Fenster am Fahrzeugfenster des Spice-Ernters (Phase 3b, Plan 4.9): Zustand, Laderaum,
 -- Treibstoff und ein Knopf für Aufbauen/Einpacken/Abdocken (gleichwertig zur Taste Umschalt+H).
 -- Bibliothek für __core__/lualib/event_handler. Offene Fenster stehen in storage.gui_open[player_index] = un.
+-- Getragen (Phase 3c, docs/plan-3c.md 4.1): Knopf „Wird getragen“ gesperrt; der 30-Tick-Takt schließt das Fenster.
 
 local harvester = require("scripts.harvester")
 
@@ -10,15 +11,17 @@ local SPICE = "spice-sand"
 local FRAME = "arrakis_harvester_frame"
 local BUTTON = "arrakis_harvester_toggle"
 
--- Beschriftung des Knopfs je Zustand; im Einpacken gesperrt.
+-- Beschriftung des Knopfs je Zustand; im Einpacken und getragen gesperrt.
 local BUTTON_CAPTION =
 {
   mobile = "gui-deploy",
   deploying = "gui-abort",
   deployed = "gui-pack",
   packing = "gui-pack",
-  docked = "gui-undock"
+  docked = "gui-undock",
+  carried = "gui-carried"
 }
+local BUTTON_LOCKED = {packing = true, carried = true}
 
 local function destroy(player)
   local frame = player.gui.relative[FRAME]
@@ -45,7 +48,7 @@ local function update(player, h)
   frame.arrakis_fuel.caption = {"arrakis-message.gui-fuel", items, string.format("%.1f", rest / 1000000)}
   local button = frame[BUTTON]
   button.caption = {"arrakis-message." .. (BUTTON_CAPTION[h.state] or "gui-deploy")}
-  button.enabled = h.state ~= "packing"
+  button.enabled = not BUTTON_LOCKED[h.state]
 end
 
 local function build(player, h)
@@ -116,14 +119,15 @@ local function on_gui_click(event)
   update(player, h)
 end
 
--- Offene Fenster auffrischen; Fenster zu verschwundenen Erntern oder Spielern schließen.
+-- Offene Fenster auffrischen; Fenster zu verschwundenen, getragenen Erntern oder Spielern schließen.
 local function on_nth_tick_30()
   local open = storage.gui_open
   if next(open) == nil then return end
   for player_index, un in pairs(open) do
     local player = game.get_player(player_index)
     local h = storage.harvesters[un]
-    if not (player and player.connected and h and h.entity.valid and player.gui.relative[FRAME]) then
+    if not (player and player.connected and h and h.entity.valid and h.state ~= "carried"
+        and player.gui.relative[FRAME]) then
       close(player_index)
     else
       update(player, h)

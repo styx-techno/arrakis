@@ -11,6 +11,18 @@
 --   storage.gui_open[player_index] = un (scripts/harvester-gui.lua)
 --   storage.migration       {spice_drills = {LuaEntity…}, old_map_notice = true|nil}
 --
+-- Schema 2 (0.6.0, Phase 3c, docs/plan-3c.md 4.2), dazu:
+--   storage.harvesters[un]  zusätzlich state "carried", carried_by = flyer_un|nil, lift_pos = {surface, x, y}|nil
+--   storage.flyers[un]      Ornithopter-Datensätze (scripts/flyer.lua)
+--   storage.couplings[un]   true, Ornithopter, die gerade ankoppeln (10-Tick-Takt)
+--   storage.stranded[un]    {crash_pos, damage, reason}, getragene Ernter ohne Träger und ohne Landeplatz
+--   storage.hold            {surface = LuaSurface|nil}, Ablage arrakis-hold (scripts/hold.lua)
+--   storage.flyer_gui_open[player_index] = flyer_un (scripts/flyer-gui.lua)
+--   storage.reg[nummer]     zusätzlich kind "flyer"
+-- 0.5.x → 0.6.0: „Ornithopter“ (Trigger: ersten Spice-Ernter herstellen) feuert nicht rückwirkend [U12]; für
+-- Forces mit erforschter „Spice-Ernte“ und Ernter holt migrate.ornithopter_research die Forschung nach.
+-- Herunterstufen auf 0.5.x mit getragenem Ernter ist nicht unterstützt (0.5.x kennt carried nicht): vorher absetzen.
+--
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
 -- Oberfläche schon existiert, sonst beim Anlegen der Oberfläche. Ob ein vor 0.5.4 begonnener Spielstand
@@ -22,9 +34,12 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 1
+local SCHEMA = 2
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
+local HARVESTER = "spice-harvester"
+local HARVESTING_TECH = "arrakis-spice-harvesting"
+local ORNITHOPTER_TECH = "arrakis-ornithopter"
 
 -- Schema-Version dieses Codes.
 migrate.SCHEMA = SCHEMA
@@ -40,6 +55,40 @@ function migrate.init()
   storage.gui_open = storage.gui_open or {}
   storage.migration = storage.migration or {}
   storage.migration.spice_drills = storage.migration.spice_drills or {}
+  -- Schema 2 (Phase 3c)
+  storage.flyers = storage.flyers or {}
+  storage.couplings = storage.couplings or {}
+  storage.stranded = storage.stranded or {}
+  storage.hold = storage.hold or {}
+  storage.flyer_gui_open = storage.flyer_gui_open or {}
+end
+
+-- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt
+-- (Produktionsstatistik irgendeiner Oberfläche, A23 classes.d.ts:11187, :10737)?
+local function has_harvester(force)
+  for _, h in pairs(storage.harvesters or {}) do
+    local entity = h.entity
+    if entity.valid and entity.force.index == force.index then return true end
+  end
+  for _, surface in pairs(game.surfaces) do
+    if force.get_item_production_statistics(surface).get_input_count(HARVESTER) > 0 then return true end
+  end
+  return false
+end
+
+-- Holt „Ornithopter“ nach (docs/plan-3c.md 4.15): vorhanden und nicht erforscht, „Spice-Ernte“ erforscht und die
+-- Force hat einen Ernter oder je einen hergestellt → researched = true (A23 classes.d.ts:22293), Rückgabe true.
+-- Der Trigger feuert nicht für früher hergestellte Ernter [U12]. Setzt nur, was fehlt; für T15 exportiert.
+function migrate.ornithopter_research(force)
+  if not (force and force.valid) then return false end
+  local technologies = force.technologies
+  local ornithopter = technologies[ORNITHOPTER_TECH]
+  local harvesting = technologies[HARVESTING_TECH]
+  if not (ornithopter and harvesting) then return false end
+  if ornithopter.researched or not harvesting.researched then return false end
+  if not has_harvester(force) then return false end
+  ornithopter.researched = true
+  return true
 end
 
 local function on_spice(surface, drill)
@@ -110,13 +159,20 @@ end
 
 migrate.on_configuration_changed = function()
   migrate.init()
-  if (storage.schema or 0) < 1 then
+  local old = storage.schema or 0
+  if old < 1 then
     -- 0.3.0/0.4.x → 0.5.0: Spice gehört jetzt zur Kategorie arrakis-spice-harvest, Bohrer bauen es nicht mehr ab.
     local planet = game.planets["arrakis"]
     local surface = planet and planet.surface
     if surface then storage.migration.spice_drills = migrate.report_drills(surface) end
   end
-  storage.schema = math.max(storage.schema or 0, SCHEMA)
+  if old < 2 then
+    -- 0.5.x → 0.6.0: Forschung „Ornithopter“ für Forces mit Ernter nachholen (siehe oben).
+    for _, force in pairs(game.forces) do
+      migrate.ornithopter_research(force)
+    end
+  end
+  storage.schema = math.max(old, SCHEMA)
   -- 0.5.3 → 0.5.4: Hinweis auf die alte Karte (siehe oben).
   local planet = game.planets[ARRAKIS]
   migrate.notice_old_map(planet and planet.surface)

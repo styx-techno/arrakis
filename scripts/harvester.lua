@@ -1,14 +1,20 @@
 -- Spice-Ernter (Phase 3b): Zustände, Abbau, Treibstoff, Tempo, Abbausperre, Andocken/Abdocken und Taste.
--- Bibliothek für __core__/lualib/event_handler (Plan 4.1). Daten nur in storage (Schema 1, siehe
+-- Bibliothek für __core__/lualib/event_handler (Plan 4.1). Daten nur in storage (Schema 2, siehe
 -- scripts/migrate.lua), Schlüssel ist unit_number. Ereignisse kommen ungefiltert: Jeder Handler prüft
 -- zuerst den Namen und kehrt sofort zurück. scripts/intake.lua ruft dock/undock; dieses Modul kennt
 -- intake.lua nicht, liest aber storage.intakes/storage.nozzles als Daten (Proxy-Ziele setzen und löschen).
 --
 -- Datensatz storage.harvesters[un] (Plan 4.2, dazu un = eigener Schlüssel):
---   un, entity, state = "mobile"|"deploying"|"deployed"|"packing"|"docked",
+--   un, entity, state = "mobile"|"deploying"|"deployed"|"packing"|"docked"|"carried",
 --   timer_start, timer_end, resources = {LuaEntity…}, res_index, progress, drain_rest, prod_rest,
 --   last_tick, deploy_pos = {x, y}, deploy_surface, status = nil|"harvesting"|"trunk_full"|"field_empty"|"no_fuel",
---   renders = {ring, frame}, dock, undocked_from, still_since, fuel_key, last_toggle_tick, minable_pos
+--   renders = {ring, frame}, dock, undocked_from, still_since, fuel_key, last_toggle_tick, minable_pos,
+--   carried_by = flyer_un|nil, lift_pos = {surface = surface_index, x, y}|nil (Phase 3c, docs/plan-3c.md 4.2)
+--
+-- Zustand carried (Phase 3c, docs/plan-3c.md 4.1 und 4.3): Der Ernter steht gesperrt auf der Ablage arrakis-hold,
+-- am Ornithopter hängt sein Bild. Anheben (lift) und Absetzen (land) ruft scripts/flyer.lua; dieses Modul kennt
+-- flyer.lua nicht. carried gilt als gesperrt (LOCKED: nicht abbaubar, kein Tempo-Deckel), hat aber keine Uhr (TIMED).
+-- Wartet ein Ernter ohne Träger auf einen Landeplatz (storage.stranded, flyer.lua), ist carried_by nil.
 
 local terrain = require("scripts.terrain")
 
@@ -47,7 +53,9 @@ lib.DEBOUNCE = 15
 -- Unter diesem Tempo (Kacheln/Tick) steht ein Ernter.
 lib.STILL_SPEED = 0.001
 
-local LOCKED = {deploying = true, deployed = true, packing = true}
+local LOCKED = {deploying = true, deployed = true, packing = true, carried = true}
+-- Zustände mit Aufbau-/Einpack-Uhr (timer_end); carried ist gesperrt, hat aber keine (docs/plan-3c.md 4.1).
+local TIMED = {deploying = true, packing = true}
 local ALERT = {trunk_full = true, field_empty = true, no_fuel = true}
 local STATUS_KEY =
 {
@@ -535,8 +543,45 @@ function lib.toggle(entity, player)
     return false
   elseif state == "docked" then
     return lib.undock(h)
+  elseif state == "carried" then
+    hint(player, entity, "hint-carried")
+    return false
   end
   return false
+end
+
+-- Anheben (docs/plan-3c.md 4.1, 4.6 Schritt 4): Notstart nach mobile (angedockt → abdocken), dann carried und
+-- gesperrt. carrier_un ist der Flieger (nil: wartet ohne Träger), lift_pos der Abhebepunkt
+-- {surface = surface_index, x, y} (nil: unbekannt, dann gilt bei der Landesuche nur der Startpunkt der Force).
+-- speed = 0 setzt lock(): Ein angekoppelt fahrender Ernter rollte nach dem Absetzen sonst weiter.
+function lib.lift(h, carrier_un, lift_pos)
+  local entity = h and h.entity
+  if not (entity and entity.valid) then return false end
+  if h.state ~= "carried" then lib.to_mobile(h) end
+  local un = h.un
+  h.state = "carried"
+  h.carried_by = carrier_un
+  h.lift_pos = lift_pos
+  h.undocked_from = nil
+  h.still_since = nil
+  storage.driven[un] = nil
+  storage.timers[un] = nil
+  lock(entity)
+  write_custom_status(h)
+  lib.refresh_minable(h)
+  return true
+end
+
+-- Absetzen (docs/plan-3c.md 4.1, 4.8 Schritt 3): Träger und Abhebepunkt vergessen, dann wie jeder Weg nach
+-- mobile (entsperrt, Abbausperre und Tempo-Ausgleich am neuen Ort, last_tick). undocked_from = nil: Steht er an
+-- einer freien Annahme, dockt er nach 2 s Stillstand an (scripts/intake.lua, dock_check).
+function lib.land(h)
+  if not h then return false end
+  h.carried_by = nil
+  h.lift_pos = nil
+  h.undocked_from = nil
+  set_mobile(h)
+  return true
 end
 
 -- Zustand und Status als LocalisedString (Fenster, Prüfstand).
@@ -677,7 +722,7 @@ lib.field_area = field_area
 
 -- Aufbau-/Einpack-Uhr eines Datensatzes nachführen und bei Ablauf abschließen (wie der 10-Tick-Takt).
 local function update_timer(h, tick)
-  if not LOCKED[h.state] or h.state == "deployed" then
+  if not TIMED[h.state] then
     storage.timers[h.un] = nil
     return
   end
@@ -795,6 +840,10 @@ local function on_teleported(event)
   local h = lib.get(entity)
   if not h then
     lib.register(entity)
+  elseif h.state == "carried" then
+    -- Getragen: nichts tun, sonst risse to_mobile ihn los. Landet ein fremdes Skript ihn außerhalb der Ablage,
+    -- holt scripts/flyer.lua ihn herunter (docs/plan-3c.md 4.4, care Fall b).
+    return
   elseif h.state == "mobile" then
     lib.refresh_minable(h)
     lib.apply_fuel_normalization(entity)
