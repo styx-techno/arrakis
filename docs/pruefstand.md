@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.3 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.5.4 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -10,7 +10,7 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 
 1. **Einstellung einschalten:** im Hauptmenü *Einstellungen → Mod-Einstellungen → Start* das Häkchen bei **Prüfstand** setzen und bestätigen. Factorio startet neu.
 2. **Wegwerf-Spielstand:** ein neues Spiel mit Space Age starten (oder einen Spielstand, der kaputtgehen darf). Nie den echten Spielstand nehmen.
-   Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 legt kurz leere Testoberflächen `arrakis-t11-…` an und löscht sie wieder.
+   Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 legt kurz leere Testoberflächen `arrakis-t11-…` an und löscht sie wieder. T14 erzeugt die Karte von Arrakis nacheinander auf Testoberflächen `arrakis-t14-…` und löscht auch diese wieder; die Oberfläche Arrakis selbst fasst er nicht an.
 3. **Alte Ergebnisdatei löschen** (wenn du eine saubere Datei willst): `%APPDATA%\Factorio\script-output\arrakis-test.txt`. Der Prüfstand hängt nur an.
 4. Danach die Einstellung wieder ausschalten, bevor du normal spielst.
 
@@ -18,10 +18,10 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 
 Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisherigen Messwerte stammen aus 2.0.77. Bitte in 2.1.23 neu laufen lassen:
 
-- **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt: Es wirkt jetzt linear (Endtempo ∝ √(a · Ausgleich) · t, gemessen in 2.1.23). Seit 0.5.3 rechnet der Ausgleich ab 2.1.13 deshalb mit min(1, 1/(a · t²)), davor mit min(1, 1/a) (Modell aus T2 in 2.0.77). Der nächste T2b-Lauf soll das bestätigen.
+- **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt: Es wirkt jetzt linear (Endtempo ∝ √(a · Ausgleich) · t, gemessen in 2.1.23). Seit 0.5.3 rechnet der Ausgleich ab 2.1.13 deshalb mit min(1, 1/(a · t²)), davor mit min(1, 1/a) (Modell aus T2 in 2.0.77). Bestätigt am 25.10.2026 mit 0.5.3: In T2b fuhren alle 13 Läufe des echten Ernters speed 1,453 wie Kohle, ab 1 s griff der Deckel nie ein.
 - **T4 (Annahme und Tankstutzen):** Bauregel auf Fels und Proxy-Container; der Schaltungsanschluss des Proxys ist seit 2.1.21 anders aufgebaut.
 - **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen.
-- **T11 (Kartengenerator):** siehe dort.
+- **T11 und T14 (Kartengenerator 0.5.4):** Die neue Karte ist gebaut, aber noch nicht im Spiel abgenommen. T11 entscheidet über die Spice-Regel (B oder A), T14 prüft die erzeugte Karte auf Kacheln. Beide zusammen laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T11 T14`; siehe dort.
 - **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
 
 Von Hand prüfen (2.1.23):
@@ -43,8 +43,9 @@ Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T13` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b. Dauer etwa 13 min |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T14` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14. Dauer geschätzt etwa 13 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test zurück` | zurück an die Stelle, an der du vor dem Test warst |
@@ -60,18 +61,18 @@ Die Antworten gehen dann an RCON und ins Log des Servers (`factorio-current.log`
 Ein eigener Server braucht in `server-settings.json` `"auto_pause": false`, sonst steht er ohne Spieler still und kein Test kommt voran.
 Am einfachsten macht das alles das Werkzeug [`tools/pc/pruefstand.py`](#werkzeug-toolspcpruefstandpy).
 
-**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13 und T2b.
+**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b und T14.
 T9 und T12 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt beide wie immer aus.
 `/arrakis-test zurück` gibt es nur für Spieler.
 Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gestartet: T13. Stand: /arrakis-test status`, `„alle“ gestartet: …` oder `Gestoppt.` Endet ein Test schon beim Start (etwa mit Skriptfehler), steht dort `T13 gleich beim Start beendet: …`.
 
 **Was ohne Spieler anders ist:**
 
-- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13 und T2b fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
+- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13, T2b und T14 fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
 - `alle` wartet ohne Spieler nach einer FRAGE nicht (mit Spieler nach T2 und T4 je 30 s).
 - Die Zusammenfassung von `alle` lässt den Hinweis auf `/arrakis-test zurück` weg.
 - T2: Geht die Skriptfahrt nicht, setzt der Test sonst dich in den Ernter. Ohne Spieler entfällt das: FEHLER „Manuelle Messung entfällt: kein Spieler im Spiel“, dann wertet der Test gleich aus.
-- T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Seit 0.5.3 laufen die fahrenden Testwürmer (T5 b, c, d, T6, T7 b) mit `minimum_activity_mode = full`. Factorio rechnet sie dann auch ohne Zuschauer so, als sähe jemand zu. Bis 0.5.2 standen T5 c, d und T6 Bahn A bis C auf `minimal`; im ersten Lauf ohne Spieler kam Bahn C vermutlich deshalb nicht an. Nur T5 a bleibt auf `minimal`, wie echte Würmer (Design 4.3): Ohne Spieler misst a also, wie weit ein unbeobachteter Wurm kommt. Mit Spieler ändert sich nichts, dort liefen die Würmer schon immer als `full`.
+- T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Seit 0.5.3 laufen die fahrenden Testwürmer (T5 b, c, d, T6, T7 b) mit `minimum_activity_mode = full`. Factorio rechnet sie dann auch ohne Zuschauer so, als sähe jemand zu. Bis 0.5.2 standen T5 c, d und T6 Bahn A bis C auf `minimal`. Messbar geändert hat die Umstellung nichts: Die Würmer fuhren schon vorher full, und Bahn C kam auch im ersten Lauf ohne Spieler an (0.5.2: nach 64,2 s; die Begründung im Changelog zu 0.5.3 stimmte nicht). Nur T5 a bleibt auf `minimal`, wie echte Würmer (Design 4.3). Den Modus minimal misst a damit aber nicht: Im Zustand `investigating` hält die Engine den Wurm auch ohne Zuschauer auf full (0.5.3 unter 2.1.23: full bis zur Ankunft, minimal erst etwa 4 s nach dem Wechsel zu `patrolling`). a zeigt also den ungedrosselten Anmarsch. Mit Spieler ändert sich nichts, dort liefen die Würmer schon immer als `full`.
 - Die Karte wird nicht aufgedeckt. In T13 Schritt 10 steht dann „Kartenmarkierungen entfernt 0“; das zählt nicht für OK oder FEHLER.
 
 ### `/arrakis-test status`
@@ -89,7 +90,7 @@ STATUS wartet <id> | Tick <n>
 - `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
-Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b):
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14):
 
 ```
 ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
@@ -124,7 +125,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 | `--rcon-port N`, `--port N` | Ports auf 127.0.0.1, Standard 27115 (RCON) und 34297 (Spiel) |
 | `--zeitlimit MIN` | Minuten je Test, Standard 30, bei `alle` 90 |
 | `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
-| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`. T9 und T12 nicht angeben. |
+| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9 und T12 nicht angeben. |
 
 **Was es tut:**
 
@@ -139,7 +140,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bleiben unberührt, auch die Einstellung **Prüfstand** in deinem Spiel. Die Factorio-Installation und die Mod im Repo liest es nur.
 Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
 Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
-`alle` dauert etwa 13 min (erster Lauf ohne Spieler, 0.5.2: 12 min). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+`alle` dauert geschätzt etwa 13 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
 
 **Ergebnisse:**
 
@@ -181,11 +182,16 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 
 ## „alle“
 
-`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13 und T2b nacheinander, mit 1 s Abstand.
+`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b und T14 nacheinander, mit 1 s Abstand.
 Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an.
 Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
 T9 und T12 brauchen dich und laufen nur einzeln.
+
+**Dauer (Schätzung, mit 0.5.4 noch nicht gemessen): etwa 13 min.**
+- Gemessen ist der Lauf mit 0.5.3 ohne Spieler: 724,7 s Spielzeit, also gut 12 min (Zusammenfassung der Ergebnisdatei vom 25.10.2026; 0.5.2: 723,2 s). Die größten Teile sind T2b mit 275 s, T13 mit 104 s und T5 mit 102 s.
+- Neu in 0.5.4 sind T14 mit etwa 11 s Spielzeit (je Seed etwa 70 Ticks, dazu die beiden Zusatzdurchgänge) und ein längeres T11 mit 6,0 s statt 4,7 s (40 statt 31 Ticks je Seed). Zusammen mit dem Abstand von 1 s sind das etwa 13 s Spielzeit mehr. Die Spielzeit beider Tests hängt nur an der Zahl der Ticks, nicht an der Rechenlast.
+- In echter Zeit kommt dazu, dass T11 und T14 das Spiel ausbremsen. T14 erzeugt dabei rund 6600 Chunks; wie lange das dauert, misst erst der nächste Lauf (T14 schreibt die Dauer selbst in die Datei).
 
 ## Die Tests
 
@@ -215,7 +221,9 @@ Dann **W gedrückt halten, bis die Meldung „W loslassen“ kommt** (etwa 75 s)
 ### T3 Ernter: Teleport zur Ablage (etwa 4 s)
 
 **Was passiert:** Ein voll beladener Ernter (Qualität, Ladung, Treibstoff, Brennvorgang, 60 % Gesundheit, Farbe) wird auf eine versteckte Ablage-Oberfläche `arrakis-test-hold` teleportiert und zurück.
-Zuerst steigt eine Puppe ein. Dabei übernimmt der Ernter ihre Farbe (Orange); das ist kein Fehler, eine INFO-Zeile nennt die Farbe vor und nach dem Einsteigen. Danach färbt der Test ihn wieder hellblau, damit auffällt, falls der Teleport die Farbe zurücksetzt. Verglichen wird mit dem Zustand danach, jedes Feld einzeln (22 OK-Zeilen, wenn alles erhalten bleibt). Die Gegenprobe mit `clone` (Teil c) steht nur als INFO da. Die Ablage bleibt im Spielstand und wird wiederverwendet.
+Zuerst steigt eine Puppe ein. Ein Auto übernimmt beim Einsteigen die Farbe seines Fahrers und behält sie nach dem Aussteigen; solange jemand am Steuer sitzt, lässt sich seine Farbe per Skript nicht setzen (0.5.3 unter 2.1.23). Bis 0.5.3 war der Bezug deshalb Standard-Orange, und ein Teleport, der die Farbe auf Standard zurücksetzt, fiel nicht auf.
+Seit 0.5.4 färbt der Test die Puppe vor dem Einsteigen mit einer eigenen Testfarbe (0.60/0.20/0.80/0.50, weder Standard-Orange noch die Farbe vom Aufbau). Eine INFO-Zeile nennt die Farbe vom Aufbau, die der Puppe und die des Autos mit Puppe am Steuer und sagt, woher diese kommt. Ließ sich die Puppe nicht färben und ist die Vorher-Farbe deshalb die Standardfarbe, sagt das eine eigene INFO-Zeile; dann tragen alle Farbzeilen und die ENDE-Zeile den Zusatz „nicht aussagekräftig (Standardfarbe)“ (gezählt werden sie trotzdem).
+Verglichen wird mit dem Zustand mit Puppe am Steuer, jedes Feld einzeln (22 OK-Zeilen, wenn alles erhalten bleibt). Die Gegenprobe mit `clone` (Teil c) steht nur als INFO da. Die Ablage bleibt im Spielstand und wird wiederverwendet.
 
 **Du:** nichts. **Melden:** nur die Datei.
 
@@ -233,12 +241,13 @@ Dann: Annahme (orange 2×2-Kiste in der Felsmitte) mit Greifarm zu einer Kiste, 
 
 **Was passiert:** Nacheinander vier Testwürmer auf vier Bahnen: a) zu einem Punkt hinter einem Ernter, b) Angriff auf einen Ernter, c) gebremst, d) ein Flieger schwebt 3 s über dem Wurmkopf.
 Deine Spielfigur ist dabei unverwundbar und steht südlich der Bahnen.
+Bahn a fährt mit `minimum_activity_mode = minimal` wie echte Würmer. Welchen Modus der Wurm fährt, wählt aber die Engine: Im Zustand `investigating` war es in 0.5.3 auch ohne Zuschauer full, minimal kam erst etwa 4 s nach dem Wechsel zu `patrolling`. a misst also den ungedrosselten Anmarsch. Die MESSUNG-Zeile zählt `activity_mode` deshalb insgesamt und je Zustand.
 
 **Du:** herauszoomen und zuschauen, ein Screenshot.
 
 **Melden:** Ziehen die Würmer Ascheschwaden oder dunkle Spuren hinter sich her (sollten fehlen)? Sind sie sandfarben?
 
-### T6 Fels-Ebene und Wächter (bis 110 s)
+### T6 Fels-Ebene und Wächter (etwa 65 s, höchstens 110 s)
 
 **Was passiert:** Vier Würmer gleichzeitig auf vier Bahnen, jede mit einer Felsinsel: A ohne Schutz, B mit Fels-Kollisionsebene, C mit Fels-Wächter, D greift einen Ernter vor dem Fels an (Ziel per `investigating` auf den Ernter; `attacking` hält bei Fahrzeugen nicht, siehe T5 b).
 Du stehst zwischen B und C und bist unverwundbar.
@@ -266,12 +275,27 @@ Ein vierter Flieger wird automatisch auf die Ablage teleportiert (OK/FEHLER: ver
 
 **Melden:** Welcher Schatten sieht richtig aus, A oder B? Liegt das Panzerbild unter dem Rumpf? Folgt es bei C dem Flug ohne Ruckeln?
 
-### T11 Kartengenerator: Fels-Varianten im Seed-Vergleich (etwa 5 s)
+### T11 Kartengenerator: Rauschwerte im Seed-Vergleich (etwa 6 s Spielzeit, mit `lang` etwa 20 s)
 
-**Was passiert:** T11 vergleicht die Fels-Verteilung von 0.4.0 mit vier neuen Varianten (je mit mehreren Felsanteilen), auf dem Seed deines Spielstands und acht festen Seeds, je 1600 × 1600 Kacheln.
-**Am besten im Testspielstand vom letzten Mal starten:** Dort hat Arrakis den Seed, bei dem rund um den Start alles Fels war. T11 verändert dort nichts.
-Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei etwa eine halbe Minute.** Du bleibst, wo du bist.
-Gemessen werden Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei. (Variante c3 zählt vor allem für Fels und Inseln; ihre Spicefläche ist bauartbedingt klein.)
+**Was passiert:** T11 rechnet auf dem Seed deines Spielstands und acht festen Seeds (mit `/arrakis-test T11 lang` 30 Seeds) die Rauschwerte des Kartengenerators auf einem 8-Kachel-Raster aus, je 1600 × 1600 Kacheln.
+Es wird keine Karte erzeugt: Für jeden Seed entsteht kurz eine leere Testoberfläche, T11 liest dort nur die Rauschwerte und löscht sie wieder. **Das Spiel ruckelt dabei**; wie lange in echter Zeit, ist mit 0.5.4 noch nicht gemessen (mit `lang` etwa dreimal so lange, weil es 30 statt 9 Seeds sind). Du bleibst, wo du bist.
+Die Spielzeit im Titel hängt nur an der Zahl der Ticks: je Seed 40 (1 zum Anlegen, 7 für die Rauschwerte, je Rauschen einer für die Werteverteilung, also 15, und je Variante einer, also 17). Das sind 6,0 s für 9 Seeds und 20 s für 30. 0.5.3 hatte 8 Rauschwerte und 15 Varianten, also 31 Ticks je Seed, und brauchte gemessen 4,7 s.
+
+Verglichen werden 17 Varianten:
+- `live`: die Karte von 0.5.4 (`arrakis_v2_rock`: Kegel-Inseln c4 mit Startinsel und Graben). Im Kartenbild steht `o` hier für die Spicezone nach Regel B.
+- `alt`: die Karte von 0.4.0 bis 0.5.3 (`arrakis_rock`), zum Vergleich.
+- c1 bis c4: die Kandidaten aus 0.4.1 (c1 und c2 mit 15 bis 30 % Fels, c3 und c4 mit je drei Felsschwellen). Aus dem Lauf vom 25.10.2026 wurde c4 mit Felsschwelle 0 die Karte 0.5.4.
+- `c4v2`: der Kegel der Karte 0.5.4 (`arrakis_v2_c4`, Verzerrung auf ±25 Kacheln je Achse begrenzt) ohne Startinsel und Graben, Felsschwelle 0.
+
+Gemessen werden je Variante Felsanteil, Inseln, Abstand des Sands zum Fels und die Schwelle t100, ab der Spice mindestens 100 Kacheln vom Fels entfernt liegt. (Variante c3 zählt vor allem für Fels und Inseln; ihre Spicefläche ist bauartbedingt klein.)
+Seit 0.5.4 prüft T11 außerdem die Spice-Regel der Karte 0.5.4:
+- **Zone** (OK oder FEHLER): Kein Rasterpunkt der Spicezone nach Regel B (`arrakis_v2_spice_zone`) liegt näher als 100 Kacheln am nächsten Fels-Rasterpunkt von `live`; dazu der Flächenanteil der Zone. Ist die Zone auf einem Seed leer, sagt das eine INFO-Zeile; ist sie auf allen Seeds leer, ist das ein FEHLER „nicht prüfbar“ (sonst bestünde ein kaputter Ausdruck die Prüfung). Regel A (`arrakis_v2_spice_zone_a`) steht nur als MESSUNG da.
+- **Kegel** (OK oder FEHLER): t100 des unverzerrten Kegels `arrakis_v2_c4u` gegen den Fels aus `arrakis_v2_c4 > 0` liegt auf jedem Seed bei mindestens −1,53. Regel B setzt voraus, dass `spot_noise` das Maximum linearer Kegel ist, dass verzerrter und unverzerrter Aufruf dieselben Kegelmitten setzen und dass `clamp` die Verzerrung wirklich begrenzt. Genau das prüft „Kegel“. Das Modell lässt bis −(0,955 / 90) · (√2 · 25 + 108) = −1,521 zu; die Grenze liegt eine Hundertstel darunter, damit ein Seed mit Verzerrung an der Klemme nicht fälschlich scheitert. Ohne c4-Fels auf allen Seeds: FEHLER „nicht prüfbar“.
+- MESSUNG: die Spicefläche von c4 (Felsschwelle 0) und `c4v2` je Seed bei den festen Schwellen −1,9 / −2,0 / −2,1 / −2,2 und die gemessene Verzerrung `wx − x`, `wy − y` (Soll höchstens ±25).
+
+Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei. Die ENDE-Zeile nennt das Urteil: „Zone ok“, „Zone verletzt“ oder „Zone nicht prüfbar“, „Regel B bestätigt“, „Regel B nicht belegt → Regel A“ oder „Kegel nicht prüfbar“.
+**Was daraus folgt:** Die Karte 0.5.4 nutzt Regel B. Meldet „Kegel“ einen FEHLER, kommt Regel A (verzerrtes c4 unter −2,10, Spicezone etwa ein Viertel so groß): In `prototypes/planet/planet-map-gen.lua` wird dann `local SPICE_RULE = "_a"` eingetragen. Regel A hat eigene Ausdrücke (`arrakis_v2_spice_richness_a`, `arrakis_v2_spice_probability_a`), eine schon angelegte Oberfläche behält so ihre Regel. Bei einem FEHLER in „Zone“ wird der Ausdruck angepasst; ist 0.5.4 schon veröffentlicht, unter neuen Namen (`arrakis_v3_…`). Das Raster sieht Fels zwischen den Punkten nicht; genau auf Kacheln prüft T14.
+T11 braucht die Einstellung **Prüfstand** (die Kandidaten c1 bis c4 gibt es nur dann) und alle Rauschausdrücke der Karte 0.5.4. Fehlt einer, bricht T11 gleich mit FEHLER „Rauschausdrücke fehlen: …“ ab.
 
 In der Factorio-Version laufen lassen, in der gespielt wird (jetzt 2.1.23). 2.1.7 hat Voronoi-Rauschen mit hohem jitter korrigiert; c3-Werte aus 2.0.77 gelten dort nicht sicher.
 
@@ -325,10 +349,36 @@ Die MESSUNG-Zeilen dieser Läufe nennen a, t, Tempo im Verhältnis zu Kohle, ein
 Am Ende fassen zwei INFO-Zeilen zusammen. Die erste zeigt, wie t wirkt (Faktor 1.000 bzw. p = 0 heißt keine Wirkung, Faktor ≈ t bzw. p = 1 heißt linear). Die zweite zeigt, ob der neue Ausgleich das Tempo ohne Deckel unter 1,5 Kacheln/s hält („hält ohne Deckel“ / „hält NICHT ohne Deckel“), die größte Abweichung von Tempo/Kohle = 1,000 in Prozent und ab 1 % Abweichung die Formel, die zu den Messungen passen würde (min(1, 1/(a · t^(2p)))); vor 2.1.13 sagt sie nur, dass der neue Ausgleich dort gleich dem alten ist. Griff der Deckel schon im Lauf mit Kohle ein, warnt eine weitere INFO-Zeile: Dann sind Tempo/Kohle, Faktor und p zu hoch.
 Die ENDE-Zeile nennt zusätzlich den Bereich von p und das höchste Tempo mit neuem Ausgleich ohne Deckel.
 Je Lauf stehen Tempo (`speed`), Spitze, Bodentempo (zurückgelegte Strecke ab 5 s) und der Ausgleichswert `effectivity_modifier` in der Zeile.
-FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet (min(1, 1/(a · t²)) ab 2.1.13, sonst min(1, 1/a)). Dazu gegen zu viel Ausgleich: Festbrennstoff, Raketen- und Atomtreibstoff (je 15 s wie Kohle) müssen im Mittel mindestens 97 % des Tempos mit Kohle fahren. Ohne Qualität im Spiel entfallen die legendären Läufe (drei, vor 2.1.13 zwei) mit je einer INFO-Zeile.
+FEHLER heißt (ab der ersten Sekunde eines Laufs): Spitze über 1,5 Kacheln/s, der Tempo-Deckel des Mods musste eingreifen (dann war das Tempo vor dem Deckel über 1,5), Bodentempo über 1,5 oder Ausgleich nicht wie erwartet (min(1, 1/(a · t²)) ab 2.1.13, sonst min(1, 1/a)). Dazu gegen zu viel Ausgleich: Alle eingetragenen Läufe mit einem anderen Brennstoff als Kohle und derselben Dauer wie Kohle (15 s) müssen im Mittel mindestens 97 % des Tempos mit Kohle fahren. Das sind fünf Läufe: Festbrennstoff, Raketentreibstoff, Atomtreibstoff, legendärer Raketentreibstoff und voller Laderaum (ohne Qualität vier). Nicht geprüft werden die sieben Läufe mit 10 s (nach Westen, Norden, Süden, schräg nach NO und SW, negative Koordinaten nach O und W) und die Läufe „ohne Deckel“ des zweiten Ernters. Die Start-INFO zählt die geprüften Läufe auf; die OK-Zeilen nennen nur verfehlte Kriterien. Ohne Qualität im Spiel entfallen die legendären Läufe (drei, vor 2.1.13 zwei) mit je einer INFO-Zeile.
 Am Ende entfernt der Test beide Ernter.
 
 **Du:** nichts, zuschauen (die Ernter fahren an dir vorbei). **Melden:** nur die Datei.
+
+### T14 Kartengenerator: Karte echt (Kacheln) (geschätzt etwa 11 s Spielzeit, ab 0.5.4)
+
+**Was passiert:** T14 nimmt die Karte von 0.5.4 auf echten Kacheln ab. Für jeden Seed (der deines Spielstands und dieselben acht festen wie in T11; mit `/arrakis-test T14 lang` 30 Seeds) legt er eine Testoberfläche `arrakis-t14-…` mit den Kartengenerator-Einstellungen des Planeten Arrakis an und erzeugt dort die Chunks im Radius 12 um den Ursprung, also 800 × 800 Kacheln.
+Dann liest er Felskacheln und Ressourcen und rechnet für jede Kachel den genauen Abstand zur nächsten Felskachel (von Kachelmitte zu Kachelmitte). Danach löscht er die Oberfläche. Arrakis selbst und deine Spielfigur bleiben unberührt; Testoberflächen eines abgebrochenen Laufs löscht der nächste Start.
+Nach allen Seeds folgen zwei Durchgänge nur auf dem ersten Seed: das Spice mit dem Spice-Regler auf Größe 0 (Chunks im Radius 9, bis 288 Kacheln je Achse und damit auch dort, wo reguläre Felder liegen dürfen) und dieselbe Fläche wie bei den Seeds mit der Karte 0.4.0, nur zum Zeitvergleich.
+**Das Spiel läuft dabei langsam:** Je Tick erzeugt T14 eine Chunkreihe (25 Chunks), je Seed sind es etwa 70 Ticks. Die Dauer im Titel ist daraus geschätzt; wie lange die Chunk-Erzeugung in echter Zeit dauert, misst T14 selbst. Du bleibst, wo du bist.
+
+Spice bis 160 Kacheln vom Start zählt als Lehrfeld, alles weiter draußen als reguläres Feld.
+**FEHLER** heißt, je Seed:
+- Reguläres Spice-Sand liegt näher als 100 Kacheln am Fels. Ein Seed ohne reguläres Spice im Gebiet ist dafür nicht prüfbar (INFO); gibt es auf keinem Seed reguläres Spice, ist das ein FEHLER „nicht prüfbar“.
+- Es gibt kein Lehrfeld, eine Lehrfeld-Kachel liegt nicht 40–60 Kacheln vom Fels, oder das Lehrfeld hat nicht 100 000 Spice-Sand ± 5 % (nachgerechnet 99 910 bis 100 190). Von Kachelmitte zu Kachelmitte gemessen liegt eine richtige Karte bei 40,7 bis 60,0 Kacheln, eine Verschiebung um eine Kachel fällt also auf.
+- Spice liegt auf Fels, Erz auf Sand, oder unter einem Tiefenwasser (3 × 3 Kacheln wie die Pumpe) liegt eine Sandkachel.
+- Der Ursprung liegt nicht auf Fels, oder auf der Startinsel fehlt eines der Erze von Arrakis oder ein Tiefenbrunnen.
+- Graben: Fels außer der Startinsel liegt näher als 218,5 Kacheln am Start (220 abzüglich Felskante und Kachelraster).
+- Chunks wurden nicht erzeugt (drei Versuche je Reihe).
+
+Dazu einmal auf dem ersten Seed: Bei Spice-Größe 0 fehlt das Lehrfeld oder hat nicht 100 000 Spice-Sand ± 5 %, oder es liegt noch reguläres Spice.
+Am Ende steht je Prüfung eine OK-Zeile über alle Seeds, bei Verstößen eine INFO-Zeile mit den Seeds (die FEHLER stehen darüber).
+Die ENDE-Zeile lautet „9 Seeds, alle Prüfungen bestanden“ bzw. „9 Seeds, K Verstöße; Einzelwerte in arrakis-test.txt“.
+
+**MESSUNG:** Zahl und Größe der regulären Felder, Abstand vom Start zum nächsten regulären Feld, Lehrfeld (Lage, Menge, Abstand zum Fels, größter dichter Block für das 13×13-Feld des Ernters), Startinsel (Kacheln, Rand von … bis … Kacheln vom Start), Graben (nächster Fels außer der Startinsel), Felsanteil und die Dauer der Chunk-Erzeugung je Seed und zusammen, auch bei Spice-Größe 0 und mit der Karte 0.4.0. Die Zeitzeilen stehen nur in der Datei.
+Der größte dichte Block ist nur Messung: Mit Radius 9 passt ein dichter 13×13-Block nur, wenn die Mitte des Lehrfelds nah genug an einer Kachelmitte liegt (nachgerechnet bei etwa 83 % der Lagen). Sonst fehlen dem besten Block 1 bis 4 Eckkacheln. Ob das so bleibt, entscheidet Max.
+Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine INFO-Zeile, dass T14 nicht die Karte 0.5.4 prüft.
+
+**Du:** nichts. **Melden:** nur die Datei.
 
 ## Bekannte Grenzen
 
@@ -337,4 +387,8 @@ Am Ende entfernt der Test beide Ernter.
 - T6, Bahn D: Bewertet wird der Kopf bis zum Biss. Was der Wurm danach tut, steht als MESSUNG/INFO da (im Spiel taucht er beim Biss ab).
 - Im normalen Spiel erntet der Ernter nur auf Arrakis. Die Prüfstand-Fläche gibt dieselbe Einstellung **Prüfstand** frei, die auch den Befehl bringt; nur deshalb kann T13 dort mit dem echten Code ernten.
 - T13, Schritt 11: Bewegt sich auch das normale Auto auf dem Band nicht, sagt die Messung nichts; dann meldet der Schritt FEHLER „nicht prüfbar“. Bitte trotzdem die Datei schicken.
+- T11 sieht Fels nur auf dem 8-Kachel-Raster. Fels zwischen zwei Rasterpunkten findet erst T14.
+- T14 kennt nur Fels im erzeugten Gebiet (800 × 800 Kacheln). Spice-Kacheln, die weniger als 100 Kacheln vom Gebietsrand liegen und deren nächster Fels im Gebiet mindestens 100 Kacheln weg ist, gelten als „nicht gewertet“, nicht als FEHLER.
+- T11 und T14 lesen die Kartengenerator-Einstellungen des Planeten-Prototyps. Was ein vor 0.5.4 begonnener Spielstand erzeugt, in dem Arrakis noch nicht angelegt ist (Karte 1 oder Karte 2), zeigen sie nicht; das zeigt erst ein Ladetest mit einer Kopie (die Mod meldet die alte Karte beim Anlegen).
+- T14 misst die Zeit mit einem Profiler, den Factorio nicht speichert. Wird mitten im Test ein Spielstand geladen, steht bei der Dauer „nicht messbar“.
 - T2b liest das Tempo im Prüfstand-Takt, nach dem Tempo-Deckel des Mods. Deshalb zählt jeder Lauf, wie oft der Deckel eingegriffen hat („Deckel n× (ab 1 s m×)“); in der ersten Sekunde ist das nach einem Brennstoffwechsel erlaubt, danach ist es ein FEHLER. Die INFO-Zeile am Ende fasst das zusammen. Die echte Fahrt zeigt in jedem Fall das Bodentempo.

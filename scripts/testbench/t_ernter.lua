@@ -1546,6 +1546,12 @@ local function t2b_planned(spec)
   return not (spec.norm == "new" and not top_speed_acts())
 end
 
+-- Gilt das 97-%-Kriterium (T2B_SLOWER) für spec? Eingetragene Läufe mit anderem Brennstoff und gleicher Dauer wie
+-- Kohle (coal_ticks). Start-INFO und Auswertung nehmen beide diese Regel.
+local function t2b_slower_checked(spec, coal_ticks)
+  return not spec.raw and spec.fuel ~= "coal" and coal_ticks ~= nil and spec.ticks == coal_ticks
+end
+
 local function t2b_park(d, which)
   return which == "raw" and at(d.track_center, -40, 50) or at(d.track_center, 40, 50)
 end
@@ -1797,7 +1803,7 @@ local function t2b_end(run, tb)
     check(failed, ground ~= nil and ground <= CAP, "Bodentempo ≤ 1.5")
     check(failed, math.abs(modifier - expected) <= 1e-3, "Ausgleich " .. string.format("%.3f", expected))
     local coal = d.results.coal
-    if spec.fuel ~= "coal" and coal and coal.mean and coal.mean > 0 and coal.ticks == spec.ticks then
+    if coal and coal.mean and coal.mean > 0 and t2b_slower_checked(spec, coal.ticks) then
       check(failed, mean ~= nil and mean >= T2B_SLOWER * coal.mean, string.format("Mittel ≥ %d %% von Kohle (%s), nicht zu viel ausgeglichen",
         math.floor(T2B_SLOWER * 100 + 0.5), tb.num(T2B_SLOWER * coal.mean, 3)))
     end
@@ -1840,22 +1846,33 @@ local function t2b_start(run, tb)
   local seated = car.get_driver() ~= nil and raw.get_driver() ~= nil
   tb.log(run, (h and seated) and "INFO" or "FEHLER", string.format("Ernter Nr. %d eingetragen %s, im Tempo-Deckel %s; Vergleichsernter Nr. %d eingetragen %s; Dummy-Fahrer sitzen %s",
     car.unit_number, tostring(h ~= nil), tostring(driven), raw.unit_number, tostring(harvester.get(raw) ~= nil), tostring(seated)))
-  local planned, ticks = 0, 0
+  -- Welche Läufe das 97-%-Kriterium prüft, steht in der Start-INFO (OK-Zeilen nennen nur verfehlte Kriterien).
+  local planned, ticks, slower, other_duration, coal_ticks = 0, 0, {}, 0, nil
+  for _, spec in ipairs(T2B_RUNS) do
+    if spec.key == "coal" then coal_ticks = spec.ticks end
+  end
   for _, spec in ipairs(T2B_RUNS) do
     if t2b_planned(spec) and not (spec.quality and not quality_exists(spec.quality)) then
       planned = planned + 1
       ticks = ticks + spec.ticks + T2B_PAUSE
+      if t2b_slower_checked(spec, coal_ticks) then
+        table.insert(slower, spec.label)
+      elseif not spec.raw and spec.fuel ~= "coal" then
+        other_duration = other_duration + 1
+      end
     end
   end
   local acts = top_speed_acts()
   tb.log(run, "INFO", string.format("%d Läufe je 10–15 s, Dauer etwa %.1f min. Kriterium mit Ausgleich: ab 1 s Spitze ≤ 1.5 Kacheln/s"
-    .. " und kein Eingriff des Tempo-Deckels, Bodentempo ≤ 1.5 Kacheln/s, effectivity_modifier = %s (base %s, Höchsttempo t wirkt %s %s),"
-    .. " bei anderem Brennstoff und gleicher Dauer wie Kohle Mittel ≥ 97 %% von Kohle (nicht zu viel ausgeglichen)."
+    .. " und kein Eingriff des Tempo-Deckels, Bodentempo ≤ 1.5 Kacheln/s, effectivity_modifier = %s (base %s, Höchsttempo t wirkt %s %s)."
+    .. " Dazu Mittel ≥ %d %% von Kohle (nicht zu viel ausgeglichen) in allen eingetragenen Läufen mit anderem Brennstoff und gleicher"
+    .. " Dauer wie Kohle (%d s): %s; nicht in den %d eingetragenen Läufen mit anderer Dauer und nicht in den Läufen „ohne Deckel“."
     .. " speed wird nach dem Deckel des Laufzeitcodes gelesen; ein Eingriff heißt, das Tempo war davor über 1.5."
     .. " Die Läufe „ohne Deckel“ fährt der Vergleichsernter; sie werden nur gemessen: ohne Ausgleich und mit altem Ausgleich 1/a"
     .. " zeigen sie, wie t wirkt, mit neuem Ausgleich das Tempo, das sonst der Deckel verdeckt.%s",
     planned, ticks / 3600, formula_text(false), tostring(script.active_mods["base"]), acts and "ab" or "erst ab", T2B_TOP_SPEED_FROM,
-    acts and "" or (" Die Läufe mit neuem Ausgleich entfallen (vor " .. T2B_TOP_SPEED_FROM .. " gleich dem alten).")))
+    math.floor(T2B_SLOWER * 100 + 0.5), math.floor((coal_ticks or 0) / 60), #slower > 0 and table.concat(slower, ", ") or "–",
+    other_duration, acts and "" or (" Die Läufe mit neuem Ausgleich entfallen (vor " .. T2B_TOP_SPEED_FROM .. " gleich dem alten).")))
   tb.watch(run, nil, at(d.track_center, 12, 12))
   d.run_index = 1
   d.phase = "wait"

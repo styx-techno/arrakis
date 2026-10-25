@@ -538,17 +538,26 @@ end
 -- Ein voll ausgestatteter Ernter wird mit und ohne Fahrer auf die versteckte Ablage-Oberfläche
 -- teleportiert und zurück; der Zustand wird je Feld mit dem Vorher-Datensatz verglichen.
 -- Vorher-Datensatz (d.before) ist der Zustand, nachdem der Dummy-Fahrer eingestiegen ist: Das Auto übernimmt
--- beim Einsteigen die Farbe des Fahrers (0.4.0: Puppe ohne Spieler = Standard-Orange). Das ist keine Folge des
--- Teleports; der Zustand vom Aufbau steht in d.before_seat und in der MESSUNG „Aufbau (noch ohne Fahrer)“.
--- Danach bekommt das Auto wieder T3_COLOR: Mit Standard-Orange als Vorher fiele ein Teleport, der die Farbe auf
--- Standard zurückstellt, nicht auf.
+-- beim Einsteigen die Farbe des Fahrers und behält sie nach dem Aussteigen; solange er sitzt, wirkt car.color = …
+-- nicht (0.5.3 mit 2.1.23). Das ist keine Folge des Teleports; der Zustand vom Aufbau steht in d.before_seat und
+-- in der MESSUNG „Aufbau (noch ohne Fahrer)“.
+-- Deshalb färbt der Test die Puppe vor dem Einsteigen mit T3_DRIVER_COLOR: Mit Standard-Orange als Vorher fiele ein
+-- Teleport oder Klon, der die Farbe auf Standard zurückstellt, nicht auf. Ist die Vorher-Farbe trotzdem die
+-- Standardfarbe (Puppe ließ sich nicht färben), heißen die Farbzeilen „nicht aussagekräftig (Standardfarbe)“.
 
 local T3_STEP = 30
 local T3_ORIENTATION = 0.375
+-- Farbe des Autos beim Aufbau (ohne Fahrer).
 local T3_COLOR = {r = 0.2, g = 0.7, b = 1, a = 1}
+-- Testfarbe der Puppe: weder Standard-Orange noch T3_COLOR, damit die Herkunft der Autofarbe erkennbar bleibt.
+local T3_DRIVER_COLOR = {r = 0.6, g = 0.2, b = 0.8, a = 0.5}
+-- Standardfarbe einer Spielfigur ohne Spieler (gelesen in 0.4.0 bis 0.5.3), falls die Puppe sie nicht verrät.
+local T3_DEFAULT_COLOR = "0.87/0.50/0.13/0.50"
+local T3_COLOR_NOTE = "nicht aussagekräftig (Standardfarbe)"
 
 -- Felder des Zustandsvergleichs. tolerance für Zahlen, kilo = Anzeige in kJ.
 -- unsupported = Schlüssel in run.data: ist er gesetzt, kann das Auto das Feld nicht tragen (nur INFO, nicht gezählt).
+-- note = Schlüssel in run.data: ist er gesetzt, sagt „gleich“ bei diesem Feld nichts (Text steht dahinter, wird gezählt).
 local T3_FIELDS =
 {
   {key = "trunk", label = "Kofferraum"},
@@ -558,7 +567,7 @@ local T3_FIELDS =
   {key = "health", label = "Gesundheit", tolerance = 0.01},
   {key = "quality", label = "Qualität"},
   {key = "label", label = "Label", unsupported = "label_unsupported"},
-  {key = "color", label = "Farbe"},
+  {key = "color", label = "Farbe", note = "color_note"},
   {key = "unit_number", label = "unit_number", integer = true},
   {key = "orientation", label = "Ausrichtung", tolerance = 0.001, digits = 3},
   {key = "minable_flag", label = "minable_flag"}
@@ -634,18 +643,20 @@ end
 -- Vergleich je Feld. per_field: jedes Feld eine Zeile (level_same/level_diff), sonst gleiche Felder gesammelt.
 -- Gibt die Zahl gleicher Felder und die Zahl verglichener Felder zurück.
 local function t3_compare(run, tb, prefix, before, after, level_same, level_diff, per_field)
-  local same, compared, equal_labels, skipped = 0, 0, {}, {}
+  local same, compared, equal_labels, skipped, notes = 0, 0, {}, {}, {}
   for _, field in ipairs(T3_FIELDS) do
     local a, b = before[field.key], after[field.key]
+    local note = field.note and run.data[field.note]
     if field.unsupported and run.data[field.unsupported] then
       table.insert(skipped, field.label)
     elseif t3_same(field, a, b) then
       compared = compared + 1
       same = same + 1
       if per_field then
-        tb.log(run, level_same, prefix .. field.label .. " gleich: " .. t3_value_text(tb, field, b))
+        tb.log(run, level_same, prefix .. field.label .. " gleich: " .. t3_value_text(tb, field, b) .. (note and ("; " .. note) or ""))
       else
         table.insert(equal_labels, field.label)
+        if note then table.insert(notes, field.label .. " " .. note) end
       end
     else
       compared = compared + 1
@@ -654,7 +665,8 @@ local function t3_compare(run, tb, prefix, before, after, level_same, level_diff
     end
   end
   if not per_field and #equal_labels > 0 then
-    tb.log(run, level_same, prefix .. "gleich: " .. table.concat(equal_labels, ", "))
+    tb.log(run, level_same, prefix .. "gleich: " .. table.concat(equal_labels, ", ")
+      .. (#notes > 0 and ("; " .. table.concat(notes, "; ")) or ""))
   end
   if #skipped > 0 then
     tb.log(run, "INFO", prefix .. "nicht verglichen (am Auto nicht unterstützt): " .. table.concat(skipped, ", "))
@@ -714,20 +726,49 @@ end
 
 local function t3_summary(run)
   local d = run.data
-  return string.format("a) mit Fahrer: %s; b) Ablage %s/%s gleich, zurück %s/%s gleich; c) Klon %s/%s gleich",
+  return string.format("a) mit Fahrer: %s; b) Ablage %s/%s gleich, zurück %s/%s gleich; c) Klon %s/%s gleich%s",
     d.a_result or "–", count_text(d.b_hold_same), count_text(d.b_hold_total or #T3_FIELDS), count_text(d.b_back_same),
-    count_text(d.b_back_total or #T3_FIELDS), count_text(d.c_same), count_text(d.c_total or #T3_FIELDS))
+    count_text(d.b_back_total or #T3_FIELDS), count_text(d.c_same), count_text(d.c_total or #T3_FIELDS),
+    d.color_note and ("; Farbe " .. d.color_note) or "")
 end
 
 local t3_steps = {}
 
--- a) Dummy-Fahrer einsteigen lassen. Teleport erst im nächsten Schritt: Der Vorher-Datensatz soll den Zustand
--- mit Fahrer zeigen, auch falls das Auto die Farbe des Fahrers erst im nächsten Tick übernimmt.
+-- a) Dummy-Fahrer (Puppe) erzeugen, mit T3_DRIVER_COLOR färben und erst dann einsteigen lassen (wie
+-- tb.dummy_driver, nur mit dem Färben dazwischen). Teleport erst im nächsten Schritt: Der Vorher-Datensatz soll den
+-- Zustand mit Fahrer zeigen, auch falls das Auto die Farbe des Fahrers erst im nächsten Tick übernimmt.
 t3_steps[1] = function(run, tb)
   local d = run.data
   local car = t3_car(run, tb)
   if not car then return false end
-  d.driver = tb.dummy_driver(car)
+  local surface = car.surface
+  local position = surface.find_non_colliding_position("character", car.position, 10, 0.5) or car.position
+  local driver = surface.create_entity{name = "character", position = position, force = car.force}
+  if not driver then
+    tb.log(run, "INFO", "a) Dummy-Fahrer ließ sich nicht erzeugen; a) läuft ohne Fahrer")
+    return true
+  end
+  d.driver = driver
+  local standard = read(function() return driver.color end)
+  d.standard_color = type(standard) == "table" and color_text(standard) or nil
+  local ok_color, err_color = pcall(function() driver.color = T3_DRIVER_COLOR end)
+  local after = read(function() return driver.color end)
+  local driver_color = color_text(after)
+  local wanted = color_text(T3_DRIVER_COLOR)
+  -- Gefärbt heißt: lesbar und gleich der Testfarbe oder wenigstens anders als die Standardfarbe (Rundung beim Speichern).
+  if not ok_color then
+    tb.log(run, "INFO", "a) Dummy-Fahrer färben ging nicht (" .. tostring(err_color) .. "); er steigt mit "
+      .. (d.standard_color or "unbekannter Farbe") .. " ein")
+  elseif type(after) ~= "table" then
+    tb.log(run, "INFO", "a) Farbe des Dummy-Fahrers nicht lesbar (" .. driver_color .. "); ob das Färben wirkte, zeigt die Farbe des Autos mit Fahrer")
+  elseif driver_color == wanted or (d.standard_color and driver_color ~= d.standard_color) then
+    tb.log(run, "INFO", "a) Dummy-Fahrer vor dem Einsteigen gefärbt: " .. (d.standard_color or "–") .. " → " .. driver_color
+      .. (driver_color == wanted and "" or (" (gesetzt " .. wanted .. ")")))
+  else
+    tb.log(run, "INFO", "a) Dummy-Fahrer färben ging nicht (Lesewert danach " .. driver_color .. "); er steigt mit "
+      .. (d.standard_color or "unbekannter Farbe") .. " ein")
+  end
+  car.set_driver(driver)
   return true
 end
 
@@ -741,17 +782,28 @@ t3_steps[2] = function(run, tb)
   local driver = d.driver
   local seated = driver and driver.valid and car.get_driver() ~= nil
   local seat = d.before_seat
-  local seated_color = color_text(read(function() return car.color end))
-  local recolored = ""
-  if seated_color ~= seat.color then
-    local ok_color = pcall(function() car.color = T3_COLOR end)
-    recolored = ok_color and ", danach wieder auf " .. color_text(read(function() return car.color end)) .. " gesetzt"
-      or ", wieder setzen ging nicht"
-  end
   d.before = t3_snapshot(car)
-  tb.log(run, "INFO", "a) Farbe vor dem Einsteigen " .. seat.color .. ", mit Dummy-Fahrer " .. seated_color
-    .. (seated_color == seat.color and " (gleich)" or " (das Auto übernimmt die Farbe des Fahrers)") .. recolored
-    .. "; „vorher“ heißt ab hier: Zustand mit Fahrer, vor dem Teleport")
+  local seated_color = d.before.color
+  local raw_driver_color = driver and driver.valid and read(function() return driver.color end)
+  local driver_color = type(raw_driver_color) == "table" and color_text(raw_driver_color) or (raw_driver_color and "nicht lesbar" or "–")
+  local origin
+  if seated_color == seat.color then
+    origin = " (gleich wie vor dem Einsteigen)"
+  elseif seated_color == driver_color then
+    origin = " (das Auto übernimmt die Farbe des Fahrers)"
+  elseif type(raw_driver_color) ~= "table" then
+    origin = " (anders als vor dem Einsteigen)"
+  else
+    origin = " (weder die Farbe vom Aufbau noch die des Fahrers)"
+  end
+  tb.log(run, "INFO", "a) Farbe vor dem Einsteigen " .. seat.color .. ", Dummy-Fahrer " .. driver_color .. ", Auto mit Dummy-Fahrer "
+    .. seated_color .. origin .. "; „vorher“ heißt ab hier: Zustand mit Fahrer, vor dem Teleport")
+  -- Standard-Orange als Vorher: ein Teleport oder Klon, der die Farbe auf Standard zurückstellt, fiele nicht auf.
+  if seated_color == (d.standard_color or T3_DEFAULT_COLOR) then
+    d.color_note = T3_COLOR_NOTE
+    tb.log(run, "INFO", "a) Vorher-Farbe " .. seated_color .. " ist die Standardfarbe der Spielfigur; die Farbzeilen ab hier sind "
+      .. T3_COLOR_NOTE)
+  end
   local others = {}
   for _, field in ipairs(T3_FIELDS) do
     if field.key ~= "color" and not (field.unsupported and d[field.unsupported])

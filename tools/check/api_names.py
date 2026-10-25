@@ -126,6 +126,9 @@ WRITE_WHITELIST = {
   "lane.max_speed", "check.tick",
   # t_map: d = run.data, f = Spicefeld-Datensatz (Gruppenliste, Felsabstand in Kacheln)
   "d.groups", "f.grid",
+  # t_karte: Datensätze in run.data (d.current: Werte des laufenden Seeds, d.grid: Abstandsgitter) und
+  # Messtabellen je Seed bzw. Spicefeld (Zahl der Kacheln, Feld am Gebietsrand)
+  "d.current", "d.grid", "island.tiles", "lehr.tiles", "regular.tiles", "field.tiles", "field.border",
   # t_worm: p/lane/check = Datensätze je Teil (Wurm-Referenz, Weglänge, Höchsttempo, Modusname)
   "p.unit", "p.path", "p.max_speed", "p.mode", "lane.unit", "check.unit",
   # harvester.lua: h = Ernter-Datensatz in storage.harvesters, Feld status laut Plan 4.2 (kein LuaEntity.status)

@@ -2,7 +2,11 @@
 
 Factorio-Mod für **Factorio 2.1 + Space Age** (ab 2.1.23): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Factorio 2.1 lädt keine Mods für 2.0. Für **Factorio 2.0.77** gibt es den Zweig `factorio-2.0` (Mod 0.5.0): im Mod-Ordner `arrakis` einmal `git fetch` und dann `git checkout factorio-2.0` ausführen.
 
-Stand: Phase 3b (0.5.3). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern). Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
+Stand: Phase 3b (0.5.4). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Neu ist der Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern).
+
+Neu in 0.5.4 ist die Karte von Arrakis: Der Start liegt auf einer Startinsel mit allen Erzen und einem Tiefenbrunnen, ringsum bis 220 Kacheln vom Start nur Sand, dahinter gleich große Felsinseln. Ein Lehrfeld mit etwa 100 000 Spice-Sand liegt 41–59 Kacheln vom Inselrand, alle anderen Spicefelder mindestens 100 Kacheln vom Fels. **Sicher gibt es die neue Karte nur in einem neuen Spiel.** Spielstände, in denen Arrakis schon angelegt ist, behalten die alte Karte, auch in neu erkundeten Gebieten. Ob ein älterer Spielstand, in dem Arrakis noch nicht angelegt ist, beim ersten Besuch die neue oder die alte Karte bekommt, ist noch nicht geprüft. Bekommt Arrakis die alte Karte, sagt die Mod das einmal im Chat.
+
+Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 
@@ -21,11 +25,11 @@ Stand: Phase 3b (0.5.3). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-San
 Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer und den Kartengenerator, misst selbst und schreibt die Ergebnisse auf. Er ist nur für Testspielstände gedacht. Ausführliche Anleitung je Test: [`docs/pruefstand.md`](docs/pruefstand.md).
 
 1. **Einstellung einschalten:** im Hauptmenü *Einstellungen → Mod-Einstellungen → Start* das Häkchen bei **Prüfstand** setzen und bestätigen (Factorio startet neu). Ist die Einstellung aus, gibt es weder Test-Objekte noch den Befehl.
-2. **Neues Spiel oder Wegwerf-Spielstand** mit Space Age nehmen, nie den echten Spielstand. Die Tests laufen auf einer eigenen Oberfläche. T11 legt nur kurz leere Testoberflächen an und erzeugt keine Karte.
+2. **Neues Spiel oder Wegwerf-Spielstand** mit Space Age nehmen, nie den echten Spielstand. Die Tests laufen auf einer eigenen Oberfläche. T11 legt nur kurz leere Testoberflächen an und erzeugt keine Karte; T14 erzeugt die Karte von Arrakis auf eigenen Testoberflächen und löscht sie danach.
 3. **Befehle** im Chat (nur Admins; im Einzelspiel ist man Admin):
    - `/arrakis-test`: Liste aller Tests mit Dauer und Hinweisen
-   - `/arrakis-test T1` (bzw. `T2` … `T13`, `T2b`): einen Test starten
-   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (etwa 13 min)
+   - `/arrakis-test T1` (bzw. `T2` … `T14`, `T2b`): einen Test starten; `T11 lang` und `T14 lang` mit 30 statt 9 Seeds
+   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (geschätzt etwa 13 min)
    - `/arrakis-test stop`: laufenden Test abbrechen
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
    - `/arrakis-test T7 ja`: T7 mit Teil b (kann das Spiel abstürzen lassen, nur im Wegwerf-Spielstand)
@@ -37,8 +41,8 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | Datei | Inhalt |
 |---|---|
 | `prototypes/planet/planet.lua` | Planet und Raumverbindung Vulcanus – Arrakis |
-| `prototypes/planet/planet-map-gen.lua` | Kartengenerator (welche Kacheln und Ressourcen) |
-| `prototypes/noise.lua` | Noise-Ausdrücke: Felsinseln, Erz-, Spice- und Wasserverteilung |
+| `prototypes/planet/planet-map-gen.lua` | Kartengenerator (welche Kacheln und Ressourcen): der Planet nutzt ab 0.5.4 Karte 2, `arrakis_v1()` liefert die alte Karte zum Vergleich |
+| `prototypes/noise.lua` | Noise-Ausdrücke: Felsinseln, Erz-, Spice- und Wasserverteilung; Karte 1 (`arrakis_*`, alte Spielstände) und Karte 2 (`arrakis_v2_*`, ab 0.5.4) |
 | `prototypes/collision-layers.lua` | Kollisionsebene `arrakis_rock` (liegt an der Fels-Kachel) |
 | `prototypes/tiles.lua` | Arrakis-Fels |
 | `prototypes/resources.lua` | Spice-Sand, Tiefenwasser |
@@ -53,7 +57,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Lädt die Laufzeit-Bibliotheken (`event_handler`) |
 | `scripts/arrakis-surface.lua` | Oberfläche von Arrakis anlegen, Entwicklerbefehl `/arrakis` |
-| `scripts/migrate.lua` | `storage` anlegen (Schema 1), Meldung alter Bohrer auf Spice |
+| `scripts/migrate.lua` | `storage` anlegen (Schema 1), Meldung alter Bohrer auf Spice, Hinweis auf die alte Karte |
 | `scripts/harvester.lua` | Spice-Ernter: Zustände, Abbau, Treibstoff, Tempo-Deckel, Abbausperre, Andocken, Taste |
 | `scripts/harvester-gui.lua` | Fenster am Fahrzeugfenster des Ernters |
 | `scripts/intake.lua` | Spice-Annahme und Tankstutzen: Bauen, Felsprüfung, Andock-Takt |
@@ -61,7 +65,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `settings.lua` | Startup-Einstellung „Prüfstand“, Mod-Einstellung „Wurmbiss“ |
 | `locale/*/messages.cfg` | Laufzeittexte (Status, Alarme, Hinweise, Fenster) |
 | `prototypes/testbench/` | Test-Prototypen (nur mit Prüfstand) |
-| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T13 und T2b (`t_ernter.lua`: echter Ernter-Code) |
+| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T14 und T2b (`t_ernter.lua`: echter Ernter-Code, `t_karte.lua`: T14 Karte echt) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
 | `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
 | `tools/pc/` | Prüfstand ohne Spieler: `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |

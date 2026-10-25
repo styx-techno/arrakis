@@ -13,6 +13,9 @@ spice.stages.sheet.tint = spice_tint
 spice.map_color = {0.95, 0.4, 0.1}
 spice.mining_visualisation_tint = spice_tint
 spice.factoriopedia_simulation = nil
+-- autoplace ist Karte 1 (alte Spielstände). Karte 2 setzt Wahrscheinlichkeit und Menge über die
+-- map_gen_settings des Planeten (prototypes/planet/planet-map-gen.lua). Keine tile_restriction: Sie gälte
+-- auch für Karte 1. Karte 2 hält Spice per Ausdruck vom Fels fern (arrakis_v2_spice_probability).
 spice.autoplace =
 {
   order = "b",
@@ -29,6 +32,7 @@ deep_water.minable.results = {{type = "fluid", name = "water", amount_min = 10, 
 deep_water.stages.sheet.tint = water_tint
 deep_water.map_color = {0.2, 0.45, 0.9}
 deep_water.factoriopedia_simulation = nil
+-- autoplace ist Karte 1, Karte 2 kommt über den Planeten (wie bei Spice-Sand).
 deep_water.autoplace =
 {
   order = "c",

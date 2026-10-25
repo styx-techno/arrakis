@@ -3,22 +3,64 @@ local planet_map_gen = {}
 -- Wüste aus Nauvis-Sand (niedrige Feuchte), dazwischen Felsinseln (arrakis-rock).
 -- Grunderze und Tiefenwasser liegen nur auf Fels, Spice nur im offenen Sand.
 -- Ausdrücke siehe prototypes/noise.lua.
-planet_map_gen.arrakis = function()
+--
+-- Karte 2 (ab 0.5.4) hängt sich nur hier ein: Die Schlüssel aux, tile:… und entity:… zeigen auf die
+-- Ausdrücke arrakis_v2_* (Schlüsselform tile:NAME:probability: A23 concepts.d.ts:6993, in Vanilla nicht
+-- benutzt; entity:NAME:probability/richness wie bei Vulcanus, FD space-age/prototypes/planet/
+-- planet-map-gen.lua:15-22). Eine Oberfläche
+-- behält ihre map_gen_settings aus der Zeit ihrer Anlage, alte Spielstände erzeugen also weiter
+-- Karte 1 (scripts/migrate.lua meldet das einmal). Die Prototypen (Kachel, Spice, Tiefenwasser) tragen
+-- weiter die Ausdrücke von Karte 1.
+-- Die Datei greift nicht auf data zu und lässt sich auch im Control-Stage laden.
+
+-- Spice-Regel der Karte 2 (prototypes/noise.lua): "" = Regel B (eingehängt), "_a" = Regel A (Rückfall, wenn
+-- T11 Regel B nicht bestätigt). Umgeschaltet wird nur hier: Jede Regel hat eigene Ausdrücke, eine schon
+-- angelegte Oberfläche behält die Namen ihrer Regel und bekommt so keine Kanten.
+local SPICE_RULE = ""
+
+-- Karte 1 (bis 0.5.3): Kachel, Spice und Tiefenwasser kommen aus den Prototypen.
+local function property_names_1()
   return
   {
-    property_expression_names =
-    {
-      moisture = "arrakis_moisture",
-      aux = "arrakis_aux",
-      ["entity:iron-ore:probability"] = "arrakis_iron_ore_probability",
-      ["entity:iron-ore:richness"] = "arrakis_iron_ore_richness",
-      ["entity:copper-ore:probability"] = "arrakis_copper_ore_probability",
-      ["entity:copper-ore:richness"] = "arrakis_copper_ore_richness",
-      ["entity:stone:probability"] = "arrakis_stone_probability",
-      ["entity:stone:richness"] = "arrakis_stone_richness",
-      ["entity:coal:probability"] = "arrakis_coal_probability",
-      ["entity:coal:richness"] = "arrakis_coal_richness"
-    },
+    moisture = "arrakis_moisture",
+    aux = "arrakis_aux",
+    ["entity:iron-ore:probability"] = "arrakis_iron_ore_probability",
+    ["entity:iron-ore:richness"] = "arrakis_iron_ore_richness",
+    ["entity:copper-ore:probability"] = "arrakis_copper_ore_probability",
+    ["entity:copper-ore:richness"] = "arrakis_copper_ore_richness",
+    ["entity:stone:probability"] = "arrakis_stone_probability",
+    ["entity:stone:richness"] = "arrakis_stone_richness",
+    ["entity:coal:probability"] = "arrakis_coal_probability",
+    ["entity:coal:richness"] = "arrakis_coal_richness"
+  }
+end
+
+-- Karte 2 (ab 0.5.4): Startinsel, Graben, Kegel-Inseln, Lehrfeld, Spice mindestens 100 Kacheln vom Fels.
+local function property_names_2()
+  return
+  {
+    moisture = "arrakis_moisture",
+    aux = "arrakis_v2_aux",
+    ["tile:arrakis-rock:probability"] = "arrakis_v2_rock_tile",
+    ["entity:iron-ore:probability"] = "arrakis_v2_iron_ore_probability",
+    ["entity:iron-ore:richness"] = "arrakis_v2_iron_ore_richness",
+    ["entity:copper-ore:probability"] = "arrakis_v2_copper_ore_probability",
+    ["entity:copper-ore:richness"] = "arrakis_v2_copper_ore_richness",
+    ["entity:stone:probability"] = "arrakis_v2_stone_probability",
+    ["entity:stone:richness"] = "arrakis_v2_stone_richness",
+    ["entity:coal:probability"] = "arrakis_v2_coal_probability",
+    ["entity:coal:richness"] = "arrakis_v2_coal_richness",
+    ["entity:spice-sand:probability"] = "arrakis_v2_spice_probability" .. SPICE_RULE,
+    ["entity:spice-sand:richness"] = "arrakis_v2_spice_richness" .. SPICE_RULE,
+    ["entity:arrakis-deep-water:probability"] = "arrakis_v2_deep_water_probability",
+    ["entity:arrakis-deep-water:richness"] = "arrakis_v2_deep_water_richness"
+  }
+end
+
+local function settings(property_expression_names)
+  return
+  {
+    property_expression_names = property_expression_names,
     cliff_settings =
     {
       name = "cliff",
@@ -60,5 +102,19 @@ planet_map_gen.arrakis = function()
     }
   }
 end
+
+-- Einstellungen des Planeten Arrakis: Karte 2.
+planet_map_gen.arrakis = function()
+  return settings(property_names_2())
+end
+
+-- Karte 1 wie bis 0.5.3, nur zum Vergleich (etwa für eine Testoberfläche); der Planet nutzt sie nicht mehr.
+planet_map_gen.arrakis_v1 = function()
+  return settings(property_names_1())
+end
+
+-- Daran erkennt man Karte 2 in LuaSurface::map_gen_settings.property_expression_names (scripts/migrate.lua).
+planet_map_gen.V2_KEY = "tile:arrakis-rock:probability"
+planet_map_gen.V2_NAME = "arrakis_v2_rock_tile"
 
 return planet_map_gen

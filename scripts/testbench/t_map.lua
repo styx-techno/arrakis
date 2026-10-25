@@ -8,8 +8,19 @@
 --   mindestens 108 Kacheln weg (100 plus ein Rasterschritt, weil Fels zwischen den Punkten liegen
 --   kann). Dazu der Flächenanteil, der dann für Spice übrig bleibt.
 -- Zusätzlich die Werteverteilung jedes Rauschens (auch Hilfsgrößen wie die Verzerrung von 0.4.0).
+-- Seit 0.5.4 misst „live“ die Karte 0.5.4 (arrakis_v2_rock: c4 mit Startinsel und Graben), die Karte
+-- 0.4.0 bleibt als Variante „alt“. Dazu drei Prüfungen für die Spice-Regel (T11-Empfehlung 5.2):
+--   Zone: Kein Rasterpunkt der Spicezone (Regel B, arrakis_v2_spice_zone) liegt näher als 100 Kacheln
+--     am nächsten Fels-Rasterpunkt der Karte (sonst FEHLER); Regel A (arrakis_v2_spice_zone_a) nur
+--     als Messung. Das Raster sieht Fels zwischen den Punkten nicht; genau auf Kacheln prüft T14.
+--   Kegel: t100 des unverzerrten Kegels arrakis_v2_c4u gegen den Fels aus arrakis_v2_c4 > 0 muss auf
+--     jedem Seed mindestens −1,53 sein, sonst FEHLER: Regel B ist dann nicht belegt, es gilt Regel A.
+--   Beide Prüfungen brauchen etwas zum Prüfen: Ist die Zone bzw. der c4-Fels auf allen Seeds leer,
+--   ist das ein FEHLER („nicht prüfbar“), auf einzelnen Seeds nur INFO.
+--   Spicefläche von c4 je Seed bei den festen Schwellen −1,9 / −2,0 / −2,1 / −2,2.
+-- „/arrakis-test T11 lang“ nimmt 30 statt 9 Seeds.
 -- Kartenbilder (ein Zeichen je 16 × 16 Kacheln) stehen in script-output/arrakis-t11-karten.txt;
--- tools/check/t11_bilder.py macht daraus PNGs.
+-- tools/check/t11_bilder.py macht daraus PNGs. Im Bild „live“ ist o die Spicezone nach Regel B.
 -- Die Rechenlast ist über Ticks verteilt (Phasen in run.data.phase); der Zustand liegt als reine
 -- Daten in run.data.
 
@@ -25,6 +36,10 @@ local BLOCKS_PER_TICK = 6
 local MAP_FILE = "arrakis-t11-karten.txt"
 local SURFACE_PREFIX = "arrakis-t11-"
 local FIXED_SEEDS = {1234, 98765, 424242, 1000003, 2718281, 3141592, 16180339, 27182818}
+-- Weitere feste Seeds für „lang“ (zusammen mit dem eigenen 30 Seeds; dieselben in t_karte.lua).
+local LONG_SEEDS = {7, 42, 99, 314, 1001, 2024, 4711, 8191, 12345, 31337, 65537, 99991, 131071, 271828,
+                    524287, 777777, 1234567, 2147483, 3000017, 9999991, 123456789, 987654321}
+local LONG_COUNT = 30
 local INF = math.huge
 local BIG = 1e10                    -- quadrierter Abstand „kein Fels“ in der Abstandstransformation
 local NONE = 1e9                    -- „kein Wert“ in gespeicherten Ergebnissen (statt math.huge)
@@ -37,9 +52,31 @@ for index = 1, T_COUNT do
   T_STEPS[index] = -T_STEP * (index - 1)
 end
 
--- Rauschen, die T11 je Seed holt.
+-- Spice-Regel der Karte 0.5.4 (T11-Empfehlung 5.2): Zonen (1 = Spice erlaubt) und der unverzerrte Kegel.
+-- strict: FEHLER, wenn ein Zonenpunkt näher als TARGET am Fels liegt; sonst nur Messung.
+local ZONES =
+{
+  {key = "B", property = "arrakis_v2_spice_zone", title = "Regel B (c4u < −1,46)", strict = true},
+  {key = "A", property = "arrakis_v2_spice_zone_a", title = "Regel A (c4 < −2,10)", strict = false}
+}
+local CONE = "arrakis_v2_c4u"
+-- t100 von c4u mindestens so hoch, sonst gilt Regel A. Das Modell von Regel B lässt bis
+-- −(h / 90) · (√2 · 25 + DEEP) = −0,0106 · 143,4 = −1,521 zu (T11-Empfehlung 5.2, dort auf −1,52 gerundet);
+-- die Grenze liegt eine Hundertstel darunter, damit ein Seed mit Verzerrung an der Klemme nicht als FEHLER gilt.
+local CONE_LIMIT = -1.53
+local RULE_B = -1.46                -- Schwelle von Regel B (nur für den Flächenanteil)
+local FIXED_T = {-1.9, -2.0, -2.1, -2.2}
+
+-- Rauschen, die T11 je Seed holt. minus: die Koordinate wird abgezogen (bei wx, wy bleibt die Verschiebung).
 local PROPERTIES =
 {
+  {name = "arrakis_v2_rock", title = "Karte 0.5.4 (c4 mit Startinsel und Graben)"},
+  {name = "arrakis_v2_c4", title = "c4 der Karte 0.5.4 (Verzerrung begrenzt)"},
+  {name = CONE, title = "c4 der Karte 0.5.4, unverzerrt"},
+  {name = "arrakis_v2_wx", title = "Verzerrung 0.5.4 in x (wx − x)", minus = "x", short = "wx − x"},
+  {name = "arrakis_v2_wy", title = "Verzerrung 0.5.4 in y (wy − y)", minus = "y", short = "wy − y"},
+  {name = ZONES[1].property, title = "Spicezone " .. ZONES[1].title},
+  {name = ZONES[2].property, title = "Spicezone " .. ZONES[2].title},
   {name = "arrakis_rock", title = "Karte 0.4.0 mit Startinsel"},
   {name = "arrakis_rock_noise", title = "Rauschen 0.4.0 ohne Startinsel"},
   {name = "arrakis_wobble_x", title = "Verzerrung 0.4.0 (multioctave_noise, Maßstab 12)"},
@@ -56,10 +93,14 @@ end
 
 -- Varianten = Rauschen + Felsschwelle. share: Schwelle je Seed so, dass dieser Anteil Fels ist;
 -- sonst feste Schwelle offset. picture: Kartenbild schreiben. family: Zeile in der Kurzfassung.
+-- zones: Prüfung „Zone“ gegen den Fels dieser Variante. cone: Prüfung „Kegel“ gegen ihren Fels.
+-- fixed: Spicefläche bei den festen Schwellen FIXED_T ausgeben.
 local VARIANTS =
 {
-  {key = "live", family = "live", property = "arrakis_rock", offset = 0, picture = true,
-   title = "Karte 0.4.0 (mit Startinsel)"}
+  {key = "live", family = "live", property = "arrakis_v2_rock", offset = 0, picture = true, zones = true,
+   title = "Karte 0.5.4 (c4 mit Startinsel und Graben)", label = "0.5.4"},
+  {key = "alt", family = "live", property = "arrakis_rock", offset = 0, picture = true,
+   title = "Karte 0.4.0 (mit Startinsel)", label = "0.4.0"}
 }
 for _, family in ipairs({{key = "c1", property = "arrakis_t11_c1"}, {key = "c2", property = "arrakis_t11_c2"}}) do
   for _, percent in ipairs({15, 20, 25, 30}) do
@@ -73,14 +114,26 @@ for _, offset in ipairs({-0.05, 0, 0.05}) do
 end
 for _, offset in ipairs({-0.2, 0, 0.2}) do
   VARIANTS[#VARIANTS + 1] = {key = "c4" .. string.format("%+.1f", offset), family = "c4", property = "arrakis_t11_c4",
-    offset = offset, picture = offset == 0, title = "Felsschwelle " .. offset, label = string.format("%+.1f", offset)}
+    offset = offset, picture = offset == 0, fixed = offset == 0, title = "Felsschwelle " .. offset,
+    label = string.format("%+.1f", offset)}
 end
+VARIANTS[#VARIANTS + 1] = {key = "c4v2", family = "c4", property = "arrakis_v2_c4", offset = 0, cone = true, fixed = true,
+  title = "c4 der Karte 0.5.4 ohne Startinsel und Graben, Felsschwelle 0", label = "0.5.4 +0.0"}
 local FAMILIES = {"live", "c1", "c2", "c3", "c4"}
 
--- Letzte Variante je Rauschen: danach werden seine Werte freigegeben.
+-- Letzte Variante je Rauschen (auch Zonen und Kegel): danach werden seine Werte freigegeben.
 local LAST_USE = {}
 for index, variant in ipairs(VARIANTS) do
   LAST_USE[variant.property] = index
+  if variant.zones then
+    for _, zone in ipairs(ZONES) do LAST_USE[zone.property] = index end
+  end
+  if variant.cone then LAST_USE[CONE] = index end
+end
+
+-- Index in T_STEPS zur Schwelle t (t = 0 … −4 im Raster 0,01).
+local function step_index(t)
+  return math.floor(-t / T_STEP + 0.5) + 1
 end
 
 -- Helfer ---------------------------------------------------------------------------------------
@@ -132,8 +185,8 @@ local function share_above(qtab, low, high, x)
   return 0
 end
 
--- Seeds: der Seed dieses Spielstands (Arrakis, sonst Nauvis) und die festen Seeds.
-local function seed_list()
+-- Seeds: der Seed dieses Spielstands (Arrakis, sonst Nauvis) und die festen Seeds, mit long bis 30.
+local function seed_list(long)
   local seeds, label = {}, nil
   local ok, own = pcall(function()
     local arrakis = game.get_surface("arrakis")
@@ -153,6 +206,14 @@ local function seed_list()
   for _, seed in ipairs(FIXED_SEEDS) do
     if not (seeds[1] and seeds[1].seed == seed) then
       seeds[#seeds + 1] = {seed = seed, label = "fest"}
+    end
+  end
+  if long then
+    for _, seed in ipairs(LONG_SEEDS) do
+      if #seeds >= LONG_COUNT then break end
+      if not (seeds[1] and seeds[1].seed == seed) then
+        seeds[#seeds + 1] = {seed = seed, label = "fest"}
+      end
     end
   end
   return seeds
@@ -254,9 +315,11 @@ end
 
 -- Kartenbild: # Fels, - Sand unter 100 Kacheln vom Fels, . Sand ab 100 Kacheln,
 -- o Spicefläche (Wert − Felsschwelle < t100 dieses Seeds, nur im ausgewerteten Inneren), S Ursprung.
-local function write_picture(variant, entry, values, offset, rock, dist, t100)
-  local lines = {string.format("=== %s Seed %d (%s): %s, Felsschwelle %s, t100 %s ===",
-    variant.key, entry.seed, entry.label, variant.title, fmt(offset, 3), fmt(t100, 3))}
+-- Mit zone (Werte einer Spicezone) ist o stattdessen die Zone (Wert > 0).
+local function write_picture(variant, entry, values, offset, rock, dist, t100, zone)
+  local lines = {string.format("=== %s Seed %d (%s): %s, Felsschwelle %s, t100 %s%s ===",
+    variant.key, entry.seed, entry.label, variant.title, fmt(offset, 3), fmt(t100, 3),
+    zone and ", o = Spicezone " .. ZONES[1].title or "")}
   local origin = N / 2
   for j = 0, N - 1, PICTURE_STEP do
     local row = {}
@@ -267,7 +330,7 @@ local function write_picture(variant, entry, values, offset, rock, dist, t100)
         char = "S"
       elseif rock[k] then
         char = "#"
-      elseif interior(i, j) and values[k] - offset < t100 then
+      elseif interior(i, j) and (zone and zone[k] > 0 or not zone and values[k] - offset < t100) then
         char = "o"
       elseif dist[k] * GRID >= DEEP then
         char = "."
@@ -294,8 +357,10 @@ local function distribution_text(q)
     fmt(q.min), fmt(q.q01), fmt(q.q10), fmt(q.q25), fmt(q.q50), fmt(q.q75), fmt(q.q90), fmt(q.q99), fmt(q.max))
 end
 
--- Analyse einer Variante für einen Seed. Rückgabe: Ergebnis (nur Zahlen).
-local function analyse(variant, entry, values, offset)
+-- Analyse einer Variante für einen Seed. Rückgabe: Ergebnis (nur Zahlen), dazu Fels und Abstände
+-- für die Prüfungen „Zone“ und „Kegel“ (nur für den Aufrufer, nicht speichern).
+-- zone: Werte der Spicezone für das Kartenbild (oder nil).
+local function analyse(variant, entry, values, offset, zone)
   local n = N * N
   local rock, rock_count = {}, 0
   for k = 1, n do
@@ -369,7 +434,7 @@ local function analyse(variant, entry, values, offset)
   end
 
   if variant.picture then
-    write_picture(variant, entry, values, offset, rock, dist, t100)
+    write_picture(variant, entry, values, offset, rock, dist, t100, zone)
   end
 
   result.inner, result.sand, result.deep, result.max_dist = inner, sand, deep, max_dist
@@ -378,15 +443,87 @@ local function analyse(variant, entry, values, offset)
   result.eligible, result.eligible_p1 = eligible, eligible_p1
   result.below = below
   result.origin_rock = rock[(N / 2) * N + N / 2 + 1] == true
-  return result
+  return result, rock, dist
+end
+
+-- Prüfung „Zone“: kleinster Rasterabstand eines Zonenpunkts (Wert > 0) zum nächsten Fels-Rasterpunkt
+-- und Flächenanteil der Zone. Nur Innenpunkte: Fels außerhalb des Gebiets liegt mindestens 128 Kacheln weg.
+local function zone_check(zone, dist)
+  local inner, count, near = 0, 0, 0
+  local closest = INF
+  for j = BORDER, N - 1 - BORDER do
+    for i = BORDER, N - 1 - BORDER do
+      local k = j * N + i + 1
+      inner = inner + 1
+      if zone[k] > 0 then
+        count = count + 1
+        local tiles = dist[k] * GRID
+        if tiles < closest then closest = tiles end
+        if tiles < TARGET then near = near + 1 end
+      end
+    end
+  end
+  return {inner = inner, count = count, near = near, closest = closest == INF and NONE or closest}
+end
+
+-- Prüfung „Kegel“: t100 des unverzerrten Kegels gegen den Fels der Variante, also der kleinste c4u-Wert
+-- unter allen Innenpunkten, deren nächster Fels-Rasterpunkt näher als DEEP liegt (Felspunkte mitgezählt).
+-- Dazu die Flächenanteile mit c4u < t100 und mit c4u < RULE_B.
+local function cone_check(cone, dist)
+  local t100, inner = INF, 0
+  for j = BORDER, N - 1 - BORDER do
+    for i = BORDER, N - 1 - BORDER do
+      local k = j * N + i + 1
+      inner = inner + 1
+      if dist[k] * GRID < DEEP and cone[k] < t100 then t100 = cone[k] end
+    end
+  end
+  local eligible, rule_b = 0, 0
+  for j = BORDER, N - 1 - BORDER do
+    for i = BORDER, N - 1 - BORDER do
+      local u = cone[j * N + i + 1]
+      if u < t100 then eligible = eligible + 1 end
+      if u < RULE_B then rule_b = rule_b + 1 end
+    end
+  end
+  return {inner = inner, t100 = t100 == INF and NONE or t100, eligible = eligible, rule_b = rule_b}
+end
+
+-- Spicefläche (Anteil der Innenfläche) bei den festen Schwellen FIXED_T, als Text a / b / c / d.
+local function fixed_text(r)
+  local parts = {}
+  for index, t in ipairs(FIXED_T) do
+    parts[index] = pct(r.below[step_index(t)], r.inner)
+  end
+  return table.concat(parts, " / ")
+end
+
+local function fixed_names()
+  local parts = {}
+  for index, t in ipairs(FIXED_T) do parts[index] = fmt(t, 1) end
+  return table.concat(parts, " / ")
 end
 
 local function result_line(variant, entry, r)
-  return string.format("%s Seed %d (%s): Felsschwelle %s, Fels %s, %d Inseln (größte %d, Median %d Kacheln²), Ursprung %s; " ..
+  local line = string.format("%s Seed %d (%s): Felsschwelle %s, Fels %s, %d Inseln (größte %d, Median %d Kacheln²), Ursprung %s; " ..
     "Sand ≥ %d vom Fels %s der Innenfläche, größter Abstand %s; t100 %s → Spicefläche %s; t100 (1 %% Ausreißer) %s → %s",
     variant.key, entry.seed, entry.label, fmt(r.offset, 3), pct(r.rock, 1), r.islands, r.island_max, r.island_median,
     r.origin_rock and "Fels" or "Sand", TARGET, pct(r.deep, r.inner), fmt(r.max_dist, 0),
     fmt(r.t100, 3), pct(r.eligible, r.inner), fmt(r.t100_p1, 3), pct(r.eligible_p1, r.inner))
+  if variant.fixed then
+    line = line .. string.format("; Spicefläche bei %s: %s", fixed_names(), fixed_text(r))
+  end
+  for _, zone in ipairs(variant.zones and ZONES or {}) do
+    local z = r.zones[zone.key]
+    line = line .. string.format("; Zone %s: %s der Innenfläche, kleinster Abstand zum Fels %s (Raster), %d Punkte unter %d",
+      zone.title, pct(z.count, z.inner), fmt(z.closest, 0), z.near, TARGET)
+  end
+  if variant.cone then
+    local c = r.cone
+    line = line .. string.format("; Kegel c4u: t100 %s → Spicefläche %s, Fläche c4u < %s: %s",
+      fmt(c.t100, 3), pct(c.eligible, c.inner), fmt(RULE_B), pct(c.rule_b, c.inner))
+  end
+  return line
 end
 
 -- Zusammenfassung ------------------------------------------------------------------------------------
@@ -536,17 +673,20 @@ phases.werte = function(run, tb, d)
       tb.finish(run, "abgebrochen (calculate_tile_properties)")
       return
     end
-    for _, property in ipairs(PROPERTY_NAMES) do
-      local list = result[property]
+    for _, property in ipairs(PROPERTIES) do
+      local list = result[property.name]
       if not list then
-        tb.log(run, "FEHLER", "calculate_tile_properties liefert keinen Wert für " .. property ..
+        tb.log(run, "FEHLER", "calculate_tile_properties liefert keinen Wert für " .. property.name ..
           " (Prüfstand-Einstellung aus oder Name falsch?)")
         tb.finish(run, "abgebrochen (Wert fehlt)")
         return
       end
-      local target = d.values[property]
+      local target = d.values[property.name]
+      local minus = property.minus
       for index = 1, last - first + 1 do
-        target[first + index - 1] = list[index]
+        local value = list[index]
+        if minus then value = value - positions[index][minus] end
+        target[first + index - 1] = value
       end
     end
     d.k = last + 1
@@ -588,10 +728,38 @@ phases.auswerten = function(run, tb, d)
   local entry = d.seeds[d.si]
   local variant = VARIANTS[d.vi]
   local offset = variant.share and d.offsets[variant.key] or variant.offset
-  local result = analyse(variant, entry, d.values[variant.property], offset)
+  local zone_b = variant.zones and d.values[ZONES[1].property] or nil
+  local result, _, dist = analyse(variant, entry, d.values[variant.property], offset, zone_b)
+  if variant.zones then
+    result.zones = {}
+    for _, zone in ipairs(ZONES) do
+      local z = zone_check(d.values[zone.property], dist)
+      result.zones[zone.key] = z
+      if zone.strict and z.count == 0 then
+        tb.log(run, "INFO", string.format("Zone %s, Seed %d (%s): Zone im Innengebiet leer, auf diesem Seed nicht prüfbar",
+          zone.title, entry.seed, entry.label))
+      elseif zone.strict and z.closest < TARGET then
+        tb.log(run, "FEHLER", string.format("Zone %s, Seed %d (%s): %d Zonenpunkte näher als %d Kacheln am Fels " ..
+          "(Raster %d), kleinster Abstand %s", zone.title, entry.seed, entry.label, z.near, TARGET, GRID, fmt(z.closest, 0)))
+      end
+    end
+  end
+  if variant.cone then
+    result.cone = cone_check(d.values[CONE], dist)
+    if result.cone.t100 >= NONE then
+      tb.log(run, "INFO", string.format("Kegel, Seed %d (%s): kein Fels aus %s im Innengebiet, auf diesem Seed nicht prüfbar",
+        entry.seed, entry.label, variant.property))
+    elseif result.cone.t100 < CONE_LIMIT then
+      tb.log(run, "FEHLER", string.format("Kegel, Seed %d (%s): t100 von c4u %s liegt unter %s. Regel B ist damit nicht " ..
+        "belegt; dann gilt Regel A (%s).", entry.seed, entry.label, fmt(result.cone.t100, 3), fmt(CONE_LIMIT),
+        ZONES[2].property))
+    end
+  end
   table.insert(d.results[variant.key], result)
   tb.trace(run, result_line(variant, entry, result))
-  if LAST_USE[variant.property] == d.vi then d.values[variant.property] = nil end
+  for property, last in pairs(LAST_USE) do
+    if last == d.vi then d.values[property] = nil end
+  end
   d.vi = d.vi + 1
   if d.vi <= #VARIANTS then return end
 
@@ -600,6 +768,105 @@ phases.auswerten = function(run, tb, d)
   tb.log(run, "INFO", string.format("Seed %d von %d fertig (%d, %s)", d.si, #d.seeds, entry.seed, entry.label))
   d.si = d.si + 1
   d.phase = d.si <= #d.seeds and "anlegen" or "bericht"
+end
+
+local function spread_text(list, as_pct)
+  if #list == 0 then return "–" end
+  local low, mean, high = spread(list)
+  if as_pct then return string.format("min %s, Mittel %s, max %s", pct(low, 1), pct(mean, 1), pct(high, 1)) end
+  return string.format("min %s, Mittel %s, max %s", fmt(low, 3), fmt(mean, 3), fmt(high, 3))
+end
+
+-- Prüfungen der Karte 0.5.4 über alle Seeds (Zone, Kegel, feste Schwellen, Verzerrung).
+-- Rückgabe: Kurztext für die Zusammenfassung.
+local function v2_report(run, tb, d)
+  local verdict = {}
+  local n = #d.seeds
+  for _, variant in ipairs(VARIANTS) do
+    local results = d.results[variant.key]
+    for _, zone in ipairs(variant.zones and ZONES or {}) do
+      local shares, bad = {}, {}
+      local closest, empty = INF, 0
+      for index, r in ipairs(results) do
+        local z = r.zones[zone.key]
+        shares[index] = z.count / math.max(z.inner, 1)
+        if z.count == 0 then empty = empty + 1 end
+        if z.closest < closest then closest = z.closest end
+        if z.closest < TARGET then bad[#bad + 1] = tostring(r.seed) end
+      end
+      local area = "Zone " .. spread_text(shares, true) .. " der Innenfläche"
+      if not zone.strict then
+        tb.log(run, "MESSUNG", string.format("Zone %s (nur Messung): kleinster Abstand zum Fels %s Kacheln (Raster %d), " ..
+          "unter %d auf %d von %d Seeds; %s", zone.title, fmt(closest, 0), GRID, TARGET, #bad, n, area))
+      elseif empty == n then
+        -- Ohne Zonenpunkt gibt es keinen Abstand: Ein kaputter Ausdruck (Zone immer 0) bestünde sonst die Prüfung.
+        tb.log(run, "FEHLER", string.format("Zone %s nicht prüfbar: Die Spicezone (%s) ist auf allen %d Seeds im " ..
+          "Innengebiet leer", zone.title, zone.property, n))
+        verdict[#verdict + 1] = "Zone nicht prüfbar"
+      elseif #bad == 0 then
+        tb.log(run, "OK", string.format("Zone %s: auf allen %d Seeds kein Zonenpunkt näher als %d Kacheln am Fels " ..
+          "(Raster %d), kleinster Abstand %s; %s%s", zone.title, n, TARGET, GRID, fmt(closest, 0), area,
+          empty > 0 and string.format(" (auf %d Seeds leer, dort nicht prüfbar)", empty) or ""))
+        verdict[#verdict + 1] = "Zone ok"
+      else
+        tb.log(run, "INFO", string.format("Zone %s: auf %d von %d Seeds zu nah am Fels (%s, FEHLER oben); %s",
+          zone.title, #bad, n, table.concat(bad, ", "), area))
+        verdict[#verdict + 1] = "Zone verletzt"
+      end
+    end
+    if variant.cone then
+      local values, shares, rule_b, bad = {}, {}, {}, {}
+      for index, r in ipairs(results) do
+        if r.cone.t100 < NONE then values[#values + 1] = r.cone.t100 end
+        shares[index] = r.cone.eligible / math.max(r.cone.inner, 1)
+        rule_b[index] = r.cone.rule_b / math.max(r.cone.inner, 1)
+        if r.cone.t100 < CONE_LIMIT then bad[#bad + 1] = tostring(r.seed) end
+      end
+      local low = spread(values)
+      if #values == 0 then
+        -- Ohne Fels gibt es kein t100; ein kaputter Kegel (c4 nie > 0) bestünde sonst die Prüfung.
+        tb.log(run, "FEHLER", string.format("Kegel nicht prüfbar: kein Fels aus %s im Innengebiet, auf allen %d Seeds",
+          variant.property, n))
+        verdict[#verdict + 1] = "Kegel nicht prüfbar"
+      elseif #bad == 0 then
+        tb.log(run, "OK", string.format("Kegel: t100 von c4u gegen den Fels aus %s auf allen %d Seeds ≥ %s (%s): Regel B gilt%s",
+          variant.property, #values, fmt(CONE_LIMIT), spread_text(values),
+          #values < n and string.format(" (%d Seeds ohne Fels, dort nicht prüfbar)", n - #values) or ""))
+        verdict[#verdict + 1] = "Regel B bestätigt"
+      else
+        tb.log(run, "INFO", string.format("Kegel: auf %d von %d Seeds unter %s (%s; kleinstes %s): Regel B nicht belegt, " ..
+          "Regel A einbauen (%s)", #bad, n, fmt(CONE_LIMIT), table.concat(bad, ", "), fmt(low, 3), ZONES[2].property))
+        verdict[#verdict + 1] = "Regel B nicht belegt → Regel A"
+      end
+      tb.log(run, "MESSUNG", string.format("Kegel c4u: Spicefläche bei t100 je Seed %s; Fläche c4u < %s %s",
+        spread_text(shares, true), fmt(RULE_B), spread_text(rule_b, true)))
+    end
+    if variant.fixed then
+      local parts = {}
+      for index, t in ipairs(FIXED_T) do
+        local shares = {}
+        for si, r in ipairs(results) do shares[si] = r.below[step_index(t)] / math.max(r.inner, 1) end
+        parts[index] = fmt(t, 1) .. ": " .. spread_text(shares, true)
+      end
+      tb.log(run, "MESSUNG", string.format("Spicefläche %s (%s) bei festen Schwellen: %s", variant.key, variant.title,
+        table.concat(parts, " | ")))
+    end
+  end
+  local shifts = {}
+  for _, property in ipairs(PROPERTIES) do
+    if property.minus then
+      local low, high = INF, -INF
+      for _, q in ipairs(d.distributions[property.name]) do
+        if q.min < low then low = q.min end
+        if q.max > high then high = q.max end
+      end
+      shifts[#shifts + 1] = string.format("%s %s … %s", property.short, fmt(low), fmt(high))
+    end
+  end
+  if #shifts > 0 then
+    tb.log(run, "MESSUNG", "Verzerrung 0.5.4 (Soll höchstens ±25 je Achse): " .. table.concat(shifts, ", "))
+  end
+  return table.concat(verdict, ", ")
 end
 
 phases.bericht = function(run, tb, d)
@@ -630,16 +897,38 @@ phases.bericht = function(run, tb, d)
       tb.log(run, "MESSUNG", family .. " – " .. table.concat(by_family[family], " | "))
     end
   end
+  local verdict = v2_report(run, tb, d)
   tb.log(run, "INFO", "Kartenbilder: script-output/" .. MAP_FILE .. ". Bitte diese Datei zusammen mit arrakis-test.txt schicken.")
   d.phase = "fertig"
-  tb.finish(run, string.format("%d Seeds, %d Varianten; Einzelwerte in arrakis-test.txt", #d.seeds, #VARIANTS))
+  tb.finish(run, string.format("%d Seeds, %d Varianten%s; Einzelwerte in arrakis-test.txt", #d.seeds, #VARIANTS,
+    verdict ~= "" and (", " .. verdict) or ""))
 end
 
 -- Vertrag ----------------------------------------------------------------------------------------
 
+-- Namen der Rauschen, die es als Ausdruck nicht gibt (leer, wenn die Liste nicht lesbar ist).
+local function missing_expressions()
+  local missing = {}
+  local ok, known = pcall(function() return prototypes.named_noise_expression end)
+  if not ok or not known then return missing end
+  for _, name in ipairs(PROPERTY_NAMES) do
+    local found = pcall(function() return known[name].name end)
+    if not found then missing[#missing + 1] = name end
+  end
+  return missing
+end
+
 local function start(run, tb)
   local d = run.data
-  d.seeds = seed_list()
+  local missing = missing_expressions()
+  if #missing > 0 then
+    tb.log(run, "FEHLER", "Rauschausdrücke fehlen: " .. table.concat(missing, ", ") ..
+      " (prototypes/noise.lua bzw. Prüfstand-Einstellung aus?)")
+    tb.finish(run, "abgebrochen (Ausdrücke fehlen)")
+    return
+  end
+  d.long = string.lower(run.args[1] or "") == "lang"
+  d.seeds = seed_list(d.long)
   d.results, d.distributions, d.offsets = {}, {}, {}
   for _, variant in ipairs(VARIANTS) do
     d.results[variant.key] = {}
@@ -650,8 +939,9 @@ local function start(run, tb)
   d.si = 1
   local own = d.seeds[1].label ~= "fest" and string.format("eigener Seed %d (%s) und ", d.seeds[1].seed, d.seeds[1].label) or ""
   tb.log(run, "INFO", string.format("T11 vergleicht %d Fels-Varianten auf %d Seeds (%s%d feste), je %d × %d Kacheln, " ..
-    "ohne Karte zu erzeugen. Das Spiel ruckelt dabei etwa eine halbe Minute. Du bleibst, wo du bist.",
-    #VARIANTS, #d.seeds, own, #d.seeds - (own ~= "" and 1 or 0), 2 * HALF, 2 * HALF))
+    "ohne Karte zu erzeugen, und prüft die Spice-Regel der Karte 0.5.4 (Zone, Kegel). Das Spiel ruckelt dabei%s; wie " ..
+    "lange in echter Zeit, ist noch nicht gemessen. Du bleibst, wo du bist.", #VARIANTS, #d.seeds, own,
+    #d.seeds - (own ~= "" and 1 or 0), 2 * HALF, 2 * HALF, d.long and " etwa dreimal so lange wie ohne „lang“" or ""))
   -- Die Bilddatei gilt nur für diesen Lauf (überschreiben statt anhängen).
   helpers.write_file(MAP_FILE, string.format("##### T11 Tick %d: %d Varianten, %d Seeds, Gebiet %d … %d, 1 Zeichen = %d Kacheln #####\n\n",
     game.tick, #VARIANTS, #d.seeds, -HALF, HALF - 1, GRID * PICTURE_STEP), false)
@@ -679,7 +969,7 @@ return
     timeout = 300 * 60,
     interactive = false,
     confirm = nil,
-    hint = "schreibt zusätzlich script-output/arrakis-t11-karten.txt",
+    hint = "schreibt zusätzlich script-output/arrakis-t11-karten.txt; mit „lang“ 30 Seeds",
     start = start,
     tick = tick,
     cleanup = cleanup

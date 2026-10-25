@@ -19,11 +19,14 @@ local SAND = {["sand-1"] = true, ["sand-2"] = true, ["sand-3"] = true}
 -- Biss-Reichweite: Kopf näher als 3 Kacheln plus Zielradius (Design 4.3, BISS).
 local REACH = 3
 -- minimum_activity_mode aller Testwürmer. Laut API rechnet die Engine Würmer ohne möglichen Zuschauer sparsamer
--- (minimal: weniger Bewegung und Trigger-Effekte); full heißt „wie beobachtet“. Mit Zuschauer blieben sie in 0.4.0
--- ohnehin full, so sind Läufe ohne Spieler (Serverkonsole, RCON) vergleichbar. Die Würmer leben nur im Test.
+-- (minimal: weniger Bewegung und Trigger-Effekte; im Zustand investigating nicht, siehe T5 a); full heißt „wie
+-- beobachtet“. Mit Zuschauer blieben sie in 0.4.0 ohnehin full, so sind Läufe ohne Spieler (Serverkonsole, RCON)
+-- vergleichbar. Die Würmer leben nur im Test.
 local MIN_ACTIVITY = "full"
--- Ausnahme T5 a: misst die Annäherung mit Minimum minimal, wie es echte Würmer haben (Design 4.3). Ohne Zuschauer
--- zeigt a also, wie weit ein unbeobachteter Wurm kommt; nur MESSUNG, T5 hat kein OK/FEHLER.
+-- Ausnahme T5 a: Minimum minimal, wie es echte Würmer haben (Design 4.3). Den Modus minimal misst a damit nicht:
+-- Im Zustand investigating hält die Engine den Wurm auch ohne Zuschauer auf full (0.5.3 mit 2.1.23: full bis zur
+-- Ankunft, minimal erst etwa 4 s nach dem Wechsel zu patrolling). a zeigt also den ungedrosselten Anmarsch eines
+-- echten Wurms und, nach der Ankunft, wann er auf minimal wechselt; nur MESSUNG, T5 hat kein OK/FEHLER.
 local T5A_ACTIVITY = "minimal"
 
 -- Hilfen ------------------------------------------------------------------------------------
@@ -408,6 +411,7 @@ function t5.a_start(run, tb, p)
   p.states_before = {}
   p.states_after = {}
   p.modes = {}
+  p.state_modes = {}
   tb.log(run, "MESSUNG", string.format("a) investigating: Kopf %s, Ziel %s (%s Kacheln, 20 hinter dem Ernter), Zustand %s, activity_mode %s",
     pos_text(tb, head), pos_text(tb, p.target), tb.num(p.min_dist), (ai_state(tb, p.unit)), activity_mode(tb, p.unit)))
   return true
@@ -435,6 +439,8 @@ function t5.a_tick(run, tb, p, elapsed)
     local mode = activity_mode(tb, unit)
     count_up(p.arrived and p.states_after or p.states_before, name)
     count_up(p.modes, mode)
+    p.state_modes[name] = p.state_modes[name] or {}
+    count_up(p.state_modes[name], mode)
     trace(run, tb, string.format("a) %s s: Kopf %s, Abstand %s, Zustand %s, Tempo %s Kacheln/s, activity_mode %s",
       tb.num(elapsed / 60), pos_text(tb, p.last), tb.num(tb.distance(p.last, p.target)), name,
       tb.num(tb.speed_tps(unit)), mode))
@@ -459,7 +465,13 @@ function t5.a_done(run, tb, p)
     summary = "a keine Ankunft (min. " .. tb.num(p.min_dist) .. " Kacheln)"
   end
   tb.log(run, "MESSUNG", "a) Zustände bis zur Ankunft (vision_distance 0, Ernter im Weg): " .. counts_text(p.states_before))
-  tb.log(run, "MESSUNG", "a) activity_mode (Minimum " .. T5A_ACTIVITY .. " gesetzt, wie bei echten Würmern): " .. counts_text(p.modes))
+  -- Je Zustand getrennt: Das Minimum ist nur eine Untergrenze, den Modus wählt die Engine (investigating: full, siehe T5A_ACTIVITY).
+  local states, per_state = {}, {}
+  for state in pairs(p.state_modes) do table.insert(states, state) end
+  table.sort(states)
+  for _, state in ipairs(states) do table.insert(per_state, state .. " " .. counts_text(p.state_modes[state])) end
+  tb.log(run, "MESSUNG", "a) activity_mode (Minimum " .. T5A_ACTIVITY .. " gesetzt, wie bei echten Würmern; welchen Modus der Wurm fährt, "
+    .. "entscheidet die Engine): " .. counts_text(p.modes) .. "; je Zustand: " .. (#per_state > 0 and table.concat(per_state, "; ") or "–"))
   local death = death_of(run, p.harvester_number)
   if death then
     tb.log(run, "MESSUNG", string.format("a) Ernter im Weg: zerstört nach %s s (Ursache: %s)",
