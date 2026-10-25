@@ -473,6 +473,11 @@ data:extend({
 --   gibt es trotzdem nur in der Zone, also ab 215 Kacheln vom Start und mindestens 100 Kacheln vom Fels;
 --   Felder am Zonenrand schneidet die Zone weiter an (Radius 20 reicht weiter als 9 Kacheln), aber nicht
 --   mehr zu Bruchstücken wie in 0.5.4.
+--   Das gilt für Regel B. Regel A (…_a) nimmt dieselbe Gunst nach c4u. Ihre Zone (c4 < −2,1) liegt ab
+--   225 Kacheln vom Start ganz im Bereich mit Gunst 1 (die Verzerrung verschiebt um höchstens 35,4 Kacheln,
+--   dort ist also c4u < −2,1 + 0,0106 · 35,4 = −1,72), ist aber etwa ein Viertel so groß wie die von
+--   Regel B. Mit Regel A bekämen deshalb auch Kandidaten außerhalb ihrer Zone Flecken, und die Zone schnitte
+--   sie an wie in 0.5.4. Wird Regel A eingehängt, braucht sie eine eigene Gunst.
 --   Die Menge je Kachel bleibt: Ein Fleck ist ein Kegel der Höhe 3 · q / (π · r²) mit q = r², also immer
 --   3 / π = 0,955 in der Mitte und linear 0 am Rand. Spitze 6000, Lehrfeld (1180), Zonen und Fels bleiben,
 --   es ändern sich nur Zahl und Größe der Felder. Ein ganzes Feld hat rechnerisch 6000 · 20² = 2 400 000

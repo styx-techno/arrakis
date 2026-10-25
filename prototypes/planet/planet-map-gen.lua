@@ -19,6 +19,8 @@ local planet_map_gen = {}
 -- Spice-Regel der Karte 2 (prototypes/noise.lua): "" = Regel B (eingehängt), "_a" = Regel A (Rückfall, wenn
 -- T11 Regel B nicht bestätigt). Umgeschaltet wird nur hier: Jede Regel hat eigene Ausdrücke, eine schon
 -- angelegte Oberfläche behält die Namen ihrer Regel und bekommt so keine Kanten.
+-- Ab 0.5.5 nimmt Regel A noch die Gunst von Regel B (arrakis_v3_spice_favorability); vor dem Umschalten
+-- braucht sie eine eigene (prototypes/noise.lua bei arrakis_v3_*).
 local SPICE_RULE = ""
 
 -- Karte 1 (bis 0.5.3): Kachel, Spice und Tiefenwasser kommen aus den Prototypen.

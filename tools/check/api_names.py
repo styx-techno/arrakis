@@ -135,6 +135,9 @@ WRITE_WHITELIST = {
   "h.status",
   # runner.lua: all = storage.testbench.all („alle“), Spieler, der es gestartet hat
   "all.player_index",
+  # runner.lua: s.pending = storage.testbench.pending (nächster Test bei „alle“), set_tempo rechnet den
+  # Start-Tick der FRAGE-Pause um
+  "s.pending.tick",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die

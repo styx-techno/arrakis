@@ -10,8 +10,9 @@
 -- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
---   Optional: hint (Text für die Testliste), answer_time (Ticks Pause bei „alle“ nach diesem Test,
---   damit Max eine FRAGE vom Testende vor Ort beantworten kann).
+--   Optional: hint (Text für die Testliste), answer_time (Pause bei „alle“ nach diesem Test, damit Max eine
+--   FRAGE vom Testende vor Ort beantworten kann; Ticks bei game.speed 1, gilt also in echter Zeit: mit
+--   Zeitraffer entsprechend mehr Ticks, auch wenn sich das Tempo während der Pause ändert).
 --   run = storage.testbench.run = {id, player_index, started, data = {}, args = {…}, counts = {…}}, nur Daten.
 --     player_index ist nil, wenn ohne Spieler gestartet (dann tb.player(run) == nil).
 --     run.data gehört dem Test; Schlüssel mit "tb_" benutzt der Runner (z. B. tb_protect).
@@ -23,7 +24,8 @@
 --   run = run | nil,                         -- laufender Test (höchstens einer)
 --   queue = {id…} | nil,                     -- restliche Tests bei „alle“
 --   all = {started, list = {…}, skipped, player_index} | nil, -- Ergebnisse von „alle“
---   pending = {tick, id, player_index} | nil, -- nächster Test bei „alle“ (player_index wie bei run)
+--   pending = {tick, id, player_index, answer} | nil, -- nächster Test bei „alle“ (player_index wie bei run;
+--                                            answer = true: Pause für eine FRAGE, echte Zeit, siehe set_tempo)
 --   back = {[player_index] = {surface, position}}, -- für /arrakis-test zurück
 --   results = {[id] = {summary, tick, counts}},
 -- }
@@ -421,12 +423,14 @@ function tb.finish(run, summary)
       local answer_time = test and test.answer_time
       -- Pause für die FRAGE nur mit Spieler; ohne Spieler antwortet niemand. Sie ist Zeit für Max und gilt
       -- deshalb in echter Zeit: mit Zeitraffer entsprechend mehr Ticks (bei game.speed 1 genau answer_time).
+      -- Ändert sich das Tempo während der Pause, rechnet set_tempo den Rest um (answer).
       local answer_ticks = type(answer_time) == "number" and math.ceil(answer_time * game.speed) or 0
       if answer_ticks > delay and (counts.FRAGE or 0) > 0 and run.player_index then
         delay = answer_ticks
       end
       local next_id = table.remove(s.queue, 1)
-      s.pending = {tick = game.tick + delay, id = next_id, player_index = run.player_index}
+      s.pending = {tick = game.tick + delay, id = next_id, player_index = run.player_index,
+                   answer = delay > NEXT_TEST_DELAY or nil}
       if delay > NEXT_TEST_DELAY then
         emit(nil, "INFO", string.format("Nächster Test (%s) in %s: Zeit für die FRAGE von %s. /arrakis-test stop hält „alle“ an.",
           next_id, seconds(answer_time), run.id))
@@ -633,8 +637,14 @@ local function set_tempo(player, word, extra)
   end
   game.speed = factor
   local new = game.speed
+  local s = state()
+  -- Die Pause für eine FRAGE gilt in echter Zeit (tb.finish): Ihre restlichen Ticks wachsen und schrumpfen
+  -- mit dem Tempo, die restliche Zeit bleibt.
+  if s.pending and s.pending.answer and new ~= old then
+    s.pending.tick = game.tick + math.ceil(math.max(0, s.pending.tick - game.tick) * new / old)
+  end
   -- Ändert sich das Tempo mitten in einem Test, steht das bei ihm (die Start-Zeile nennt nur das alte).
-  local run = state().run
+  local run = s.run
   if run and new ~= old then
     tb.log(run, "INFO", string.format("Zeitraffer geändert: game.speed %s (vorher %s)", speed_text(new), speed_text(old)))
   end
