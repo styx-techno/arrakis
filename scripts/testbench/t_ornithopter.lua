@@ -2470,7 +2470,7 @@ local function t15_start(run, tb)
   for number = 1, #T15_STEPS do d["s" .. number] = {} end
   tb.watch(run, nil, d.pos.watch)
   tb.log(run, "INFO", "Siebzehn Schritte mit dem echten Ornithopter-Code (Anheben, Tragen, Absetzen, Absturz, Ablage, Migration),"
-    .. " Dauer etwa 2 min Spielzeit. Je Schritt eine OK/FEHLER-Zeile, Einzelwerte in der Datei.")
+    .. " Dauer etwa 2 bis 3 min Spielzeit. Je Schritt eine OK/FEHLER-Zeile, Einzelwerte in der Datei.")
   tb.log(run, "INFO", "T15 benutzt die echte Ablage " .. HOLD .. " und setzt in Schritt 17 alle getragenen Ernter ab (wie /arrakis-uninstall ja);"
     .. " Zahlen zur Ablage gelten relativ zum Stand vor dem Schritt.")
   d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
