@@ -26,16 +26,17 @@
 --     nutzbares Feld (9 Seeds: höchstens 1, „lang“ mit 30: höchstens 4).
 --   „Feldgröße“: Median der Größe aller nutzbaren Felder aller Seeds unter 500 Kacheln. Ohne nutzbares
 --     Feld nicht prüfbar (INFO); das meldet schon „Felder“.
---   Die Schätzung für 0.5.5 liegt weit darüber (etwa 5,1 Felder je Seed, Median etwa 1150 Kacheln; die
---   Größe eher zu hoch geschätzt, siehe prototypes/noise.lua).
+--   Die Schätzung für 0.5.5 liegt weit darüber (etwa 5,1 Felder je Seed, Median etwa 1150 Kacheln). Die
+--   Simulation setzt Felder nur an günstige Kandidaten wie jetzt arrakis_v3_spot, bleibt aber eine
+--   Schätzung (prototypes/noise.lua).
 --   Ein Lauf, der vor 0.5.5 begann und nach einem Update weiterläuft, hat d.usable_check nicht (start); beide
 --   sind dann nicht prüfbar (INFO), statt im Bericht an fehlenden Daten abzubrechen.
 -- Nach allen Seeds zwei Durchgänge nur auf dem ersten Seed (d.pass):
 --   „groesse0“: Spice-Regler auf Größe 0, Chunks im Radius 9. FEHLER, wenn das Lehrfeld dann fehlt
 --     oder nicht 100 000 ± 5 % Spice-Sand hat (Festlegung 0.5.4: Es bleibt bei Größe 0), oder wenn
 --     dann noch reguläres Spice liegt. Das Gebiet reicht bis 288 Kacheln je Achse, also in den Bereich
---     ab 215 Kacheln, in dem reguläres Spice liegen darf (Spicezone; Gunst ab 225 Kacheln,
---     arrakis_v3_spice_favorability).
+--     ab 215 Kacheln, in dem reguläres Spice liegen darf (Spicezone), und über die etwa 225 Kacheln hinaus,
+--     ab denen die Fleckmitten liegen (arrakis_v3_spice_favorability, arrakis_v3_spot).
 --   „alt“: dieselbe Fläche mit den Ausdrücken der Karte 0.4.0, nur zum Zeitvergleich.
 -- MESSUNG: Zahl und Größe der regulären Felder, nutzbare Felder je Seed und ihre Größe im Median, Abstand
 -- Start → nächstes reguläres Feld, Lehrfeld (Lage, größter dichter Block für den 13×13-Ernter), Startinsel,

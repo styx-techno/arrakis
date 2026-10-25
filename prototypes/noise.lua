@@ -333,7 +333,8 @@ data:extend({
 -- Spice-Menge und -Wahrscheinlichkeit je Regel: Regel B ohne Zusatz (in 0.5.4 eingehängt), Regel A mit „_a“
 -- (Rückfall, nicht eingehängt). Welche gilt, steht nur in prototypes/planet/planet-map-gen.lua (SPICE_RULE).
 -- Gilt für Oberflächen aus 0.5.4: Sie behalten diese Namen. Ab 0.5.5 hängt der Planet arrakis_v3_spice_*
--- ein (ganz unten, gleicher Aufbau, nur Fleckradius, Abstand und Gunst der regulären Felder neu).
+-- ein (ganz unten, gleicher Aufbau, nur Fleckradius, Abstand, Gunst und Fleck arrakis_v3_spot der regulären
+-- Felder neu).
 --
 -- Lehrfeld mit Spitze 1180, erschöpfbar, Ziel 100 000 Spice-Sand: Ein Kegel mit Spitze S und Radius r
 -- enthält S · π · r² / 3, also S = 3 · 100 000 / (π · 81) = 1178,9, gerundet 1180; das ergibt
@@ -429,53 +430,96 @@ data:extend({
 -- die regulären Felder waren viel zu selten und zu klein: im Mittel 0,9 Felder je Seed (0 bis 3), auf 5 von
 -- 9 Seeds keins, Feldgröße im Median 134 Kacheln, größtes Feld im Mittel 253, nächstes Feld 258–516 Kacheln
 -- vom Start.
--- Ursache ist die Kandidatenzahl von arrakis_spot, nicht die Spicezone. spot_noise wählt je Region
--- (region_size = 5 · Abstand) candidate_spot_count = 22 Zufallspunkte. Die Zielmenge der Region ist die
--- mittlere abgetastete Dichte mal Fläche der Region; die Flecken kommen nach Gunst geordnet, bis die
--- Zielmenge oder die Kandidatenzahl erreicht ist (Factorio-Doku zu spot_noise, lokal nicht vorhanden). Mit
--- Dichte = Gunst und Menge = Radius² begrenzt die Zielmenge nie, die Kandidatenzahl schon. Deshalb bekommen
--- in einer Region mit etwas günstiger Fläche auch die übrigen Kandidaten Flecken, die Gunst ordnet sie nur:
--- Schon ein Kandidat mit Gunst 1 gibt die Zielmenge 1250² / 22 = 71 023 ≥ 22 · 14² = 4 312 (0.5.4) bzw.
--- 450² / 22 = 9 205 ≥ 22 · 20² = 8 800 (0.5.5), also Flecken für alle 22. Der Zonenfaktor schneidet sie ganz
--- oder teilweise weg. Das passt zur Messung mit 0.5.4: größtes Feld im Mittel 253, Median 134 Kacheln, ein
--- ganzer Fleck mit Radius 14 hätte etwa π · 14² = 615. Felder gibt es also etwa so viele, wie Flecken die
--- Zone treffen, viele davon am Zonenrand angeschnitten; Engpass bleibt die Kandidatenzahl. In 0.5.4
--- (Abstand 250) ist die Region 1250 Kacheln breit, ein Kandidat kommt auf 1250² / 22 = 71 000 Kacheln, nur
--- etwa 9 auf 800 × 800. Die Zone selbst (Regel B) bedeckt im mittleren 800 × 800 jedes Seeds 31 000 bis
--- 105 000 Kacheln als zusammenhängende Rinnen (gemessen auf den T11-Rastern) und ist nicht der Engpass.
+-- Ursache sind zwei Eigenschaften von arrakis_spot, nicht die Spicezone:
+--   Zu wenige Kandidaten. spot_noise wählt je Region (region_size = 5 · Abstand) candidate_spot_count = 22
+--   Zufallspunkte. In 0.5.4 (Abstand 250) ist die Region 1250 Kacheln breit, ein Kandidat kommt auf
+--   1250² / 22 = 71 000 Kacheln, nur etwa 9 auf 800 × 800. Die Zone selbst (Regel B) bedeckt im mittleren
+--   800 × 800 jedes Seeds 31 000 bis 105 000 Kacheln als zusammenhängende Rinnen (gemessen auf den
+--   T11-Rastern) und ist nicht der Engpass.
+--   Die Gunst hält die Fleckmitten nicht im günstigen Teil der Zone. Die Zielmenge der Region ist die
+--   mittlere abgetastete Dichte mal Fläche der Region; die Flecken kommen nach Gunst geordnet, bis die
+--   Zielmenge oder die Kandidatenzahl erreicht ist (Factorio-Doku zu spot_noise, lokal nicht vorhanden).
+--   arrakis_spot hat Dichte = Gunst und Menge = Radius², dann begrenzt die Zielmenge nicht: Schon ein
+--   Kandidat mit Gunst 1 gibt 1250² / 22 = 71 023 ≥ 22 · 14² = 4 312 (0.5.4), also Flecken für alle 22
+--   Kandidaten der Region, auch am Zonenrand und außerhalb. Der Zonenfaktor schneidet sie ganz oder
+--   teilweise weg. Das passt zur Messung mit 0.5.4: größtes Feld im Mittel 253, Median 134 Kacheln, ein
+--   ganzer Fleck mit Radius 14 hätte etwa π · 14² = 615. Mit den neuen Zahlen wäre es ebenso
+--   (450² / 22 = 9 205 ≥ 22 · 20² = 8 800); deshalb nimmt 0.5.5 den Fleck arrakis_v3_spot.
 -- Neue Zahlen (Regler auf 1):
 --   Fleckradius 20 · √Größe statt 14 · √Größe, Abstand 90 / √Häufigkeit statt 250 / √Häufigkeit. Die
 --   Region ist dann 450 Kacheln breit, ein Kandidat kommt auf 450² / 22 = 9 200 Kacheln, etwa 70 auf
 --   800 × 800.
 --   Gunst > 0 erst 0,1 unter der Grenze von Regel B, also bei c4u < −1,56: c4u fällt um 0,0106 je Kachel
 --   (cones oben), das sind etwa 9 Kacheln innerhalb des Zonenrands (1 ab −1,66, weitere 9 Kacheln
---   tiefer). Dazu ab 225 Kacheln vom Start (Zone ab 215). Die Gunst ordnet nur die Kandidaten und gibt
---   der Region ihre Zielmenge; die Fleckmitten hält sie dort nicht (siehe oben). Mitten liegen auch am
---   Zonenrand, außerhalb der Zone oder näher als 225 Kacheln am Start; Spice gibt es trotzdem nur in der
---   Zone, also ab 215 Kacheln vom Start und mit dem Abstand zum Fels.
---   Die Zielmenge begrenzt weiter nicht: Ein Fleck hat die Menge 20² = 400, und schon eine Summe der Gunst
---   von 0,05 über die Kandidaten einer Region ergibt 0,05 / 22 · 450² = 460. Ein Kandidat tief in der Zone
---   bringt allein Gunst 1.
+--   tiefer). Dazu ab 225 Kacheln vom Start (Zone ab 215).
+--   Fleck arrakis_v3_spot: wie arrakis_spot, nur mit der Dichte Gunst · 0,9 · 22 / 25 · r² / Abstand². Die
+--   Region hat die Fläche 25 · Abstand², die Zielmenge ist also 0,9 · r² mal die Summe der Gunst ihrer 22
+--   Kandidaten. Die Flecken kommen nach Gunst geordnet, jeder Kandidat mit Gunst > 0 vor jedem mit 0, und
+--   nur, solange die Zielmenge nicht erreicht ist (hard_region_target_quantity = 0: Der letzte Fleck darf sie
+--   überschreiten). Bei k Kandidaten mit Gunst 1 endet das genau nach ihnen, solange k < 10 ist
+--   ((k − 1) < 0,9 · k). k ≥ 10 bräuchte etwa die halbe Region günstig (die Zone bedeckt 5 bis 16 % der
+--   800 × 800), dann blieben einige günstige ohne Fleck. Kandidaten im Übergang (Gunst zwischen 0 und 1)
+--   zählen anteilig, dort bleibt ab und zu einer ohne Fleck. Eine Region ohne günstigen Kandidaten hat die
+--   Zielmenge 0 und keinen Fleck. 0,9 statt 1 deckt auch, dass das Mittel über 21 statt 22 Punkte gehen
+--   könnte (skip_offset = 1): 0,9 · 22 / 21 = 0,943 < 1. Mittelt die Engine die Dichte stattdessen über die
+--   Fläche der Region, ist die Zielmenge 0,9 · (erwartete Zahl günstiger Kandidaten) · r², also von
+--   derselben Größe; dann bekäme eine Region mit weniger günstigen Kandidaten als erwartet auch Flecken an
+--   Kandidaten mit Gunst 0.
+--   Damit liegen die Fleckmitten etwa 9 Kacheln innerhalb der Spicezone und ab 225 Kacheln vom Start, aber
+--   nur ungefähr: Die Gunst gilt am Kandidaten in den Koordinaten von spot_noise, und arrakis_spot wie
+--   arrakis_v3_spot verschieben diese um Wobble · 0,5 · Radius (arrakis_wobble_x/y, multioctave_noise im
+--   Maßstab 12, gemessen 10 % bis 90 % etwa ±0,9, 1 % bis 99 % etwa ±1,5). Bei Radius 20 liegt die Mitte
+--   also je Achse meist bis etwa 9, selten bis 15 Kacheln neben dem Punkt, an dem die Gunst gilt. Spice
+--   gibt es trotzdem nur in der Zone, also ab 215 Kacheln vom Start und mindestens 100 Kacheln vom Fels;
+--   Felder am Zonenrand schneidet die Zone weiter an (Radius 20 reicht weiter als 9 Kacheln), aber nicht
+--   mehr zu Bruchstücken wie in 0.5.4.
 --   Die Menge je Kachel bleibt: Ein Fleck ist ein Kegel der Höhe 3 · q / (π · r²) mit q = r², also immer
 --   3 / π = 0,955 in der Mitte und linear 0 am Rand. Spitze 6000, Lehrfeld (1180), Zonen und Fels bleiben,
 --   es ändern sich nur Zahl und Größe der Felder. Ein ganzes Feld hat rechnerisch 6000 · 20² = 2 400 000
 --   Spice-Sand statt 6000 · 14² = 1 176 000 (ohne Anschnitt durch die Zone, Reichtum 1).
 -- Schätzung (Simulation auf den Zonenrastern aus T11 mit 4 Kacheln Auflösung, zufällig verschobene
--- Kandidaten, runde Felder von der Zone beschnitten): etwa 5,1 Felder je Seed auf 800 × 800 (je Seed 2,0
--- bis 9,4), ein Seed ohne Feld mit höchstens 3 % Wahrscheinlichkeit, Feld im Median etwa 1150 Kacheln,
--- größtes etwa 1500, nächstes etwa 245 Kacheln vom Start, etwa 5700 Spice-Kacheln je Seed. Für die Zahlen
--- von 0.5.4 gibt dieselbe Simulation 0,4 Felder je Seed, gemessen waren 0,9; sie unterschätzt also
--- vermutlich, um bis zu etwa den Faktor 2. Ein Grund ist wohl, dass sie Felder nur an Kandidaten mit
--- Gunst > 0 setzt, nicht an den übrigen (siehe oben); die Feldgröße schätzt sie dann eher zu hoch. Es bleibt
--- eine Schätzung; was gilt, misst T14 (Prüfungen „Felder“ und „Feldgröße“).
+-- Kandidaten, Felder nur an Kandidaten mindestens 9 Kacheln innerhalb der Zone und ab 225 Kacheln vom Start,
+-- runde Felder von der Zone beschnitten): etwa 5,1 Felder je Seed auf 800 × 800 (je Seed 2,0 bis 9,4), ein
+-- Seed ohne Feld mit höchstens 3 % Wahrscheinlichkeit, Feld im Median etwa 1150 Kacheln, größtes etwa 1500,
+-- nächstes etwa 245 Kacheln vom Start, etwa 5700 Spice-Kacheln je Seed. Die Simulation setzt die Flecken
+-- so, wie arrakis_v3_spot es tut (ohne die Verschiebung durch den Wobble und mit Gunst ganz oder gar nicht),
+-- und passt zu 0.5.5 deshalb besser als zu 0.5.4: Für 0.5.4 gab sie 0,4 Felder je Seed, gemessen waren 0,9,
+-- vermutlich weil dort alle Kandidaten Flecken bekamen und die angeschnittenen Stücke als Felder zählten.
+-- Es bleibt eine Schätzung; was gilt, misst T14 (Prüfungen „Felder“ und „Feldgröße“).
 -- Eine Oberfläche aus 0.5.4 behält die Namen arrakis_v2_spice_* und damit ihre wenigen kleinen Felder, auch
 -- in neu erkundeten Gebieten. Ist 0.5.5 veröffentlicht, gilt für arrakis_v3_* dasselbe wie für arrakis_v2_*:
 -- Jede Änderung braucht neue Namen.
 data:extend({
   {
-    -- Gunst der regulären Flecken ab 0.5.5: > 0 ab 0,1 unter der Grenze von Regel B (etwa 9 Kacheln
-    -- innerhalb des Zonenrands) und ab 225 Kacheln vom Start. Sie ordnet die Kandidaten und gibt die
-    -- Zielmenge, die Fleckmitten liegen nicht nur dort (siehe oben).
+    -- Fleck der regulären Felder ab 0.5.5: wie arrakis_spot (Wobble, Seeds, Region, 22 Kandidaten, Menge r²,
+    -- Sockel), nur mit der Dichte Gunst · 0,9 · 22 / 25 · r² / Abstand². Die Zielmenge der Region ist dann
+    -- 0,9 · (Summe der Gunst) · r², Flecken bekommen nur günstige Kandidaten (siehe oben). arrakis_spot
+    -- bleibt unverändert, Karte 1 und arrakis_v2_* nutzen ihn.
+    type = "noise-function",
+    name = "arrakis_v3_spot",
+    parameters = {"seed1", "radius", "spacing", "favorability"},
+    expression = "spot_noise{x = x + arrakis_wobble_x * 0.5 * radius,\z
+                             y = y + arrakis_wobble_y * 0.5 * radius,\z
+                             seed0 = map_seed,\z
+                             seed1 = seed1,\z
+                             skip_span = 1,\z
+                             skip_offset = 1,\z
+                             region_size = spacing * 5,\z
+                             density_expression = favorability * 0.9 * 22 / 25 * radius * radius / (spacing * spacing),\z
+                             spot_favorability_expression = favorability,\z
+                             candidate_spot_count = 22,\z
+                             suggested_minimum_candidate_point_spacing = spacing,\z
+                             spot_quantity_expression = radius * radius,\z
+                             spot_radius_expression = radius,\z
+                             hard_region_target_quantity = 0,\z
+                             basement_value = -1,\z
+                             maximum_spot_basement_radius = radius * 2}"
+  },
+  {
+    -- Gunst der regulären Fleckmitten ab 0.5.5: > 0 ab 0,1 unter der Grenze von Regel B (etwa 9 Kacheln
+    -- innerhalb des Zonenrands) und ab 225 Kacheln vom Start. arrakis_v3_spot setzt Flecken nur an
+    -- Kandidaten mit Gunst > 0; die Mitte liegt wegen des Wobbles je Achse meist bis etwa 9, selten bis
+    -- 15 Kacheln daneben (siehe oben).
     type = "noise-expression",
     name = "arrakis_v3_spice_favorability",
     expression = "clamp((-1.56 - arrakis_v2_c4u) * 10, 0, 1) * (distance > 225)"
@@ -485,7 +529,7 @@ data:extend({
 -- Spice-Menge und -Wahrscheinlichkeit je Regel wie bei arrakis_v2_spice_* (Regel B ohne Zusatz, eingehängt;
 -- Regel A mit „_a“, Rückfall, nicht eingehängt; SPICE_RULE in prototypes/planet/planet-map-gen.lua). Lehrfeld,
 -- Zonen, Spitze 6000, (size > 0), max(size, 1/6) und 0,005 Abstand zur Felskante wie dort, neu sind nur
--- Fleckradius, Abstand und Gunst der regulären Felder.
+-- Fleckradius, Abstand, Gunst und Fleck (arrakis_v3_spot statt arrakis_spot) der regulären Felder.
 for _, rule in ipairs({{suffix = "", zone = "arrakis_v2_spice_zone"}, {suffix = "_a", zone = "arrakis_v2_spice_zone_a"}}) do
   data:extend({
     {
@@ -497,7 +541,7 @@ for _, rule in ipairs({{suffix = "", zone = "arrakis_v2_spice_zone"}, {suffix = 
         richness = "var('control:arrakis_spice:richness')",
         frequency = "var('control:arrakis_spice:frequency')",
         size = "var('control:arrakis_spice:size')",
-        regular = "6000 * (size > 0) * " .. rule.zone .. " * arrakis_spot(7301, 20 * max(size, 1 / 6) ^ 0.5, 90 / frequency ^ 0.5, arrakis_v3_spice_favorability)"
+        regular = "6000 * (size > 0) * " .. rule.zone .. " * arrakis_v3_spot(7301, 20 * max(size, 1 / 6) ^ 0.5, 90 / frequency ^ 0.5, arrakis_v3_spice_favorability)"
       }
     },
     {
