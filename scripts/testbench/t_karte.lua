@@ -26,12 +26,16 @@
 --     nutzbares Feld (9 Seeds: höchstens 1, „lang“ mit 30: höchstens 4).
 --   „Feldgröße“: Median der Größe aller nutzbaren Felder aller Seeds unter 500 Kacheln. Ohne nutzbares
 --     Feld nicht prüfbar (INFO); das meldet schon „Felder“.
---   Die Schätzung für 0.5.5 liegt weit darüber (etwa 5,1 Felder je Seed, Median etwa 1150 Kacheln).
+--   Die Schätzung für 0.5.5 liegt weit darüber (etwa 5,1 Felder je Seed, Median etwa 1150 Kacheln; die
+--   Größe eher zu hoch geschätzt, siehe prototypes/noise.lua).
+--   Ein Lauf, der vor 0.5.5 begann und nach einem Update weiterläuft, hat d.usable_check nicht (start); beide
+--   sind dann nicht prüfbar (INFO), statt im Bericht an fehlenden Daten abzubrechen.
 -- Nach allen Seeds zwei Durchgänge nur auf dem ersten Seed (d.pass):
 --   „groesse0“: Spice-Regler auf Größe 0, Chunks im Radius 9. FEHLER, wenn das Lehrfeld dann fehlt
 --     oder nicht 100 000 ± 5 % Spice-Sand hat (Festlegung 0.5.4: Es bleibt bei Größe 0), oder wenn
 --     dann noch reguläres Spice liegt. Das Gebiet reicht bis 288 Kacheln je Achse, also in den Bereich
---     ab 225 Kacheln, in dem reguläre Fleckmitten liegen dürfen (arrakis_v3_spice_favorability).
+--     ab 215 Kacheln, in dem reguläres Spice liegen darf (Spicezone; Gunst ab 225 Kacheln,
+--     arrakis_v3_spice_favorability).
 --   „alt“: dieselbe Fläche mit den Ausdrücken der Karte 0.4.0, nur zum Zeitvergleich.
 -- MESSUNG: Zahl und Größe der regulären Felder, nutzbare Felder je Seed und ihre Größe im Median, Abstand
 -- Start → nächstes reguläres Feld, Lehrfeld (Lage, größter dichter Block für den 13×13-Ernter), Startinsel,
@@ -1044,10 +1048,12 @@ end
 phases.bericht = function(run, tb, d)
   local n = #d.seeds
   local failures = 0
-  local usable = usable_fields(d)
-  local notes = total_checks(run, tb, d, usable)
+  -- Ein Lauf aus 0.5.4 (gespeichert, mit 0.5.5 weitergeladen) hat weder d.usable_check noch usable je Seed
+  -- noch d.failed.felder/feldgroesse: „Felder“ und „Feldgröße“ sind dann nicht prüfbar.
+  local usable = d.usable_check and usable_fields(d) or nil
+  local notes = usable and total_checks(run, tb, d, usable) or {}
   for _, check in ipairs(CHECKS) do
-    local failed = d.failed[check.key]
+    local failed = d.failed[check.key] or {}
     local checked = d.checked[check.key] or 0
     failures = failures + #failed
     if checked == 0 and check.required then
@@ -1055,7 +1061,7 @@ phases.bericht = function(run, tb, d)
       failures = failures + 1
       tb.log(run, "FEHLER", string.format("%s: nicht prüfbar, %s (von %d Seeds)", check.title, check.required, n))
     elseif checked == 0 and check.total then
-      tb.log(run, "INFO", string.format("%s: nicht prüfbar, %s", check.title, check.absent))
+      tb.log(run, "INFO", string.format("%s: nicht prüfbar, %s", check.title, usable and check.absent or "Lauf vor 0.5.5 begonnen"))
     elseif checked == 0 then
       tb.log(run, "INFO", check.title .. ": auf keinem Seed prüfbar")
     elseif #failed == 0 and check.once then
@@ -1088,9 +1094,11 @@ phases.bericht = function(run, tb, d)
   tb.log(run, "MESSUNG", string.format("Reguläre Felder je Seed %s; Feldgröße (Median je Seed) %s, größtes Feld %s Kacheln; " ..
     "nächstes Feld vom Start %s Kacheln (%d Seeds ohne Feld)", spread_text(fields, 1), spread_text(sizes), spread_text(largest),
     spread_text(nearest), n - #nearest))
-  tb.log(run, "MESSUNG", string.format("Nutzbare Felder (ab %d Kacheln) je Seed %s (%d Seeds ohne); Größe der nutzbaren Felder " ..
-    "im Median %s Kacheln (%d Felder, alle Seeds)", USABLE, spread_text(usable.counts, 1), usable.empty,
-    usable.median and tostring(usable.median) or "–", #usable.sizes))
+  if usable then
+    tb.log(run, "MESSUNG", string.format("Nutzbare Felder (ab %d Kacheln) je Seed %s (%d Seeds ohne); Größe der nutzbaren " ..
+      "Felder im Median %s Kacheln (%d Felder, alle Seeds)", USABLE, spread_text(usable.counts, 1), usable.empty,
+      usable.median and tostring(usable.median) or "–", #usable.sizes))
+  end
   local rim_low, _, rim_high = spread(rims)
   tb.log(run, "MESSUNG", string.format("Lehrfeld Spice-Sand %s, größter dichter Block %s (Ernter %d × %d); Startinsel %s Kacheln, " ..
     "Rand %s … %s Kacheln vom Start", spread_text(lehr, 0, true), spread_text(squares), HARVEST_SIZE, HARVEST_SIZE, spread_text(island),
@@ -1142,6 +1150,7 @@ local function start(run, tb)
   d.seeds = seed_list(d.long)
   d.failed, d.checked, d.summary = {}, {}, {}
   for _, check in ipairs(CHECKS) do d.failed[check.key] = {} end
+  d.usable_check = true                  -- ab 0.5.5: je Seed usable in d.summary, „Felder“ und „Feldgröße“ (bericht)
   local leftovers = delete_leftovers()
   if leftovers > 0 then tb.log(run, "INFO", leftovers .. " alte T14-Testoberflächen gelöscht") end
   local ok_timer, profiler = pcall(function() return helpers.create_profiler(true) end)

@@ -310,8 +310,9 @@ data:extend({
   },
   {
     -- Gunst der regulären Fleckmitten: > 0 erst 0,3 unter der Grenze von Regel B (etwa 28 Kacheln tiefer:
-    -- Fleckradius 14 plus Wobble bis etwa 16, arrakis_spot) und ab 245 Kacheln vom Start. So werden Felder
-    -- am Zonenrand selten angeschnitten; den Abstand hält die Zone ohnehin.
+    -- Fleckradius 14 plus Wobble bis etwa 16, arrakis_spot) und ab 245 Kacheln vom Start. So sollten Felder
+    -- am Zonenrand selten angeschnitten werden; die Gunst ordnet aber nur die Kandidaten (siehe arrakis_v3_*),
+    -- T14 mit 0.5.4 fand Felder von im Median 134 Kacheln (ganz etwa 615). Den Abstand hält die Zone ohnehin.
     -- Gilt für Oberflächen aus 0.5.4 (arrakis_v2_spice_*); ab 0.5.5 siehe arrakis_v3_spice_favorability.
     type = "noise-expression",
     name = "arrakis_v2_spice_favorability",
@@ -432,22 +433,26 @@ data:extend({
 -- (region_size = 5 · Abstand) candidate_spot_count = 22 Zufallspunkte. Die Zielmenge der Region ist die
 -- mittlere abgetastete Dichte mal Fläche der Region; die Flecken kommen nach Gunst geordnet, bis die
 -- Zielmenge oder die Kandidatenzahl erreicht ist (Factorio-Doku zu spot_noise, lokal nicht vorhanden). Mit
--- Dichte = Gunst und Menge = Radius² begrenzt die Zielmenge nie, die Kandidatenzahl schon. Kandidaten
--- außerhalb der Spicezone geben Flecken, die der Zonenfaktor wegschneidet: Es gibt nur so viele Felder, wie
--- Kandidaten in den günstigen Teil der Zone fallen. In 0.5.4 (Abstand 250) ist die Region 1250 Kacheln
--- breit, ein Kandidat kommt auf 1250² / 22 = 71 000 Kacheln, nur etwa 9 auf 800 × 800. Die Zone selbst
--- (Regel B) bedeckt im mittleren 800 × 800 jedes Seeds 31 000 bis 105 000 Kacheln als zusammenhängende Rinnen
--- (gemessen auf den T11-Rastern) und ist nicht der Engpass; die Gunst von 0.5.4 (c4u < −1,76 und ab 245
--- Kacheln vom Start) verkleinert sie noch.
+-- Dichte = Gunst und Menge = Radius² begrenzt die Zielmenge nie, die Kandidatenzahl schon. Deshalb bekommen
+-- in einer Region mit etwas günstiger Fläche auch die übrigen Kandidaten Flecken, die Gunst ordnet sie nur:
+-- Schon ein Kandidat mit Gunst 1 gibt die Zielmenge 1250² / 22 = 71 023 ≥ 22 · 14² = 4 312 (0.5.4) bzw.
+-- 450² / 22 = 9 205 ≥ 22 · 20² = 8 800 (0.5.5), also Flecken für alle 22. Der Zonenfaktor schneidet sie ganz
+-- oder teilweise weg. Das passt zur Messung mit 0.5.4: größtes Feld im Mittel 253, Median 134 Kacheln, ein
+-- ganzer Fleck mit Radius 14 hätte etwa π · 14² = 615. Felder gibt es also etwa so viele, wie Flecken die
+-- Zone treffen, viele davon am Zonenrand angeschnitten; Engpass bleibt die Kandidatenzahl. In 0.5.4
+-- (Abstand 250) ist die Region 1250 Kacheln breit, ein Kandidat kommt auf 1250² / 22 = 71 000 Kacheln, nur
+-- etwa 9 auf 800 × 800. Die Zone selbst (Regel B) bedeckt im mittleren 800 × 800 jedes Seeds 31 000 bis
+-- 105 000 Kacheln als zusammenhängende Rinnen (gemessen auf den T11-Rastern) und ist nicht der Engpass.
 -- Neue Zahlen (Regler auf 1):
 --   Fleckradius 20 · √Größe statt 14 · √Größe, Abstand 90 / √Häufigkeit statt 250 / √Häufigkeit. Die
 --   Region ist dann 450 Kacheln breit, ein Kandidat kommt auf 450² / 22 = 9 200 Kacheln, etwa 70 auf
 --   800 × 800.
 --   Gunst > 0 erst 0,1 unter der Grenze von Regel B, also bei c4u < −1,56: c4u fällt um 0,0106 je Kachel
 --   (cones oben), das sind etwa 9 Kacheln innerhalb des Zonenrands (1 ab −1,66, weitere 9 Kacheln
---   tiefer). Dazu ab 225 Kacheln vom Start (Zone ab 215). Felder am Zonenrand schneidet die Zone
---   damit öfter an als in 0.5.4 (Radius 20 plus Verzerrung reicht weiter als 9 Kacheln); den Abstand zum
---   Fels hält die Zone trotzdem.
+--   tiefer). Dazu ab 225 Kacheln vom Start (Zone ab 215). Die Gunst ordnet nur die Kandidaten und gibt
+--   der Region ihre Zielmenge; die Fleckmitten hält sie dort nicht (siehe oben). Mitten liegen auch am
+--   Zonenrand, außerhalb der Zone oder näher als 225 Kacheln am Start; Spice gibt es trotzdem nur in der
+--   Zone, also ab 215 Kacheln vom Start und mit dem Abstand zum Fels.
 --   Die Zielmenge begrenzt weiter nicht: Ein Fleck hat die Menge 20² = 400, und schon eine Summe der Gunst
 --   von 0,05 über die Kandidaten einer Region ergibt 0,05 / 22 · 450² = 460. Ein Kandidat tief in der Zone
 --   bringt allein Gunst 1.
@@ -460,15 +465,17 @@ data:extend({
 -- bis 9,4), ein Seed ohne Feld mit höchstens 3 % Wahrscheinlichkeit, Feld im Median etwa 1150 Kacheln,
 -- größtes etwa 1500, nächstes etwa 245 Kacheln vom Start, etwa 5700 Spice-Kacheln je Seed. Für die Zahlen
 -- von 0.5.4 gibt dieselbe Simulation 0,4 Felder je Seed, gemessen waren 0,9; sie unterschätzt also
--- vermutlich, um bis zu etwa den Faktor 2. Es bleibt eine Schätzung; was gilt, misst T14 (Prüfungen
--- „Felder“ und „Feldgröße“).
+-- vermutlich, um bis zu etwa den Faktor 2. Ein Grund ist wohl, dass sie Felder nur an Kandidaten mit
+-- Gunst > 0 setzt, nicht an den übrigen (siehe oben); die Feldgröße schätzt sie dann eher zu hoch. Es bleibt
+-- eine Schätzung; was gilt, misst T14 (Prüfungen „Felder“ und „Feldgröße“).
 -- Eine Oberfläche aus 0.5.4 behält die Namen arrakis_v2_spice_* und damit ihre wenigen kleinen Felder, auch
 -- in neu erkundeten Gebieten. Ist 0.5.5 veröffentlicht, gilt für arrakis_v3_* dasselbe wie für arrakis_v2_*:
 -- Jede Änderung braucht neue Namen.
 data:extend({
   {
-    -- Gunst der regulären Fleckmitten ab 0.5.5: > 0 ab 0,1 unter der Grenze von Regel B (etwa 9 Kacheln
-    -- innerhalb des Zonenrands) und ab 225 Kacheln vom Start.
+    -- Gunst der regulären Flecken ab 0.5.5: > 0 ab 0,1 unter der Grenze von Regel B (etwa 9 Kacheln
+    -- innerhalb des Zonenrands) und ab 225 Kacheln vom Start. Sie ordnet die Kandidaten und gibt die
+    -- Zielmenge, die Fleckmitten liegen nicht nur dort (siehe oben).
     type = "noise-expression",
     name = "arrakis_v3_spice_favorability",
     expression = "clamp((-1.56 - arrakis_v2_c4u) * 10, 0, 1) * (distance > 225)"
