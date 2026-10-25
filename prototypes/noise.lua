@@ -9,6 +9,9 @@
 --   Karte 2 (ab 0.5.4): die Ausdrücke arrakis_v2_* weiter unten. Eingehängt nur über
 --     property_expression_names des Planeten (prototypes/planet/planet-map-gen.lua), gilt also erst
 --     für eine neu angelegte Oberfläche.
+--     Ab 0.5.5 nimmt Karte 2 das reguläre Spice aus arrakis_v3_spice_* (ganz unten: mehr und größere
+--     Felder); Fels, Erz, Tiefenwasser, Spicezone und Lehrfeld bleiben arrakis_v2_*. Eine Oberfläche aus
+--     0.5.4 behält arrakis_v2_spice_* und damit ihre wenigen kleinen Felder.
 
 -- Fels-Ausdrücke je Karte: Namenspräfix, Gunst für Erz- und Brunnenflecken, Bedingung „auf Fels“.
 -- Karte 2 verlangt 0,005 Abstand zur Felskante: Dort ist die Kachel nach der steilen Felsregel sicher Fels.
@@ -309,6 +312,7 @@ data:extend({
     -- Gunst der regulären Fleckmitten: > 0 erst 0,3 unter der Grenze von Regel B (etwa 28 Kacheln tiefer:
     -- Fleckradius 14 plus Wobble bis etwa 16, arrakis_spot) und ab 245 Kacheln vom Start. So werden Felder
     -- am Zonenrand selten angeschnitten; den Abstand hält die Zone ohnehin.
+    -- Gilt für Oberflächen aus 0.5.4 (arrakis_v2_spice_*); ab 0.5.5 siehe arrakis_v3_spice_favorability.
     type = "noise-expression",
     name = "arrakis_v2_spice_favorability",
     expression = "clamp((-1.76 - arrakis_v2_c4u) * 10, 0, 1) * (distance > 245)"
@@ -325,8 +329,10 @@ data:extend({
   }
 })
 
--- Spice-Menge und -Wahrscheinlichkeit je Regel: Regel B ohne Zusatz (eingehängt), Regel A mit „_a“ (Rückfall,
--- nicht eingehängt). Welche gilt, steht nur in prototypes/planet/planet-map-gen.lua (SPICE_RULE).
+-- Spice-Menge und -Wahrscheinlichkeit je Regel: Regel B ohne Zusatz (in 0.5.4 eingehängt), Regel A mit „_a“
+-- (Rückfall, nicht eingehängt). Welche gilt, steht nur in prototypes/planet/planet-map-gen.lua (SPICE_RULE).
+-- Gilt für Oberflächen aus 0.5.4: Sie behalten diese Namen. Ab 0.5.5 hängt der Planet arrakis_v3_spice_*
+-- ein (ganz unten, gleicher Aufbau, nur Fleckradius, Abstand und Gunst der regulären Felder neu).
 --
 -- Lehrfeld mit Spitze 1180, erschöpfbar, Ziel 100 000 Spice-Sand: Ein Kegel mit Spitze S und Radius r
 -- enthält S · π · r² / 3, also S = 3 · 100 000 / (π · 81) = 1178,9, gerundet 1180; das ergibt
@@ -338,8 +344,9 @@ data:extend({
 -- 100 Laderaumfüllungen. Es hängt nicht am Größen-Regler (bleibt bei Größe 0), der Reichtum-Regler wirkt
 -- (1/6 bis 6, also etwa 17 000 bis 600 000 Spice-Sand).
 -- Reguläre Felder wie in Karte 1: 6000 · Fleck mit Radius 14 · √Größe, Abstand 250 / √Häufigkeit, nur
--- in der Spicezone der Regel. max(size, 1/6) hält den Radius bei Größe 0 endlich (der Regler reicht sonst
--- von 1/6 bis 6, FD core/prototypes/noise-functions.lua:9); (size > 0) schaltet die Felder dann ab.
+-- in der Spicezone der Regel (ab 0.5.5: Radius 20 · √Größe, Abstand 90 / √Häufigkeit, arrakis_v3_*).
+-- max(size, 1/6) hält den Radius bei Größe 0 endlich (der Regler reicht sonst von 1/6 bis 6,
+-- FD core/prototypes/noise-functions.lua:9); (size > 0) schaltet die Felder dann ab.
 -- Spice nur auf Sand: 0,005 Abstand zur Felskante, dort ist die Kachel nach der steilen Regel sicher
 -- Sand. Das ersetzt eine tile_restriction am Prototyp spice-sand; die gälte auch für Karte 1 in alten
 -- Spielständen und nähme dort Spice auf Felskacheln am Inselrand weg.
@@ -414,3 +421,82 @@ data:extend({
     expression = "starting_spot_at_angle{angle = arrakis_starting_angle + 225, distance = 45, radius = 8, x_distortion = 0, y_distortion = 0} <= 0"
   }
 })
+
+
+-- Karte 2, reguläres Spice ab 0.5.5 (arrakis_v3_*) ---------------------------------------------------
+-- Warum: T14 „Karte echt“ mit 0.5.4 im Spiel (9 Seeds, je 800 × 800 Kacheln) bestand alle Prüfungen, aber
+-- die regulären Felder waren viel zu selten und zu klein: im Mittel 0,9 Felder je Seed (0 bis 3), auf 5 von
+-- 9 Seeds keins, Feldgröße im Median 134 Kacheln, größtes Feld im Mittel 253, nächstes Feld 258–516 Kacheln
+-- vom Start.
+-- Ursache ist die Kandidatenzahl von arrakis_spot, nicht die Spicezone. spot_noise wählt je Region
+-- (region_size = 5 · Abstand) candidate_spot_count = 22 Zufallspunkte. Die Zielmenge der Region ist die
+-- mittlere abgetastete Dichte mal Fläche der Region; die Flecken kommen nach Gunst geordnet, bis die
+-- Zielmenge oder die Kandidatenzahl erreicht ist (Factorio-Doku zu spot_noise, lokal nicht vorhanden). Mit
+-- Dichte = Gunst und Menge = Radius² begrenzt die Zielmenge nie, die Kandidatenzahl schon. Kandidaten
+-- außerhalb der Spicezone geben Flecken, die der Zonenfaktor wegschneidet: Es gibt nur so viele Felder, wie
+-- Kandidaten in den günstigen Teil der Zone fallen. In 0.5.4 (Abstand 250) ist die Region 1250 Kacheln
+-- breit, ein Kandidat kommt auf 1250² / 22 = 71 000 Kacheln, nur etwa 9 auf 800 × 800. Die Zone selbst
+-- (Regel B) bedeckt im mittleren 800 × 800 jedes Seeds 31 000 bis 105 000 Kacheln als zusammenhängende Rinnen
+-- (gemessen auf den T11-Rastern) und ist nicht der Engpass; die Gunst von 0.5.4 (c4u < −1,76 und ab 245
+-- Kacheln vom Start) verkleinert sie noch.
+-- Neue Zahlen (Regler auf 1):
+--   Fleckradius 20 · √Größe statt 14 · √Größe, Abstand 90 / √Häufigkeit statt 250 / √Häufigkeit. Die
+--   Region ist dann 450 Kacheln breit, ein Kandidat kommt auf 450² / 22 = 9 200 Kacheln, etwa 70 auf
+--   800 × 800.
+--   Gunst > 0 erst 0,1 unter der Grenze von Regel B, also bei c4u < −1,56: c4u fällt um 0,0106 je Kachel
+--   (cones oben), das sind etwa 9 Kacheln innerhalb des Zonenrands (1 ab −1,66, weitere 9 Kacheln
+--   tiefer). Dazu ab 225 Kacheln vom Start (Zone ab 215). Felder am Zonenrand schneidet die Zone
+--   damit öfter an als in 0.5.4 (Radius 20 plus Verzerrung reicht weiter als 9 Kacheln); den Abstand zum
+--   Fels hält die Zone trotzdem.
+--   Die Zielmenge begrenzt weiter nicht: Ein Fleck hat die Menge 20² = 400, und schon eine Summe der Gunst
+--   von 0,05 über die Kandidaten einer Region ergibt 0,05 / 22 · 450² = 460. Ein Kandidat tief in der Zone
+--   bringt allein Gunst 1.
+--   Die Menge je Kachel bleibt: Ein Fleck ist ein Kegel der Höhe 3 · q / (π · r²) mit q = r², also immer
+--   3 / π = 0,955 in der Mitte und linear 0 am Rand. Spitze 6000, Lehrfeld (1180), Zonen und Fels bleiben,
+--   es ändern sich nur Zahl und Größe der Felder. Ein ganzes Feld hat rechnerisch 6000 · 20² = 2 400 000
+--   Spice-Sand statt 6000 · 14² = 1 176 000 (ohne Anschnitt durch die Zone, Reichtum 1).
+-- Schätzung (Simulation auf den Zonenrastern aus T11 mit 4 Kacheln Auflösung, zufällig verschobene
+-- Kandidaten, runde Felder von der Zone beschnitten): etwa 5,1 Felder je Seed auf 800 × 800 (je Seed 2,0
+-- bis 9,4), ein Seed ohne Feld mit höchstens 3 % Wahrscheinlichkeit, Feld im Median etwa 1150 Kacheln,
+-- größtes etwa 1500, nächstes etwa 245 Kacheln vom Start, etwa 5700 Spice-Kacheln je Seed. Für die Zahlen
+-- von 0.5.4 gibt dieselbe Simulation 0,4 Felder je Seed, gemessen waren 0,9; sie unterschätzt also
+-- vermutlich, um bis zu etwa den Faktor 2. Es bleibt eine Schätzung; was gilt, misst T14 (Prüfungen
+-- „Felder“ und „Feldgröße“).
+-- Eine Oberfläche aus 0.5.4 behält die Namen arrakis_v2_spice_* und damit ihre wenigen kleinen Felder, auch
+-- in neu erkundeten Gebieten. Ist 0.5.5 veröffentlicht, gilt für arrakis_v3_* dasselbe wie für arrakis_v2_*:
+-- Jede Änderung braucht neue Namen.
+data:extend({
+  {
+    -- Gunst der regulären Fleckmitten ab 0.5.5: > 0 ab 0,1 unter der Grenze von Regel B (etwa 9 Kacheln
+    -- innerhalb des Zonenrands) und ab 225 Kacheln vom Start.
+    type = "noise-expression",
+    name = "arrakis_v3_spice_favorability",
+    expression = "clamp((-1.56 - arrakis_v2_c4u) * 10, 0, 1) * (distance > 225)"
+  }
+})
+
+-- Spice-Menge und -Wahrscheinlichkeit je Regel wie bei arrakis_v2_spice_* (Regel B ohne Zusatz, eingehängt;
+-- Regel A mit „_a“, Rückfall, nicht eingehängt; SPICE_RULE in prototypes/planet/planet-map-gen.lua). Lehrfeld,
+-- Zonen, Spitze 6000, (size > 0), max(size, 1/6) und 0,005 Abstand zur Felskante wie dort, neu sind nur
+-- Fleckradius, Abstand und Gunst der regulären Felder.
+for _, rule in ipairs({{suffix = "", zone = "arrakis_v2_spice_zone"}, {suffix = "_a", zone = "arrakis_v2_spice_zone_a"}}) do
+  data:extend({
+    {
+      type = "noise-expression",
+      name = "arrakis_v3_spice_richness" .. rule.suffix,
+      expression = "max(1180 * arrakis_v2_lehrfeld, regular) * richness",
+      local_expressions =
+      {
+        richness = "var('control:arrakis_spice:richness')",
+        frequency = "var('control:arrakis_spice:frequency')",
+        size = "var('control:arrakis_spice:size')",
+        regular = "6000 * (size > 0) * " .. rule.zone .. " * arrakis_spot(7301, 20 * max(size, 1 / 6) ^ 0.5, 90 / frequency ^ 0.5, arrakis_v3_spice_favorability)"
+      }
+    },
+    {
+      type = "noise-expression",
+      name = "arrakis_v3_spice_probability" .. rule.suffix,
+      expression = "(arrakis_v3_spice_richness" .. rule.suffix .. " > 1) * (arrakis_v2_rock < -0.005)"
+    }
+  })
+end

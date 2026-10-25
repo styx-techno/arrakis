@@ -11,6 +11,9 @@ local planet_map_gen = {}
 -- behält ihre map_gen_settings aus der Zeit ihrer Anlage, alte Spielstände erzeugen also weiter
 -- Karte 1 (scripts/migrate.lua meldet das einmal). Die Prototypen (Kachel, Spice, Tiefenwasser) tragen
 -- weiter die Ausdrücke von Karte 1.
+-- Ab 0.5.5 zeigt Spice-Sand auf arrakis_v3_spice_* (mehr und größere reguläre Felder, prototypes/noise.lua
+-- ganz unten). Eine Oberfläche aus 0.5.4 behält arrakis_v2_spice_* und ihre wenigen kleinen Felder, ohne
+-- Hinweis im Spiel; V2_KEY/V2_NAME unten erkennen beide als Karte 2.
 -- Die Datei greift nicht auf data zu und lässt sich auch im Control-Stage laden.
 
 -- Spice-Regel der Karte 2 (prototypes/noise.lua): "" = Regel B (eingehängt), "_a" = Regel A (Rückfall, wenn
@@ -36,6 +39,7 @@ local function property_names_1()
 end
 
 -- Karte 2 (ab 0.5.4): Startinsel, Graben, Kegel-Inseln, Lehrfeld, Spice mindestens 100 Kacheln vom Fels.
+-- Spice ab 0.5.5 aus arrakis_v3_spice_* (0.5.4: arrakis_v2_spice_*), alles andere arrakis_v2_*.
 local function property_names_2()
   return
   {
@@ -50,8 +54,8 @@ local function property_names_2()
     ["entity:stone:richness"] = "arrakis_v2_stone_richness",
     ["entity:coal:probability"] = "arrakis_v2_coal_probability",
     ["entity:coal:richness"] = "arrakis_v2_coal_richness",
-    ["entity:spice-sand:probability"] = "arrakis_v2_spice_probability" .. SPICE_RULE,
-    ["entity:spice-sand:richness"] = "arrakis_v2_spice_richness" .. SPICE_RULE,
+    ["entity:spice-sand:probability"] = "arrakis_v3_spice_probability" .. SPICE_RULE,
+    ["entity:spice-sand:richness"] = "arrakis_v3_spice_richness" .. SPICE_RULE,
     ["entity:arrakis-deep-water:probability"] = "arrakis_v2_deep_water_probability",
     ["entity:arrakis-deep-water:richness"] = "arrakis_v2_deep_water_richness"
   }
@@ -113,7 +117,8 @@ planet_map_gen.arrakis_v1 = function()
   return settings(property_names_1())
 end
 
--- Daran erkennt man Karte 2 in LuaSurface::map_gen_settings.property_expression_names (scripts/migrate.lua).
+-- Daran erkennt man Karte 2 in LuaSurface::map_gen_settings.property_expression_names (scripts/migrate.lua),
+-- mit Spice aus 0.5.4 (arrakis_v2_spice_*) wie aus 0.5.5 (arrakis_v3_spice_*).
 planet_map_gen.V2_KEY = "tile:arrakis-rock:probability"
 planet_map_gen.V2_NAME = "arrakis_v2_rock_tile"
 

@@ -20,7 +20,8 @@ Texte gelten so, wie sie hier stehen. Wo der Plan von DOC abweicht, gilt der Pla
 - Kartengenerator (Lehrfeld, Mindestabstand, steile Felsregel): kam mit 0.5.4 nach Max' T11-Lauf vom 25.10.2026
   (Kegel-Inseln c4 mit Felsschwelle 0, Startinsel 90 ± 22,5, Graben 220, Lehrfeld mit Radius 9 und Mitte 140,
   Spice-Regel B mit Rückfall A; Zahlen in DOC 2.4). Sicher nur in neuen Spielen; Spielstände mit angelegtem Arrakis
-  behalten die alte Karte (DOC 4.6). Abnahme durch T11 und T14 im nächsten Prüfstand-Lauf.
+  behalten die alte Karte (DOC 4.6). Abnahme durch T11 und T14 im nächsten Prüfstand-Lauf. T14 fand mit 0.5.4 zu wenige
+  und zu kleine reguläre Spicefelder; 0.5.5 macht sie dichter und größer (`arrakis_v3_spice_*`, DOC 2.4).
 - Vorsichtsmodus: braucht die Vibration/Wärme aus 3d1 und kommt mit ihr. Ohne Wärme hätte der Schalter keine Wirkung.
 - Ornithopter/Anheben (3c), Vibration, Würmer, Biss (3d). Staubwolken und Rumpeln kommen mit der Unruhe in 3d1.
 

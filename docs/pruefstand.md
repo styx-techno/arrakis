@@ -1,6 +1,6 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.5.4 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.5.5 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
 Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8).
@@ -21,7 +21,7 @@ Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisher
 - **T2 und T2b (Tempo):** 2.1.13 hat geändert, wie das Höchsttempo der Brennstoffe bei Autos wirkt: Es wirkt jetzt linear (Endtempo ∝ √(a · Ausgleich) · t, gemessen in 2.1.23). Seit 0.5.3 rechnet der Ausgleich ab 2.1.13 deshalb mit min(1, 1/(a · t²)), davor mit min(1, 1/a) (Modell aus T2 in 2.0.77). Bestätigt am 25.10.2026 mit 0.5.3: In T2b fuhren alle 13 Läufe des echten Ernters speed 1,453 wie Kohle, ab 1 s griff der Deckel nie ein.
 - **T4 (Annahme und Tankstutzen):** Bauregel auf Fels und Proxy-Container; der Schaltungsanschluss des Proxys ist seit 2.1.21 anders aufgebaut.
 - **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen.
-- **T11 und T14 (Kartengenerator 0.5.4):** Die neue Karte ist gebaut, aber noch nicht im Spiel abgenommen. T11 entscheidet über die Spice-Regel (B oder A), T14 prüft die erzeugte Karte auf Kacheln. Beide zusammen laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T11 T14`; siehe dort.
+- **T11 und T14 (Kartengenerator 0.5.4, Spicefelder 0.5.5):** Die neue Karte ist gebaut, aber noch nicht im Spiel abgenommen. T11 entscheidet über die Spice-Regel (B oder A), T14 prüft die erzeugte Karte auf Kacheln. Beide zusammen laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T11 T14`; siehe dort. T14 lief mit 0.5.4 auf 9 Seeds ohne FEHLER, fand aber im Mittel nur 0,9 reguläre Felder je Seed (5 Seeds ohne, Median 134 Kacheln). 0.5.5 macht die Felder dichter und größer, T14 prüft jetzt auch Zahl und Größe („Felder“, „Feldgröße“); bitte mit 0.5.5 noch einmal laufen lassen.
 - **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
 
 Von Hand prüfen (2.1.23):
@@ -294,7 +294,7 @@ Seit 0.5.4 prüft T11 außerdem die Spice-Regel der Karte 0.5.4:
 - MESSUNG: die Spicefläche von c4 (Felsschwelle 0) und `c4v2` je Seed bei den festen Schwellen −1,9 / −2,0 / −2,1 / −2,2 und die gemessene Verzerrung `wx − x`, `wy − y` (Soll höchstens ±25).
 
 Im Chat steht am Ende je Variante eine Zeile, alles Weitere in der Datei. Die ENDE-Zeile nennt das Urteil: „Zone ok“, „Zone verletzt“ oder „Zone nicht prüfbar“, „Regel B bestätigt“, „Regel B nicht belegt → Regel A“ oder „Kegel nicht prüfbar“.
-**Was daraus folgt:** Die Karte 0.5.4 nutzt Regel B. Meldet „Kegel“ einen FEHLER, kommt Regel A (verzerrtes c4 unter −2,10, Spicezone etwa ein Viertel so groß): In `prototypes/planet/planet-map-gen.lua` wird dann `local SPICE_RULE = "_a"` eingetragen. Regel A hat eigene Ausdrücke (`arrakis_v2_spice_richness_a`, `arrakis_v2_spice_probability_a`), eine schon angelegte Oberfläche behält so ihre Regel. Bei einem FEHLER in „Zone“ wird der Ausdruck angepasst; ist 0.5.4 schon veröffentlicht, unter neuen Namen (`arrakis_v3_…`). Das Raster sieht Fels zwischen den Punkten nicht; genau auf Kacheln prüft T14.
+**Was daraus folgt:** Die Karte 0.5.4 nutzt Regel B. Meldet „Kegel“ einen FEHLER, kommt Regel A (verzerrtes c4 unter −2,10, Spicezone etwa ein Viertel so groß): In `prototypes/planet/planet-map-gen.lua` wird dann `local SPICE_RULE = "_a"` eingetragen. Regel A hat eigene Ausdrücke (ab 0.5.5 `arrakis_v3_spice_richness_a`, `arrakis_v3_spice_probability_a`; in 0.5.4 `arrakis_v2_…_a`), eine schon angelegte Oberfläche behält so ihre Regel. Bei einem FEHLER in „Zone“ wird der Ausdruck angepasst, unter neuen Namen: 0.5.4 ist veröffentlicht, und nach 0.5.5 gilt das auch für `arrakis_v3_*`. Das Raster sieht Fels zwischen den Punkten nicht; genau auf Kacheln prüft T14.
 T11 braucht die Einstellung **Prüfstand** (die Kandidaten c1 bis c4 gibt es nur dann) und alle Rauschausdrücke der Karte 0.5.4. Fehlt einer, bricht T11 gleich mit FEHLER „Rauschausdrücke fehlen: …“ ab.
 
 In der Factorio-Version laufen lassen, in der gespielt wird (jetzt 2.1.23). 2.1.7 hat Voronoi-Rauschen mit hohem jitter korrigiert; c3-Werte aus 2.0.77 gelten dort nicht sicher.
@@ -356,9 +356,9 @@ Am Ende entfernt der Test beide Ernter.
 
 ### T14 Kartengenerator: Karte echt (Kacheln) (geschätzt etwa 11 s Spielzeit, ab 0.5.4)
 
-**Was passiert:** T14 nimmt die Karte von 0.5.4 auf echten Kacheln ab. Für jeden Seed (der deines Spielstands und dieselben acht festen wie in T11; mit `/arrakis-test T14 lang` 30 Seeds) legt er eine Testoberfläche `arrakis-t14-…` mit den Kartengenerator-Einstellungen des Planeten Arrakis an und erzeugt dort die Chunks im Radius 12 um den Ursprung, also 800 × 800 Kacheln.
+**Was passiert:** T14 nimmt die Karte 2 auf echten Kacheln ab (ab 0.5.4, die regulären Spicefelder ab 0.5.5). Für jeden Seed (der deines Spielstands und dieselben acht festen wie in T11; mit `/arrakis-test T14 lang` 30 Seeds) legt er eine Testoberfläche `arrakis-t14-…` mit den Kartengenerator-Einstellungen des Planeten Arrakis an und erzeugt dort die Chunks im Radius 12 um den Ursprung, also 800 × 800 Kacheln.
 Dann liest er Felskacheln und Ressourcen und rechnet für jede Kachel den genauen Abstand zur nächsten Felskachel (von Kachelmitte zu Kachelmitte). Danach löscht er die Oberfläche. Arrakis selbst und deine Spielfigur bleiben unberührt; Testoberflächen eines abgebrochenen Laufs löscht der nächste Start.
-Nach allen Seeds folgen zwei Durchgänge nur auf dem ersten Seed: das Spice mit dem Spice-Regler auf Größe 0 (Chunks im Radius 9, bis 288 Kacheln je Achse und damit auch dort, wo reguläre Felder liegen dürfen) und dieselbe Fläche wie bei den Seeds mit der Karte 0.4.0, nur zum Zeitvergleich.
+Nach allen Seeds folgen zwei Durchgänge nur auf dem ersten Seed: das Spice mit dem Spice-Regler auf Größe 0 (Chunks im Radius 9, bis 288 Kacheln je Achse und damit auch dort, wo reguläre Felder liegen dürfen: ihre Mitten ab 0.5.5 ab 225 Kacheln vom Start, in 0.5.4 ab 245) und dieselbe Fläche wie bei den Seeds mit der Karte 0.4.0, nur zum Zeitvergleich.
 **Das Spiel läuft dabei langsam:** Je Tick erzeugt T14 eine Chunkreihe (25 Chunks), je Seed sind es etwa 70 Ticks. Die Dauer im Titel ist daraus geschätzt; wie lange die Chunk-Erzeugung in echter Zeit dauert, misst T14 selbst. Du bleibst, wo du bist.
 
 Spice bis 160 Kacheln vom Start zählt als Lehrfeld, alles weiter draußen als reguläres Feld.
@@ -370,13 +370,18 @@ Spice bis 160 Kacheln vom Start zählt als Lehrfeld, alles weiter draußen als r
 - Graben: Fels außer der Startinsel liegt näher als 218,5 Kacheln am Start (220 abzüglich Felskante und Kachelraster).
 - Chunks wurden nicht erzeugt (drei Versuche je Reihe).
 
+**FEHLER** heißt außerdem, über alle Seeds (seit 0.5.5). Nutzbar ist ein reguläres Feld (zusammenhängendes Spice, auch schräg) ab 300 Kacheln, auch wenn es am Gebietsrand angeschnitten ist:
+- **Felder:** Im Mittel liegen weniger als 2 nutzbare Felder je Seed, oder mehr als ein Neuntel der Seeds (aufgerundet: bei 9 Seeds 1, mit `lang` 4 von 30) hat keins.
+- **Feldgröße:** Die nutzbaren Felder aller Seeds sind im Median kleiner als 500 Kacheln. Gibt es gar kein nutzbares Feld, ist „Feldgröße“ nicht prüfbar (INFO); das meldet dann schon „Felder“.
+- Zum Vergleich: Mit 0.5.4 fand T14 im Mittel 0,9 reguläre Felder je Seed (0 bis 3, 5 von 9 Seeds ohne), Median 134 Kacheln. Für 0.5.5 sind etwa 5 Felder je Seed mit im Median etwa 1150 Kacheln geschätzt; die Schätzung unterschätzt vermutlich eher.
+
 Dazu einmal auf dem ersten Seed: Bei Spice-Größe 0 fehlt das Lehrfeld oder hat nicht 100 000 Spice-Sand ± 5 %, oder es liegt noch reguläres Spice.
-Am Ende steht je Prüfung eine OK-Zeile über alle Seeds, bei Verstößen eine INFO-Zeile mit den Seeds (die FEHLER stehen darüber).
+Am Ende steht je Prüfung eine OK-Zeile über alle Seeds, bei Verstößen eine INFO-Zeile mit den Seeds (die FEHLER stehen darüber). Bei „Felder“ und „Feldgröße“ nennt die OK-Zeile die Werte (Mittel, Seeds ohne, Median).
 Die ENDE-Zeile lautet „9 Seeds, alle Prüfungen bestanden“ bzw. „9 Seeds, K Verstöße; Einzelwerte in arrakis-test.txt“.
 
-**MESSUNG:** Zahl und Größe der regulären Felder, Abstand vom Start zum nächsten regulären Feld, Lehrfeld (Lage, Menge, Abstand zum Fels, größter dichter Block für das 13×13-Feld des Ernters), Startinsel (Kacheln, Rand von … bis … Kacheln vom Start), Graben (nächster Fels außer der Startinsel), Felsanteil und die Dauer der Chunk-Erzeugung je Seed und zusammen, auch bei Spice-Größe 0 und mit der Karte 0.4.0. Die Zeitzeilen stehen nur in der Datei.
+**MESSUNG:** Zahl und Größe der regulären Felder, nutzbare Felder je Seed (min, Mittel, max, Seeds ohne) und ihre Größe im Median über alle Seeds, Abstand vom Start zum nächsten regulären Feld, Lehrfeld (Lage, Menge, Abstand zum Fels, größter dichter Block für das 13×13-Feld des Ernters), Startinsel (Kacheln, Rand von … bis … Kacheln vom Start), Graben (nächster Fels außer der Startinsel), Felsanteil und die Dauer der Chunk-Erzeugung je Seed und zusammen, auch bei Spice-Größe 0 und mit der Karte 0.4.0. Die Zeitzeilen stehen nur in der Datei.
 Der größte dichte Block ist nur Messung: Mit Radius 9 passt ein dichter 13×13-Block nur, wenn die Mitte des Lehrfelds nah genug an einer Kachelmitte liegt (nachgerechnet bei etwa 83 % der Lagen). Sonst fehlen dem besten Block 1 bis 4 Eckkacheln. Ob das so bleibt, entscheidet Max.
-Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine INFO-Zeile, dass T14 nicht die Karte 0.5.4 prüft.
+Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine INFO-Zeile, dass T14 nicht die Karte 2 (ab 0.5.4) prüft.
 
 **Du:** nichts. **Melden:** nur die Datei.
 
@@ -389,6 +394,7 @@ Nutzen die Planeten-Einstellungen keinen `arrakis_v2_…`-Ausdruck, sagt eine IN
 - T13, Schritt 11: Bewegt sich auch das normale Auto auf dem Band nicht, sagt die Messung nichts; dann meldet der Schritt FEHLER „nicht prüfbar“. Bitte trotzdem die Datei schicken.
 - T11 sieht Fels nur auf dem 8-Kachel-Raster. Fels zwischen zwei Rasterpunkten findet erst T14.
 - T14 kennt nur Fels im erzeugten Gebiet (800 × 800 Kacheln). Spice-Kacheln, die weniger als 100 Kacheln vom Gebietsrand liegen und deren nächster Fels im Gebiet mindestens 100 Kacheln weg ist, gelten als „nicht gewertet“, nicht als FEHLER.
+- Auch die Felder zählt T14 nur im Gebiet: Ein am Gebietsrand angeschnittenes Feld zählt mit seinen Kacheln im Gebiet, ein Feld knapp außerhalb gar nicht. „Felder“ und „Feldgröße“ messen also die Umgebung des Starts, nicht den ganzen Planeten.
 - T11 und T14 lesen die Kartengenerator-Einstellungen des Planeten-Prototyps. Was ein vor 0.5.4 begonnener Spielstand erzeugt, in dem Arrakis noch nicht angelegt ist (Karte 1 oder Karte 2), zeigen sie nicht; das zeigt erst ein Ladetest mit einer Kopie (die Mod meldet die alte Karte beim Anlegen).
 - T14 misst die Zeit mit einem Profiler, den Factorio nicht speichert. Wird mitten im Test ein Spielstand geladen, steht bei der Dauer „nicht messbar“.
 - T2b liest das Tempo im Prüfstand-Takt, nach dem Tempo-Deckel des Mods. Deshalb zählt jeder Lauf, wie oft der Deckel eingegriffen hat („Deckel n× (ab 1 s m×)“); in der ersten Sekunde ist das nach einem Brennstoffwechsel erlaubt, danach ist es ein FEHLER. Die INFO-Zeile am Ende fasst das zusammen. Die echte Fahrt zeigt in jedem Fall das Bodentempo.

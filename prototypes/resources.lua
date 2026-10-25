@@ -15,7 +15,8 @@ spice.mining_visualisation_tint = spice_tint
 spice.factoriopedia_simulation = nil
 -- autoplace ist Karte 1 (alte Spielstände). Karte 2 setzt Wahrscheinlichkeit und Menge über die
 -- map_gen_settings des Planeten (prototypes/planet/planet-map-gen.lua). Keine tile_restriction: Sie gälte
--- auch für Karte 1. Karte 2 hält Spice per Ausdruck vom Fels fern (arrakis_v2_spice_probability).
+-- auch für Karte 1. Karte 2 hält Spice per Ausdruck vom Fels fern (arrakis_v3_spice_probability, auf
+-- Oberflächen aus 0.5.4 arrakis_v2_spice_probability).
 spice.autoplace =
 {
   order = "b",

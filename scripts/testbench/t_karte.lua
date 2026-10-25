@@ -1,10 +1,11 @@
 -- Prüfstand: Kartengenerator-Test T14 „Karte echt“ (Vertrag siehe runner.lua).
--- T14 nimmt die Karte von 0.5.4 auf echten Kacheln ab (T11-Empfehlung, Bauplan Schritt 6). Je Seed
--- (der Seed dieses Spielstands und 8 feste wie in T11, mit „/arrakis-test T14 lang“ 30) legt der Test
--- eine Testoberfläche mit den Kartengenerator-Einstellungen des Planeten Arrakis an, erzeugt die Chunks
--- im Radius 12 um den Ursprung (800 × 800 Kacheln), liest Felskacheln und Ressourcen und rechnet eine
--- exakte euklidische Abstandstransformation auf Kacheln (Abstand jeder Kachelmitte zur Mitte der
--- nächsten Felskachel). Danach wird die Oberfläche gelöscht. Arrakis und der Spieler bleiben unberührt.
+-- T14 nimmt die Karte 2 (ab 0.5.4, reguläres Spice ab 0.5.5 aus arrakis_v3_spice_*) auf echten Kacheln
+-- ab (T11-Empfehlung, Bauplan Schritt 6). Je Seed (der Seed dieses Spielstands und 8 feste wie in T11, mit
+-- „/arrakis-test T14 lang“ 30) legt der Test eine Testoberfläche mit den Kartengenerator-Einstellungen des
+-- Planeten Arrakis an, erzeugt die Chunks im Radius 12 um den Ursprung (800 × 800 Kacheln), liest
+-- Felskacheln und Ressourcen und rechnet eine exakte euklidische Abstandstransformation auf Kacheln (Abstand
+-- jeder Kachelmitte zur Mitte der nächsten Felskachel). Danach wird die Oberfläche gelöscht. Arrakis und der
+-- Spieler bleiben unberührt.
 -- FEHLER (je Seed):
 --   reguläres Spice-Sand (mehr als 160 Kacheln vom Start) näher als 100 Kacheln am Fels;
 --   kein Lehrfeld (Spice bis 160 Kacheln vom Start), eine Lehrfeld-Kachel nicht 40–60 Kacheln vom Fels
@@ -17,15 +18,24 @@
 -- gewertet: Fels außerhalb des Gebiets kennt der Test nicht. Ein Seed ohne reguläres Spice im Gebiet ist
 -- für den Abstand nicht prüfbar (INFO); auf allen Seeds ohne ist das ein FEHLER, sonst bestünde ein
 -- kaputter Spice-Ausdruck die Prüfung.
+-- FEHLER (nach allen Seeds, ab 0.5.5; Grund: T14 mit 0.5.4 fand im Mittel 0,9 reguläre Felder je Seed,
+-- Median 134 Kacheln, siehe prototypes/noise.lua bei arrakis_v3_*). Nutzbar ist ein reguläres Feld
+-- (zusammenhängendes Spice, 8er-Nachbarschaft wie unten) ab USABLE = 300 Kacheln, auch ein am Gebietsrand
+-- angeschnittenes:
+--   „Felder“: im Mittel weniger als 2 nutzbare Felder je Seed, oder mehr als ⌈n / 9⌉ der n Seeds ohne
+--     nutzbares Feld (9 Seeds: höchstens 1, „lang“ mit 30: höchstens 4).
+--   „Feldgröße“: Median der Größe aller nutzbaren Felder aller Seeds unter 500 Kacheln. Ohne nutzbares
+--     Feld nicht prüfbar (INFO); das meldet schon „Felder“.
+--   Die Schätzung für 0.5.5 liegt weit darüber (etwa 5,1 Felder je Seed, Median etwa 1150 Kacheln).
 -- Nach allen Seeds zwei Durchgänge nur auf dem ersten Seed (d.pass):
 --   „groesse0“: Spice-Regler auf Größe 0, Chunks im Radius 9. FEHLER, wenn das Lehrfeld dann fehlt
 --     oder nicht 100 000 ± 5 % Spice-Sand hat (Festlegung 0.5.4: Es bleibt bei Größe 0), oder wenn
 --     dann noch reguläres Spice liegt. Das Gebiet reicht bis 288 Kacheln je Achse, also in den Bereich
---     ab 245 Kacheln, in dem reguläre Fleckmitten liegen dürfen.
+--     ab 225 Kacheln, in dem reguläre Fleckmitten liegen dürfen (arrakis_v3_spice_favorability).
 --   „alt“: dieselbe Fläche mit den Ausdrücken der Karte 0.4.0, nur zum Zeitvergleich.
--- MESSUNG: Zahl und Größe der regulären Felder, Abstand Start → nächstes reguläres Feld, Lehrfeld
--- (Lage, größter dichter Block für den 13×13-Ernter), Startinsel, Graben (nächster Fels außer der
--- Startinsel), Dauer der Chunk-Erzeugung.
+-- MESSUNG: Zahl und Größe der regulären Felder, nutzbare Felder je Seed und ihre Größe im Median, Abstand
+-- Start → nächstes reguläres Feld, Lehrfeld (Lage, größter dichter Block für den 13×13-Ernter), Startinsel,
+-- Graben (nächster Fels außer der Startinsel), Dauer der Chunk-Erzeugung.
 -- Die Rechenlast ist über Ticks verteilt: je Tick eine Chunkreihe erzeugen bzw. lesen, 100 Zeilen bzw.
 -- Spalten der Abstandstransformation. Der Zustand liegt als reine Daten in run.data.
 -- Die Dauer misst ein LuaProfiler. Er lässt sich nicht speichern und liegt deshalb nur in einer
@@ -53,6 +63,11 @@ local GRABEN_SLACK = 1.5
 local HARVEST_SIZE = 13                  -- Erntefeld des Ernters (Design 2.1)
 local ISLAND_BOX = 250                   -- Startinsel: Suche bis hier vom Ursprung (je Achse)
 local SPICE_LIMIT = 150000               -- höchstens so viele Spice-Kacheln je Seed auswerten
+-- Nutzbare Felder (Prüfungen „Felder“ und „Feldgröße“ nach allen Seeds, ab 0.5.5).
+local USABLE = 300                       -- ein reguläres Feld ab so vielen Kacheln ist nutzbar
+local USABLE_MEAN = 2                    -- im Mittel mindestens so viele nutzbare Felder je Seed
+local EMPTY_SHARE = 9                    -- höchstens ⌈n / 9⌉ der n Seeds ohne nutzbares Feld
+local USABLE_MEDIAN = 500                -- Median der Größe aller nutzbaren Felder mindestens so viele Kacheln
 local SURFACE_PREFIX = "arrakis-t14-"
 local LOG_FILE = "arrakis-test.txt"      -- wie in runner.lua; Zeilen mit Zeitmessung schreibt T14 selbst
 local ROCK = "arrakis-rock"
@@ -60,6 +75,8 @@ local SPICE = "spice-sand"
 local DEEP_WATER = "arrakis-deep-water"
 local SPICE_CONTROL = "arrakis_spice"    -- Autoplace-Regler für Spice (prototypes/noise.lua)
 local V2_PREFIX = "arrakis_v2_"
+-- Präfixe der Karte 2 (Spice ab 0.5.5 aus arrakis_v3_*); Durchgang „alt“ stellt beide auf arrakis_ zurück.
+local MAP2_PREFIXES = {V2_PREFIX, "arrakis_v3_"}
 local DEFAULT_ORES = {"iron-ore", "copper-ore", "stone", "coal"}
 local DEFAULT_TILES = {"sand-1", "sand-2", "sand-3", ROCK}
 local NAMES = {["iron-ore"] = "Eisen", ["copper-ore"] = "Kupfer", ["stone"] = "Stein", ["coal"] = "Kohle",
@@ -88,6 +105,12 @@ local CHECKS =
   {key = "lehrfeld_menge", title = "Lehrfeld 100 000 Spice-Sand ± " .. LEHR_TOLERANCE * 100 .. " %"},
   {key = "abstand", title = "Reguläres Spice mindestens " .. TARGET .. " Kacheln vom Fels",
    required = "auf keinem Seed reguläres Spice im Gebiet"},
+  -- total: eine Prüfung über alle Seeds (total_checks); absent: Text, wenn sie nicht prüfbar ist.
+  {key = "felder", title = string.format("Felder: im Mittel mindestens %d nutzbare Felder (reguläre Felder ab %d Kacheln) " ..
+   "je Seed, höchstens 1/%d der Seeds (aufgerundet) ohne", USABLE_MEAN, USABLE, EMPTY_SHARE), total = true,
+   absent = "keine Seeds ausgewertet"},
+  {key = "feldgroesse", title = string.format("Feldgröße: nutzbare Felder im Median mindestens %d Kacheln", USABLE_MEDIAN),
+   total = true, absent = "auf keinem Seed ein nutzbares Feld (siehe „Felder“)"},
   {key = "spice_fels", title = "Kein Spice auf Fels"},
   {key = "erz_sand", title = "Kein Erz und kein Tiefenwasser auf Sand (Tiefenwasser: alle 3 × 3 Kacheln)"},
   {key = "lehrfeld_groesse0", title = "Lehrfeld auch bei Spice-Größe 0 (100 000 Spice-Sand ± " .. LEHR_TOLERANCE * 100 .. " %)",
@@ -213,10 +236,20 @@ local function expression_exists(name)
   return (pcall(function() return known[name].name end))
 end
 
+-- Rest des Namens hinter einem Präfix der Karte 2 (MAP2_PREFIXES), sonst nil.
+local function map2_rest(value)
+  if type(value) ~= "string" then return nil end
+  for _, prefix in ipairs(MAP2_PREFIXES) do
+    if string.sub(value, 1, #prefix) == prefix then return string.sub(value, #prefix + 1) end
+  end
+  return nil
+end
+
 -- Kartengenerator-Einstellungen von Arrakis für seed. pass (PASSES): „karte“ wie der Planet;
 -- „groesse0“ mit dem Spice-Regler auf Größe 0; „alt“ Karte 0.4.0 zum Zeitvergleich, also jeder
--- Schlüssel mit einem arrakis_v2_…-Ausdruck auf den gleichnamigen alten Ausdruck (arrakis_…) gestellt
--- oder, wenn es den nicht gibt, gestrichen (dann gilt die Autoplace-Regel des Prototyps wie bis 0.5.3).
+-- Schlüssel mit einem arrakis_v2_…- oder arrakis_v3_…-Ausdruck (Spice ab 0.5.5) auf den gleichnamigen
+-- alten Ausdruck (arrakis_…) gestellt oder, wenn es den nicht gibt, gestrichen (dann gilt die
+-- Autoplace-Regel des Prototyps wie bis 0.5.3).
 local function settings_for(seed, pass)
   local map_gen = game.planets["arrakis"].prototype.map_gen_settings
   map_gen.seed = seed
@@ -227,8 +260,9 @@ local function settings_for(seed, pass)
   if pass == "alt" then
     local names = map_gen.property_expression_names or {}
     for key, value in pairs(names) do
-      if type(value) == "string" and string.sub(value, 1, #V2_PREFIX) == V2_PREFIX then
-        local previous = "arrakis_" .. string.sub(value, #V2_PREFIX + 1)
+      local rest = map2_rest(value)
+      if rest then
+        local previous = "arrakis_" .. rest
         names[key] = expression_exists(previous) and previous or nil
       end
     end
@@ -454,7 +488,7 @@ phases.erzeugen = function(run, tb, d)
   local chunks = (2 * radius + 1) ^ 2
   if d.pass == "alt" then
     write_timing(run, tb, string.format("Seed %d (%s), Karte 0.4.0 (Ausdrücke ohne %s) zum Vergleich: Chunk-Erzeugung " ..
-      "%d Chunks: ", entry.seed, entry.label, V2_PREFIX, chunks), timer)
+      "%d Chunks: ", entry.seed, entry.label, table.concat(MAP2_PREFIXES, "/"), chunks), timer)
     next_pass(d)
     return
   end
@@ -781,9 +815,11 @@ phases.felder = function(run, tb, d)
     if a.start_min ~= b.start_min then return a.start_min < b.start_min end
     return a.tiles > b.tiles
   end)
-  local sizes, near_fields, border_fields = {}, 0, 0
+  -- usable: Größen der nutzbaren Felder (ab USABLE Kacheln, auch am Gebietsrand) für „Felder“ und „Feldgröße“.
+  local sizes, usable, near_fields, border_fields = {}, {}, 0, 0
   for index, field in ipairs(fields) do
     sizes[index] = field.tiles
+    if field.tiles >= USABLE then usable[#usable + 1] = field.tiles end
     if field.closest < TARGET then near_fields = near_fields + 1 end
     if field.border then border_fields = border_fields + 1 end
   end
@@ -871,22 +907,24 @@ phases.felder = function(run, tb, d)
     field_parts[#field_parts + 1] = string.format("%d Kacheln/%s bei %s vom Start, Fels %s%s", field.tiles,
       amount_text(field.amount), fmt(field.start_min, 0), fmt(field.closest, 0), field.border and ", am Rand" or "")
   end
-  tb.trace(run, string.format("Seed %d (%s): %d reguläre Felder (%d am Gebietsrand angeschnitten), %d Kacheln, %s Spice-Sand, " ..
-    "kleinster Abstand zum Fels %s, nicht gewertet (Gebietsrand) %d Kacheln; nächstes Feld %s Kacheln vom Start; Felder: %s",
-    entry.seed, entry.label, #fields, border_fields, regular.tiles, amount_text(regular.amount), fmt(regular.closest),
-    regular.unrated, fmt(regular.start_min, 0), #field_parts > 0 and table.concat(field_parts, "; ") or "keine"))
+  tb.trace(run, string.format("Seed %d (%s): %d reguläre Felder (%d nutzbar ab %d Kacheln, %d am Gebietsrand angeschnitten), " ..
+    "%d Kacheln, %s Spice-Sand, kleinster Abstand zum Fels %s, nicht gewertet (Gebietsrand) %d Kacheln; nächstes Feld %s " ..
+    "Kacheln vom Start; Felder: %s", entry.seed, entry.label, #fields, #usable, USABLE, border_fields, regular.tiles,
+    amount_text(regular.amount), fmt(regular.closest), regular.unrated, fmt(regular.start_min, 0),
+    #field_parts > 0 and table.concat(field_parts, "; ") or "keine"))
 
   local median = sizes[1] and sizes[math.ceil(#sizes / 2)] or 0
   table.insert(d.summary, {
     seed = entry.seed, fields = #fields, size_min = sizes[1] or 0, size_median = median, size_max = sizes[#sizes] or 0,
+    usable = #usable, usable_sizes = usable,
     nearest = regular.start_min == INF and NONE or regular.start_min, closest = regular.closest == INF and NONE or regular.closest,
     lehr_tiles = lehr.tiles, lehr_amount = lehr.amount, square = square,
     island_tiles = island.tiles, island_min = island.r_min, island_max = island.r_max, rock = d.rock_tiles / cells,
     graben = graben.closest, regular_box = regular.box
   })
-  tb.log(run, "INFO", string.format("Seed %d von %d fertig (%d, %s): %d reguläre Felder, nächstes %s Kacheln vom Start, " ..
-    "Lehrfeld %d Kacheln mit %s Spice-Sand", d.si, #d.seeds, entry.seed, entry.label, #fields, fmt(regular.start_min, 0),
-    lehr.tiles, amount_text(lehr.amount)))
+  tb.log(run, "INFO", string.format("Seed %d von %d fertig (%d, %s): %d reguläre Felder (%d nutzbar), nächstes %s Kacheln " ..
+    "vom Start, Lehrfeld %d Kacheln mit %s Spice-Sand", d.si, #d.seeds, entry.seed, entry.label, #fields, #usable,
+    fmt(regular.start_min, 0), lehr.tiles, amount_text(lehr.amount)))
 
   -- Aufräumen, nächster Seed bzw. nach dem letzten die Zusatzdurchgänge auf dem ersten Seed.
   d.grid, d.spice_k, d.spice_amount, d.resources, d.current, d.wells = nil, nil, nil, nil, nil, nil
@@ -935,7 +973,7 @@ phases.groesse0 = function(run, tb, d)
     next_pass(d)
     return
   end
-  -- (size > 0) in arrakis_v2_spice_richness schaltet die regulären Felder bei Größe 0 ab.
+  -- (size > 0) in arrakis_v3_spice_richness schaltet die regulären Felder bei Größe 0 ab.
   verdict(run, tb, d, "groesse0_regulaer", outside == 0, string.format("bei Spice-Größe 0 noch %d reguläre Spice-Kacheln " ..
     "(weiter als %d Kacheln vom Start, Größe 1: %s); schaltet (size > 0) die Felder nicht ab?", outside, LEHR_MAX,
     normal and tostring(normal.regular_box) or "–"))
@@ -950,9 +988,64 @@ phases.groesse0 = function(run, tb, d)
   next_pass(d)
 end
 
+-- Nutzbare Felder aller Seeds (aus d.summary): Zahl je Seed, alle Größen sortiert, Seeds ohne, Median (nil ohne Feld).
+local function usable_fields(d)
+  local counts, sizes, empty = {}, {}, 0
+  for index, s in ipairs(d.summary) do
+    counts[index] = s.usable
+    if s.usable == 0 then empty = empty + 1 end
+    for _, size in ipairs(s.usable_sizes) do sizes[#sizes + 1] = size end
+  end
+  table.sort(sizes)
+  -- Median wie je Seed in „felder“: bei gerader Zahl der kleinere der beiden mittleren Werte.
+  local median = sizes[1] and sizes[math.ceil(#sizes / 2)] or nil
+  return {counts = counts, sizes = sizes, empty = empty, median = median}
+end
+
+-- Prüfungen über alle Seeds (CHECKS mit total): „Felder“ und „Feldgröße“. Wie verdict, aber einmal für alle
+-- Seeds: zählt in d.checked und d.failed und schreibt den FEHLER sofort. ok nil heißt nicht prüfbar.
+-- Rückgabe: je Prüfung der Text für die OK-Zeile.
+local function total_checks(run, tb, d, usable)
+  local seeds = #usable.counts
+  local notes = {}
+  local function total(key, ok, text)
+    if ok == nil then return end
+    d.checked[key] = seeds
+    if not ok then
+      table.insert(d.failed[key], "alle")
+      tb.log(run, "FEHLER", text)
+    end
+  end
+  if seeds > 0 then
+    local _, mean = spread(usable.counts)
+    local allowed = math.ceil(seeds / EMPTY_SHARE)
+    local problems = {}
+    if mean < USABLE_MEAN then
+      problems[#problems + 1] = string.format("im Mittel %s nutzbare Felder je Seed, Soll mindestens %d", fmt(mean, 1), USABLE_MEAN)
+    end
+    if usable.empty > allowed then
+      problems[#problems + 1] = string.format("%d von %d Seeds ohne nutzbares Feld, erlaubt höchstens %d", usable.empty, seeds,
+        allowed)
+    end
+    notes.felder = string.format("%d Seeds, im Mittel %s nutzbare Felder je Seed, %d Seeds ohne (erlaubt höchstens %d)",
+      seeds, fmt(mean, 1), usable.empty, allowed)
+    total("felder", #problems == 0, string.format("Felder: %s (nutzbar: reguläres Feld ab %d Kacheln, %d Seeds)",
+      table.concat(problems, "; "), USABLE, seeds))
+  end
+  -- Ohne nutzbares Feld nicht prüfbar: Das meldet schon „Felder“ (Mittel 0), ein zweiter FEHLER sagte nichts Neues.
+  if usable.median then
+    notes.feldgroesse = string.format("Median %d Kacheln über %d nutzbare Felder", usable.median, #usable.sizes)
+    total("feldgroesse", usable.median >= USABLE_MEDIAN, string.format("Feldgröße: nutzbare Felder im Median %d Kacheln, " ..
+      "Soll mindestens %d (%d nutzbare Felder auf %d Seeds)", usable.median, USABLE_MEDIAN, #usable.sizes, seeds))
+  end
+  return notes
+end
+
 phases.bericht = function(run, tb, d)
   local n = #d.seeds
   local failures = 0
+  local usable = usable_fields(d)
+  local notes = total_checks(run, tb, d, usable)
   for _, check in ipairs(CHECKS) do
     local failed = d.failed[check.key]
     local checked = d.checked[check.key] or 0
@@ -961,10 +1054,16 @@ phases.bericht = function(run, tb, d)
       -- Sonst bestünde ein kaputter Ausdruck (etwa nie reguläres Spice) die Prüfung ohne Befund.
       failures = failures + 1
       tb.log(run, "FEHLER", string.format("%s: nicht prüfbar, %s (von %d Seeds)", check.title, check.required, n))
+    elseif checked == 0 and check.total then
+      tb.log(run, "INFO", string.format("%s: nicht prüfbar, %s", check.title, check.absent))
     elseif checked == 0 then
       tb.log(run, "INFO", check.title .. ": auf keinem Seed prüfbar")
     elseif #failed == 0 and check.once then
       tb.log(run, "OK", string.format("%s: Seed %d", check.title, d.seeds[1].seed))
+    elseif #failed == 0 and check.total then
+      tb.log(run, "OK", string.format("%s: %s", check.title, notes[check.key]))
+    elseif check.total then
+      tb.log(run, "INFO", string.format("%s: verletzt über alle %d Seeds, FEHLER oben", check.title, checked))
     elseif #failed == 0 then
       tb.log(run, "OK", string.format("%s: alle %d Seeds%s", check.title, checked,
         checked < n and string.format(" (von %d prüfbar)", n) or ""))
@@ -989,6 +1088,9 @@ phases.bericht = function(run, tb, d)
   tb.log(run, "MESSUNG", string.format("Reguläre Felder je Seed %s; Feldgröße (Median je Seed) %s, größtes Feld %s Kacheln; " ..
     "nächstes Feld vom Start %s Kacheln (%d Seeds ohne Feld)", spread_text(fields, 1), spread_text(sizes), spread_text(largest),
     spread_text(nearest), n - #nearest))
+  tb.log(run, "MESSUNG", string.format("Nutzbare Felder (ab %d Kacheln) je Seed %s (%d Seeds ohne); Größe der nutzbaren Felder " ..
+    "im Median %s Kacheln (%d Felder, alle Seeds)", USABLE, spread_text(usable.counts, 1), usable.empty,
+    usable.median and tostring(usable.median) or "–", #usable.sizes))
   local rim_low, _, rim_high = spread(rims)
   tb.log(run, "MESSUNG", string.format("Lehrfeld Spice-Sand %s, größter dichter Block %s (Ernter %d × %d); Startinsel %s Kacheln, " ..
     "Rand %s … %s Kacheln vom Start", spread_text(lehr, 0, true), spread_text(squares), HARVEST_SIZE, HARVEST_SIZE, spread_text(island),
@@ -1032,7 +1134,8 @@ local function start(run, tb)
   end
   tb.trace(run, "Planet Arrakis, property_expression_names: " .. (#names > 0 and table.concat(names, ", ") or "keine"))
   if not v2 then
-    tb.log(run, "INFO", "Die Planeten-Einstellungen nutzen keinen " .. V2_PREFIX .. "…-Ausdruck: T14 prüft also nicht die Karte 0.5.4.")
+    tb.log(run, "INFO", "Die Planeten-Einstellungen nutzen keinen " .. V2_PREFIX .. "…-Ausdruck: T14 prüft also nicht die Karte 2 " ..
+      "(ab 0.5.4).")
   end
 
   d.long = string.lower(run.args[1] or "") == "lang"
@@ -1047,8 +1150,9 @@ local function start(run, tb)
   local own = d.seeds[1].label ~= "fest" and string.format("eigener Seed %d (%s) und ", d.seeds[1].seed, d.seeds[1].label) or ""
   tb.log(run, "INFO", string.format("T14 erzeugt die Karte von Arrakis auf %d Seeds (%s%d feste) je %d × %d Kacheln " ..
     "(Chunks im Radius %d) auf eigenen Testoberflächen und prüft sie auf Kacheln: Spice-Abstand zum Fels, Lehrfeld, " ..
-    "Startinsel, Graben; danach auf dem ersten Seed das Spice bei Spice-Größe 0. Das Spiel läuft dabei langsam, je Seed " ..
-    "etwa 70 Ticks. Du bleibst, wo du bist.", #d.seeds, own, #d.seeds - (own ~= "" and 1 or 0), N, N, CHUNK_RADIUS))
+    "Startinsel, Graben, Zahl und Größe der regulären Felder; danach auf dem ersten Seed das Spice bei Spice-Größe 0. " ..
+    "Das Spiel läuft dabei langsam, je Seed etwa 70 Ticks. Du bleibst, wo du bist.", #d.seeds, own,
+    #d.seeds - (own ~= "" and 1 or 0), N, N, CHUNK_RADIUS))
   d.phase = "anlegen"
 end
 
