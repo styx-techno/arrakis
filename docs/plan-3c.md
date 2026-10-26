@@ -821,11 +821,15 @@ T14 ohne FEHLER; T15 15/17 (FEHLER in 2 und 15), T16 Kriterien 2/5 (FEHLER leer,
   Item und Qualität bleibt je Lua-Sitzung gemerkt, nie in `storage`. Der 60-Tick-Takt tauscht nach einem Brennstoffwechsel binnen 1 s.
 - `checks.lua`: Familienregeln statt zweier Sticker (je Zustand 106, Name unabhängig aus 1,02^j, Modifier BASE / t_j auf 1e-9, Dauer,
   hidden, `localised_name`, `parse`), p = 100 und 115 da, jeder `arrakis-ornithopter-*`-Sticker gehört zu einer Stufe, alte Namen weg.
+  Die Vertragswerte (0,603, 0,427, 1,02, j = −35 … 70) stehen in der Regel fest, nicht aus dem Modul gelesen; weicht eine
+  Konstante des Moduls ab, FEHLER (wie 0,52 und 0,364 in 0.6.0).
 
 **Forschung [U11]** (Ausweichweg abgewandelt: der Trigger `craft-item` bleibt, auch für den Tooltip; das Skript erforscht zusätzlich)
-- `migrate.ornithopter_pending(force)`: Technologie da und nicht erforscht, „Spice-Ernte“ erforscht. Jede Sekunde (`on_nth_tick` 60,
+- `migrate.ornithopter_pending(force)`: Technologie da, freigegeben (`enabled`) und nicht erforscht, jede Voraussetzung erforscht (also
+  „Spice-Ernte“; A23 classes.d.ts:22238, :22267), wie beim Auslöser der Engine. Jede Sekunde (`on_nth_tick` 60,
   event_handler fasst ihn mit flyer.lua zusammen) je Force mit ausstehender Forschung dieselbe Prüfung wie `migrate.ornithopter_research`
-  (Datensatz oder Produktionsstatistik, 4.15); `on_player_crafted_item` mit `spice-harvester` (Stapel, sonst Rezeptname) erforscht sofort.
+  (Datensatz oder Produktionsstatistik, 4.15; die Statistik je Qualität außer `quality-unknown`, ein Name allein zählte nur „normal“,
+  A23 concepts.d.ts:4599–4611); `on_player_crafted_item` mit `spice-harvester` (Stapel, sonst Rezeptname) erforscht sofort.
   Erforscht das Skript, bekommt die Force die Chatzeile `msg-ornithopter-researched`; die Migration aus 0.5.x bleibt stumm.
 - Grenze: Zählt die Statistik das Item einer Figur ohne Spieler nicht, erforscht auch das Skript nichts, bis ein Ernter gebaut ist.
   Mit Spieler greift `on_player_crafted_item`.
@@ -838,10 +842,12 @@ T14 ohne FEHLER; T15 15/17 (FEHLER in 2 und 15), T16 Kriterien 2/5 (FEHLER leer,
   Item bis zu 130 Ticks warten (60-Tick-Takt plus Reserve). MESSUNG je Weg: Ticks bis erforscht, wer (`on_research_finished`,
   `by_script`), Herstellzähler. FEHLER: b) Item, aber nicht erforscht; a) Item gezählt, aber nicht erforscht. a) Item nicht gezählt und
   nichts erforscht: nur MESSUNG. Die INFO „nicht prüfbar“ bleibt.
-- T15 Schritt 15: Teile a–f. b) Sticker des anderen Zustands; gut, wenn genau ein eigener, beladen, und der gemerkte gültig
-  (ohne `==`). e) neu: zweiter Sticker gleichen Namens; MESSUNG, was die Engine tat (Rückgabe, gemerkter gültig, Zahl), dann gut = ein
-  eigener beladener mit Bild und Schatten, gemerkter gültig. f) neu: Brennstoff Kohle → Raketentreibstoff (Inventar leeren,
-  `currently_burning` schreiben); gut, wenn beladen mit p = 115 binnen 61 Ticks.
+- T15 Schritt 15: Teile a–f. b) Sticker des anderen Zustands; gut, wenn genau ein eigener, beladen, und der gemerkte (der Sticker
+  von vor dem Eingriff) gültig (ohne `==`). „Der gemerkte“ gibt es nur in b). e) neu: zweiter Sticker gleichen Namens; MESSUNG, was
+  die Engine tat (Rückgabe, ob der alte gleichnamige Sticker noch gültig ist, Zahl), dann gut = genau ein eigener beladener Sticker
+  mit Bild und Schatten, und der Datensatz zeigt auf einen gültigen Sticker (`record.sticker`). Ob der alte gleichnamige Sticker
+  noch gültig ist, steht nur in der MESSUNG. f) neu: Brennstoff Kohle → Raketentreibstoff (Inventar leeren, `currently_burning`
+  schreiben); gut, wenn beladen mit p = 115 binnen 61 Ticks.
 - T16: Bahn-MESSUNG nennt den Sticker mit Stufe; neue Bahn ohne Sticker, Raketentreibstoff, `effectivity_modifier = 0,5` per pcall
   (nur MESSUNG: ob schreibbar, gelesen, Tempo zum Rohwert); INFO-Vorschlag aus den Modulkonstanten mit Dateinamen. Kriterien
   unverändert, 21 Bahnen.

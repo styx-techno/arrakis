@@ -41,7 +41,6 @@ local SCHEMA = 2
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
-local HARVESTING_TECH = "arrakis-spice-harvesting"
 local ORNITHOPTER_TECH = "arrakis-ornithopter"
 
 -- Schema-Version dieses Codes.
@@ -67,27 +66,35 @@ function migrate.init()
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt
--- (Produktionsstatistik irgendeiner Oberfläche, A23 classes.d.ts:11187, :10737)?
+-- (Produktionsstatistik irgendeiner Oberfläche, A23 classes.d.ts:11187, :10737)? Die Statistik zählt je Qualität, ein
+-- Name allein fragt nur „normal“ ab (A23 concepts.d.ts:4599–4611); deshalb jede Qualität außer quality-unknown
+-- (prototypes.quality, A23 classes.d.ts:17058), sonst bliebe ein Ernter aus einer Maschine mit Qualitätsmodulen ungezählt.
 local function has_harvester(force)
   for _, h in pairs(storage.harvesters or {}) do
     local entity = h.entity
     if entity.valid and entity.force.index == force.index then return true end
   end
   for _, surface in pairs(game.surfaces) do
-    if force.get_item_production_statistics(surface).get_input_count(HARVESTER) > 0 then return true end
+    local stats = force.get_item_production_statistics(surface)
+    for quality in pairs(prototypes.quality) do
+      if quality ~= "quality-unknown" and stats.get_input_count({name = HARVESTER, quality = quality}) > 0 then return true end
+    end
   end
   return false
 end
 
--- Steht „Ornithopter“ für die Force aus? Vorhanden und nicht erforscht, „Spice-Ernte“ erforscht. Nur zwei Abfragen,
--- deshalb vor jeder teureren Prüfung (Datensätze, Statistik aller Oberflächen).
+-- Steht „Ornithopter“ für die Force aus? Vorhanden, freigegeben und nicht erforscht, jede Voraussetzung erforscht (also
+-- „Spice-Ernte“; enabled und prerequisites, A23 classes.d.ts:22238, :22267): Mehr als der Auslöser der Engine darf das
+-- Skript nicht, auch wenn eine andere Mod Voraussetzungen ergänzt oder ein Szenario die Technologie sperrt. Nur wenige
+-- Abfragen, deshalb vor jeder teureren Prüfung (Datensätze, Statistik aller Oberflächen).
 function migrate.ornithopter_pending(force)
   if not (force and force.valid) then return false end
-  local technologies = force.technologies
-  local ornithopter = technologies[ORNITHOPTER_TECH]
-  if not ornithopter or ornithopter.researched then return false end
-  local harvesting = technologies[HARVESTING_TECH]
-  return harvesting ~= nil and harvesting.researched
+  local ornithopter = force.technologies[ORNITHOPTER_TECH]
+  if not ornithopter or ornithopter.researched or not ornithopter.enabled then return false end
+  for _, prerequisite in pairs(ornithopter.prerequisites) do
+    if not prerequisite.researched then return false end
+  end
+  return true
 end
 
 -- Holt „Ornithopter“ nach (docs/plan-3c.md 4.15): steht aus und die Force hat einen Ernter oder je einen hergestellt
@@ -184,8 +191,8 @@ local function on_player_crafted_item(event)
 end
 
 -- Jede Sekunde (Takt wie flyer.lua, event_handler fasst die Handler zusammen): je Force, bei der „Ornithopter“ aussteht,
--- dieselbe Prüfung wie die Migration. Forces ohne „Spice-Ernte“ oder mit erforschtem „Ornithopter“ kosten zwei
--- Abfragen; nur eine ausstehende Force liest Datensätze und Statistik.
+-- dieselbe Prüfung wie die Migration. Forces ohne „Spice-Ernte“ oder mit erforschtem „Ornithopter“ kosten nur die
+-- Abfragen der Technologie und ihrer Voraussetzungen; nur eine ausstehende Force liest Datensätze und Statistik.
 local function on_nth_tick_60()
   for _, force in pairs(game.forces) do
     research_by_script(force, false)

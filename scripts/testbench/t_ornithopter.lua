@@ -113,6 +113,16 @@ local function quality_exists(name)
   return ok and exists
 end
 
+-- spice-harvester je Qualität außer quality-unknown, als {name, quality}: Ein Name allein fragt die Produktionsstatistik
+-- nur nach „normal“ (A23 concepts.d.ts:4599–4611). So zählt und löscht der Test, was migrate.lua abfragt.
+local function harvester_ids()
+  local ids = {}
+  for quality in pairs(prototypes.quality) do
+    if quality ~= "quality-unknown" then table.insert(ids, {name = NAME, quality = quality}) end
+  end
+  return ids
+end
+
 -- BoundingBox um center mit halben Kantenlängen half {x, y} (ganze Kacheln wie tb.prepare).
 local function box_of(center, half)
   return
@@ -744,20 +754,33 @@ function t15_steps.s2_reason(force)
     if h.entity.valid and h.entity.force.index == force.index then return "Ernter-Datensatz der Force (Nr. " .. h.un .. ")" end
   end
   for _, surface in pairs(game.surfaces) do
-    local count = read(function() return force.get_item_production_statistics(surface).get_input_count(NAME) end)
-    if count and count > 0 then return string.format("Herstellzähler %s auf %s = %d", NAME, surface.name, count) end
+    for _, id in ipairs(harvester_ids()) do
+      local count = read(function() return force.get_item_production_statistics(surface).get_input_count(id) end)
+      if count and count > 0 then return string.format("Herstellzähler %s (%s) auf %s = %d", NAME, id.quality, surface.name, count) end
+    end
   end
   return "unbekannt"
 end
 
--- Herstellzähler spice-harvester der Force, Summe über alle Oberflächen.
+-- Herstellzähler spice-harvester der Force, Summe über alle Oberflächen und Qualitäten.
 function t15_steps.s2_counted(force)
   local total = 0
   for _, surface in pairs(game.surfaces) do
-    local count = read(function() return force.get_item_production_statistics(surface).get_input_count(NAME) end)
-    if type(count) == "number" then total = total + count end
+    for _, id in ipairs(harvester_ids()) do
+      local count = read(function() return force.get_item_production_statistics(surface).get_input_count(id) end)
+      if type(count) == "number" then total = total + count end
+    end
   end
   return total
+end
+
+-- Herstellzähler spice-harvester der Force auf 0, alle Oberflächen und Qualitäten.
+local function clear_counted(force)
+  for _, surface in pairs(game.surfaces) do
+    for _, id in ipairs(harvester_ids()) do
+      pcall(function() force.get_item_production_statistics(surface).set_input_count(id, 0) end)
+    end
+  end
 end
 
 -- Zurücksetzen (Beginn und vor b): „Ornithopter“ nicht erforscht, Herstellzähler 0 auf allen Oberflächen, Ereignis
@@ -766,9 +789,7 @@ function t15_steps.s2_reset(s)
   local force = s.force
   local ornithopter = force.technologies[ORNITHOPTER_TECH]
   ornithopter.researched = false
-  for _, surface in pairs(game.surfaces) do
-    pcall(function() force.get_item_production_statistics(surface).set_input_count(NAME, 0) end)
-  end
+  clear_counted(force)
   s.event = nil
   if migrate.ornithopter_research(force) then
     ornithopter.researched = false
@@ -2276,9 +2297,7 @@ function t15_steps.s14_run(run, tb, d)
   if not (ornithopter and harvesting) then return fail(run, tb, 14, "Technologien fehlen") end
   local before = {harvesting = harvesting.researched, ornithopter = ornithopter.researched}
   -- Nur der Ernter-Datensatz soll zählen: Herstellzähler (Schritt 2) auf 0.
-  for _, surface in pairs(game.surfaces) do
-    pcall(function() force.get_item_production_statistics(surface).set_input_count(NAME, 0) end)
-  end
+  clear_counted(force)
   local car = new_car(run, tb, {x = d.pos.s14.x + 0.5, y = d.pos.s14.y + 0.5}, {force = force})
   if not (car and harvester.get(car)) then return fail(run, tb, 14, "Ernter der Force " .. T15_FORCE .. " nicht eingetragen") end
   harvesting.researched = true

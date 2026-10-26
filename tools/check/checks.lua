@@ -321,26 +321,33 @@ if orni_tech then
 end
 local orni_recipe = raw.recipe["arrakis-ornithopter"]
 if orni_recipe and orni_recipe.enabled ~= false then add("FEHLER 3c: recipe arrakis-ornithopter von Anfang an frei") end
--- Tempo-Sticker (0.6.1, docs/plan-3c.md 4.9): je Zustand eine Familie, eine Stufe t_j = STEP^j je Sticker, Name mit
--- p = floor(100 · t_j + 0,5), versteckt, vehicle_speed_modifier = BASE / t_j, 216000 Ticks. Name und Modifier rechnet
--- die Regel aus den Konstanten von prototypes/ornithopter-speed.lua selbst nach, nicht mit dessen Tabellen. Das Modul
--- liest sie per loadfile (aus dem Repo-Root wie die Laufzeitdateien unten). Die beiden Sticker aus 0.6.0 gibt es nicht mehr.
+-- Tempo-Sticker (0.6.1, docs/plan-3c.md 4.9 und 9): je Zustand eine Familie, eine Stufe t_j = 1,02^j je Sticker
+-- (j = −35 … 70), Name mit p = floor(100 · t_j + 0,5), versteckt, vehicle_speed_modifier = BASE / t_j (BASE leer 0,603,
+-- beladen 0,427), 216000 Ticks. Die Vertragswerte stehen hier fest wie 0,52 und 0,364 in 0.6.0: Weicht eine Konstante in
+-- prototypes/ornithopter-speed.lua ab, FEHLER. Name und Modifier rechnet die Regel aus diesen Werten selbst nach, nicht
+-- mit Konstanten oder Tabellen des Moduls; von dort nur parse, bucket und percent. Das Modul liest sie per loadfile (aus
+-- dem Repo-Root wie die Laufzeitdateien unten). Die beiden Sticker aus 0.6.0 gibt es nicht mehr.
+local PLAN_BASE = {empty = 0.603, loaded = 0.427}
+local PLAN_STEP, PLAN_MIN_J, PLAN_MAX_J = 1.02, -35, 70
 local speed_chunk = loadfile("prototypes/ornithopter-speed.lua")
 local speed_ok, speed = false, nil
 if speed_chunk then speed_ok, speed = pcall(speed_chunk) end
 local speed_count = {empty = 0, loaded = 0}
 if not (speed_ok and type(speed) == "table") then add("FEHLER 3c: prototypes/ornithopter-speed.lua nicht ladbar (aus dem Repo-Root starten): " .. tostring(speed))
 else
-  local base = {empty = speed.BASE_EMPTY, loaded = speed.BASE_LOADED}
+  local plan_values = {{"BASE_EMPTY", PLAN_BASE.empty}, {"BASE_LOADED", PLAN_BASE.loaded}, {"STEP", PLAN_STEP}, {"MIN_J", PLAN_MIN_J}, {"MAX_J", PLAN_MAX_J}}
+  for _, kv in ipairs(plan_values) do
+    if speed[kv[1]] ~= kv[2] then add("FEHLER 3c: prototypes/ornithopter-speed.lua " .. kv[1] .. " = " .. tostring(speed[kv[1]]) .. " statt " .. kv[2] .. " (docs/plan-3c.md 9)") end
+  end
   for _, state in ipairs({"empty", "loaded"}) do
-    for j = speed.MIN_J, speed.MAX_J do
-      local t = speed.STEP ^ j
+    for j = PLAN_MIN_J, PLAN_MAX_J do
+      local t = PLAN_STEP ^ j
       local n = "arrakis-ornithopter-" .. state .. "-" .. math.floor(100 * t + 0.5)
       local s = raw.sticker[n]
       if not s then add("FEHLER 3c: sticker " .. n .. " fehlt") else
         speed_count[state] = speed_count[state] + 1
         if s.hidden ~= true then add("FEHLER 3c: sticker " .. n .. " nicht hidden") end
-        if type(s.vehicle_speed_modifier) ~= "number" or math.abs(s.vehicle_speed_modifier - base[state] / t) > 1e-9 then add("FEHLER 3c: sticker " .. n .. " vehicle_speed_modifier " .. tostring(s.vehicle_speed_modifier) .. " statt " .. base[state] / t) end
+        if type(s.vehicle_speed_modifier) ~= "number" or math.abs(s.vehicle_speed_modifier - PLAN_BASE[state] / t) > 1e-9 then add("FEHLER 3c: sticker " .. n .. " vehicle_speed_modifier " .. tostring(s.vehicle_speed_modifier) .. " statt " .. PLAN_BASE[state] / t) end
         if s.duration_in_ticks ~= 216000 then add("FEHLER 3c: sticker " .. n .. " duration_in_ticks " .. tostring(s.duration_in_ticks)) end
         local ln = s.localised_name
         if not (type(ln) == "table" and ln[1] == "entity-name.arrakis-ornithopter-" .. state) then add("FEHLER 3c: sticker " .. n .. " localised_name") end
