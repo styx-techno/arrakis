@@ -21,6 +21,9 @@
 --   storage.reg[nummer]     zusätzlich kind "flyer"
 -- 0.5.x → 0.6.0: „Ornithopter“ (Trigger: ersten Spice-Ernter herstellen) feuert nicht rückwirkend [U12]; für
 -- Forces mit erforschter „Spice-Ernte“ und Ernter holt migrate.ornithopter_research die Forschung nach.
+-- 0.6.1: Dieselbe Prüfung läuft jede Sekunde für jede Force, bei der „Ornithopter“ noch aussteht, dazu
+-- on_player_crafted_item [U11]: Im Prüfstand-Lauf vom 26.10.2026 (T15 Schritt 2) stellte eine Figur ohne Spieler einen
+-- Ernter her, und der Auslöser der Engine feuerte nicht. Erforscht das Skript, bekommt die Force eine Chatzeile.
 -- Herunterstufen auf 0.5.x mit getragenem Ernter ist nicht unterstützt (0.5.x kennt carried nicht): vorher absetzen.
 --
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
@@ -76,18 +79,38 @@ local function has_harvester(force)
   return false
 end
 
--- Holt „Ornithopter“ nach (docs/plan-3c.md 4.15): vorhanden und nicht erforscht, „Spice-Ernte“ erforscht und die
--- Force hat einen Ernter oder je einen hergestellt → researched = true (A23 classes.d.ts:22293), Rückgabe true.
--- Der Trigger feuert nicht für früher hergestellte Ernter [U12]. Setzt nur, was fehlt; für T15 exportiert.
-function migrate.ornithopter_research(force)
+-- Steht „Ornithopter“ für die Force aus? Vorhanden und nicht erforscht, „Spice-Ernte“ erforscht. Nur zwei Abfragen,
+-- deshalb vor jeder teureren Prüfung (Datensätze, Statistik aller Oberflächen).
+function migrate.ornithopter_pending(force)
   if not (force and force.valid) then return false end
   local technologies = force.technologies
   local ornithopter = technologies[ORNITHOPTER_TECH]
+  if not ornithopter or ornithopter.researched then return false end
   local harvesting = technologies[HARVESTING_TECH]
-  if not (ornithopter and harvesting) then return false end
-  if ornithopter.researched or not harvesting.researched then return false end
+  return harvesting ~= nil and harvesting.researched
+end
+
+-- Holt „Ornithopter“ nach (docs/plan-3c.md 4.15): steht aus und die Force hat einen Ernter oder je einen hergestellt
+-- → researched = true (A23 classes.d.ts:22293), Rückgabe true. Der Trigger feuert nicht für früher hergestellte Ernter
+-- [U12]. Setzt nur, was fehlt, und meldet nichts; für T15 exportiert.
+function migrate.ornithopter_research(force)
+  if not migrate.ornithopter_pending(force) then return false end
   if not has_harvester(force) then return false end
-  ornithopter.researched = true
+  force.technologies[ORNITHOPTER_TECH].researched = true
+  return true
+end
+
+-- Forschung „Ornithopter“ per Skript (0.6.1) [U11]: Steht sie aus und hat die Force einen Ernter (crafted: das
+-- Ereignis on_player_crafted_item beweist ihn, die Statistik kann nachhinken), erforscht das Skript sie und meldet es der
+-- Force. Hat die Engine sie schon erforscht, steht sie nicht mehr aus: keine Meldung. Rückgabe true, wenn erforscht.
+local function research_by_script(force, crafted)
+  if not migrate.ornithopter_pending(force) then return false end
+  if crafted then
+    force.technologies[ORNITHOPTER_TECH].researched = true
+  elseif not migrate.ornithopter_research(force) then
+    return false
+  end
+  force.print({"arrakis-message.msg-ornithopter-researched"})
   return true
 end
 
@@ -147,9 +170,37 @@ local function on_surface_created(event)
   migrate.notice_old_map(game.get_surface(event.surface_index))
 end
 
+-- Von Hand hergestellt (A23 events.d.ts:2346): ein Spice-Ernter → Forschung sofort, wenn sie aussteht.
+local function on_player_crafted_item(event)
+  local stack = event.item_stack
+  local name = stack and stack.valid_for_read and stack.name
+  if not name then
+    local recipe = event.recipe
+    name = recipe and recipe.valid and recipe.name
+  end
+  if name ~= HARVESTER then return end
+  local player = game.get_player(event.player_index)
+  if player then research_by_script(player.force, true) end
+end
+
+-- Jede Sekunde (Takt wie flyer.lua, event_handler fasst die Handler zusammen): je Force, bei der „Ornithopter“ aussteht,
+-- dieselbe Prüfung wie die Migration. Forces ohne „Spice-Ernte“ oder mit erforschtem „Ornithopter“ kosten zwei
+-- Abfragen; nur eine ausstehende Force liest Datensätze und Statistik.
+local function on_nth_tick_60()
+  for _, force in pairs(game.forces) do
+    research_by_script(force, false)
+  end
+end
+
 migrate.events =
 {
-  [defines.events.on_surface_created] = on_surface_created
+  [defines.events.on_surface_created] = on_surface_created,
+  [defines.events.on_player_crafted_item] = on_player_crafted_item
+}
+
+migrate.on_nth_tick =
+{
+  [60] = on_nth_tick_60
 }
 
 migrate.on_init = function()
