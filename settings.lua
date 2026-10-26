@@ -8,7 +8,7 @@ data:extend({
     order = "z"
   },
   {
-    -- Wurmbiss (Entscheidung 4): wirkt erst, wenn es Würmer gibt (Phase 3d).
+    -- Wurmbiss (Entscheidung 4): gilt für Spice-Ernter im Bissradius (docs/plan-3d1.md 4.9).
     type = "string-setting",
     name = "arrakis-worm-bite",
     setting_type = "runtime-global",

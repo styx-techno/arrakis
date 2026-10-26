@@ -15,6 +15,8 @@ require("prototypes.windtrap")
 require("prototypes.spice")
 require("prototypes.planet.planet")
 require("prototypes.technology")
+-- Phase 3d1 (docs/plan-3d1.md 3): Eruption, Sandstaub, Signal, Geräusche, Vibrationsanzeige, Tipps.
+require("prototypes.worms")
 
 -- Prüfstand: nur mit Startup-Einstellung "arrakis-testbench".
 require("prototypes.testbench.init")

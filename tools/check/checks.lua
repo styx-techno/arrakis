@@ -432,6 +432,149 @@ local carry_key = raw["custom-input"]["arrakis-carry-toggle"]
 if carry_key and (carry_key.key_sequence ~= "SHIFT + C" or carry_key.consuming ~= "none") then add("FEHLER 3c: custom-input arrakis-carry-toggle " .. tostring(carry_key.key_sequence) .. " / " .. tostring(carry_key.consuming)) end
 add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Tempo-Sticker leer " .. speed_count.empty .. "/106, beladen " .. speed_count.loaded .. "/106, Lastbild " .. sprite_count .. "/32 Sprites")
 
+-- Phase 3d1 (docs/plan-3d1.md 3 und 7): Eruption, Sandstaub, Signal, Geräusche, Verknüpfung, Tipps. Pfade und Werte
+-- stehen hier fest (nicht aus prototypes/worms.lua gelesen).
+local expected_3d1 = {
+  explosion = {"arrakis-worm-eruption"},
+  ["trivial-smoke"] = {"arrakis-sand-dust"},
+  ["virtual-signal"] = {"arrakis-wormsign"},
+  sound = {"arrakis-wormsign", "arrakis-rumble"},
+  shortcut = {"arrakis-vibration-overlay"},
+  ["tips-and-tricks-item"] = {"arrakis-briefing", "arrakis-wormsign-tip"},
+}
+local count_3d1 = 0
+for t, names in pairs(expected_3d1) do for _, n in ipairs(names) do
+  local p = raw[t] and raw[t][n]
+  if not p then add("FEHLER 3d1: " .. t .. " " .. n .. " fehlt")
+  else
+    count_3d1 = count_3d1 + 1
+    -- Explosionen sind in Vanilla versteckt (die Eruption erbt das von big-artillery-explosion).
+    if p.hidden and t ~= "explosion" then add("FEHLER 3d1: " .. t .. " " .. n .. " ist hidden") end
+  end
+end end
+local function walk_particles(node, seen, found)
+  if type(node) ~= "table" or seen[node] then return end
+  seen[node] = true
+  for k, v in pairs(node) do
+    if k == "particle_name" and type(v) == "string" then found[#found+1] = v end
+    walk_particles(v, seen, found)
+  end
+end
+local SAND_TINT = {r = 1, g = 0.85, b = 0.6}
+local function sand_tinted(layer)
+  local t = layer.tint
+  return type(t) == "table" and (t.r or t[1]) == SAND_TINT.r and (t.g or t[2]) == SAND_TINT.g and (t.b or t[3]) == SAND_TINT.b
+end
+local eruption = raw.explosion["arrakis-worm-eruption"]
+if eruption then
+  local particles = {}
+  walk_particles(eruption.created_effect, {}, particles)
+  local stone, sand = 0, 0
+  for _, n in ipairs(particles) do
+    if n:find("^explosion%-stone%-particle") then stone = stone + 1 end
+    if n:find("^sand%-1%-stone%-particle") then sand = sand + 1 end
+    if not raw["optimized-particle"][n] then add("FEHLER 3d1: Eruption Partikel " .. n .. " fehlt") end
+  end
+  if stone > 0 then add("FEHLER 3d1: Eruption mit " .. stone .. " explosion-stone-particle-*") end
+  if sand == 0 then add("FEHLER 3d1: Eruption ohne Sandsteine") end
+  local anims = eruption.animations
+  if anims and (anims.filename or anims.layers or anims.stripes or anims.filenames) then anims = {anims} end
+  local n_anim, untinted = 0, 0
+  for _, a in pairs(anims or {}) do
+    for _, layer in pairs(a.layers or {a}) do
+      n_anim = n_anim + 1
+      if not sand_tinted(layer) then untinted = untinted + 1 end
+    end
+  end
+  if n_anim == 0 then add("FEHLER 3d1: Eruption ohne Animation") end
+  if untinted > 0 then add("FEHLER 3d1: Eruption " .. untinted .. " von " .. n_anim .. " Animationen/Ebenen nicht getönt") end
+  local variations = eruption.sound and eruption.sound.variations or {}
+  if #variations ~= 2 then add("FEHLER 3d1: Eruption sound mit " .. #variations .. " Varianten statt 2") end
+  local smoke = false
+  local seen_smoke = {}
+  local function walk_smoke(node)
+    if type(node) ~= "table" or seen_smoke[node] then return end
+    seen_smoke[node] = true
+    if node.type == "create-trivial-smoke" and node.smoke_name == "arrakis-sand-dust" then smoke = true end
+    for _, v in pairs(node) do walk_smoke(v) end
+  end
+  walk_smoke(eruption.created_effect)
+  if not smoke then add("FEHLER 3d1: Eruption ohne Sandstaub") end
+end
+local dust = raw["trivial-smoke"]["arrakis-sand-dust"]
+if dust then
+  local c = dust.color or {}
+  local want = {0.80, 0.65, 0.40, 0.6}
+  local got = {c.r or c[1], c.g or c[2], c.b or c[3], c.a or c[4]}
+  for i = 1, 4 do if got[i] ~= want[i] then add("FEHLER 3d1: Sandstaub color " .. i .. " = " .. tostring(got[i]) .. " statt " .. want[i]) end end
+end
+local signal = raw["virtual-signal"]["arrakis-wormsign"]
+if signal then
+  local icon = signal.icons and signal.icons[1] and signal.icons[1].icon or signal.icon
+  if icon ~= "__base__/graphics/icons/signal/signal-alert.png" then add("FEHLER 3d1: Signal arrakis-wormsign Icon " .. tostring(icon)) end
+end
+local function sound_files(sound)
+  local files = {}
+  if sound.filename then files[#files+1] = sound.filename end
+  for _, v in ipairs(sound.variations or {}) do files[#files+1] = v.filename end
+  return files
+end
+local plan_sounds = {
+  ["arrakis-wormsign"] = {
+    "__space-age__/sound/enemies/demolisher/demolisher-roar-big-1.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-2.ogg",
+    "__space-age__/sound/enemies/demolisher/demolisher-roar-big-3.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-4.ogg",
+    "__space-age__/sound/enemies/demolisher/demolisher-roar-big-5.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-6.ogg"},
+  ["arrakis-rumble"] = {"__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg"},
+  ["arrakis-worm-eruption"] = {"__space-age__/sound/explosions/demolisher-explosion-1.ogg", "__space-age__/sound/explosions/demolisher-explosion-2.ogg"},
+}
+for n, want in pairs(plan_sounds) do
+  local p = n == "arrakis-worm-eruption" and (eruption and eruption.sound) or raw.sound[n]
+  if p and not same_list(sound_files(p), want) then add("FEHLER 3d1: Geräusch " .. n .. ": " .. table.concat(sound_files(p), ", ")) end
+end
+local wormsign_sound = raw.sound["arrakis-wormsign"]
+if wormsign_sound and wormsign_sound.category ~= "alert" then add("FEHLER 3d1: sound arrakis-wormsign category " .. tostring(wormsign_sound.category)) end
+local overlay = raw.shortcut["arrakis-vibration-overlay"]
+if overlay and (overlay.action ~= "lua" or overlay.toggleable ~= true or overlay.technology_to_unlock ~= "arrakis-spice-harvesting") then
+  add("FEHLER 3d1: shortcut arrakis-vibration-overlay action/toggleable/Forschung")
+end
+local plan_tips = {["arrakis-briefing"] = "planet-discovery-arrakis", ["arrakis-wormsign-tip"] = "arrakis-spice-harvesting"}
+for n, tech in pairs(plan_tips) do
+  local tip = raw["tips-and-tricks-item"][n]
+  if tip then
+    local tr = tip.trigger or {}
+    if tip.category ~= "space-age" then add("FEHLER 3d1: Tipp " .. n .. " Kategorie " .. tostring(tip.category)) end
+    if tr.type ~= "research" or tr.technology ~= tech then add("FEHLER 3d1: Tipp " .. n .. " Auslöser " .. tostring(tr.type) .. " " .. tostring(tr.technology)) end
+    if not (tip.localised_name and tip.localised_description) then add("FEHLER 3d1: Tipp " .. n .. " ohne localised_name/localised_description") end
+    if tip.skip_trigger ~= nil then add("FEHLER 3d1: Tipp " .. n .. " mit skip_trigger") end
+  end
+end
+-- Forschungen unverändert gegenüber 0.6.1 (Zahl, Namen, Auslöser).
+local plan_techs = {
+  ["planet-discovery-arrakis"] = "unit",
+  ["arrakis-windtrap"] = "unit",
+  ["arrakis-spice-processing"] = "mine-entity spice-sand",
+  ["spice-science-pack"] = "craft-item melange 20",
+  ["melange-productivity"] = "unit",
+  ["arrakis-spice-harvesting"] = "craft-item melange 10",
+  ["arrakis-ornithopter"] = "craft-item spice-harvester 1",
+}
+local tech_count = 0
+for n, tech in pairs(raw.technology) do if is_own(n) then
+  tech_count = tech_count + 1
+  local tr = tech.research_trigger
+  local got = "unit"
+  if tr then
+    -- 2.1: mine-entity mit entities statt entity (prototypes/compat.lua)
+    local target = tr.entity or (tr.entities and tr.entities[1]) or tr.item
+    if type(target) == "table" then target = target.name end
+    got = tr.type .. " " .. tostring(target) .. (tr.type == "craft-item" and (" " .. (tr.count or 1)) or "")
+  end
+  if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
+  elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
+end end
+if tech_count ~= 7 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 7") end
+add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
+
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]
 local tb_on = tb_setting and tb_setting.value
@@ -463,7 +606,8 @@ if tb_on then
   local not_prototypes = {["arrakis-test-hold"] = true}
   local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua", "scripts/testbench/t_flyer.lua",
     "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua",
-    "scripts/testbench/t_ornithopter.lua"}
+    "scripts/testbench/t_ornithopter.lua", "scripts/vibration.lua", "scripts/worms.lua", "scripts/worms-gui.lua",
+    "scripts/testbench/t_jagd.lua"}
   local read = 0
   for _, file in ipairs(files) do
     local f = io.open(file, "r")
