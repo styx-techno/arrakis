@@ -12,7 +12,11 @@ local libraries =
   require("scripts.intake"),
   require("scripts.hold"),
   require("scripts.flyer"),
-  require("scripts.flyer-gui")
+  require("scripts.flyer-gui"),
+  -- Phase 3d1 (docs/plan-3d1.md 4.1): Vibration, Würmer (einzige Wurm-Takte), Fenster oben links.
+  require("scripts.vibration"),
+  require("scripts.worms"),
+  require("scripts.worms-gui")
 }
 
 -- Prüfstand (/arrakis-test) nur mit Startup-Einstellung; sonst bleibt das Spiel unberührt. Immer zuletzt.

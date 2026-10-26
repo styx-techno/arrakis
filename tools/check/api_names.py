@@ -116,7 +116,11 @@ def api_version(folder, fallback):
   return fallback
 
 # Namen, die als Methodenaufruf erlaubt sind, obwohl der Prüfer sie nirgends findet.
-CALL_WHITELIST = set()
+CALL_WHITELIST = {
+  # worms.lua: storage.rng ist ein LuaRandomGenerator, aufgerufen über seinen Aufruf-Operator rng(lower, upper)
+  # (A23 classes.d.ts:11748, docs/plan-3d1.md 1 „Zufall“); eine benannte Methode gibt es nicht.
+  "rng",
+}
 
 # Schreibzugriffe auf eigene Datentabellen, deren Feld zufällig wie ein schreibgeschütztes
 # API-Attribut heißt. Einträge: "name" (überall) oder "empfänger.name" (genau diese Kette,
@@ -138,6 +142,11 @@ WRITE_WHITELIST = {
   # runner.lua: s.pending = storage.testbench.pending (nächster Test bei „alle“), set_tempo rechnet den
   # Start-Tick der FRAGE-Pause um
   "s.pending.tick",
+  # vibration.lua: e = storage.vib.heat[s] (Takt der Wärme), record = storage.vib.sources[un] (Gewicht dieses Takts),
+  # docs/plan-3d1.md 4.2
+  "e.tick", "record.weight",
+  # worms.lua: hunt = storage.hunts.list[id], Force der Jagd (docs/plan-3d1.md 4.2)
+  "hunt.force_index",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die

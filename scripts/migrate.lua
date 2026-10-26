@@ -1,6 +1,6 @@
--- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10). Erste Bibliothek in control.lua:
--- legt alle Tabellen in on_init und on_configuration_changed an, bevor die anderen Module sie benutzen.
--- on_load schreibt nie (diese Bibliothek hat kein on_load).
+-- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10; Schema 3: docs/plan-3d1.md 4.16).
+-- Erste Bibliothek in control.lua: legt alle Tabellen in on_init und on_configuration_changed an, bevor die anderen
+-- Module sie benutzen. on_load schreibt nie (diese Bibliothek hat kein on_load).
 --
 -- Schema 1:
 --   storage.harvesters[un]  Ernter-Datensätze (scripts/harvester.lua)
@@ -26,6 +26,22 @@
 -- Ernter her, und der Auslöser der Engine feuerte nicht. Erforscht das Skript, bekommt die Force eine Chatzeile.
 -- Herunterstufen auf 0.5.x mit getragenem Ernter ist nicht unterstützt (0.5.x kennt carried nicht): vorher absetzen.
 --
+-- Schema 3 (0.7.0, Phase 3d1, docs/plan-3d1.md 4.2), dazu:
+--   storage.rng             LuaRandomGenerator (Kartenseed), nur für die Ruhezeit der Sektoren
+--   storage.grace[force_index]  Schonfrist je Force (scripts/worms.lua)
+--   storage.vib             {sources, heat, rumble, overlay, testbench}: Quellen, Wärme, Rumpeln, Vibrationsanzeige,
+--                           Prüfstand-Merker (scripts/vibration.lua)
+--   storage.hunts           {next_id, list = {[id] = Jagd}, paused_until}: Jagden (scripts/worms.lua)
+--   storage.sector_cooldown[surface_index][sector_key] = Ende der Ruhe
+--   storage.worm_stats[force_index] = {bitten, escaped, gone, first_escape_tick}
+--   storage.harvesters[un]  zusätzlich careful, careful_wait, careful_pos, careful_packing, vib_weight, vib_key,
+--                           vib_sand, alarm_unrest, alarm_hunt_eta, alarm_hunt_safe, status_written
+--   storage.migration       zusätzlich worms_pending (hier gesetzt, von worms.lua abgearbeitet), worm_notice
+-- 0.6.x/0.5.x → 0.7.0: fehlende Ernter-Felder nachtragen, worms_pending setzen; Schonfrist, Quellen-Scan und Chatzeile
+-- macht worms.lua in seinem on_configuration_changed (läuft danach). old < 2 läuft vor old < 3: Die Schonfrist sieht
+-- die nachgeholte Forschung „Ornithopter“. Herunterstufen auf 0.6.x: vorher /arrakis-uninstall ja (Markierungen und
+-- die Sandwurm-Force blieben sonst im Spielstand).
+--
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
 -- Oberfläche schon existiert, sonst beim Anlegen der Oberfläche. Ob ein vor 0.5.4 begonnener Spielstand
@@ -37,7 +53,7 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 2
+local SCHEMA = 3
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
@@ -63,6 +79,21 @@ function migrate.init()
   storage.stranded = storage.stranded or {}
   storage.hold = storage.hold or {}
   storage.flyer_gui_open = storage.flyer_gui_open or {}
+  -- Schema 3 (Phase 3d1)
+  storage.rng = storage.rng or game.create_random_generator()
+  storage.grace = storage.grace or {}
+  storage.vib = storage.vib or {}
+  local vib = storage.vib
+  vib.sources = vib.sources or {}
+  vib.heat = vib.heat or {}
+  vib.rumble = vib.rumble or {}
+  vib.overlay = vib.overlay or {}
+  vib.testbench = vib.testbench or {}
+  storage.hunts = storage.hunts or {next_id = 1, list = {}}
+  storage.hunts.next_id = storage.hunts.next_id or 1
+  storage.hunts.list = storage.hunts.list or {}
+  storage.sector_cooldown = storage.sector_cooldown or {}
+  storage.worm_stats = storage.worm_stats or {}
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt
@@ -229,6 +260,15 @@ migrate.on_configuration_changed = function()
     for _, force in pairs(game.forces) do
       migrate.ornithopter_research(force)
     end
+  end
+  if old < 3 then
+    -- 0.6.x/0.5.x → 0.7.0: Felder für Vorsichtsmodus und Vibration; der Rest folgt in worms.lua (siehe oben).
+    for _, h in pairs(storage.harvesters) do
+      if h.careful == nil then h.careful = false end
+      if h.vib_weight == nil then h.vib_weight = 0 end
+      if h.vib_sand == nil then h.vib_sand = false end
+    end
+    storage.migration.worms_pending = true
   end
   storage.schema = math.max(old, SCHEMA)
   -- 0.5.3 → 0.5.4: Hinweis auf die alte Karte (siehe oben).

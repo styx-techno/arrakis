@@ -1,5 +1,5 @@
 -- Spice-Ernter (Phase 3b): Zustände, Abbau, Treibstoff, Tempo, Abbausperre, Andocken/Abdocken und Taste.
--- Bibliothek für __core__/lualib/event_handler (Plan 4.1). Daten nur in storage (Schema 2, siehe
+-- Bibliothek für __core__/lualib/event_handler (Plan 4.1). Daten nur in storage (Schema 3, siehe
 -- scripts/migrate.lua), Schlüssel ist unit_number. Ereignisse kommen ungefiltert: Jeder Handler prüft
 -- zuerst den Namen und kehrt sofort zurück. scripts/intake.lua ruft dock/undock; dieses Modul kennt
 -- intake.lua nicht, liest aber storage.intakes/storage.nozzles als Daten (Proxy-Ziele setzen und löschen).
@@ -10,6 +10,15 @@
 --   last_tick, deploy_pos = {x, y}, deploy_surface, status = nil|"harvesting"|"trunk_full"|"field_empty"|"no_fuel",
 --   renders = {ring, frame}, dock, undocked_from, still_since, fuel_key, last_toggle_tick, minable_pos,
 --   carried_by = flyer_un|nil, lift_pos = {surface = surface_index, x, y}|nil (Phase 3c, docs/plan-3c.md 4.2)
+--   Phase 3d1 (docs/plan-3d1.md 4.2): careful = false, careful_wait = true|nil, careful_pos = {surface, x, y}|nil,
+--   careful_packing = true|nil (Vorsichtsmodus, scripts/vibration.lua), vib_weight, vib_key, vib_sand (Stand des letzten
+--   60-Tick-Takts), alarm_unrest, alarm_hunt_eta, alarm_hunt_safe (set_alarm), status_written (zuletzt geschriebener
+--   custom_status, Schlüssel wie "hunt:37").
+--
+-- Status am Ernter (docs/plan-3d1.md 1 „Status Ernter“): getragen immer „Wird getragen“; sonst Vorrang Wurmzeichen (rot,
+-- sicher grün) vor „Vorsichtsmodus: wartet auf Ruhe“ (gelb) vor „Der Sand bebt“ (gelb) vor dem Zustand aus 3b/3c, auch im
+-- Zustand mobil. Die Werte setzen scripts/vibration.lua und scripts/worms.lua über set_alarm und refresh_status; dieses
+-- Modul kennt beide nicht.
 --
 -- Zustand carried (Phase 3c, docs/plan-3c.md 4.1 und 4.3): Der Ernter steht gesperrt auf der Ablage arrakis-hold,
 -- am Ornithopter hängt sein Bild. Anheben (lift) und Absetzen (land) ruft scripts/flyer.lua; dieses Modul kennt
@@ -163,28 +172,56 @@ local function draw_frame(h, area)
   }
 end
 
--- custom_status nach Zustand und Status; nur bei Zustands- oder Statuswechsel aufrufen.
+-- custom_status nach Vorrang (Kopfkommentar), Zustand und Status. Geschrieben wird nur, wenn sich Text oder Sekunde
+-- ändern (Schlüssel in h.status_written, docs/plan-3d1.md 4.1); aufrufen bei jedem Zustands-, Status- oder Alarmwechsel.
 local function write_custom_status(h)
   local entity = h.entity
   if not entity.valid then return end
   local state = h.state
-  if state == "mobile" then
-    if entity.custom_status then entity.custom_status = nil end
+  local key, status
+  if state == "carried" then
+    key = "state:carried"
+    status = {diode = defines.entity_status_diode.yellow, label = {"arrakis-message.state-carried"}}
+  elseif h.alarm_hunt_eta then
+    local left = math.max(0, math.ceil((h.alarm_hunt_eta - game.tick) / 60))
+    if h.alarm_hunt_safe then
+      key = "safe:" .. left
+      status = {diode = defines.entity_status_diode.green, label = {"arrakis-message.status-wormsign-safe", left}}
+    else
+      key = "hunt:" .. left
+      status = {diode = defines.entity_status_diode.red, label = {"arrakis-message.status-wormsign", left}}
+    end
+  elseif h.careful_wait then
+    key = "careful"
+    status = {diode = defines.entity_status_diode.yellow, label = {"arrakis-message.status-careful-wait"}}
+  elseif h.alarm_unrest then
+    key = "unrest"
+    status = {diode = defines.entity_status_diode.yellow, label = {"arrakis-message.status-unrest"}}
+  elseif state == "mobile" then
+    key = "none"
   elseif state == "deployed" then
-    local status = h.status or "harvesting"
-    entity.custom_status = {
-      diode = defines.entity_status_diode[STATUS_DIODE[status]],
-      label = {"arrakis-message." .. STATUS_KEY[status]}
-    }
+    local name = h.status or "harvesting"
+    key = "deployed:" .. name
+    status = {diode = defines.entity_status_diode[STATUS_DIODE[name]], label = {"arrakis-message." .. STATUS_KEY[name]}}
   else
     local diode = state == "docked" and "green" or "yellow"
-    entity.custom_status = {diode = defines.entity_status_diode[diode], label = {"arrakis-message.state-" .. state}}
+    key = "state:" .. state
+    status = {diode = defines.entity_status_diode[diode], label = {"arrakis-message.state-" .. state}}
+  end
+  if h.status_written == key then return end
+  h.status_written = key
+  if status then
+    entity.custom_status = status
+  elseif entity.custom_status then
+    entity.custom_status = nil
   end
 end
 
+-- Nur die eigenen Alarme (Symbol Spice-Sand, AlertFilter mit icon, A23 concepts.d.ts:130–138); sonst löschte
+-- „Laderaum voll ist vorbei“ auch das Wurmzeichen (docs/plan-3d1.md 4.1).
 local function remove_alerts(entity)
   for _, player in pairs(entity.force.connected_players) do
-    player.remove_alert{entity = entity, type = defines.alert_type.custom}
+    player.remove_alert{entity = entity, type = defines.alert_type.custom, icon = {type = "item", name = SPICE}}
   end
 end
 
@@ -205,6 +242,25 @@ local function set_status(h, status)
   if old and ALERT[old] then remove_alerts(entity) end
   if status and ALERT[status] then add_alerts(entity, status) end
   if h.state == "deployed" then write_custom_status(h) end
+end
+
+-- Alarm am Ernter (docs/plan-3d1.md 4.1): kind "hunt" mit value = eta_tick oder nil und safe = true oder nil
+-- (Wurmzeichen, scripts/worms.lua), kind "unrest" mit value = true oder nil (Der Sand bebt, scripts/vibration.lua).
+-- Schreibt über write_custom_status, also nur bei einer Änderung von Text oder Sekunde.
+function lib.set_alarm(h, kind, value, safe)
+  if not h then return end
+  if kind == "hunt" then
+    h.alarm_hunt_eta = value
+    h.alarm_hunt_safe = (value and safe) and true or nil
+  elseif kind == "unrest" then
+    h.alarm_unrest = value and true or nil
+  end
+  write_custom_status(h)
+end
+
+-- Status neu werten, z. B. nachdem der Vorsichtsmodus careful_wait geändert hat (scripts/vibration.lua).
+function lib.refresh_status(h)
+  if h then write_custom_status(h) end
 end
 
 -- Proxy-Ziele (Annahme und zugeordnete Stutzen) -----------------------------------------------------
@@ -356,6 +412,7 @@ local function set_mobile(h)
   h.deploy_pos = nil
   h.deploy_surface = nil
   h.still_since = nil
+  h.careful_packing = nil
   h.last_tick = game.tick
   h.state = "mobile"
   set_status(h, nil)
@@ -393,7 +450,11 @@ function lib.register(entity)
     prod_rest = 0,
     last_tick = game.tick,
     renders = {},
-    last_toggle_tick = 0
+    last_toggle_tick = 0,
+    -- Phase 3d1 (docs/plan-3d1.md 4.2)
+    careful = false,
+    vib_weight = 0,
+    vib_sand = false
   }
   storage.harvesters[un] = h
   storage.reg[script.register_on_object_destroyed(entity)] = {kind = "harvester", un = un}
@@ -493,6 +554,9 @@ function lib.dock(h, intake_record)
   h.dock = intake_un
   h.undocked_from = nil
   h.still_since = nil
+  h.careful_wait = nil
+  h.careful_pos = nil
+  h.careful_packing = nil
   h.last_tick = game.tick
   intake_record.docked = h.un
   lock(entity)
@@ -528,6 +592,11 @@ function lib.toggle(entity, player)
   local tick = game.tick
   if h.last_toggle_tick ~= 0 and tick - h.last_toggle_tick < lib.DEBOUNCE then return false end
   h.last_toggle_tick = tick
+  -- Der Spieler übernimmt: Ein wartender Vorsichtsmodus baut nicht mehr selbst auf (docs/plan-3d1.md 4.11).
+  if h.careful_wait then
+    h.careful_wait = nil
+    write_custom_status(h)
+  end
   local state = h.state
   if state == "mobile" then
     local ok, reason = lib.deploy(h)
@@ -564,6 +633,9 @@ function lib.lift(h, carrier_un, lift_pos)
   h.lift_pos = lift_pos
   h.undocked_from = nil
   h.still_since = nil
+  h.careful_wait = nil
+  h.careful_pos = nil
+  h.careful_packing = nil
   storage.driven[un] = nil
   storage.timers[un] = nil
   lock(entity)
