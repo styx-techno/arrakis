@@ -57,14 +57,14 @@ welcher Test sie entscheidet und was gilt, wenn sie nicht hält. Die Nummern end
 | Wärme | Je Oberfläche und Chunk: `H ← H · 0,98^Δs + ΣV · min(Δs, 2)` im 60-Tick-Takt, alle Einträge jeden Takt; Einträge unter 1 ohne Quelle fliegen raus, eine Oberfläche ohne Einträge verliert ihren Wärme-Datensatz (4.4 Schritt 7) | DOC 4.3. Δs ist im 60-Tick-Takt immer 1: `on_nth_tick(60)` fällt nie aus, und eine leere Oberfläche beginnt neu mit `tick − 60`. `min(Δs, 2)` bleibt nur als Absicherung wie beim Ernter (DOC 4.0 „höchstens 2 s“) |
 | Nachbarschaft | S(c) = Summe der Wärme über die 3×3 Chunks um c, gespeichert je Takt (`sum3`). Am Ort einer Quelle gilt W = größtes S(d) über die 3×3 Chunks d um ihren Chunk | W ist der Wert, mit dem irgendein Wurmzeichen-Kandidat die Quelle erfasst; nur so hält der Vorsichtsmodus jede Schwelle ein |
 | Schwellen | Unruhe W ≥ 600, Wurmzeichen S(d) ≥ 1000 und S(d) im Takt davor ≥ 600; 2000 (großer Wurm) erst in 3d3 | DOC 4.3. Die Zusatzbedingung erfüllt „jedes neue Wurmzeichen kündigt sich mit Unruhe an“ auch bei vielen Quellen |
-| Zeiten | Ein Ernter allein: Unruhe im 26. Takt (594,8 → 612,9), Wurmzeichen im 55. Takt (996,1 → 1006,2), also 1500 bis 1560 bzw. 3240 bis 3300 Ticks nach „aufgebaut“. Gilt ab kaltem Sand (abgesetzt per Ornithopter oder vorher 2 min gestanden). Nach der Anfahrt aufs Lehrfeld (41 bis 59 Kacheln mit Gewicht 10, dann 5 s Aufbau) liegen schon etwa 200 bis 260 an: Unruhe nach etwa 15 bis 19 s, Wurmzeichen nach etwa 45 bis 48 s | H_n = 1500 · (1 − 0,98^n); n ≥ ln 0,6 / ln 0,98 = 25,28 und n ≥ ln 3 / 0,020203 = 54,38. DOC 2.1: „etwa 25 s“, „etwa 55 s“. Die Fahrspur (höchstens 59 Kacheln, also höchstens 3 Chunks in einer Reihe) liegt immer ganz in einer 3×3-Summe neben dem Ernter (nachgerechnet für alle Richtungen und Chunk-Lagen) |
+| Zeiten | Ein Ernter allein: Unruhe im 26. Takt (594,8 → 612,9), Wurmzeichen im 55. Takt (996,1 → 1006,2), also 1500 bis 1619 bzw. 3240 bis 3359 Ticks nach „aufgebaut“ (4.4: der erste Takt mit Beitrag liegt 0 bis 119 Ticks danach). Gilt ab kaltem Sand (abgesetzt per Ornithopter oder vorher 2 min gestanden). Nach der Anfahrt aufs Lehrfeld (41 bis 59 Kacheln mit Gewicht 10, dann 5 s Aufbau) liegen schon etwa 200 bis 260 an: Unruhe nach etwa 15 bis 19 s, Wurmzeichen nach etwa 45 bis 48 s | H_n = 1500 · (1 − 0,98^n); n ≥ ln 0,6 / ln 0,98 = 25,28 und n ≥ ln 3 / 0,020203 = 54,38. DOC 2.1: „etwa 25 s“, „etwa 55 s“. Die Fahrspur (höchstens 59 Kacheln, also höchstens 3 Chunks in einer Reihe) liegt immer ganz in einer 3×3-Summe neben dem Ernter (nachgerechnet für alle Richtungen und Chunk-Lagen) |
 | Ziel | Stärkste berechtigte Quelle in der 3×3-Nachbarschaft des heißen Chunks; gleich stark: Ernter vor anderen, dann kleinste `unit_number`. Ursprung ist der Chunk des Ziels | DOC 4.3 „die stärkste Quelle in der Nachbarschaft“; feste Reihenfolge für den Mehrspieler |
 | Berechtigt | Gewicht > 0 in diesem Takt, auf Sand, Force wach (4.6), nicht getragen, nicht schon Ziel, sein Sektor ohne Jagd und nicht in Ruhe, Lehrjagd-Regel | Sonst träfe ein Wurmzeichen eine stehende Kiste oder eine Force in der Schonfrist |
 | Grenzen | Höchstens 1 Jagd je Sektor (4×4 Chunks), 3 zugleich über alle Forces und Oberflächen, 1 neue je Takt und Oberfläche; Befehlsjagden zählen nicht mit und sperren nichts | DOC 4.3 „Grenzen“; die Thumper-Ausnahme aus DOC kommt in 3d3 an dieselbe Stelle |
 | Ende | Jede Jagd außer per Befehl setzt am Ende die Wärme der 3×3 Chunks um den Ursprung auf 0, und der ganze Sektor des Ursprungs ruht `rng(7200, 14400)` Ticks; während der Ruhe tragen seine Quellen nichts bei, seine Einträge bleiben 0 | DOC 4.3; „gefressen oder entkommen“ gilt genauso für „Ziel weg“ |
 | Zufall | Nur die Ruhezeit kommt aus `storage.rng` (gespeichert, A23 classes.d.ts:11748, Grenzen einschließlich :17440); Staubwolken liegen an festen Stellen aus Tick und `unit_number` | DOC 4.0; deterministisch im Mehrspieler, und Kosmetik verbraucht keine Zufallszahlen |
 | Countdown | 60 s (3600 Ticks), Lehrjagd 90 s (5400); er verlängert sich nie. Wurmzeichen entsteht im 60-Tick-Takt, also ist `eta_tick` ein Vielfaches von 10, und der Biss fällt genau im 10-Tick-Takt bei `eta_tick` | DOC 2.4 „Ein Biss kommt nie vor Ablauf des Countdowns“; Roadmap 3d1 „Biss genau bei 0“ |
-| Lehrjagd | Die erste Jagd jeder Force auf einen Spice-Ernter; solange sie läuft, bekommt dieselbe Force keine zweite. Jagden auf Gebäude und Fahrzeuge haben immer 60 s und sperren nichts. Ist bei Schonfrist-Ende schon Wärme da, kommt sie im nächsten Takt | DOC 2.1 Schritte 4 und 7, 2.4: Die Lehrjagd lehrt die Flucht vom Lehrfeld, also gehört sie dem Ernter. Sie ist die Ausnahme vom Abnahmekriterium (Zeile „Flucht per Fahrt“) |
+| Lehrjagd | Die erste Jagd jeder Force auf einen Spice-Ernter; solange sie läuft, bekommt dieselbe Force keine zweite. Jagden auf Gebäude und Fahrzeuge haben immer 60 s und sperren nichts. Ist bei Schonfrist-Ende schon genug Wärme da, kommt sie im Takt des Erwachens (4.4: Schritt 3 Schonfrist vor Schritt 5 Wurmzeichen) | DOC 2.1 Schritte 4 und 7, 2.4: Die Lehrjagd lehrt die Flucht vom Lehrfeld, also gehört sie dem Ernter. Sie ist die Ausnahme vom Abnahmekriterium (Zeile „Flucht per Fahrt“) |
 | Entscheidung | Erst beim Biss-Tick: getragen oder auf einer anderen Oberfläche → entkommen; ganz auf Fels → entkommen; weiter als die Reichweite `reach = 3,5 · (eta_tick − warn_tick) / 60` Kacheln von `warn_pos` (60 s: 210, Lehrjagd: 315) → entkommen; ungültig → weg; sonst Biss an der jetzigen Position, auch wenn das Ziel inzwischen woanders steht | DOC 2.4 „Was vollständig auf Fels steht oder getragen wird, wird nie gefressen“ und Zahlenregel „langsamer als der Wurm (3,5 Kacheln/s)“: Wer schneller ist, entkommt auch ohne Fels. Ohne Wurm-Entity folgt der Biss dem Ziel, aber nur so weit, wie ein Wurm käme; 3d2 lässt den echten Wurm hinterherfahren. Ein Ernter (≤ 1,41 Kacheln/s, in 60 s höchstens 85 Kacheln) bleibt immer in Reichweite. Ohne die Grenze träfe der Biss eine Lokomotive (bis 72 Kacheln/s) kilometerweit weg. Alternative (Frage an Max): In 3d1 werden nur Ernter und feste Gebäude Ziel, Fahrzeuge heizen nur |
 | Ziel weg | Wird das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter; bei 0 harmlose Eruption an der letzten Stelle auf Sand | Spieler sehen, dass die Gefahr echt war; keine Schäden an Unbeteiligten |
 | Suchen | Entkommen oder weg: Zustand „sucht“ 600 Ticks ohne Biss, dann Ende mit Rücksetzen und Ruhe. Gebissen: sofort Ende | DOC 2.1 Schritt 9 „Er sucht 10 s und taucht ab“ |
@@ -89,7 +89,7 @@ welcher Test sie entscheidet und was gilt, wenn sie nicht hält. Die Nummern end
 | Status Ernter | Vorrang: Wurmzeichen (rot, „Wurmzeichen! Biss in 37 s“; sicher: grün, „Wurmzeichen: sicher (noch 37 s)“) vor Vorsicht wartet (gelb) vor Unruhe (gelb, „Der Sand bebt“) vor dem Zustand aus 3b/3c; auch im Zustand mobil | DOC 2.1 Schritte 6 und 7 |
 | Unruhe-Effekte | Je Quelle auf Sand mit Gewicht > 0 und W ≥ 600: 1 + floor((W − 600) / 200), höchstens 3 Staubwolken 3 bis 10 Kacheln entfernt, höchstens 24 Quellen je Oberfläche und Takt; Rumpeln je Sektor höchstens alle 300 Ticks | DOC 2.1 Schritt 6; gedeckelt, damit 50 Ernter das Spiel nicht mit Rauch füllen |
 | Briefings | Tipps `arrakis-briefing` (Forschung „Entdeckung Arrakis“) und `arrakis-wormsign-tip` (Forschung „Spice-Ernte“, eingerückt) in der Space-Age-Kategorie hinter Aquilo; dazu immer je eine Chatzeile an die Force. `allow_tip_activation` schreibt die Mod nie | DOC 2.1 Schritt 0, DOC 6. Das Szenario entscheidet, ob Tipps erscheinen (A23 classes.d.ts:12053–12057, Standard false) [V4]; die Chatzeile kommt immer |
-| Befehlsjagd | `/arrakis-worm [Sekunden\|lehr]`: Admin, ausgewählte Entity mit Gesundheit und `unit_number` (Bäume, Felsen und Klippen haben keine) auf einer erlaubten Oberfläche, 5 bis 600 s (Standard 60, `lehr` 90); ohne Schonfrist und Grenzen, am Ende ohne Rücksetzen, Ruhe, Statistik und Lehrjagd-Merker | DOC 4.0 „Debug“; zum Ausprobieren im eigenen Spielstand, ohne das Spiel zu verstellen |
+| Befehlsjagd | `/arrakis-worm [Sekunden\|lehr]`: Admin, ausgewählte Entity mit Gesundheit und `unit_number` (Bäume, Felsen und Klippen haben keine) auf einer erlaubten Oberfläche (sonst `worm-cmd-not-allowed`), 5 bis 600 s (Standard 60, `lehr` 90); ohne Schonfrist und Grenzen, am Ende ohne Rücksetzen, Ruhe, Statistik und Lehrjagd-Merker | DOC 4.0 „Debug“; zum Ausprobieren im eigenen Spielstand, ohne das Spiel zu verstellen |
 | Statistik | `storage.worm_stats[force_index] = {bitten, escaped, gone, first_escape_tick}` | DOC 6: „Thumper“ erforscht sich nach der ersten überstandenen Jagd (3d3) |
 | Flucht per Fahrt | Kein Sonderfall: Einpacken 10 s, dann 50 s × 1,41 = 70,5 Kacheln. Lehrfeld (bis 59 + 1,3) entkommt, reguläre Felder (≥ 100) nicht. In der Lehrjagd (80 s × 1,41 ≈ 112,8) entkommt man auch von regulären Feldern bis etwa 111 Kacheln vom Fels. Die Reichweite (Zeile „Entscheidung“, 210 bzw. 315 Kacheln) erreicht ein Ernter nie; ihn retten nur Fels und Anheben | DOC 2.4 Abnahmekriterium gilt für die Vorwarnzeit 60 s; die Lehrjagd ist die bewusste Ausnahme (Frage an Max) |
 | Entfernen | `/arrakis-uninstall ja` beendet zusätzlich alle Jagden ohne Biss, löscht Markierungen, Ringe, Alarme, Fenster und Anzeigen, schaltet die Verknüpfungen aus, pausiert neue Wurmzeichen 10 min und verschmilzt die Sandwurm-Force mit `enemy` | Kartenmarkierungen und Forces blieben nach dem Entfernen der Mod im Spielstand (DOC 4.6) |
@@ -197,17 +197,17 @@ Ereignisse (Handler prüfen zuerst Name bzw. Typ und kehren sonst zurück):
 | `on_entity_died` (:761), `on_player_mined_entity` (:2816), `on_robot_mined_entity` (:4237), `script_raised_destroy` (:5288) | – (ungültige Quellen fallen im Takt raus) | Ziel einer Jagd im Zustand warning: `lost = true`, Warnungen weg (4.7); im Zustand biting nichts | – |
 | `on_lua_shortcut` (:1549, `prototype_name == "arrakis-vibration-overlay"`) | Anzeige umschalten | – | – |
 | `on_player_changed_surface` (:2199) | Anzeige der alten Oberfläche löschen | Landung prüfen (4.6) | – |
-| `on_player_joined_game` (:2723) | Verknüpfungszustand angleichen | alle Wurmzeichen-Alarme des Spielers löschen (`remove_alert{type = custom, icon = ICON}`, auch alte aus Jagden, die endeten, während er weg war), die Sekundenarbeit setzt die laufender Jagden neu | Fenster aufbauen |
+| `on_player_joined_game` (:2723) | Verknüpfungszustand angleichen | alle Wurmzeichen-Alarme des Spielers löschen (`remove_alert{type = custom, icon = ICON}`, auch alte aus Jagden, die endeten, während er weg war) und ihn aus jedem `alerted` streichen, die Sekundenarbeit setzt die laufender Jagden neu | Fenster aufbauen |
 | `on_player_left_game` (:2762), `on_player_removed` (:2983) | Anzeige löschen | `alerted` des Spielers vergessen | Fenster weg |
-| `on_player_changed_force` (:2161) | – | – | Fenster neu |
+| `on_player_changed_force` (:2161) | – | wie bei `on_player_joined_game`: Wurmzeichen-Alarme des Spielers löschen und ihn aus jedem `alerted` streichen; die Sekundenarbeit setzt ihm die Alarme seiner neuen Force (sonst behielte er die der alten bis zu deren Ende) | Fenster neu |
 | `on_research_finished` (:4000) | – | „Ornithopter“: `ornithopter_tick`; „Entdeckung Arrakis“, „Spice-Ernte“: Chatzeile (4.13) | – |
 | `on_force_created` (:957) | – | Sandwurm-Force feindlich setzen; einen vorhandenen Schonfrist- oder Statistik-Datensatz unter `event.force.index` verwerfen (4.14) | – |
-| `on_forces_merging` (:1040) | Prüfstand-Merker der Quelle löschen | Jagden, Statistik auf die Ziel-Force, Datensätze der Quelle löschen (4.14) | – |
+| `on_forces_merging` (:1040) | Prüfstand-Merker der Quelle löschen | Jagden der Quelle: `force_index` der Ziel-Force und `redraw = true` (4.7); Statistik addieren, Datensätze der Quelle löschen (4.14) | – |
 | Force-Wechsel einer Entity (`entity.force = …`) | – (der Takt liest die Force jedes Mal neu) | kein Ereignis: 10-Tick-Takt (4.7) | – |
 | `on_pre_surface_deleted` (:3940), `on_surface_cleared` (:4850) | Wärme, Ruhe, Rumpeln, Anzeigen dieser Oberfläche weg | gelöscht: Jagden dort ohne Biss beenden | – |
 
 Dazu worms `on_nth_tick` 60 und 10 (4.4), worms-gui `on_nth_tick` 30, worms `add_commands` (`/arrakis-worm`), worms und migrate
-`on_init`/`on_configuration_changed` (4.16). Den Kontrollkasten „Vorsichtsmodus“ behandelt harvester-gui (`on_gui_checked_state_changed`,
+`on_init`/`on_configuration_changed` (4.16), harvester-gui `on_configuration_changed` (offene Ernterfenster schließen, unten). Den Kontrollkasten „Vorsichtsmodus“ behandelt harvester-gui (`on_gui_checked_state_changed`,
 A23 events.d.ts:1076) und ruft `vibration_lib.set_careful`.
 
 `scripts.harvester` bekommt (sonst unverändert):
@@ -223,7 +223,11 @@ A23 events.d.ts:1076) und ruft `vibration_lib.set_careful`.
 
 `scripts.harvester-gui` (Aufbau Z. 54–74): unter dem Treibstoff die Labels `arrakis_vibration` und `arrakis_hunt`, das Kontrollkästchen
 `arrakis_careful` (Tooltip `gui-careful-tooltip`, `state = h.careful == true`, A23 classes.d.ts:12977 verlangt ein boolean) und das Label
-`arrakis_careful_wait`; der 30-Tick-Takt füllt sie (4.11, 4.12), Zahlen mit `or 0` (Ernter außerhalb erlaubter Oberflächen haben nie einen `vib_key`, ihre Wärme ist 0).
+`arrakis_careful_wait`; der 30-Tick-Takt füllt sie (4.11, 4.12), Zahlen mit `or 0` (Ernter außerhalb erlaubter Oberflächen haben nach dem
+ersten Takt keinen `vib_key` mehr, 4.4 Schritt 3; ihre Wärme ist 0). `arrakis_hunt` zeigt `gui-hunt`, mit `alarm_hunt_safe` `status-wormsign-safe`, ohne Jagd
+nichts. Neu: harvester-gui `on_configuration_changed` schließt alle offenen Ernterfenster (`close` für jeden Eintrag in `storage.gui_open`). Ein in 0.6.x offen
+gespeichertes Fenster hat die neuen Elemente nicht, und `update` schriebe dann in `frame.arrakis_vibration` (nil) einen Skriptfehler; beim nächsten Öffnen
+baut `build` das Fenster vollständig.
 
 ### 4.2 storage (Schema 3)
 ```lua
@@ -248,15 +252,18 @@ storage.vib = {
 storage.hunts = {next_id = 1, list = {[id] = hunt}, paused_until = tick|nil}
 hunt = {
   id, kind = "harvest"|"vehicle"|"building", debug = false, teaching = false, bite = nil|"total-loss"|"heavy-damage", -- bite nur per Befehl/Prüfstand
-  target = LuaEntity, target_un, target_name, force_index, surface_index,
+  target = LuaEntity, target_un, force_index, surface_index,
+  target_name = LocalisedString,                  -- entity.localised_name beim Start (A23 classes.d.ts:8173), für Alarm, Fenster und Chat, auch nach dem Tod
   origin_key, sector_key,                         -- Chunk und Sektor des Ziels beim Wurmzeichen
   state = "warning"|"biting"|"searching", warn_tick, eta_tick, end_tick|nil,
   warn_pos = {x, y}, last_pos = {x, y},           -- last_pos: letzte Stelle mit Sand unter dem Ziel
   reach = Kacheln,                                -- 3,5 · (eta_tick − warn_tick) / 60, fest ab dem Start (4.7)
   safe = false|"rock"|"far",                     -- Stand des 10-Tick-Takts: ganz auf Fels bzw. weiter als reach von warn_pos
   lost = false, outcome = nil|"bitten"|"escaped"|"gone",
-  tag = LuaCustomChartTag|nil, renders = {ring = LuaRenderObject|nil, text = LuaRenderObject|nil},
+  tag = LuaCustomChartTag|nil, tag_logged = true|nil,  -- tag_logged: Fehlschlag von add_chart_tag schon geloggt (4.10)
+  renders = {ring = LuaRenderObject|nil, text = LuaRenderObject|nil},
   second = n, hidden = false, alerted = {[player_index] = true},
+  redraw = true|nil,                              -- nach on_forces_merging: Ring, Text, Markierung für force_index neu (4.7, 4.14)
 }
 storage.sector_cooldown[surface_index][sector_key] = until_tick
 storage.worm_stats[force_index] = {bitten = 0, escaped = 0, gone = 0, first_escape_tick = nil}
@@ -269,7 +276,7 @@ storage.migration.worms_pending = true|nil        -- von migrate gesetzt, von wo
 storage.migration.worm_notice = true|nil
 ```
 Schlüssel: `chunk_key(cx, cy) = (cx + 65536) · 131072 + (cy + 65536)` mit cx = floor(x / 32); `sector_key` ebenso aus sx = floor(cx / 4).
-Zurück: `cx = floor(key / 131072) − 65536`, `cy = key mod 131072 − 65536`. Die Karte reicht ±62 500 Chunks, die Schlüssel bleiben unter 2^35.
+Zurück: `cx = floor(key / 131072) − 65536`, `cy = key mod 131072 − 65536`. Die Karte reicht ±1 000 000 Kacheln, also ±31 250 Chunks; die Schlüssel bleiben unter 2^35.
 `migrate.init()` legt `rng`, `grace`, `vib` (mit allen Untertabellen), `hunts`, `sector_cooldown` und `worm_stats` an. Abweichungen von DOC 4.5:
 `grace` je Force; `vib.heat` je Oberfläche mit `sum3`; keine Felder für den Wurm (`spawn_tick`, `candidates`, `route`, `worm`: 3d2);
 `sector_cooldown` je Oberfläche. Jagd-Feld `kind`: `"harvest"` und `"building"` wie DOC, dazu `"vehicle"`; `"thumper"` erst in 3d3.
@@ -299,19 +306,25 @@ Name `big-mining-drill` 8, Name `pumpjack` 2, andere `mining-drill` 3, `assembli
   eingetragene neu werten, uneingetragene auf Sand anmelden. Pflastern ändert die natürliche Kachel nicht und braucht nichts.
 - **Austragen:** Der Takt wirft Quellen mit ungültiger Entity oder auf einer nicht erlaubten Oberfläche hinaus. Keine eigene Anmeldung für
   `on_object_destroyed`: `register_on_object_destroyed` gäbe für einen Ernter dieselbe Nummer wie in harvester.lua zurück und überschriebe `storage.reg`.
-- **Prüfstand-Fläche:** Auf `arrakis-testbench` zählen Quellen und Ernter nur, wenn ihre Force in `storage.vib.testbench` steht (4.18). Auf Arrakis immer.
+- **Prüfstand-Fläche:** Auf `arrakis-testbench` zählen Quellen und Ernter nur, wenn ihre Force in `storage.vib.testbench` steht (4.18); sonst schreibt der
+  Takt Gewicht 0 (kein Beitrag, kein Staub, nie Ziel; Ernter wie in 4.4 Schritt 3). Auf Arrakis immer.
 
 ### 4.4 Wärme: Takt und Formel
 worms `on_nth_tick(60)` (Reihenfolge fest): 1. `vibration.tick`, 2. `vibration.careful_tick` (4.11), 3. Schonfrist (4.6), 4. `vibration.unrest_tick` (4.12),
 5. Wurmzeichen (4.8), 6. Sekundenarbeit der Jagden (Alarme, Markierung, Fenster-Merker, 4.10), 7. `vibration.overlay_tick` (4.12).
 worms `on_nth_tick(10)`: Jagden nachführen und beißen (4.7, 4.9); kehrt sofort zurück, wenn `storage.hunts.list` leer ist.
 
-`vibration.tick(tick)` je erlaubter Oberfläche s mit Quellen oder Wärme:
+`vibration.tick(tick)` je erlaubter Oberfläche s mit Quellen, Wärme oder Einträgen in `storage.sector_cooldown[s]`:
 1. `e = storage.vib.heat[s]` (neu: `{tick = tick − 60, chunks = {}, sum3 = {}, prev3 = {}}`), `Δs = (tick − e.tick) / 60`, `f = 0,98^Δs`, `m = min(Δs, 2)`.
 2. Jeder Eintrag: `h ← h · f`.
 3. Jede Quelle (Ernter und `vib.sources`) auf s: Gewicht w und Sand bestimmen (4.3), in den Datensatz schreiben (`weight`/`vib_weight`, `key`/`vib_key`, `vib_sand`).
    Mit w > 0, auf Sand und Sektor nicht in Ruhe: `chunks[key] = (chunks[key] or 0) + w · m`.
-4. Ruhende Sektoren (`storage.sector_cooldown[s]`): abgelaufene (`until ≤ tick`) streichen, in den übrigen jeden Eintrag auf 0.
+   Jeder Ernter, der in diesem Takt auf keiner gewerteten Oberfläche steht (getragen auf der Ablage, auf einer anderen Oberfläche, auf der Prüfstand-Fläche
+   mit ausgeschalteter Force), bekommt `vib_weight = 0`, `vib_key = nil`, `vib_sand = false`, `careful_wait = nil`, `careful_pos = nil` und
+   `set_alarm(h, "unrest", nil)`. Sonst wählte 4.8 ihn nach einem alten `vib_key` als Ziel, und Fenster und Status zeigten alte Werte. Eine Schleife über
+   `storage.harvesters` für alle Oberflächen; die Ernter auf s zählen dann wie oben.
+4. Ruhende Sektoren (`storage.sector_cooldown[s]`): abgelaufene (`until ≤ tick`) streichen, in den übrigen jeden Eintrag auf 0; eine leere Tabelle
+   `sector_cooldown[s]` fliegt raus.
 5. Einträge unter 1, zu denen in Schritt 3 keine Quelle beitrug, löschen.
 6. `prev3 = sum3`; `sum3` neu, gestreut: Jeder Eintrag h im Chunk c addiert h zu `sum3[d]` für die 9 Chunks d um c (so erfasst S auch Chunks ohne Eintrag).
 7. `e.tick = tick`. Hat `e.chunks` danach keinen Eintrag mehr, wird `storage.vib.heat[s]` gelöscht; der nächste Takt mit einer Quelle legt ihn mit
@@ -346,11 +359,13 @@ des Ernters im selben Tick nach dem 60-Tick-Takt, zählt der erste Takt erst 60 
 - **Termin:** `active_from` = Minimum der vorhandenen Werte `ornithopter_tick + 36000` und `landed_tick + 108000`, sonst nil. Neu berechnet wird nur,
   wenn `ornithopter_tick` oder `landed_tick` gerade gesetzt wurden (Ereignis, Sekundentakt, Migration, `set_grace` ohne `active_from`, 4.18). Wird er gesetzt
   oder früher, Chatzeile `msg-grace-start` an die Force mit der Restzeit (m:ss) und `announced = active_from`.
-- **Erwachen:** `tick ≥ active_from` → `awake = true`, Chat `msg-grace-awake`, Fenster neu. Einmal wach, immer wach.
+- **Erwachen:** `tick ≥ active_from` → `awake = true`, Chat `msg-grace-awake`, Fenster neu. Einmal wach, immer wach. Weil die Schonfrist im
+  60-Tick-Takt vor dem Wurmzeichen läuft (4.4 Schritte 3 und 5), kann die erste Jagd schon im Takt des Erwachens beginnen.
 - **Lehrjagd-Merker:** Die erste Ernter-Jagd (`kind == "harvest"`) einer wachen Force setzt `first_hunt` und hat 5400 Ticks; solange sie läuft
-  (`storage.hunts.list[grace.first_hunt] ~= nil`), sind die Quellen dieser Force nicht berechtigt. Ihr Ende setzt `first_hunt = nil` und
-  `first_hunt_done = true`, egal wie sie ausging; ein Ende mit `"abort"` setzt nur `first_hunt = nil` und lässt `first_hunt_done` stehen (die nächste
-  Ernter-Jagd ist wieder eine Lehrjagd). Nur eine Ernter-Jagd setzt die Merker; Jagden auf Gebäude und Fahrzeuge haben immer 60 s und sperren nichts.
+  (`storage.hunts.list[grace.first_hunt] ~= nil`), sind die Quellen dieser Force nicht berechtigt. Beim Ende einer Jagd bekommt jeder
+  Schonfrist-Datensatz mit `first_hunt == hunt.id` (nach einem Force-Wechsel des Ziels also der der alten Force, nicht der von `hunt.force_index`)
+  `first_hunt = nil` und `first_hunt_done = true`, egal wie sie ausging; ein Ende mit `"abort"` setzt nur `first_hunt = nil` und lässt `first_hunt_done`
+  stehen (die nächste Ernter-Jagd ist wieder eine Lehrjagd). Nur eine Ernter-Jagd setzt die Merker; Jagden auf Gebäude und Fahrzeuge haben immer 60 s und sperren nichts.
   Befehlsjagden berühren die Merker nicht.
 - **Anzeige:** worms-gui zeigt allen verbundenen Spielern der Force `worm-gui-grace` mit m:ss, solange `active_from` gesetzt und `awake == false` ist.
   Die Prüfstand-Fläche zählt nie als Landung; Test-Forces stellen ihre Schonfrist selbst (4.18).
@@ -369,16 +384,20 @@ des Ernters im selben Tick nach dem 60-Tick-Takt, zählt der erste Takt erst 60 
 3. `not terrain.has_sand_under(target)` → entkommen (ganz auf Fels, auch angedockt).
 4. Abstand von `target.position` zu `warn_pos` größer als `hunt.reach` → entkommen (schneller als der Wurm, DOC 2.4).
 5. Sonst → Biss (4.9) an `target.position`, `outcome = "bitten"`, Ende sofort.
-Bei 1 bis 4: `arrakis-worm-eruption` an `last_pos` (bei 4 an `warn_pos`: so weit kam der Wurm nicht; harmlos, keine Opfer), Chat `msg-escaped` bzw.
-`msg-gone`, `state = "searching"`, `end_tick = eta_tick + 600`; im Fenster „Der Wurm sucht“. Ein Ziel, das während des Suchens wieder auf Sand steht,
-wird nicht gebissen.
+Bei 1 bis 4: `arrakis-worm-eruption` an `last_pos` (bei 4 an `warn_pos`: so weit kam der Wurm nicht; harmlos, keine Opfer), immer auf der Oberfläche
+der Jagd (`surface_index`), Chat `msg-escaped` bzw. `msg-gone`, `state = "searching"`, `end_tick = eta_tick + 600`; im Fenster „Der Wurm sucht“. Im selben
+Aufruf gehen Alarme (4.10 „Weg“), Ring und Sekunden weg, und `harvester.set_alarm(h, "hunt", nil)` setzt den Status zurück; nur die Markierung bleibt bis
+zum Ende. Sonst stünde 10 s lang ein roter Ring mit „0“ am entkommenen Ziel. Ein Ziel, das während des Suchens wieder auf Sand steht, wird nicht gebissen.
 
-**Nachführen im 10-Tick-Takt** je Jagd im Zustand warning (höchstens 3 + Befehlsjagden Sandprüfungen je 10 Ticks):
+**Nachführen im 10-Tick-Takt** je Jagd im Zustand warning, mit `redraw` auch im Zustand searching (höchstens 3 + Befehlsjagden Sandprüfungen je 10 Ticks):
 - Ziel ungültig, ohne dass ein Ereignis kam (`destroy()` ohne `raise_destroy`) → wie „Ziel ungültig“ in der Tabelle: `lost = true`, Warnungen weg
   (Alarme über den Oberflächen-Filter, 4.10).
 - Ziel gültig und `target.force_index ~= hunt.force_index` (A23 classes.d.ts:5636) → Force-Wechsel: Alarme über `alerted` weg (4.10), Ring und Text
   mit `forces = {neue Force}` neu, Markierung der alten Force zerstören (`valid` prüfen) und für die neue setzen, `force_index` neu, Fenster beider
-  Forces neu. Es gibt kein Ereignis dafür (1, „Force-Wechsel“).
+  Forces neu (die alte nur, wenn `game.forces[alt]` gültig ist). Es gibt kein Ereignis dafür (1, „Force-Wechsel“).
+- `redraw` gesetzt (nach `on_forces_merging`, 4.14; `force_index` ist dann schon die Ziel-Force): dasselbe ohne neuen `force_index`, also Ring und Text
+  (nur wenn nicht `hidden` und nicht `lost`) und Markierung für `game.forces[force_index]` neu, Fenster neu, dann `redraw = nil`. Gilt auch für eine Jagd
+  mit `lost` oder ungültigem Ziel und im Zustand searching (dann nur Markierung und Fenster).
 - Ziel gültig und auf der Oberfläche der Jagd → `sand = has_sand_under(target)`; mit Sand `last_pos` = Position. `safe = "rock"` ohne Sand,
   sonst `"far"`, wenn Abstand(target.position, warn_pos) > reach, sonst false. Wechselt `safe`, Ring und Sekundentext grün `{0.2, 0.8, 0.2, 0.9}` bzw. wieder rot
   (`LuaRenderObject.color`, A23 classes.d.ts:18121), Fenster der Force und Status neu. Ring und Sekundentext prüfen und neu zeichnen (`valid`),
@@ -407,7 +426,7 @@ noch da ist), Datensatz aus `storage.hunts.list`, Fenster der Force neu. Dazu je
 |---|---|---|---|---|
 | normal (`mode` nil) | ja | ja | ja (`bitten`, `escaped` mit `first_escape_tick`, `gone`) | ja |
 | `"quiet"` (nur Prüfstand) | ja | ja | nein | nein |
-| `"abort"` (Entfernen, gelöschte Oberfläche, Prüfstand-Aufräumen) | nein | nur `first_hunt = nil` (4.6) | nein | nein |
+| `"abort"` (Entfernen, gelöschte oder nicht mehr erlaubte Oberfläche, Prüfstand-Aufräumen) | nein | nur `first_hunt = nil` (4.6) | nein | nein |
 | Befehlsjagd (`debug`), jede Art | nein | nein | nein | wie oben |
 
 ### 4.8 Wurmzeichen und Countdown
@@ -420,8 +439,9 @@ Im 60-Tick-Takt nach Unruhe (4.4 Schritt 5), nur wenn `storage.hunts.paused_unti
 5. `start_hunt(target, {teaching = (kind == "harvest") and not grace.first_hunt_done})`, dann Schluss für s in diesem Takt.
 
 `start_hunt(entity, opts)`: Gültige Entity mit Gesundheit (`is_entity_with_health`, A23 classes.d.ts:8091) und `unit_number` (nur EntityWithOwner,
-A23 classes.d.ts:8703; sonst `nil, "no-target"`, Meldung `worm-cmd-no-target`) auf einer erlaubten Oberfläche, kein `arrakis-ornithopter`
-(`nil, "flyer"`), noch kein Ziel (`nil, "busy"`). Datensatz nach 4.2: `kind`, `warn_tick = tick`, `eta_tick = tick + 60 · s` mit s = 90 bei `teaching`,
+A23 classes.d.ts:8703; sonst `nil, "no-target"`, Meldung `worm-cmd-no-target`) auf einer erlaubten Oberfläche (sonst `nil, "not-allowed"`, Meldung
+`worm-cmd-not-allowed`), kein `arrakis-ornithopter` (`nil, "flyer"`), noch kein Ziel (`nil, "busy"`). Datensatz nach 4.2: `kind`,
+`target_name = entity.localised_name`, `warn_tick = tick`, `eta_tick = tick + 60 · s` mit s = 90 bei `teaching`,
 sonst 60, per Befehl `opts.seconds` (dann `eta_tick = ceil((tick + 60 · s) / 10) · 10`, damit der Biss im 10-Tick-Takt genau fällt), `origin_key` und
 `sector_key` aus der Position des Ziels, `warn_pos = last_pos = Position`, `reach = 3.5 * (eta_tick − warn_tick) / 60`, `safe = false`. Dann Warnungen (4.10), Chat `msg-wormsign` an die Force mit
 `[gps=x,y,Oberfläche]`, Fenster, Status. Lehrjagd: `grace.first_hunt = id`.
@@ -438,7 +458,8 @@ Der Countdown ist fest: `eta_tick` ändert sich nach dem Start nie. Eine Jagd en
    wie in scripts/terrain.lua:47–66) ≤ 4; `terrain.has_sand_under(entity)`. Das Ziel ist immer dabei. Figuren in einem Fahrzeug (`character.vehicle`,
    A23 classes.d.ts:5756) teilen dessen Los: Sie fliegen von der Liste, und Schritt 4 holt die Insassen jedes Fahrzeugs auf der Liste über `get_driver`
    und `get_passenger` (A23 classes.d.ts:6838, :7039), Figur oder `player.character`. So hängt nichts daran, ob die Suche Insassen liefert.
-   Die Liste ist fertig, bevor das erste Opfer stirbt.
+   Insassen durchlaufen denselben Filter wie alle anderen (`destructible ~= false`, nicht Force `arrakis-sandworm`): Eine geschützte Figur (T20: `tb.protect`)
+   kommt nicht auf die Liste. Die Liste ist fertig, bevor das erste Opfer stirbt.
 4. Ernter in der Liste (Name `spice-harvester`):
    - `total-loss`: Kofferraum und Treibstoff leeren (`get_inventory(defines.inventory.car_trunk).clear()`, `get_fuel_inventory().clear()`, A23 classes.d.ts:13732, :6934),
      Insassen auf die Liste, dann stirbt er wie alle anderen.
@@ -453,14 +474,14 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 ### 4.10 Warnungen, Fenster und Aufräumen
 - **Alarm:** je verbundenem Spieler der Force `player.add_custom_alert(target, ICON, {"arrakis-message.alert-wormsign", target_name}, true)`
   (A23 classes.d.ts:15899; A20 classes.d.ts:22996) [V5], gemerkt in `alerted`. Die Sekundenarbeit setzt ihn für jeden verbundenen Spieler der Force, der ihn
-  noch nicht hat (auch nach `on_player_joined_game`), solange das Ziel gültig, nicht verborgen und nicht verloren ist.
+  noch nicht hat (auch nach `on_player_joined_game`), solange die Jagd im Zustand warning ist und das Ziel gültig, nicht verborgen und nicht verloren ist.
   **Weg:** für jeden `player_index` in `alerted` (nicht für die Spieler der Force: Ziel oder Spieler können die Force gewechselt haben), Spieler gültig.
   Ziel gültig → `player.remove_alert{entity = target, type = defines.alert_type.custom, icon = ICON}` (A23 classes.d.ts:16245, AlertFilter concepts.d.ts:130–138).
   Ziel ungültig (nach dem Biss, nach `destroy()` ohne Ereignis) → `player.remove_alert{type = defines.alert_type.custom, icon = ICON, surface = hunt.surface_index}`;
   ein ungültiges LuaEntity als Filter wäre ein Laufzeitfehler (deshalb prüft scripts/harvester.lua:610 vorher `entity.valid`). Der Oberflächen-Filter trifft
   auch Alarme anderer Jagden dort; deren `alerted` wird geleert, die Sekundenarbeit setzt sie binnen 60 Ticks neu. Danach `alerted = {}`.
 - **Markierung:** `force.add_chart_tag(surface, {position = warn_pos, icon = ICON})` (A23 classes.d.ts:11008), nur Symbol: `ChartTagSpec.text` ist ein
-  String ohne Übersetzung (A23 concepts.d.ts:1577–1582). Gibt sie nil zurück (Chunk nicht kartiert), versucht die Sekundenarbeit es weiter und loggt einmal [V6].
+  String ohne Übersetzung (A23 concepts.d.ts:1577–1582). Gibt sie nil zurück (Chunk nicht kartiert), versucht die Sekundenarbeit es weiter und loggt einmal (Merker `tag_logged`) [V6].
   Ist `hunt.tag` gesetzt, aber ungültig (vom Spieler gelöscht), setzt die Sekundenarbeit sie nicht neu.
 - **Ton:** `player.play_sound{path = "arrakis-wormsign"}` je verbundenem Spieler, ohne Position, also überall hörbar (A23 classes.d.ts:16216–16222, concepts.d.ts:7784) [V8].
 - **Ring und Sekunden:** `rendering.draw_circle{color = {1, 0.15, 0.1, 0.9}, radius = BITE_RADIUS, width = 3, filled = false, target = target, surface,
@@ -471,10 +492,11 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
   `worm-gui-title`. Zeilen: Schonfrist (4.6), dann je Jagd der Force nach `eta_tick`: `worm-gui-hunt` (Name, Sekunden), mit `safe` stattdessen
   `worm-gui-hunt-safe` (`"rock"`) bzw. `worm-gui-hunt-far` (`"far"`), `worm-gui-hunt-carried`, `worm-gui-hunt-lost`,
   `worm-gui-hunt-searching`; bei der Lehrjagd zusätzlich `worm-gui-teaching`. Leer → Rahmen weg. 30-Tick-Takt für verbundene
-  Spieler, sofort bei Start, Entscheidung und Ende (`refresh_force`).
+  Spieler, sofort bei Start, Entscheidung und Ende (`refresh_force`). Solange `storage.hunts.paused_until > tick` (nach `/arrakis-uninstall`, 4.16), zeigt
+  worms-gui gar nichts, auch keine Schonfrist; sonst baute der 30-Tick-Takt das eben entfernte Fenster gleich wieder auf.
 - **Status am Ernter:** `harvester.set_alarm(h, "hunt", eta, safe and true or nil)` bei Start, jeder neuen Sekunde und jedem Wechsel von `safe`, nil beim Ende
   (Vorrang 1; mit `safe` `status-wormsign-safe`).
-- **Aufräumen:** Ende, Entfernen, gelöschte Oberfläche (4.7). Verlässt ein Spieler das Spiel, bleiben seine Alarme der Engine überlassen; beim
+- **Aufräumen:** Alarme, Ring und Sekunden bei der Entscheidung ohne Biss (4.7), alles beim Ende, Entfernen, gelöschte Oberfläche (4.7). Verlässt ein Spieler das Spiel, bleiben seine Alarme der Engine überlassen; beim
   Wiederkommen setzt die Sekundenarbeit sie neu.
 
 ### 4.11 Vorsichtsmodus
@@ -487,7 +509,7 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 | deploying | W ≥ 600 | `harvester.to_mobile(h)` (Abbruch), `careful_wait = true`, `careful_pos = Ort` |
 | packing | – | nichts (Gewicht 0, wenn `careful_packing`) |
 | mobile, `careful_wait` | weiter als 0,25 von `careful_pos` oder andere Oberfläche | `careful_wait = nil` (der Spieler fährt) |
-| mobile, `careful_wait` | steht (`math.abs(speed) < 0,001`) und W < 300 | `harvester.deploy(h)`; geht es nicht (`no-spice`, `not-allowed`): `careful_wait = nil` |
+| mobile, `careful_wait` | steht (`math.abs(speed) < 0,001`) und W < 300 | `harvester.deploy(h)`; gelingt es: `careful_wait = nil`, `careful_pos = nil` (sonst zeigte der Status beim Ernten weiter „wartet auf Ruhe“); geht es nicht (`no-spice`, `not-allowed`): ebenso `careful_wait = nil` |
 | docked, carried | – | `careful_wait`, `careful_pos`, `careful_packing` nil |
 
 - Ein von Hand gestartetes Aufbauen bei W ≥ 600 bricht der nächste Takt ab und wartet (gleiche Regel).
@@ -505,11 +527,12 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
   n = min(3, 1 + floor((W − 600) / 200)) Wolken `surface.create_trivial_smoke{name = "arrakis-sand-dust", position}` (A23 classes.d.ts:20331) [V17] mit
   t = floor(tick / 60), Winkel `(un · 37 + t · 11 + k · 97) mod 360` Grad, Abstand `3 + (un · 13 + t · 7 + k · 29) mod 8` Kacheln (k = 1 … n).
 - Rumpeln: je Sektor mit einer solchen Quelle, wenn `vib.rumble[s][sector] ≤ tick − 300` oder nil: `surface.play_sound{path = "arrakis-rumble",
-  position = Ort der heißesten Quelle}` (A23 classes.d.ts:20719), Tick merken. Hörbar für Spieler in der Nähe.
+  position = Ort der heißesten Quelle}` (A23 classes.d.ts:20719), Tick merken. Hörbar für Spieler in der Nähe. Einträge, die mindestens 300 Ticks alt
+  sind, löscht `unrest_tick` am Ende (sie sperren nichts mehr), eine leere Tabelle `vib.rumble[s]` ebenso; sonst wüchse `vib.rumble` mit jedem Sektor, der je bebte.
 
 **Vibrationsanzeige** (`overlay_tick` und Verknüpfung):
 - Klick: `on = not player.is_shortcut_toggled(name)` (A23 classes.d.ts:16186), `player.set_shortcut_toggled(name, on)` (:16323; A20 :23342);
-  an → `vib.overlay[i] = {surface, cells = {}}`, aus → `overlay_off(i)` (alle Objekte `destroy()`).
+  an → `vib.overlay[i] = {surface, cells = {}}`, aus → `overlay_off(i)` (alle Objekte `destroy()`, dann `vib.overlay[i] = nil`).
 - Takt je eingeschaltetem, verbundenem Spieler: Oberfläche `player.surface`, Mitte `player.position`; nicht erlaubt → alle Zellen weg. Wechselt die
   Oberfläche gegenüber `cells`, erst alles weg. Für die 7×7 Chunks c um den Chunk der Mitte: Stufe `rest` (Sektor ruht), sonst nach `sum3[c]`:
   `red` ab 1000, `yellow` ab 600, `green` ab 1, sonst keine (Zelle weg). Neue Zelle: `draw_rectangle{color, filled = true, left_top, right_bottom
@@ -517,7 +540,8 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
   surface, players = {player}, scale = 3, alignment = "center", vertical_alignment = "middle", draw_on_ground = true}`. Bestehende Zelle: `color` und `text`
   schreiben (:18121, :18272). Farben `green {0.2, 0.8, 0.2, 0.25}`, `yellow {0.9, 0.8, 0.1, 0.3}`, `red {1, 0.15, 0.1, 0.35}`, `rest {0.5, 0.5, 0.5, 0.3}`;
   Text: ganze Zahl, in Ruhe `overlay-rest` mit m:ss. Höchstens 49 Zellen, also 98 Objekte je Spieler.
-- Weg bei: Ausschalten, `on_player_left_game`, `on_player_removed`, Oberflächenwechsel (neu im nächsten Takt), `/arrakis-uninstall`.
+- Weg bei: Ausschalten, `on_player_left_game`, `on_player_removed`, `/arrakis-uninstall` (jeweils `overlay_off`, der Eintrag geht mit; beim Wiederkommen
+  stellt `on_player_joined_game` die Verknüpfung auf aus), Oberflächenwechsel (nur die Zellen, der Eintrag bleibt; neu im nächsten Takt).
 - `on_player_joined_game` und `on_configuration_changed`: `set_shortcut_toggled(name, vib.overlay[i] ~= nil)` [V9]. Weil `on_player_joined_game`
   beim Laden im Einzelspieler nicht kommt (A23 events.d.ts:2721), vergleicht `overlay_tick` außerdem jede Sekunde je verbundenem Spieler
   `is_shortcut_toggled(name)` mit `vib.overlay[i] ~= nil` und gleicht an, wenn sie sich unterscheiden (storage gilt).
@@ -534,7 +558,10 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 - Biss: erst sammeln, dann töten (4.9), weil `die()` Ereignisse sofort auslöst und storage ändert [V1].
 - Wärme gehört der Oberfläche, nicht der Force: Quellen mehrerer Forces heizen gemeinsam. Ziele nur aus wachen Forces; Opfer im Radius ohne Ansehen der Force.
 - Warnungen, Fenster und Ring nur für die Force des Ziels; die Vibrationsanzeige nur für ihren Spieler.
-- `on_forces_merging`: Jagden mit `force_index` der Quelle bekommen den der Ziel-Force, Statistik wird addiert, Schonfrist der Ziel-Force bleibt;
+- `on_forces_merging`: Jagden mit `force_index` der Quelle bekommen den der Ziel-Force und `redraw = true`: Ring, Text und Markierung gehören noch der
+  Quelle (`forces = {Quelle}`, `add_chart_tag` der Quelle) und wären nach dem Verschmelzen für niemanden sichtbar; der nächste 10-Tick-Takt zeichnet sie
+  für die Ziel-Force neu (4.7). Alarme gehen über `alerted` (Spieler bleiben gültig). Statistik wird addiert (`first_escape_tick`: der frühere),
+  Schonfrist der Ziel-Force bleibt;
   danach `storage.grace[source.index]`, `storage.worm_stats[source.index]` und `storage.vib.testbench[source.index]` löschen. „Indexes of merged forces
   can be reused“ (A23 classes.d.ts:11510): Sonst erbte eine neue Force (T15, T19, Mehrspieler-Teams) `awake = true` und `first_hunt_done`.
   `on_force_created` verwirft deshalb auch einen vorhandenen Datensatz unter `event.force.index` und legt ihn bei Bedarf neu an (`grace_of`).
@@ -553,7 +580,10 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
   `on_configuration_changed`: wie bisher `old < 1`, `old < 2`, neu `old < 3` → jedem Datensatz in `storage.harvesters` fehlende Felder nachtragen
   (`careful = false`, `vib_weight = 0`, `vib_sand = false`) und `storage.migration.worms_pending = true`; dann Schema. Kopfkommentar um Schema 3.
 - **worms `on_init`:** `ensure_force()`; je Force `grace_of(force)`. **worms `on_configuration_changed`** (läuft nach migrate): `ensure_force()`; mit
-  `worms_pending`: `migrate_schema3()`, dann `worms_pending = nil`. Außerdem immer: Verknüpfungszustände angleichen, verwaiste Render-Objekte und Fenster neu.
+  `worms_pending`: `migrate_schema3()`, dann `worms_pending = nil`. Außerdem immer: Verknüpfungszustände angleichen, verwaiste Render-Objekte und Fenster neu;
+  jede Oberfläche in `vib.heat`, `sector_cooldown` und `vib.rumble`, die es nicht mehr gibt oder die nicht mehr erlaubt ist (Startup-Einstellung
+  `arrakis-testbench` aus), räumt `vibration.drop_surface`, und Jagden mit diesem `surface_index` enden mit `"abort"`. Sonst blieben ihre Daten für immer
+  liegen (der Takt läuft nur über erlaubte Oberflächen), und eine Jagd dort bisse ohne Wärme weiter.
 - **`migrate_schema3(opts)`:** je Force mit Datensatz-Pflicht (4.6), nur was fehlt: „Ornithopter“ erforscht → `ornithopter_tick = tick`; gibt es die Oberfläche
   Arrakis und hat die Force Spieler → `landed_tick = tick` (DOC 4.6 „die Schonfrist beginnt also jetzt“); `active_from` nach 4.6. Dann `vibration.scan` auf
   Arrakis. Chatzeile (4.13). Ein 0.6.x-Spiel mit Ornithopter ist also 10 min später wach, eines ohne nach 30 min. Nur Prüfstand: `opts.surfaces` begrenzt den
@@ -563,7 +593,7 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 - **Herunterstufen** auf 0.6.x: vorher `/arrakis-uninstall ja` (1). Die übrigen neuen Felder ignoriert 0.6.x.
 - **`/arrakis-uninstall`** (scripts/flyer.lua:1159–1180): ohne Argument zusätzlich `uninstall-worms-warn` mit der Zahl laufender Jagden; mit `ja` nach
   `flyer_lib.uninstall()` noch `worms_lib.uninstall()`: alle Jagden `end_hunt(hunt, nil, "abort")` ohne Biss und ohne Rücksetzen; Markierungen (nur gültige),
-  Ringe, Texte, Alarme (4.10 „Weg“), Fenster (alle Spieler) und Anzeigen weg; `set_shortcut_toggled(…, false)` für alle Spieler; `harvester.set_alarm` nil für alle Ernter;
+  Ringe, Texte, Alarme (4.10 „Weg“), Fenster (alle Spieler; bis `paused_until` baut worms-gui keins neu, 4.10) und Anzeigen weg; `set_shortcut_toggled(…, false)` für alle Spieler; `harvester.set_alarm` nil für alle Ernter;
   `storage.hunts.paused_until = tick + 36000`; `game.merge_forces("arrakis-sandworm", "enemy")` (A23 classes.d.ts:11848) per pcall [V21]. Rückgabe n
   (beendete Jagden), Meldung `uninstall-worms`. Danach kann die Mod entfernt werden; bleibt sie, legt `ensure_force` die Force bei Bedarf neu an.
 - **Prüfstand-Hilfe** `tb.worm_force` (scripts/testbench/runner.lua:500–511) legt dieselbe Force genauso an; beide Wege vertragen sich.
@@ -573,7 +603,7 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 |---|---|---|---|
 | V1 | `die(force)` löst `on_entity_died` noch im Aufruf aus, mit `event.force` = Sandwurm-Force | T19 Schritt 2 (Tick und Force aus dem weitergeleiteten `entity_died`) | Ohne Folgen für die Logik (erst sammeln, dann töten); Statistik der Engine nennt dann keine Force |
 | V2 | `technology.researched = true` per Skript löst `on_research_finished` aus | T19 Schritt 7 (MESSUNG: Ereignis oder Takt) | Der Sekundentakt holt es nach (höchstens 60 Ticks später) |
-| V3 | `on_player_changed_surface` feuert bei der Landung; `physical_surface` bleibt in der Fernsicht die echte Oberfläche | T20 Schritt 1, Abnahme | Sekundentakt über `physical_surface`; zählt auch die Fernsicht, gilt die Landung eben früher |
+| V3 | `on_player_changed_surface` feuert bei der Landung; `physical_surface` bleibt in der Fernsicht die echte Oberfläche | Fernsicht: T20 Schritt 1 (MESSUNG); Landung: Abnahme (der Prüfstand landet nie auf Arrakis) | Sekundentakt über `physical_surface`; zählt auch die Fernsicht, gilt die Landung eben früher |
 | V4 | Tipps mit `research`-Auslöser erscheinen im Freeplay, auch wenn die Forschung vor 0.7.0 schon erforscht war | T20 Schritt 8, Abnahme | Die Chatzeilen (4.13) tragen das Briefing allein |
 | V5 | Ein eigener Alarm mit einem virtuellen Signal als Symbol erscheint und lässt sich über `icon` gezielt entfernen | T20 Schritt 4; T19 MESSUNG nicht möglich (keine Spieler) | Symbol `item` `spice-sand` mit eigener Nachricht; beim Entfernen alle eigenen Alarme des Ernters löschen und die 3b-Alarme neu setzen |
 | V6 | `force.chart` kartiert die Prüfstand-Chunks ohne Spieler binnen weniger Ticks, danach geht `add_chart_tag` | T18 Schritt 2 (sonst INFO „nicht prüfbar“) | Markierung nur, wo kartiert; die übrigen Warnungen reichen |
@@ -648,6 +678,7 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 - Anzeige: `overlay-rest=Ruhe __1__`
 - Befehl: `worm-cmd-help=Hetzt einen Sandwurm auf die ausgewählte Entity (nur Admins): /arrakis-worm [Sekunden 5–600 | lehr]. Ohne Ruhezeit und ohne Statistik.`,
   `worm-cmd-admin=Nur Admins dürfen /arrakis-worm benutzen.`, `worm-cmd-no-target=Erst auf eine Entity auf Sand zeigen.`,
+  `worm-cmd-not-allowed=Sandwürmer gibt es nur auf Arrakis.`,
   `worm-cmd-busy=Auf diese Entity läuft schon eine Jagd.`, `worm-cmd-flyer=Ornithopter in der Luft trifft kein Wurm.`,
   `worm-cmd-bad=Sekunden zwischen 5 und 600 oder „lehr“.`, `worm-cmd-started=Wurmzeichen auf __1__: Biss in __2__ s (Test).`
 - Entfernen: `uninstall-worms-warn=Dazu enden __1__ laufende Jagden ohne Biss, und 10 Minuten lang kommt kein Wurmzeichen.`,
@@ -701,8 +732,10 @@ Sandfläche ±300 Kacheln, darin Felsinseln wo nötig. Quellen stehen in eigenen
    Gewicht beim Einpacken 0, Wiederaufbau im ersten Takt mit W < 300, W nie ≥ 1000, kein Wurmzeichen. MESSUNG: Ernte-, Warte- und Aufbauzeit je Zyklus und
    Anteil (erwartet 16 / 36 / 5 s, 28 %).
 9. Vorsichtsmodus, zwei Ernter im selben Chunk: 2 min, W nie ≥ 1000. MESSUNG: größtes W (erwartet unter 660).
-10. Abbruch: `set_heat` 700 auf den Chunk eines dritten Ernters mit `careful`, `harvester.toggle` (Aufbauen) → nach höchstens 60 Ticks mobil mit `careful_wait`;
-    nach Fallen unter 300 → wieder `deploying`. Fahren 1 Kachel → `careful_wait` nil.
+10. Abbruch: zwei Ernter H10a und H10b mit `careful`, je eigener Chunk mit `set_heat` 700, `harvester.toggle` (Aufbauen) → nach höchstens 60 Ticks beide mobil
+    mit `careful_wait`. H10a bleibt stehen: im ersten Takt mit W < 300 (700 · 0,98^42 = 299,6, also etwa 42 Takte nach `set_heat`) wieder `deploying`, dabei
+    `careful_wait` und `careful_pos` nil. H10b fährt 1 Kachel (Puppe, `riding_state` wie oben): binnen 60 Ticks `careful_wait` nil, und 3 Takte nachdem sein W unter
+    300 fiel ist er noch mobil (kein Wiederaufbau ohne `careful_wait`).
 11. Prüfstand-Sperre: Ernter der Force `player` auf der Fläche, aufgebaut: nach 3 Takten kein Eintrag in seinem Chunk.
 
 **T19 „Jagd: echter Code“** (automatisch, etwa 6 min Spielzeit, bei Tempo 10 etwa 36 s). Force `arrakis-t19`, eingeschaltet, wach. Schritte nacheinander.
@@ -716,7 +749,8 @@ Sandfläche ±300 Kacheln, darin Felsinseln wo nötig. Quellen stehen in eigenen
    Markierung und Ring weg. MESSUNG: ob `find_entities_filtered` den Fahrer lieferte, Reihenfolge der `entity_died`-Ereignisse.
 3. Schwer beschädigt [V11, V19]: Einstellung per pcall auf `heavy-damage` (sonst `opts.bite`, INFO). Ernter H2 aufgebaut mit 500 Spice-Sand, 10 Kohle, Puppe als Fahrer,
    Auto daneben; `start_hunt(H2, {seconds = 2, debug = true})`. OK bei 0: H2 lebt, Gesundheit = max(1, 0,1 · max) ± 0,5, Kofferraum leer, Treibstoff gleich,
-   mobil, Fahrer sitzt; Auto tot; Ruhe und Statistik unverändert (Befehlsjagd). Danach fährt H2 per `riding_state` 1 s: bewegt sich. Einstellung zurück.
+   mobil, Fahrer sitzt; Auto tot; Ruhe und Statistik unverändert (Befehlsjagd). Danach fährt H2 per `riding_state` 1 s: bewegt sich (mindestens 0,05 Kacheln, Schwelle wie
+   scripts/testbench/t_ernter.lua:1921–1923). Einstellung zurück.
 4. Rettung: `first_hunt_done = true`, Ernter H3 aufgebaut, `set_heat` 999 → Wurmzeichen, 3600 Ticks. Ornithopter mit Puppe über H3; bei `eta_tick − 720`
    `flyer_lib.toggle_carry(flyer, H3, nil)`. OK: bei `eta_tick − 590` getragen; Alarm-Merker leer, Ring weg, `hidden`; bei 0 kein Tod, `escaped`, Zustand
    searching, MESSUNG Zahl der Explosionen an `last_pos`; bei `eta_tick + 600` Ende, 9 Chunks 0, Ruhe, `escaped` + 1, `first_escape_tick` gesetzt. Absetzen an
@@ -740,13 +774,14 @@ Sandfläche ±300 Kacheln, darin Felsinseln wo nötig. Quellen stehen in eigenen
       30 Kacheln weiter → gebissen dort.
    Bei a) und k) zusätzlich: `safe` wird binnen 10 Ticks `"rock"` bzw. `"far"`, sobald das Ziel ganz auf Fels bzw. außer Reichweite steht; Ring grün.
 6. Grenzen: `first_hunt_done = true`. Vier Ernter in vier Sektoren mit `set_heat` 999, ein fünfter im Sektor des ersten (3 Chunks weiter). OK: nach 1, 2, 3 Takten je
-   eine neue Jagd, nach 5 Takten genau 3, keine zweite im selben Sektor; nach `end_hunt` einer (`"quiet"`) bekommt der vierte binnen 2 Takten seine. Alle mit
+   eine neue Jagd, nach 5 Takten genau 3, keine zweite im selben Sektor; nach `end_hunt` einer Jagd, die nicht die des ersten Ernters ist (`"quiet"`), bekommt der
+   vierte binnen 2 Takten seine. Alle mit
    `"abort"` beenden, dann die fünf Ernter entfernen und ihre Chunks auf 0 (sonst sind sie mit über 1000 im nächsten Takt wieder Kandidaten).
 7. Schonfrist [V2]: `set_grace(force, {awake = false, first_hunt_done = false}, {"landed_tick", "ornithopter_tick", "active_from", "first_hunt"})`, „Ornithopter“
    `researched = false`, dann `true`.
    OK: `ornithopter_tick` binnen 60 Ticks (MESSUNG: im selben Tick = Ereignis, sonst Takt), `active_from == ornithopter_tick + 36000`; `set_grace(force, {landed_tick = tick − 100000})`
    (rechnet neu) → `active_from == landed_tick + 108000`; Ernter mit `set_heat` 999: 3 Takte keine Jagd; `set_grace(force, {landed_tick = tick − 108000 + 120})` → binnen
-   3 Takten wach, danach im nächsten Takt eine Lehrjagd mit 5400 Ticks. Ende `"quiet"`, Ernter entfernen, Chunk auf 0.
+   3 Takten wach und im Takt des Erwachens eine Lehrjagd mit 5400 Ticks (4.6 „Erwachen“; FEHLER auch, wenn sie erst einen Takt später kommt). Ende `"quiet"`, Ernter entfernen, Chunk auf 0.
 8. Flucht per Fahrt: Felsstreifen 40 × 300 Kacheln; Ernter E1 59 Kacheln, E2 und E3 100 Kacheln vor seinem Rand, je aufgebaut mit Puppe, Blick zum Fels.
    E1 und E2 regulär (`first_hunt_done = true`, `set_heat` 999), E3 per Befehl mit 90 s. E1 und E2 stehen in verschiedenen Sektoren (`key_of`) mit mindestens
    3 Chunks Abstand, ihre Wurmzeichen kommen in aufeinanderfolgenden Takten (eine neue Jagd je Takt und Oberfläche). Im Tick seines Wurmzeichens je Ernter
@@ -761,12 +796,16 @@ Sandfläche ±300 Kacheln, darin Felsinseln wo nötig. Quellen stehen in eigenen
     feindlich. `cleanup` setzt `paused_until = nil`.
 
 **T20 „Würmer: Bedienung“** (interaktiv, nur mit Max im Spiel, `alle` lässt ihn aus; endet nach 15 min Spielzeit oder mit `stop`). `start`: `grace_snapshot`
-von Max' Force und `vibration.testbench_enable(player.force)` (sonst zählt sein Ernter auf der Prüfstand-Fläche nicht, 4.3); `cleanup`: jede Jagd dieser Force
-mit `"abort"` beenden, Wärme und Ruhe der T20-Sektoren löschen, `testbench_disable(player.force)`, `grace_restore`. Während T20 vibrieren auch Max' übrige
-Bauten auf der Prüfstand-Fläche (Hinweis per INFO beim Start). Max bekommt `tb.protect`. Jede Verknüpfung und jedes Kontrollkästchen schreibt MESSUNG, jeder
-Zustandswechsel INFO.
+von Max' Force, eine Kopie von `stats_of(force)` in `run.data` und `vibration.testbench_enable(player.force)` (sonst zählt sein Ernter auf der Prüfstand-Fläche
+nicht, 4.3); `cleanup`: jede Jagd dieser Force mit `"abort"` beenden, Wärme und Ruhe der T20-Sektoren löschen, `testbench_disable(player.force)`, `grace_restore`,
+Statistik aus der Kopie zurückschreiben (die regulären Jagden aus Schritt 4 und 5 zählten sonst in Max' Force, und `first_escape_tick` schaltet in 3d3 den
+Thumper frei). Während T20 vibrieren auch Max' übrige Bauten auf der Prüfstand-Fläche (Hinweis per INFO beim Start). Max bekommt `tb.protect`. Jede
+Verknüpfung (weitergeleitetes `shortcut`) und jedes Kontrollkästchen schreibt MESSUNG, jeder Zustandswechsel INFO. Für das Kontrollkästchen gibt es keine
+Weiterleitung: Der Test vergleicht jeden Tick `careful` seiner Ernter mit dem Wert davor.
 1. Schonfrist [V3, V18]: `set_grace(force, {active_from = tick + 3600, awake = false, first_hunt_done = true})`. FRAGE: „Steht oben links ‚Die Wüste regt sich
-   in 1:00‘ und zählt herunter?“ Bei 0 Chat „Die Wüste ist erwacht“. Danach ist Max' Force wach (bis zum Ende des Tests).
+   in 1:00‘ und zählt herunter?“ Bei 0 Chat „Die Wüste ist erwacht“. Danach ist Max' Force wach (bis zum Ende des Tests). Während der Minute [V3]: Max öffnet
+   die Fernsicht auf eine andere Oberfläche (Karte, andere Oberfläche wählen, wenn es eine gibt); der Test schreibt jede Sekunde MESSUNG `surface.name` und
+   `physical_surface.name` (V3 hält für die Fernsicht, wenn `physical_surface` dabei `arrakis-testbench` bleibt; gibt es keine andere Oberfläche, INFO).
 2. Unruhe [V17]: Ernter neben Max, aufgebaut, `set_heat` 620 und bis zum Ende von Schritt 3 jeden Takt wieder auf 620 (sonst käme mit Gewicht 30 nach etwa
    30 s ein Wurmzeichen, während Max noch antwortet). FRAGE: „Siehst du Sandstaub, hörst du ein Rumpeln, und zeigen Fahrzeugfenster und Ernterfenster
    ‚Der Sand bebt‘ bzw. die Wärme?“
@@ -816,9 +855,11 @@ aus diesem Plan; Bekannte Grenzen: Ohne Spieler prüfen T18/T19 keine Alarme, T�
 - Trockenlauf gegen eine Lua-Attrappe der Engine (wie T13- und 3c-Mock): Wärme (H_25, H_26, H_54, H_55, Zerfall, Löschen, Streuung, Ruhe), Kandidaten
   und Ziel samt Gleichstand, Grenzen, Lehrjagd-Regel (nur Ernter-Jagden, Ende mit `"abort"`), alle Zeilen der Tabelle in 4.7 samt Reichweite und `safe`,
   Biss-Filter (jede Ausnahme), beide Biss-Arten, Biss mit Aufräumen am ungültigen Ziel (Alarme über den Oberflächen-Filter), Ziel per `destroy()` ohne
-  `raise_destroy`, Markierung vorher gelöscht, Force-Wechsel des Ziels ohne Ereignis, Vorsichtszyklus (Anteil 28 % ± 2), Schonfrist-Formel samt
-  `set_grace` mit `loeschen`, leere Oberfläche (Δs bleibt 1), Migration aus Schema 1 und 2 (Ernter-Felder nachgetragen), Verschmelzen und Neuanlage
-  einer Force mit wiederverwendetem Index, Entfernen.
+  `raise_destroy`, Markierung vorher gelöscht, Force-Wechsel des Ziels ohne Ereignis, Vorsichtszyklus (Anteil 28 % ± 2, Wiederaufbau löscht
+  `careful_wait`), Schonfrist-Formel samt `set_grace` mit `loeschen`, Lehrjagd im Takt des Erwachens, leere Oberfläche (Δs bleibt 1), Ernter verlässt die
+  erlaubten Oberflächen (Felder genullt, nie Ziel), Aufräumen von `vib.rumble` und `sector_cooldown`, Migration aus Schema 1 und 2 (Ernter-Felder
+  nachgetragen, offenes Ernterfenster geschlossen), Verschmelzen mit laufender Jagd (`redraw`, Lehrjagd-Merker der alten Force) und Neuanlage einer Force
+  mit wiederverwendetem Index, ausgeschaltete Prüfstand-Fläche in `on_configuration_changed`, Entfernen (danach kein Fenster bis `paused_until`).
 - Lua-Syntaxprüfung aller Dateien.
 - Gegenprüfung durch zwei unabhängige Durchsichten (Laufzeit und Prüfstand) wie bei 0.6.1, Befunde vor der Übergabe eingearbeitet.
 - Mit dabei: `info.json` 0.7.0; `changelog.txt` (Features, Changes, Hinweis zum Herunterstufen); `README.md` (Z. 5 „Stand“, Z. 11 letzter Satz, Z. 92,
@@ -828,7 +869,8 @@ aus diesem Plan; Bekannte Grenzen: Ohne Spieler prüfen T18/T19 keine Alarme, T�
   2. Vorsichtsmodus: Einpacken mit Gewicht 0, Zyklus 16 s / 36 s / 5 s statt 14 s / 34 s, „gut ein Viertel“ statt „etwa ein Drittel“ der Ausbeute;
      Schutz: nie selbst Ziel, solange aufgebaut oder beim Aufbauen, aber nicht als Nachbar und nicht vor einer laufenden Jagd (4.1 „Vorsichtsmodus“,
      „Einpacken“, 2.1 Schritt 6).
-  3. Gewichte: aufgebaut immer 30, Fahrzeuge nur fahrend, Wagen 0, Ornithopter keine Quelle; Quellen ohne `on_object_destroyed` (4.3).
+  3. Gewichte: aufgebaut immer 30, Fahrzeuge nur fahrend, Wagen 0, Ornithopter keine Quelle; Quellen ohne `on_object_destroyed` (4.3); Erstbefüllung
+     der Quellen in einem `scan` statt budgetiert über `storage.migration.pending_chunks` (4.6 „Erstbefüllung“, 4.5 `migration`).
   4. Jagd in 3d1 ohne Wurm: Zustände warning/biting/searching, Entscheidung erst am Biss-Tick, Biss folgt dem Ziel bis zur Reichweite 3,5 Kacheln je Sekunde
      Countdown, „Ziel verloren“ mit harmloser Eruption, grüner Ring und „sicher“ für ein sicheres Ziel, Force-Wechsel im 10-Tick-Takt; WURMZEICHEN-Tabelle ohne
      Spawnplanung (4.3, 2.1 Schritt 9). Dazu DOC 4.2 Anheben Schritt 4 (getragen beendet die Jagd nicht, entschieden wird bei 0) und DOC 4.1 „Tod“ (vor 0
@@ -844,7 +886,8 @@ aus diesem Plan; Bekannte Grenzen: Ohne Spieler prüfen T18/T19 keine Alarme, T�
   13. Sand = natürliche Kachel ungleich Fels, auch für „auf Fels“ (4.3 „Auf Fels heißt“).
   14. Angedockt ohne Ausnahme (2.4).
   15. Grenzen: 3 über alle Forces und Oberflächen, eine neue je Takt und Oberfläche, Befehlsjagden ausgenommen (4.3).
-  16. Roadmap 7: 3d1 gebaut, Prüfstand T18 bis T20; Risiken 8: Zeile T18–T20 mit V1 bis V22.
+  16. Roadmap 7: 3d1 gebaut, Prüfstand T18 bis T20; Risiken 8: Zeile T18–T20 mit V1 bis V22; Unsicherheiten 9: Punkt „Würmer 3d1 (T18–T20)“ mit den
+      wichtigsten Annahmen (V1, V5, V10, V12); Kopf: Mod-Stand 0.7.0 und Bauplan docs/plan-3d1.md.
 
 ## 8. Abnahme durch Max (0.7.0)
 - `pruefstand.py` mit `T18 T19` (ohne Spieler, Tempo 10): beide ohne FEHLER, Datei schicken. T20 mit dir im Spiel, Datei und Antworten auf die FRAGEn.
@@ -852,7 +895,7 @@ aus diesem Plan; Bekannte Grenzen: Ohne Spieler prüfen T18/T19 keine Alarme, T�
 - Auf Arrakis landen: oben links „Die Wüste regt sich in 30:00“ [V3]. Ersten Ernter herstellen: Die Zeit springt auf 10:00.
 - In der Schonfrist einen Ernter auf dem Lehrfeld aufbauen: Staub, Rumpeln, „Der Sand bebt“ nach etwa 17 s (angefahren) bzw. 25 s (vorher 2 min gestanden
   oder per Ornithopter abgesetzt); kein Wurmzeichen. Vibrationsanzeige einschalten: der Chunk wird gelb, später rot (über 1000).
-- Ende der Schonfrist abwarten (oder in einer Kopie mit `/arrakis-worm`): Lehrjagd mit 90 s im nächsten Takt, alle Warnzeichen da. Ernter einpacken und zum
+- Ende der Schonfrist abwarten (oder in einer Kopie mit `/arrakis-worm`): Lehrjagd mit 90 s sofort (spätestens 1 s nach „Die Wüste ist erwacht“), alle Warnzeichen da. Ernter einpacken und zum
   Fels fahren: Der Ring wird grün, sobald er ganz auf Fels steht; er entkommt.
 - Zweite Jagd: Ernter per Ornithopter auf ein reguläres Feld (≥ 100 Kacheln vom Fels) setzen und aufbauen: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s
   (Roadmap 3d1), 60 s Countdown. Einpacken und zum Fels fahren reicht nicht: Biss genau bei 0, Wrack bleibt (Abnahmekriterium DOC 2.4).
