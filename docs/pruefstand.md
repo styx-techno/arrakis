@@ -1,9 +1,9 @@
 # Prüfstand `/arrakis-test` – Anleitung für Max
 
-Stand: Mod 0.6.0 · Factorio 2.1.23 mit Space Age
+Stand: Mod 0.7.0 · Factorio 2.1.23 mit Space Age
 
 Der Prüfstand baut im Spiel Testaufbauten, misst selbst und schreibt die Ergebnisse in den Chat und in eine Datei.
-Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8) und ab 0.6.0 die Engine-Annahmen des Ornithopters (`docs/plan-3c.md`, Abschnitt 4.16).
+Er klärt die offenen Fragen aus dem Design (`docs/design-ernter-ornithopter.md`, Abschnitt 8), ab 0.6.0 die Engine-Annahmen des Ornithopters (`docs/plan-3c.md`, Abschnitt 4.16) und ab 0.7.0 die der Würmer (`docs/plan-3d1.md`, Abschnitt 4.17).
 Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schicken.
 
 ## Vorbereitung
@@ -12,6 +12,7 @@ Du musst nur zuschauen, ein paar Fragen beantworten und am Ende die Dateien schi
 2. **Wegwerf-Spielstand:** ein neues Spiel mit Space Age starten (oder einen Spielstand, der kaputtgehen darf). Nie den echten Spielstand nehmen.
    Die Tests laufen auf einer eigenen Oberfläche `arrakis-testbench`, deine Basis bleibt unberührt. T11 legt kurz leere Testoberflächen `arrakis-t11-…` an und löscht sie wieder. T14 erzeugt die Karte von Arrakis nacheinander auf Testoberflächen `arrakis-t14-…` und löscht auch diese wieder; die Oberfläche Arrakis selbst fasst er nicht an.
    T15 benutzt die echte Ablage `arrakis-hold`, setzt am Ende alle getragenen Ernter ab und löscht sie. Das trifft auch Ernter, die ein Ornithopter deines Spielstands gerade trägt: Sie stehen danach am Boden bei ihrem Ornithopter. T16 hebt ebenfalls echte Ernter auf diese Ablage und entfernt am Ende seine eigenen.
+   T18 und T19 (ab 0.7.0) laufen mit eigenen Forces `arrakis-t18` und `arrakis-t19`, die im Spielstand bleiben. T19 Schritt 10 ruft auf, was hinter `/arrakis-uninstall ja` steht: Das beendet jede laufende Jagd des Spielstands ohne Biss, auch deine, und legt die Sandwurm-Force neu an; die Pause von 10 min nimmt der Test am Ende wieder zurück. T19 stellt dazu kurz die Einstellung **Biss** um und am Ende zurück.
 3. **Alte Ergebnisdatei löschen** (wenn du eine saubere Datei willst): `%APPDATA%\Factorio\script-output\arrakis-test.txt`. Der Prüfstand hängt nur an.
 4. Danach die Einstellung wieder ausschalten, bevor du normal spielst.
 
@@ -24,6 +25,7 @@ Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisher
 - **T12 (Tasten):** 2.1 nimmt in Tasten nur noch dokumentierte Namen. `ALT+O` (T12) und `Umschalt+H` (Ernter) sollten gehen; bitte bestätigen. `Umschalt+C` (Ornithopter, ab 0.6.0) prüft T17.
 - **T11 und T14 (Kartengenerator 0.5.4, Spicefelder 0.5.5):** Die neue Karte ist gebaut, aber noch nicht im Spiel abgenommen. T11 entscheidet über die Spice-Regel (B oder A), T14 prüft die erzeugte Karte auf Kacheln. Beide zusammen laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T11 T14`; siehe dort. T14 lief mit 0.5.4 auf 9 Seeds ohne FEHLER, fand aber im Mittel nur 0,9 reguläre Felder je Seed (5 Seeds ohne, Median 134 Kacheln). 0.5.5 macht die Felder dichter und größer, T14 prüft jetzt auch Zahl und Größe („Felder“, „Feldgröße“); bitte mit 0.5.5 noch einmal laufen lassen.
 - **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
+- **T18, T19 und T20 (Würmer, neu in 0.7.0):** T18 und T19 ohne Spieler laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T18 T19` (beide sollen ohne FEHLER enden), dann T20 mit dir im Spiel (vorher `/arrakis-test tempo 1`). Sie entscheiden die Engine-Annahmen V1 bis V22 aus `docs/plan-3d1.md`, Abschnitt 4.17; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8.
 - **T15, T16 und T17 (Ornithopter, neu in 0.6.0):** T15 und T16 ohne Spieler laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T15 T16` (beide sollen ohne FEHLER enden), T17 mit dir im Spiel. Sie entscheiden die noch ungeprüften Engine-Annahmen U1 bis U28 aus `docs/plan-3c.md`, Abschnitt 4.16; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8.
 
 Von Hand prüfen (2.1.23):
@@ -40,14 +42,14 @@ In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die
 ## Befehle
 
 Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin).
-Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, T9, T12 und T17), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
+Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, T9, T12, T17 und T20), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
 
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T17` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T20` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16. Dauer ohne Zeitraffer knapp 15 min ([„alle“](#alle)) |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16, T18, T19. Dauer ohne Zeitraffer gut 23 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test tempo 10` | Zeitraffer: das Spiel läuft bis zu 10-mal so schnell (`game.speed`, Zahlen von 1 bis 50); `tempo` ohne Zahl zeigt den Stand, `tempo 1` stellt auf echte Zeit zurück. Die Ergebnisse ändern sich nicht ([Zeitraffer](#zeitraffer-arrakis-test-tempo)) |
@@ -64,19 +66,20 @@ Die Antworten gehen dann an RCON und ins Log des Servers (`factorio-current.log`
 Ein eigener Server braucht in `server-settings.json` `"auto_pause": false`, sonst steht er ohne Spieler still und kein Test kommt voran.
 Am einfachsten macht das alles das Werkzeug [`tools/pc/pruefstand.py`](#werkzeug-toolspcpruefstandpy).
 
-**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b, T14, T15 und T16.
-T9, T12 und T17 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt sie wie immer aus.
+**Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b, T14, T15, T16, T18 und T19.
+T9, T12, T17 und T20 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt sie wie immer aus.
 `/arrakis-test zurück` gibt es nur für Spieler.
 Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gestartet: T13. Stand: /arrakis-test status`, `„alle“ gestartet: …` oder `Gestoppt.` Endet ein Test schon beim Start (etwa mit Skriptfehler), steht dort `T13 gleich beim Start beendet: …`.
 
 **Was ohne Spieler anders ist:**
 
-- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13, T2b, T14, T15 und T16 fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
+- FRAGE-Zeilen beantwortet niemand, sie bleiben offen. Fragen stellen T1, T2 (am Ende), T4 (am Ende), T5, T6 und T7 (nur mit `ja`). T3, T11, T13, T2b, T14, T15, T16, T18 und T19 fragen nichts. Die Antworten gibt es nur, wenn du den Test später im Spiel laufen lässt.
 - `alle` wartet ohne Spieler nach einer FRAGE nicht (mit Spieler nach T2 und T4 je 30 s).
 - Die Zusammenfassung von `alle` lässt den Hinweis auf `/arrakis-test zurück` weg.
 - T2: Geht die Skriptfahrt nicht, setzt der Test sonst dich in den Ernter. Ohne Spieler entfällt das: FEHLER „Manuelle Messung entfällt: kein Spieler im Spiel“, dann wertet der Test gleich aus.
 - T5, T6 und T7 schreiben eine INFO-Zeile „Kein Spieler gefunden; der Test läuft ohne Zuschauer“. Seit 0.5.3 laufen die fahrenden Testwürmer (T5 b, c, d, T6, T7 b) mit `minimum_activity_mode = full`. Factorio rechnet sie dann auch ohne Zuschauer so, als sähe jemand zu. Bis 0.5.2 standen T5 c, d und T6 Bahn A bis C auf `minimal`. Messbar geändert hat die Umstellung nichts: Die Würmer fuhren schon vorher full, und Bahn C kam auch im ersten Lauf ohne Spieler an (0.5.2: nach 64,2 s; die Begründung im Changelog zu 0.5.3 stimmte nicht). Nur T5 a bleibt auf `minimal`, wie echte Würmer (Design 4.3). Den Modus minimal misst a damit aber nicht: Im Zustand `investigating` hält die Engine den Wurm auch ohne Zuschauer auf full (0.5.3 unter 2.1.23: full bis zur Ankunft, minimal erst etwa 4 s nach dem Wechsel zu `patrolling`). a zeigt also den ungedrosselten Anmarsch. Mit Spieler ändert sich nichts, dort liefen die Würmer schon immer als `full`.
-- Die Karte wird nicht aufgedeckt. In T13 Schritt 10 steht dann „Kartenmarkierungen entfernt 0“; das zählt nicht für OK oder FEHLER.
+- Die Karte wird nicht aufgedeckt. In T13 Schritt 10 steht dann „Kartenmarkierungen entfernt 0“; das zählt nicht für OK oder FEHLER. T18 kartiert seine Fläche selbst (`force.chart`); ist der Chunk des Wurmzeichens trotzdem nicht kartiert, prüft Schritt 2 die Kartenmarkierung nicht (INFO) [V6].
+- T18 und T19 sehen keine Alarme, Töne und Fenster, weil es keinen Spieler gibt, der sie bekäme. Das prüft T20.
 
 ### `/arrakis-test status`
 
@@ -93,7 +96,7 @@ STATUS wartet <id> | Tick <n>
 - `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s Spielzeit (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo)).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
-Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17):
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17, T18, T19, T20):
 
 ```
 ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
@@ -125,7 +128,7 @@ Durchgesehen für 0.5.5, wo echte Zeit eine Rolle spielt:
 
 - **T14, Dauer der Chunk-Erzeugung:** die einzige Messung in echter Zeit. Ihr Profiler läuft nur, während Factorio im selben Tick die Chunks erzeugt (`force_generate_chunk_requests`), nie zwischen zwei Ticks. Die Dauer ist also reine Rechenzeit und mit und ohne Zeitraffer vergleichbar. T11 misst keine Zeit.
 - **Pause für die FRAGE nach T2 und T4 bei `alle`** (nur mit Spieler): Das ist Zeit für dich, sie gilt deshalb in echter Zeit. Bei Tempo 10 sind es weiter 30 s, also 18 000 Ticks statt 1800. Änderst du das Tempo während der Pause, rechnet der Prüfstand die restlichen Ticks um; die restliche Zeit bleibt dieselbe. Ohne Spieler gibt es diese Pause nicht.
-- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9, T12 und T17 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s; T17 nach 6 min, also nach 36 s). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
+- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9, T12, T17 und T20 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s; T17 nach 6 min, also nach 36 s; T20 nach 15 min, also nach 90 s). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
 
 **Im eigenen Spielstand:** `game.speed` bleibt im Spielstand; sonst speichert der Befehl nichts. Zurück geht es mit `/arrakis-test tempo 1`, und zwar bevor du die Einstellung **Prüfstand** ausschaltest. Danach gibt es den Befehl nicht mehr; zurückstellen ginge dann nur noch mit `/c game.speed = 1`, und `/c` schaltet in diesem Spielstand die Errungenschaften ab.
 Solange das Tempo nicht 1 ist, erinnern die Liste (`/arrakis-test`) und, wenn du `alle` gestartet hast, auch dessen Zusammenfassung daran.
@@ -156,7 +159,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 | `--zeitlimit MIN` | Minuten je Test in echter Zeit, Standard 30, bei `alle` 90 |
 | `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
 | `--tempo N` | [Zeitraffer](#zeitraffer-arrakis-test-tempo) während der Tests, 1 bis 50, Standard 10. `--tempo 1` läuft in echter Zeit wie vor 0.5.5 und geht als Einziges auch mit einer älteren Mod |
-| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9, T12 und T17 nicht angeben. |
+| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9, T12, T17 und T20 nicht angeben. |
 
 **Was es tut:**
 
@@ -173,7 +176,7 @@ Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bl
 Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
 Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
 Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 90 s Stillstand) sind echte Zeit. Mit Zeitraffer gelten sie unverändert, die Tests enden nur früher; eine Mindestdauer setzt das Werkzeug nicht voraus.
-`alle` dauert ohne Zeitraffer knapp 15 min, mit dem Standard `--tempo 10` geschätzt etwa 2,5 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+`alle` dauert ohne Zeitraffer gut 23 min, mit dem Standard `--tempo 10` geschätzt etwa 3,5 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
 
 **Ergebnisse:**
 
@@ -189,7 +192,7 @@ Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 9
 |---|---|
 | 0 | kein FEHLER (offene FRAGEn zählen nicht) |
 | 1 | mindestens ein FEHLER, oder ein Test lief ins Zeitlimit. Dann schickt das Werkzeug `/arrakis-test stop`, die übrigen Tests laufen nicht. |
-| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, T17, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
+| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, T17, T20, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
 
 Mit `T7:ja` trifft ein Absturz nur den Server, nicht dein Spiel; das Ende des Server-Logs steht dann in der Ausgabe.
 
@@ -211,21 +214,22 @@ Steht irgendwo „Skriptfehler“, bitte unbedingt melden.
 1. Die Datei `%APPDATA%\Factorio\script-output\arrakis-test.txt`.
    Nach T11 zusätzlich `arrakis-t11-karten.txt` aus demselben Ordner (Kartenbilder; T11 überschreibt sie bei jedem Lauf).
 2. Deine Antworten auf alle FRAGE-Zeilen, mit Testnummer.
-3. Die erbetenen Screenshots (T1, T5, T6, T9, T17).
+3. Die erbetenen Screenshots (T1, T5, T6, T9, T17, T20).
 
 ## „alle“
 
-`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b, T14, T15 und T16 nacheinander, mit 1 s Abstand.
+`/arrakis-test alle` startet T1, T2, T3, T4, T5, T6, T7 (Teil a), T11, T13, T2b, T14, T15, T16, T18 und T19 nacheinander, mit 1 s Abstand.
 Nach T2 und T4 wartet er 30 s, damit du deren FRAGE vor Ort beantworten kannst; der Chat sagt das an. Die 30 s gelten in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo).
 Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
-T9, T12 und T17 brauchen dich und laufen nur einzeln.
+T9, T12, T17 und T20 brauchen dich und laufen nur einzeln.
 
-**Dauer ohne Zeitraffer: knapp 15 min (gemessen mit 0.6.0), mit Tempo 10 geschätzt etwa 2,5 min.**
+**Dauer ohne Zeitraffer: gut 23 min (geschätzt für 0.7.0), mit Tempo 10 geschätzt etwa 3,5 min.**
 - Gemessen mit 0.5.4 ohne Spieler: 44 352 Ticks (739,2 s Spielzeit), in echter Zeit 12,3 min bei 60 Ticks je Sekunde. Die größten Teile in echter Zeit: T2b 4,6 min, T13 und T5 je 1,7 min, T4 1,2 min, T2 und T6 je 1,1 min, alle übrigen unter 30 s. Die Simulation braucht dabei nur etwa 0,1 ms je Tick, das Spiel wartet fast die ganze Zeit auf den nächsten Tick. (0.5.3: 724,7 s Spielzeit; in 0.5.4 kamen T14 und das längere T11 dazu.)
 - Mit 0.6.0 kamen T15 und T16 (etwa 18 s: 30 Ticks Aufbau, 140 bis zum Start, 900 Messung) dazu. Gemessen mit 0.6.0 ohne Spieler (Lauf vom 26.10.2026): 51 972 Ticks (866,2 s Spielzeit), darin T15 108,3 s und T16 17,8 s. 0.6.1 verlängert T15 um geschätzt etwa 10 s (Schritt 2 mit beiden Wegen, Schritt 15 mit zwei Teilen mehr): etwa 52 700 Ticks, knapp 15 min ohne Zeitraffer.
+- Mit 0.7.0 kommen T18 und T19 dazu. Der Plan schätzte etwa 9000 und 21 600 Ticks; im Trockenlauf gegen die Lua-Attrappe der Engine (vor der Übergabe) brauchte T18 7710 Ticks (128,5 s) und T19 24 660 Ticks (411 s). Zusammen etwa 85 000 Ticks, gut 23 min ohne Zeitraffer. Gemessen im Spiel ist das noch nicht. T19 hängt fast nur an festen Zeiten (Countdowns, Ruhe, Takte), T18 an den Vorsichts-Zyklen der Schritte 8 und 9.
 - Die Spielzeit hängt nur an der Zahl der Ticks, auch bei T11 und T14, nicht an der Rechenlast.
-- Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks von 0.5.4 sind das gut 1 min, mit T15 und T16 knapp 1,5 min; dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2,5 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
+- Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks von 0.5.4 sind das gut 1 min, mit T15 und T16 knapp 1,5 min; dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2,5 min, mit T18 und T19 (0.7.0) etwa 50 s mehr, also etwa 3,5 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
 
 ## Die Tests
 
@@ -481,11 +485,89 @@ T17 geht nur mit dir im Spiel; `alle` lässt ihn aus. Er endet nach 6 min Spielz
 
 **Melden:** die Datei, deine Antworten auf beide FRAGEn, was dir beim Hinsehen auffällt, und einen Screenshot vom Lastbild im Flug.
 
+### T18 Wärme: echter Code (etwa 2 min Spielzeit, ab 0.7.0)
+
+**Was passiert:** T18 prüft die Vibration mit dem echten Code aus `scripts/vibration.lua` und `scripts/worms.lua`: Wärme je Chunk, Gewichte aller Quellen, Unruhe, Wurmzeichen und den Vorsichtsmodus. Er baut auf einer eigenen Sandfläche (±300 Kacheln um x = 32 000) mit einer eigenen Force `arrakis-t18`, die wach ist und deren erste Jagd eine Lehrjagd ist. Ernter, Fahrzeuge und Gebäude entstehen wie gebaut, Fahrer sind Puppen. Die elf Schritte laufen gleichzeitig ab Tick 2, jeder in eigenen Chunks mit 3 Chunks Abstand. Kein Spieler nötig, Zeitlimit 4 min Spielzeit, bei Tempo 10 etwa 13 s.
+Die Fläche zählt nur für eingeschaltete Forces: T18 schaltet `arrakis-t18` beim Start ein und am Ende aus, beendet ihre Jagden ohne Folgen, löscht Wärme und Ruhe seiner Fläche und stellt Pause und Schonfrist wieder her. Jeder Schritt räumt nach seiner letzten Messung seine Quellen ab und setzt ihre Chunks auf 0.
+Die Sollwerte stehen im Test als Zahlen aus dem Plan. Nur die Standardwahlen, die du noch ändern kannst (Countdown der Lehrjagd, Untergrenze und Gewicht im Vorsichtsmodus), liest er aus dem Code. Wärme liest er in der Mitte zwischen zwei Sekundentakten.
+
+1. Prototypen: Eruption (Explosion), Sandstaub, Signal, beide Geräusche, Verknüpfung „Vibrationsanzeige“ (umschaltbar) [V7]; die 13 storage-Tabellen von Schema 3; Sandwurm-Force da und feindlich zu `arrakis-t18` und `player`. Für die beiden Tipps nur MESSUNG (`prototypes.get_history`), verbindlich prüft sie der Datenstufen-Test.
+2. Zeitlinie: ein Ernter allein auf Spice, aufgebaut (T_d = erster Tick „aufgebaut“). Jeden Takt mit Beitrag ist die Wärme seines Chunks 1500 · (1 − 0,98^k) ± 0,01. OK: Unruhe genau ab dem 26. Takt (T_d + 1440 bis + 1620), Wurmzeichen genau im 55. Takt (T_d + 3180 bis + 3360) bei Wärme 1006,2 ± 0,5; die Jagd ist eine Lehrjagd mit 90 s Countdown, Biss-Tick ein Vielfaches von 10, Ring und Sekunden da, Status am Ernter; Kartenmarkierung, wenn der Chunk kartiert ist, sonst INFO [V6]. Danach beendet der Test die Jagd still: 9 Chunks um den Ursprung 0, der Sektor ruht 2 bis 4 min, die Lehrjagd ist verbraucht, Ring und Markierung sind weg. MESSUNG: T_d, Tick und Takt von Unruhe und Wurmzeichen.
+3. Gewichte: je Quelle `weight_of` und nach 3 Takten die Wärme 2,9404 · Gewicht ± 0,01 um sie. Ernter aufgebaut 30, beim Aufbauen 0, beim Einpacken von Hand 30, mobil fahrend 10, mobil stehend 0, angedockt 0 (Ecke im Sand); Auto fahrend 4, stehend 0; Panzer fahrend 8; Spidertron mit Ziel 6, stehend 0; Ornithopter fliegend 0 und nicht eingetragen; Lokomotive nur `weight_of`, solange der Test ihr `train.speed` gibt (sonst INFO).
+4. Feste Quellen [V13]: Großbohrer 8 (nur mit Space Age, sonst INFO), Bohrer 3, Pumpe auf Rohöl 2, Montagemaschine mit Rezept und Zutaten 1, Steinofen mit Kohle und Erz 1, Bohrer ohne Strom 0; ein Bohrer auf Fels ist nicht eingetragen und hat Gewicht 0. Strom kommt wie in T4 aus einer Schnittstelle mit Mast, gelesen frühestens 120 Ticks nach dem Bau. Dann wechselt der Test die Kacheln (mit Ereignis): Der Bohrer auf Fels steht nach höchstens 60 Ticks auf Sand, ist eingetragen und hat Gewicht 3; ein Bohrer, unter den Fels kommt, hat Gewicht 0. MESSUNG: `status` je Gebäude bei beiden Lesungen.
+5. Zerfall und Löschen: 1000 auf einem leeren Chunk ist nach 10 Takten 817,07 ± 0,05; 1,5 ist nach 20 Takten noch da, nach 21 gelöscht.
+6. Nachbarschaft: zwei Chunks nebeneinander mit je 500 → 3×3-Summe 1000; zwei Chunks Abstand → in der Mitte 1000, an beiden 500, W an beiden 1000; drei Abstand → nirgends über 500.
+7. Erstbefüllung: Auto und Montagemaschine ohne Bau-Ereignis sind nicht eingetragen; nach `scan` über ihren Chunk beide (das Einsteigen prüft T20 Schritt 9).
+8. Vorsichtsmodus, ein Ernter: zwei volle Zyklen. OK: Er packt im ersten Takt mit W ≥ 600 ein, mit Gewicht 0, baut im ersten Takt mit W < 300 wieder auf, W erreicht nie 1000, kein Wurmzeichen. MESSUNG je Zyklus: Ernte-, Warte- und Aufbauzeit und Anteil (erwartet 16 / 36 / 5 s, 28 %; der erste Zyklus ab kaltem Sand erntet länger).
+9. Vorsichtsmodus, zwei Ernter im selben Chunk: 2 min, W nie ≥ 1000, kein Wurmzeichen. MESSUNG: größtes W (erwartet unter 660).
+10. Abbruch beim Aufbauen: zwei Ernter im Vorsichtsmodus bei Wärme 700 beginnen aufzubauen und warten nach höchstens 60 Ticks mobil. H10a bleibt stehen und baut im ersten Takt mit W < 300 wieder auf (etwa 42 Takte später, MESSUNG); H10b fährt 1 Kachel, wartet danach nicht mehr und bleibt mobil.
+11. Prüfstand-Sperre: Ein aufgebauter Ernter der Force `player` hinterlässt nach 3 Takten keine Wärme (die Fläche zählt für `player` nicht). Läuft gerade T20 (dann ist `player` eingeschaltet), ist das nur eine INFO.
+
+Je Schritt kommt eine OK- oder FEHLER-Zeile mit den gemessenen Werten; die Einzelwerte stehen nur in der Datei.
+
+**Du:** nichts. **Melden:** nur die Datei.
+
+### T19 Jagd: echter Code (etwa 7 min Spielzeit, ab 0.7.0)
+
+**Was passiert:** T19 prüft Jagd und Biss mit dem echten Code: Countdown, Entscheidung bei 0, Biss, Rettung, Grenzen, Schonfrist, Migration und Entfernen. Eigene Sandfläche (±300 Kacheln um x = 34 000), eigene Force `arrakis-t19` (wach), die zehn Schritte nacheinander, jeder in seinen festen Sektoren. Kein Spieler nötig, Zeitlimit 9 min Spielzeit, bei Tempo 10 etwa 41 s. Zwischen zwei Schritten beendet der Test übrig gebliebene Jagden seiner Force ohne Folgen; am Ende räumt er wie T18 und verschmilzt die Hilfs-Force `arrakis-t19b` mit `arrakis-t19`. Die Statistik von `arrakis-t19` setzt er beim Start auf 0.
+Befehlsjagden (wie `/arrakis-worm`) setzen keine Wärme zurück und lassen keinen Sektor ruhen; Schritt 5 benutzt nur sie.
+
+1. Vorbedingung: Sandwurm-Force feindlich zu `arrakis-t19`. Laufen schon reguläre Jagden anderer Forces, sagt das eine INFO, und Schritt 6 misst nur.
+2. Lehrjagd mit Biss [V1, V14, V20]: Ernter H1 aufgebaut mit 500 Spice-Sand, Kohle und einer Puppe als Fahrer, Wärme 999. Um ihn: Auto, Holzkiste, Figur zu Fuß, Band, Eisenkiste (unzerstörbar), Kiste auf einer kleinen Felsinsel, Steinmauer knapp außerhalb von 4 Kacheln, ein Ornithopter mit Pilot genau über H1. OK: Wurmzeichen im nächsten Takt, Lehrjagd mit 90 s; bis 10 Ticks vor 0 nichts beschädigt und nichts gestorben; bei 0 stirbt H1 im selben Tick durch die Sandwurm-Force, ohne Täter-Entity; gestorben sind H1, Fahrer, Auto, Holzkiste, Figur und Band, am Leben Eisenkiste, Mauer, Felskiste, Ornithopter und Pilot; ein Wrack `tank-remnants` mehr, keine Items am Boden; 9 Chunks 0, Ruhe 2 bis 4 min ab dem Biss, Statistik „gebissen“ + 1, Lehrjagd verbraucht, Jagd, Ring und Markierung weg. MESSUNG: ob die Suche nach Figuren den Fahrer im Ernter liefert, Reihenfolge der Tode.
+3. Schwer beschädigt [V11, V19]: Der Test stellt die Einstellung **Biss** auf „schwer beschädigt“ (geht das nicht, nimmt er die Option der Befehlsjagd, INFO). Ernter H2 mit Spice-Sand, Kohle und Fahrer, daneben ein Auto, Befehlsjagd 2 s. OK bei 0: H2 lebt mit 10 % Gesundheit (± 0,5), Kofferraum leer, Treibstoff da (höchstens ein Stück weniger), mobil, Fahrer sitzt; das Auto ist tot; Ruhe und Statistik unverändert. Danach fährt H2 1 s und kommt mindestens 0,05 Kacheln weit. Einstellung zurück.
+4. Rettung per Ornithopter: reguläre Jagd mit 60 s auf Ernter H3; 12 s vor 0 hebt ein Ornithopter mit Pilot ihn an. OK: 10 s vor 0 getragen, Alarm-Merker leer, Ring weg, verborgen; bei 0 kein Tod, „entkommen“, die Jagd sucht noch 10 s (MESSUNG: Eruptionen an der letzten Stelle); danach 9 Chunks 0, Ruhe, Statistik „entkommen“ + 1 und der Tick der ersten Flucht. Abgesetzt an der alten Stelle und wieder aufgebaut, bleibt sein Chunk 5 Takte lang kalt (der Sektor ruht). Dann verkürzt der Test die Ruhe auf 1 s: Unruhe kommt wieder genau im 26. und das Wurmzeichen im 55. Takt, jetzt keine Lehrjagd, 60 s.
+5. Feste Regeln: elf Befehlsjagden mit 10 s, alle im selben Tick, je eigener Sektor; je Teil eine Zeile 5a) bis 5k):
+   a) Der Ernter fährt vor 0 ganz auf eine Felsinsel → entkommen, nichts gestorben; binnen 10 Ticks gilt er als sicher, der Ring wird grün.
+   b) Der Ernter steht auf Fels, eine Ecke über Sand → gebissen.
+   c) Das Ziel verschwindet per Skript vor 0 → „Ziel verloren“, bei 0 „weg“; die Kiste neben seiner letzten Stelle lebt (MESSUNG: Eruptionen dort).
+   d) Ein Auto geht per Teleport auf `arrakis-test-hold` → entkommen; ein zweites geht hin und vor 0 zurück → gebissen.
+   e) Die Force des Ziels wechselt auf `arrakis-t19b` → die Jagd läuft weiter, gehört der neuen Force, gebissen.
+   f) Der Ernter wird angehoben und 30 Kacheln weiter auf Sand abgesetzt → gebissen dort, die Kiste an der alten Stelle lebt (eigene Befehlsjagd mit 20 s; nicht rechtzeitig abgesetzt: INFO).
+   g) Der Ernter fährt 10 Kacheln über Sand → gebissen an der neuen Stelle.
+   h) Eine arbeitende Montagemaschine als Ziel, ein Band daneben → beide tot.
+   i) [V15] Angedockt mit einer Ecke über Sand → gebissen; angedockt auf großer Felsfläche → entkommen.
+   j) Gründe: Ornithopter → „flyer“, Baum → „no-target“, zweite Jagd auf dasselbe Ziel → „busy“; ein Spidertron auf Sand wird gebissen (MESSUNG `has_sand_under`) [V22].
+   k) Reichweite 3,5 Kacheln je Sekunde Countdown (bei 10 s also 35, wegen des Biss-Takts bis 35,5): Ein Auto springt 15 Kacheln über die Reichweite hinaus → entkommen, sicher binnen 10 Ticks, Ring grün, Eruption am Ort des Wurmzeichens; ein zweites springt 5 Kacheln weniger weit → gebissen dort.
+6. Grenzen: vier Ernter in vier Sektoren mit Wärme 999, ein fünfter im Sektor des ersten. OK: nach 1, 2 und 3 Takten je eine Jagd mehr, danach genau 3, keine zweite im selben Sektor; endet eine (nicht die des ersten), bekommt der freie Ernter binnen 2 Takten seine.
+7. Schonfrist [V2]: Der Test nimmt „Ornithopter“ zurück und erforscht es wieder. OK: Die Schonfrist merkt die Forschung binnen 60 Ticks (MESSUNG: im selben Tick über das Ereignis oder erst im Takt) und endet 10 min danach; mit einer früheren Landung rechnet sie 30 min ab der Landung; währenddessen gibt es trotz Wärme 999 keine Jagd. Kurz vor dem Ende: wach binnen 3 Takten, und im Takt des Erwachens kommt eine Lehrjagd mit 90 s.
+8. Flucht per Fahrt: Felsstreifen 40 × 300 Kacheln; Ernter E1 59, E2 und E3 100 Kacheln vor seinem Rand, Blick zum Fels. E1 und E2 bekommen reguläre Jagden in aufeinanderfolgenden Takten, E3 eine Befehlsjagd mit 90 s. Mit dem Wurmzeichen packen alle ein und fahren zum Fels. OK: E1 entkommt, E2 wird gebissen; E3 als INFO („Lehrjagd-Ausnahme“). MESSUNG: Ankunft von E1 (erwartet etwa 53 s nach dem Wurmzeichen) und wie weit E2 bei 0 noch vom Fels ist (erwartet etwa 30 Kacheln).
+9. Migration: Der Test löscht die Schonfrist von `arrakis-t19`; ein Auto und ein Bohrer stehen ohne Bau-Ereignis. Die Migration (nur für `arrakis-t19` und die Prüfstand-Fläche) setzt die Schonfrist auf 10 min ab jetzt und trägt beide Quellen ein; die Schonfrist aller anderen Forces bleibt, wie sie war; ein zweiter Aufruf ändert nichts.
+10. Entfernen [V21] (immer zuletzt): eine reguläre Jagd und eine Befehlsjagd laufen. Was hinter `/arrakis-uninstall ja` steht, beendet beide (Ring und Markierung weg) und pausiert 10 min: Trotz Wärme 999 kommt 3 Takte lang keine Jagd; die Sandwurm-Force ist mit `enemy` verschmolzen und wird danach neu und feindlich angelegt.
+
+Je Schritt kommt eine OK- oder FEHLER-Zeile mit den gemessenen Werten (Schritt 5 eine je Teil); die Einzelwerte stehen nur in der Datei.
+
+**Du:** nichts. **Melden:** nur die Datei.
+
+### T20 Würmer: Bedienung (interaktiv, 15 min, ab 0.7.0)
+
+**Was passiert:** T20 prüft, was nur du sehen und hören kannst: Fenster, Staub, Rumpeln, Alarm, Ring, Eruption, Vibrationsanzeige und Tipps. Er läuft mit deiner Force auf der Prüfstand-Fläche (bei x = 36 000) und schaltet sie dort für die Würmer ein; deine übrigen Bauten auf der Prüfstand-Fläche vibrieren dann mit (INFO beim Start). Du bist unverwundbar. Am Ende beendet er die Jagden deiner Force ohne Folgen, löscht Wärme und Ruhe seiner Fläche und stellt Schonfrist und Wurm-Statistik deiner Force wieder her (sonst zählten die Jagden aus Schritt 4 und 5 mit). Die gebauten Ernter bleiben zum Ansehen stehen.
+T20 geht nur mit dir im Spiel; `alle` lässt ihn aus. `ALT+O` schaltet zum nächsten Schritt (Schritt 2 erst nach dem Erwachen, nach Schritt 9 endet der Test). Er endet sonst nach 15 min Spielzeit oder mit `/arrakis-test stop`. Mit Zeitraffer läuft auch diese Zeit schneller (bei Tempo 10 nach 90 s), also vorher `/arrakis-test tempo 1`.
+Jeder Klick auf eine Verknüpfung und jedes Umschalten des Vorsichtsmodus schreibt eine MESSUNG-Zeile, jeder Zustandswechsel eines Ernters oder einer Jagd eine INFO-Zeile.
+
+**Du, in neun Schritten:**
+1. Schonfrist [V3, V18]: Der Test setzt das Ende der Schonfrist auf 1 min. FRAGE: „Steht oben links ‚Die Wüste regt sich in 1:00‘ und zählt herunter? Kommt bei 0 im Chat ‚Die Wüste ist erwacht‘?“ Während der Minute die Karte öffnen und eine andere Oberfläche ansehen (Fernsicht); der Test schreibt jede Sekunde in die Datei, welche Oberfläche das Spiel als deine sieht und auf welcher du wirklich stehst.
+2. Unruhe [V17]: Ein Ernter neben dir baut auf; der Test hält die Wärme bei 620. FRAGE: „Siehst du Sandstaub, hörst du ein Rumpeln, und zeigen Fahrzeugfenster und Ernterfenster ‚Der Sand bebt‘ bzw. die Wärme?“
+3. Vibrationsanzeige: die Verknüpfung „Vibrationsanzeige“ klicken. FRAGE: „Siehst du farbige Chunks mit Zahlen, der um den Ernter gelb?“ Noch einmal klicken: weg?
+4. Wurmzeichen [V5, V8]: Wärme 999, im nächsten Takt kommt ein Wurmzeichen mit 60 s. FRAGE je Zeichen: Alarm unten rechts mit Wurmzeichen-Symbol, Kartenmarkierung, Warnton, roter Ring mit Sekunden, Zeile oben links, Status „Wurmzeichen! Biss in … s“. Neben dir steht schon der Ornithopter für Schritt 5; gleich weiter, solange der Countdown läuft.
+5. Rettung [V16]: einsteigen, über den Ernter fliegen, `Umschalt+C`. (Ist die Jagd aus Schritt 4 schon vorbei, startet der Test eine Befehlsjagd mit 60 s.) FRAGE: „Verschwinden Alarm und Ring, steht oben links ‚wird getragen: erst nach … s auf Sand absetzen‘, und kommt bei 0 eine Sandfontäne unter dir, ohne Schaden?“
+6. Biss ohne Rettung: ein zweiter Ernter mit einer Kiste daneben und einer Befehlsjagd mit 30 s. FRAGE: „Kam die Eruption mit Ton genau bei 0, liegt das Wrack da, ist die Kiste weg?“ Dazu ein dritter Ernter am Rand einer Felsinsel (eine Ecke im Sand) mit einer Befehlsjagd mit 60 s: einsteigen, ganz auf den Fels fahren, dann zurück in den Sand. FRAGE: „Wird der Ring grün und steht oben links ‚steht ganz auf Fels: sicher‘, sobald er ganz auf Fels steht, und wieder rot, wenn du zurück in den Sand fährst?“
+7. Vorsichtsmodus: Der Test bringt dich zu einem vierten Ernter 120 Kacheln östlich. Ernterfenster öffnen, Vorsichtsmodus einschalten; der Test setzt dann die Wärme auf 580. FRAGE: „Packt der Ernter nach wenigen Sekunden selbst ein (im zweiten Takt), und baut er gut eine halbe Minute später (etwa 36 s nach dem Einpacken) wieder auf?“
+8. Tipps [V4]: FRAGE: „Stehen unter Tipps und Tricks (Space Age) die Einträge ‚Arrakis‘ und ‚Wurmzeichen‘?“
+9. Fahrzeug ohne Bau-Ereignis [V12]: Neben dir steht ein Auto, das der Test ohne Bau-Ereignis gebaut hat (MESSUNG: nicht eingetragen). Einsteigen: Die MESSUNG danach sagt, ob es jetzt eingetragen ist (dann hält V12). Danach `ALT+O`: Ende.
+
+**Mit dem Auge und Ohr prüfen** (hier und bei der Abnahme): Eruption (Größe, Tönung, Staub), Staubwolken, Rumpeln, Warnton, Ring und Zahl, Fenster oben links, Vibrationsanzeige (Farben, Lesbarkeit) und das Symbol des Wurmzeichens.
+
+**Melden:** die Datei, deine Antworten auf die FRAGEn, was dir beim Hinsehen und Hinhören auffällt, und einen Screenshot vom roten Ring mit Sekunden und einen von der Vibrationsanzeige.
+
 ## Bekannte Grenzen
 
 - Die Flieger-Beine drehen nicht mit der Flugrichtung. T1 fliegt nur nach Osten; die Werte für 1 und 2 Beine gelten für Ost-West-Flug.
 - Auch beim echten Ornithopter drehen die Beine nicht mit der Flugrichtung. T16 misst Norden und Süden deshalb getrennt von Osten und Westen.
 - Das Lastbild dreht nicht mit der Flugrichtung: Es zeigt den Ernter in der Richtung, die er beim Anheben hatte (16 Richtungen). Mitdrehen kommt erst mit eigener Grafik (Phase 6).
+- T18 und T19 laufen ohne Spieler: Alarme, Warnton, Fenster oben links, Status-Anzeige, Staub, Rumpeln und Vibrationsanzeige prüfen sie nicht. Das macht T20. Ebenso das Einsteigen in ein Fahrzeug ohne Bau-Ereignis [V12]: Eine Puppe ohne Spieler löst das Ereignis dafür nicht aus.
+- T18 Schritt 3: Die Lokomotive fährt nicht wirklich, der Test gibt ihrem Zug nur ein Tempo und liest `weight_of`; ihre Wärme misst er nicht.
+- T19 Schritt 8: Wann E1 den Fels erreicht und wie weit E2 bei 0 noch weg ist, hängt am Tempo des Ernters. Bewertet wird nur, wer entkommt und wer gebissen wird.
+- T19 Schritt 10 und T20 wirken auf den ganzen Spielstand: Schritt 10 beendet jede laufende Jagd (siehe [Vorbereitung](#vorbereitung)), T20 lässt die Bauten deiner Force auf der Prüfstand-Fläche vibrieren.
 - T15 und T16 prüfen den Ornithopter mit Puppen über dieselben Funktionen, die Taste, Verknüpfung und Fensterknopf aufrufen. Ob diese Wege im Spiel ankommen (Taste in der Kartenansicht, beim Fernfahren, Fernbedienung ohne „Spidertron“), zeigt nur T17.
 - Der Tempo-Deckel in T2 läuft mit Raketentreibstoff. Fährt der Ernter ohne Deckel nicht schneller als 1,6 Kacheln/s, nimmt der Test einen Ersatzdeckel (70 % seines Höchsttempos), damit der Deckel überhaupt greifen muss. Der Durchgang zählt nicht für OK oder FEHLER (siehe T2).
 - T6, Bahn D: Bewertet wird der Kopf bis zum Biss. Was der Wurm danach tut, steht als MESSUNG/INFO da (im Spiel taucht er beim Biss ab).
