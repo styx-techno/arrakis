@@ -8,6 +8,11 @@
 -- Eine Liste freier Plätze gibt es bewusst nicht (Abweichung von DOC 4.2): Frei ist ein Platz, auf dem nichts steht.
 -- Fehlt ein Datensatz oder läuft ein Handler in anderer Reihenfolge, kann so kein Platz verloren gehen, und ein
 -- wartender Ernter (storage.stranded) belegt seinen Platz einfach weiter.
+-- Reste zählen nicht: Stirbt ein getragener Ernter auf der Ablage (nur per Skript, Plan 4.10), bleiben seine Leiche
+-- tank-remnants (der Ernter ist ein deepcopy des Panzers, prototypes/harvester.lua:56; V23
+-- base/prototypes/entity/entities.lua:7961) 15 min liegen (V23 base/prototypes/entity/remnants.lua:2947) und kurz die
+-- Explosion tank-explosion. Leichen haben nur die Ebene doodad, Explosionen keine (V23
+-- core/lualib/collision-mask-defaults.lua:156, :178); sie stören keinen Ernter, sperrten den Platz sonst aber 15 min.
 -- Teleport zwischen Oberflächen prüft keine Kollision (A23 classes.d.ts:5476); deshalb nur freie Plätze.
 -- Der Name ist bewusst ein anderer als die Prüfstand-Ablage arrakis-test-hold (scripts/testbench/runner.lua:37).
 
@@ -36,8 +41,11 @@ local function slot_area(x, y)
   return {{x - r, y - r}, {x + r, y + r}}
 end
 
+-- Typen, die einen Platz nicht belegen (Reste, siehe Kopf); invert kehrt nur den Typfilter um, nicht die Fläche.
+local REMNANT_TYPES = {"corpse", "explosion"}
+
 local function slot_free(surface, x, y)
-  return surface.count_entities_filtered{area = slot_area(x, y), limit = 1} == 0
+  return surface.count_entities_filtered{area = slot_area(x, y), type = REMNANT_TYPES, invert = true, limit = 1} == 0
 end
 
 -- Die Ablage, wenn sie in storage steht und gültig ist, sonst nil.

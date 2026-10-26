@@ -55,6 +55,11 @@ lib.CRASH_DAMAGE = 0.3
 lib.SEARCH_RADII = {6, 16, 32}
 -- Suchradien um den Startpunkt der Force (Kacheln).
 lib.SPAWN_RADII = {6, 16, 32, 64}
+-- Warteliste (retry_stranded): Jeder Versuch sucht nur bis zu diesem Radius, jeder RETRY_FULL_EVERY-te (also alle 10 s)
+-- mit allen. Ohne Treffer prüft find_non_colliding_position jede Stelle im Kreis, bei Schrittweite 0,5 etwa
+-- π · (r / 0,5)²: mit allen Stufen und Radien gut 10^5 Stellen je Ernter, bis 16 Kacheln gut 11 000.
+lib.RETRY_RADIUS = 16
+lib.RETRY_FULL_EVERY = 10
 -- Suchradius beim Absetzen (Kacheln, Plan 4.8).
 lib.DROP_RADIUS = 6
 -- Schrittweite von find_non_colliding_position (Kacheln).
@@ -332,14 +337,33 @@ end
 
 -- Eine Stufe: zuerst genau center, dann je Radius die nächste freie Stelle; jeder Treffer per teleport. Ein Teleport
 -- zwischen Oberflächen prüft keine Kollision (A23 classes.d.ts:5476), deshalb nur Stellen, die die Probe frei fand.
-local function try_stage(entity, surface, center, radii)
+-- max_radius: größere Radien auslassen (Warteliste); nil: alle.
+local function try_stage(entity, surface, center, radii, max_radius)
   local position = {x = center.x or center[1], y = center.y or center[2]}
   if probe_fits(surface, position, entity.force) and entity.teleport(position, surface) then return position end
   for _, radius in ipairs(radii) do
+    if max_radius and radius > max_radius then break end
     local spot = free_spot(surface, position, radius)
     if spot and entity.teleport(spot, surface) then return spot end
   end
   return nil
+end
+
+-- Chunks um den Startpunkt erzeugen, aber nur, wenn einer fehlt (Radius 2 Chunks wie request_to_generate_chunks,
+-- A23 classes.d.ts:20796, :20707): force_generate_chunk_requests erzeugt sofort jede offene Anfrage der Oberfläche,
+-- auch die von Spielern und Radar, und die Warteliste fragt jede Sekunde.
+local SPAWN_CHUNKS = 2
+local function generate_spawn_chunks(surface, spawn)
+  local cx, cy = math.floor(spawn.x / 32), math.floor(spawn.y / 32)
+  for dx = -SPAWN_CHUNKS, SPAWN_CHUNKS do
+    for dy = -SPAWN_CHUNKS, SPAWN_CHUNKS do
+      if not surface.is_chunk_generated({x = cx + dx, y = cy + dy}) then
+        surface.request_to_generate_chunks(spawn, SPAWN_CHUNKS)
+        surface.force_generate_chunk_requests()
+        return
+      end
+    end
+  end
 end
 
 -- Oberfläche für Stufe 3: die des Abhebepunkts, fehlt sie, Arrakis, sonst nauvis.
@@ -354,37 +378,38 @@ local function spawn_surface(h)
 end
 
 -- Sucht und teleportiert; gibt Oberfläche und Stufe (1 Todesstelle, 2 Abhebepunkt, 3 Startpunkt) zurück oder nil.
-local function search_landing(h, crash_pos)
+-- max_radius wie bei try_stage.
+local function search_landing(h, crash_pos, max_radius)
   local entity = h.entity
   if crash_pos then
     local surface = surface_by_index(crash_pos.surface)
-    if surface and try_stage(entity, surface, crash_pos, lib.SEARCH_RADII) then return surface, 1 end
+    if surface and try_stage(entity, surface, crash_pos, lib.SEARCH_RADII, max_radius) then return surface, 1 end
   end
   local lift = h.lift_pos
   if lift then
     local surface = surface_by_index(lift.surface)
-    if surface and try_stage(entity, surface, lift, lib.SEARCH_RADII) then return surface, 2 end
+    if surface and try_stage(entity, surface, lift, lib.SEARCH_RADII, max_radius) then return surface, 2 end
   end
   local surface = spawn_surface(h)
   if surface then
     -- Startpunkt der Force (A23 classes.d.ts:11216); Chunks vorher erzeugen, sonst findet die Probe dort nichts.
     local spawn = entity.force.get_spawn_position(surface)
-    surface.request_to_generate_chunks(spawn, 2)
-    surface.force_generate_chunk_requests()
-    if try_stage(entity, surface, spawn, lib.SPAWN_RADII) then return surface, 3 end
+    generate_spawn_chunks(surface, spawn)
+    if try_stage(entity, surface, spawn, lib.SPAWN_RADII, max_radius) then return surface, 3 end
   end
   return nil
 end
 
 -- Landesuche für einen Ernter ohne Träger; no_wait: scheitert sie, nicht in die Warteliste (Löschen der Ablage).
-local function land(h, crash_pos, damage, no_wait)
+-- max_radius: nur die Warteliste setzt ihn (RETRY_RADIUS), sonst nil.
+local function land(h, crash_pos, damage, no_wait, max_radius)
   local entity = h and h.entity
   if not (entity and entity.valid) then
     if h then storage.stranded[h.un] = nil end
     return false
   end
   local un = h.un
-  local surface, stage = search_landing(h, crash_pos)
+  local surface, stage = search_landing(h, crash_pos, max_radius)
   if surface then
     harvester.land(h)
     if damage then
@@ -429,9 +454,14 @@ local function land_here(h)
 end
 
 -- Warteliste (wie der 60-Tick-Takt): jeden Eintrag noch einmal landen; ohne gültigen Ernter oder Datensatz streichen.
+-- Jede Sekunde bis RETRY_RADIUS, jede RETRY_FULL_EVERY-te Sekunde mit allen Radien. Der Zähler kommt aus dem Tick: kein
+-- storage, für alle Spieler gleich. Die Stufen gelten je Versuch in ihrer Reihenfolge; ein kurzer Versuch kann also am
+-- Startpunkt landen, wo ein voller weiter weg an der Todesstelle fände (beides ist ein freier Platz).
 function lib.retry_stranded()
   local stranded = storage.stranded
   if next(stranded) == nil then return end
+  local max_radius = lib.RETRY_RADIUS
+  if math.floor(game.tick / 60) % lib.RETRY_FULL_EVERY == 0 then max_radius = nil end
   local harvesters = storage.harvesters
   for un, entry in pairs(stranded) do
     local h = harvesters[un]
@@ -440,7 +470,7 @@ function lib.retry_stranded()
     elseif not on_hold(h.entity) then
       land_here(h)
     else
-      land(h, entry.crash_pos, entry.damage, false)
+      land(h, entry.crash_pos, entry.damage, false, max_radius)
     end
   end
 end
@@ -1178,22 +1208,28 @@ local function on_driving_changed(event)
   if is_flyer(entity) and not lib.get(entity) then lib.register(entity) end
 end
 
--- Oberfläche wird gelöscht (A23 events.d.ts:3940). Ablage: jeden Ernter auf ihr herunterholen (ohne Warteliste),
--- was bleibt, geht verloren. Andere Oberfläche: Kopplungen dort abbrechen, Lasten von Fliegern dort landen.
+-- Ablage wird gelöscht oder geleert: jeden Ernter auf ihr herunterholen (ohne Warteliste, die Ablage verliert ihn
+-- gleich), was bleibt, geht verloren. Danach Ablage vergessen und Warteliste leeren.
+local function evacuate_hold(surface)
+  for _, entity in pairs(hold_harvesters(surface)) do
+    if entity.valid and not unload(entity, true) then
+      log("Arrakis: Spice-Ernter " .. tostring(entity.unit_number) .. " geht mit der Ablage verloren (kein Landeplatz)")
+      entity.force.print({"arrakis-message.msg-cargo-lost"})
+    end
+  end
+  hold.forget()
+  storage.stranded = {}
+end
+
+-- Oberfläche wird gelöscht (A23 events.d.ts:3940). Ablage: evacuate_hold. Andere Oberfläche: Kopplungen dort
+-- abbrechen, Lasten von Fliegern dort landen.
 local function on_pre_surface_deleted(event)
   local index = event.surface_index
   local surface = game.get_surface(index)
   if not surface then return end
   deleting[index] = true
   if surface.name == hold.NAME then
-    for _, entity in pairs(hold_harvesters(surface)) do
-      if entity.valid and not unload(entity, true) then
-        log("Arrakis: Spice-Ernter " .. tostring(entity.unit_number) .. " geht mit der Ablage verloren (kein Landeplatz)")
-        entity.force.print({"arrakis-message.msg-cargo-lost"})
-      end
-    end
-    hold.forget()
-    storage.stranded = {}
+    evacuate_hold(surface)
   else
     for flyer_un in pairs(storage.couplings) do
       local record = storage.flyers[flyer_un]
@@ -1218,6 +1254,15 @@ local function on_pre_surface_deleted(event)
     end
   end
   deleting[index] = nil
+end
+
+-- Oberfläche wird geleert (A23 events.d.ts:3926; surface.clear() entfernt alle Entities und Chunks, die Oberfläche
+-- bleibt gültig). Nur die Ablage: evacuate_hold, sonst gingen alle getragenen und wartenden Ernter verloren. forget()
+-- lässt das nächste ensure() die Laborchunks neu erzeugen und die Ablage neu verstecken. Andere Oberflächen nicht:
+-- Flieger dort verschwinden (on_object_destroyed), Lasten landen wie „anders entfernt“.
+local function on_pre_surface_cleared(event)
+  local surface = game.get_surface(event.surface_index)
+  if surface and surface.name == hold.NAME then evacuate_hold(surface) end
 end
 
 local function on_carry_key(event)
@@ -1248,6 +1293,7 @@ lib.events =
   [defines.events.script_raised_teleported] = on_teleported,
   [defines.events.on_player_driving_changed_state] = on_driving_changed,
   [defines.events.on_pre_surface_deleted] = on_pre_surface_deleted,
+  [defines.events.on_pre_surface_cleared] = on_pre_surface_cleared,
   [defines.events.on_lua_shortcut] = on_shortcut,
   [CARRY_INPUT] = on_carry_key
 }

@@ -35,7 +35,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 3. **Befehle** im Chat (nur Admins; im Einzelspiel ist man Admin):
    - `/arrakis-test`: Liste aller Tests mit Dauer und Hinweisen
    - `/arrakis-test T1` (bzw. `T2` … `T17`, `T2b`): einen Test starten; `T11 lang` und `T14 lang` mit 30 statt 9 Seeds. T9, T12 und T17 sind interaktiv und brauchen dich im Spiel
-   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (ohne Zeitraffer geschätzt gut 16 min)
+   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (ohne Zeitraffer geschätzt knapp 16 min)
    - `/arrakis-test stop`: laufenden Test abbrechen
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
    - `/arrakis-test tempo 10`: Zeitraffer (`game.speed`, 1 bis 50), die Ergebnisse bleiben gleich; `/arrakis-test tempo 1` stellt zurück, im eigenen Spielstand bitte vor dem Ausschalten der Einstellung ([Zeitraffer](docs/pruefstand.md#zeitraffer-arrakis-test-tempo))

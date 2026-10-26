@@ -47,7 +47,7 @@ Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
 | `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T17` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
-| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16. Dauer ohne Zeitraffer geschätzt gut 16 min ([„alle“](#alle)) |
+| `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16. Dauer ohne Zeitraffer geschätzt knapp 16 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
 | `/arrakis-test status` | Stand in festen Zeilen: bereit, läuft oder wartet, dazu das letzte Ergebnis je Test ([Format](#arrakis-test-status)) |
 | `/arrakis-test tempo 10` | Zeitraffer: das Spiel läuft bis zu 10-mal so schnell (`game.speed`, Zahlen von 1 bis 50); `tempo` ohne Zahl zeigt den Stand, `tempo 1` stellt auf echte Zeit zurück. Die Ergebnisse ändern sich nicht ([Zeitraffer](#zeitraffer-arrakis-test-tempo)) |
@@ -173,7 +173,7 @@ Deine eigenen Spielstände, Einstellungen und Mods unter `%APPDATA%\Factorio` bl
 Nebenbei normal spielen geht: Der Server hat einen eigenen Ordner und eigene Ports.
 Im selben Arbeitsordner läuft immer nur ein Lauf; ein zweiter bricht mit einem Hinweis ab (Sperrdatei `pruefstand.lock`).
 Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 90 s Stillstand) sind echte Zeit. Mit Zeitraffer gelten sie unverändert, die Tests enden nur früher; eine Mindestdauer setzt das Werkzeug nicht voraus.
-`alle` dauert ohne Zeitraffer gut 12 min, mit dem Standard `--tempo 10` geschätzt etwa 2 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
+`alle` dauert ohne Zeitraffer knapp 16 min, mit dem Standard `--tempo 10` geschätzt etwa 2,5 min ([„alle“](#alle)). Wer das Werkzeug aus einem Programm mit kurzem Zeitlimit für Befehle startet (etwa einem Assistenten), startet es im Hintergrund mit der Ausgabe in eine Datei, verfolgt die Datei und liest am Ende den Rückgabewert. Beendet man das Werkzeug von außen (Strg+C, `kill`), stoppt es den Server noch. Wird es hart beendet (Task-Manager, `kill -9`), läuft der Server weiter, bis der nächste Lauf im selben Ordner ihn beendet.
 
 **Ergebnisse:**
 
@@ -221,9 +221,9 @@ Die FRAGEn von T1, T5 und T6 gelten während des Tests: einfach zuschauen.
 Am Ende kommt eine Zusammenfassung mit allen offenen FRAGEn. Was du verpasst hast, wiederholst du einzeln (z. B. `/arrakis-test T2`).
 T9, T12 und T17 brauchen dich und laufen nur einzeln.
 
-**Dauer ohne Zeitraffer: geschätzt gut 16 min, mit Tempo 10 geschätzt etwa 2,5 min.**
+**Dauer ohne Zeitraffer: geschätzt knapp 16 min, mit Tempo 10 geschätzt etwa 2,5 min.**
 - Gemessen mit 0.5.4 ohne Spieler: 44 352 Ticks (739,2 s Spielzeit), in echter Zeit 12,3 min bei 60 Ticks je Sekunde. Die größten Teile in echter Zeit: T2b 4,6 min, T13 und T5 je 1,7 min, T4 1,2 min, T2 und T6 je 1,1 min, alle übrigen unter 30 s. Die Simulation braucht dabei nur etwa 0,1 ms je Tick, das Spiel wartet fast die ganze Zeit auf den nächsten Tick. (0.5.3: 724,7 s Spielzeit; in 0.5.4 kamen T14 und das längere T11 dazu.)
-- Mit 0.6.0 kommen T15 (etwa 3 min Spielzeit) und T16 (etwa 45 s) dazu, mit den Pausen gut 13 600 Ticks. Zusammen sind das geschätzt etwa 58 000 Ticks, gut 16 min ohne Zeitraffer. Gemessen ist das noch nicht.
+- Mit 0.6.0 kommen T15 (etwa 3 min Spielzeit) und T16 (etwa 18 s: 30 Ticks Aufbau, 140 bis zum Start, 900 Messung) dazu, mit den Pausen knapp 12 000 Ticks. Zusammen sind das geschätzt etwa 56 000 Ticks, knapp 16 min ohne Zeitraffer. Gemessen ist das noch nicht.
 - Die Spielzeit hängt nur an der Zahl der Ticks, auch bei T11 und T14, nicht an der Rechenlast.
 - Mit [Zeitraffer](#zeitraffer-arrakis-test-tempo) (`/arrakis-test tempo 10`, Standard von `tools/pc/pruefstand.py`) rechnet das Spiel bis zu 600 Ticks je Sekunde: Für die 44 352 Ticks von 0.5.4 sind das gut 1 min, mit T15 und T16 etwa 1,6 min; dazu kommt, was T11 und T14 je Tick länger rechnen (T14 erzeugt rund 6600 Chunks). Daher geschätzt etwa 2,5 min; gemessen ist das noch nicht. Die Ergebnisse bleiben dieselben.
 
@@ -448,7 +448,7 @@ Je Schritt kommt eine OK- oder FEHLER-Zeile mit den gemessenen Werten; die Einze
 
 **Du:** nichts. **Melden:** nur die Datei.
 
-### T16 Ornithopter: Flugphysik (etwa 45 s, ab 0.6.0)
+### T16 Ornithopter: Flugphysik (etwa 18 s, ab 0.6.0)
 
 **Was passiert:** Echte Ornithopter mit ihrem echten Tempo-Sticker fliegen wie in T1 auf parallelen Bahnen je 400 Kacheln weit, jeder mit einer Puppe als Pilot. Gemessen wird zwischen 5 s und 15 s nach dem Start. Eigene Fläche, kein Spieler nötig, Zeitlimit 90 s Spielzeit.
 - Leer: mit Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff, Spice-Brikett und legendärem Raketentreibstoff (wenn Quality); mit Kohle nach Osten, Westen, Norden, Süden und Nordosten; Ornithopter in Qualität „ungewöhnlich“ und „legendär“ (wenn Quality).

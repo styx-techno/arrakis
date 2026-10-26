@@ -2868,8 +2868,9 @@ end
 -- Jeder Druck auf die Taste (arrakis-carry-toggle) und jeder Klick auf eine der beiden Verknüpfungen schreibt eine
 -- MESSUNG-Zeile (Weiterleitung carry_key und shortcut aus runner.lua, zusätzlich zu flyer.lua: event_handler fasst sie
 -- zusammen, die Reihenfolge ist nicht zugesichert; der Zustand in der Zeile kann also vor oder nach dem Laufzeitcode
--- stehen). Jeder Zustandswechsel von Ornithopter oder Ernter schreibt eine INFO-Zeile. Nach dem ersten Anheben fliegt
--- der Test den Ornithopter 20 s im Kreis (wie T9 C), dann kommt die FRAGE zum Lastbild.
+-- stehen). Jeder Zustandswechsel von Ornithopter oder Ernter schreibt eine INFO-Zeile. Nach dem zweiten Anheben
+-- (Schritt 2; Schritt 1 ist Anheben und Absetzen, Plan 6) fliegt der Test den Ornithopter 20 s im Kreis (wie T9 C),
+-- dann kommt die FRAGE zum Lastbild.
 
 local T17_END_TICKS = 360 * 60 -- „endet nach 6 min Spielzeit“ (Zeitlimit des Runners 380 s)
 local T17_CIRCLE_TICKS = 20 * 60
@@ -2935,6 +2936,7 @@ local function t17_start(run, tb)
   d.boxes = {box_of(origin, {x = 60, y = 60})}
   d.made = {cars = {}, flyers = {}, others = {}}
   d.keys, d.shortcuts, d.changes = 0, 0, 0
+  d.lifts = 0 -- Wechsel des Ornithopters nach „beladen“; der Kreisflug beginnt beim zweiten
   sweep(run, tb, d.boxes, true)
   tb.prepare(origin, 60)
   local surface = tb.surface()
@@ -2995,7 +2997,8 @@ local function t17_tick(run, tb)
   if flyer_now ~= d.last_flyer or car_now ~= d.last_car then
     d.changes = d.changes + 1
     tb.log(run, "INFO", string.format("Zustand: Ornithopter %s → %s, Ernter %s → %s", d.last_flyer, flyer_now, d.last_car, car_now))
-    if flyer_now == "beladen" and not d.circle and valid(d.flyer) then
+    if flyer_now == "beladen" and d.last_flyer ~= "beladen" then d.lifts = d.lifts + 1 end
+    if flyer_now == "beladen" and d.lifts == 2 and not d.circle and valid(d.flyer) then
       d.circle = {center = copy_pos(d.flyer.position), radius = T17_CIRCLE_RADIUS, angle = 0, next_tick = now, until_tick = now + T17_CIRCLE_TICKS, targets = 0}
       tb.log(run, "INFO", "2) Kreisflug 20 s um " .. pos_text(tb, d.circle.center) .. " (wie T9 C)")
     end

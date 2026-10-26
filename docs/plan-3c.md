@@ -209,6 +209,7 @@ Ereignisse von flyer.lua:
 | `script_raised_teleported` | Bilder neu zeichnen, Kopplung prüfen | getragen und nicht mehr auf der Ablage: landen wie `care` Fall b (4.4) |
 | `on_player_driving_changed_state` | `get or register` (Spieler steigt ein oder aus) | – (gehört harvester.lua) |
 | `on_pre_surface_deleted` | 4.10 | 4.10 |
+| `on_pre_surface_cleared` (nur die Ablage) | 4.10 | 4.10 |
 | `arrakis-carry-toggle`, `on_lua_shortcut` (`prototype_name == "arrakis-carry"`) | 4.5 | 4.5 |
 
 Dazu `on_nth_tick` 10 und 60 (4.4), `on_configuration_changed` (4.15), `add_commands` (`/arrakis-uninstall`, Muster
@@ -301,9 +302,10 @@ Ornithopter:
   b) Entity gültig, aber nicht auf der Ablage (ein fremdes Skript hat sie wegteleportiert; harvester.lua tut bei `carried` nichts):
      `harvester.land(h)` am jetzigen Ort, Flieger leeren wie in a), Log, keine Meldung. Sonst bliebe der Ernter für immer gesperrt.
   Sticker (4.9) und Render-Objekte (4.12) prüfen und neu anlegen. Danach `retry_stranded()`:
-  `if next(storage.stranded) == nil then return end`, sonst je Eintrag die Landesuche aus 4.10 noch einmal; ein Eintrag ohne gültigen
-  Ernter oder ohne Datensatz wird gestrichen. Kosten: ein Durchlauf über `storage.flyers` je Sekunde, dazu die (meist leere) Liste
-  `storage.stranded`.
+  `if next(storage.stranded) == nil then return end`, sonst je Eintrag die Landesuche aus 4.10 noch einmal, jede Sekunde nur bis
+  `RETRY_RADIUS = 16` Kacheln, jede `RETRY_FULL_EVERY = 10`-te mit allen Radien (Zähler aus dem Tick; ohne Treffer prüft die volle
+  Suche gut 10^5 Stellen je Ernter); ein Eintrag ohne gültigen Ernter oder ohne Datensatz wird gestrichen. Kosten: ein Durchlauf über
+  `storage.flyers` je Sekunde, dazu die (meist leere) Liste `storage.stranded`.
 - flyer-gui `on_nth_tick(30)`: offene Fenster auffrischen (Countdown, Laderaum), schließen bei ungültigem Flieger.
 
 ### 4.5 Bedienung: Taste, Shortcut, Knopf, Fernbedienung
@@ -407,7 +409,8 @@ unit_number und Ausrichtung bleiben beim Teleport erhalten (RUN055 T3 b: 10/10 g
   1. nur beim Absturz: um `crash_pos` mit der Probe (4.8) in `SEARCH_RADII` (6, 16, 32);
   2. um den Abhebepunkt `h.lift_pos` ebenso, wenn es seine Oberfläche noch gibt;
   3. um den Startpunkt der Force: `force.get_spawn_position(s)` auf der Oberfläche des Abhebepunkts, fehlt sie, auf Arrakis, sonst
-     nauvis (A23 classes.d.ts:11216). Vorher `s.request_to_generate_chunks(spawn, 2)` und `s.force_generate_chunk_requests()`, dann die
+     nauvis (A23 classes.d.ts:11216). Vorher `s.request_to_generate_chunks(spawn, 2)` und `s.force_generate_chunk_requests()`, aber nur,
+     wenn dort ein Chunk fehlt (`is_chunk_generated`; das Erzwingen erzeugt jede offene Anfrage der Oberfläche), dann die
      Probe in `SPAWN_RADII` (6, 16, 32, 64). Ein Teleport zwischen Oberflächen prüft keine Kollision (A23 classes.d.ts:5476); ohne
      diese Suche stünde der Ernter womöglich mitten in den Gebäuden am Startpunkt. Kein Radius 0: Die Suche endet dann nie, wenn es
      keinen Platz gibt (A23 classes.d.ts:20536).
@@ -438,7 +441,8 @@ unit_number und Ausrichtung bleiben beim Teleport erhalten (RUN055 T3 b: 10/10 g
   wird an ihm abgesetzt (4.8 ohne Hinweis), sonst und bei „kein Platz“ `land_cargo` ohne Warteliste. Was dann noch auf der Ablage
   steht, geht mit ihr verloren: Log und `msg-cargo-lost` je Ernter. Danach `hold.forget()`, `storage.stranded` leeren. Ist es eine
   andere Oberfläche: Kopplungen dort abbrechen; Lasten von Fliegern dort per `land_cargo` (die Stufen überspringen Oberflächen, die
-  gerade gelöscht werden).
+  gerade gelöscht werden). `on_pre_surface_cleared` (A23 events.d.ts:3926, `surface.clear()`) behandelt die Ablage ebenso; die Oberfläche
+  bleibt, und nach `hold.forget()` erzeugt das nächste `ensure()` ihre Chunks neu. Andere geleerte Oberflächen: nichts Eigenes.
 - **Waisen:** Ein Ernter auf der Ablage ohne Flieger, dessen `cargo` auf ihn zeigt, und ohne Eintrag in `storage.stranded` (etwa
   nach einem Fehler oder einer fremden Mod), wird im 60-Tick-Takt nicht gesehen. Ihn finden `on_configuration_changed` (4.15),
   `/arrakis-uninstall` und `on_pre_surface_deleted` über die Suche auf der Ablage und geben ihn an `land_cargo`.
@@ -450,8 +454,10 @@ oder `game.create_surface("arrakis-hold")`; `generate_with_lab_tiles = true`, `r
 `force_generate_chunk_requests()`, `force.set_surface_hidden(surface, true)` für alle Forces (A23 classes.d.ts:11399) [U25], dann in
 storage eintragen. Das gilt auch für eine vorgefundene Oberfläche: Wird die Mod ohne `/arrakis-uninstall` entfernt, bleibt die leere
 Ablage im Spielstand (DOC 4.6), und nach dem Wiederhinzufügen beginnt `storage.hold` leer.
-`take_slot()`: die 256 Plätze in fester Reihenfolge (y, dann x); der erste mit `count_entities_filtered{area = slot ± 4, limit = 1} == 0`
-gilt, sonst nil. Weil Anheben und Teleport im selben Tick nacheinander laufen, bekommt der nächste Aufruf schon den nächsten Platz.
+`take_slot()`: die 256 Plätze in fester Reihenfolge (y, dann x); der erste mit
+`count_entities_filtered{area = slot ± 4, type = {"corpse", "explosion"}, invert = true, limit = 1} == 0` gilt, sonst nil. Reste zählen
+nicht: Ein auf der Ablage gestorbener Ernter ließe sonst seine Leiche `tank-remnants` 15 min auf dem Platz. Weil Anheben und Teleport im
+selben Tick nacheinander laufen, bekommt der nächste Aufruf schon den nächsten Platz.
 `free_count()`: Zahl der Plätze, auf denen nichts steht (256 Abfragen; nur für den Prüfstand). Eine Liste freier
 Plätze gibt es nicht (Abweichung von DOC 4.2): Fehlt ein Datensatz oder läuft ein Handler in anderer Reihenfolge, kann so kein Platz
 verloren gehen, und ein wartender Ernter (`storage.stranded`) belegt seinen Platz einfach weiter. Name bewusst anders als die
@@ -677,7 +683,7 @@ Felsinsel mit Annahme, Wasser- und Mauerfeld. Ornithopter und Ernter entstehen m
     eigenen Ernter am Boden ≤ 6 Kacheln von ihrem Flieger, die Waise ≤ 6 Kacheln von ihrem Abhebepunkt, Flieger leer; nach 1 Tick gibt es
     `arrakis-hold` nicht mehr. `n` kann größer sein, wenn der Spielstand selbst Ernter trägt. Der nächste Lauf legt die Ablage neu an.
 
-**T16 „Ornithopter: Flugphysik“** (automatisch, parallele Bahnen wie T1, etwa 45 s Spielzeit). Echte Ornithopter, eingetragen über
+**T16 „Ornithopter: Flugphysik“** (automatisch, parallele Bahnen wie T1, etwa 18 s Spielzeit). Echte Ornithopter, eingetragen über
 flyer.lua (also mit echtem Sticker), Dummy-Pilot, Ziel 400 Kacheln voraus; gemessen wird zwischen 5 s und 15 s nach dem Start.
 - Bahnen leer: Kohle, Festbrennstoff, Raketentreibstoff, Atomtreibstoff, Spice-Brikett, legendärer Raketentreibstoff (wenn Quality);
   Richtungen O, W, N, S und NO mit Kohle; Ornithopter `uncommon` und `legendary` (wenn Quality).
