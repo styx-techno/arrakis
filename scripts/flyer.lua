@@ -1,9 +1,9 @@
 -- Ornithopter (Phase 3c, docs/plan-3c.md 4.1 bis 4.12 und 4.15): Datensätze, Bedienung (Taste, Shortcut, Knopf),
 -- Ankoppeln, Anheben mit Notstart, Sitze, Absetzen, Tempo-Sticker, Lastbild, Absturz, Landesuche mit Warteliste,
--- Pflege und /arrakis-uninstall. Bibliothek für __core__/lualib/event_handler. Daten nur in storage (Schema 2, siehe
--- scripts/migrate.lua), Schlüssel ist unit_number. Ereignisse kommen ungefiltert: Jeder Handler prüft zuerst den Namen
--- und kehrt sofort zurück. Die Modultabelle heißt lib (tools/check/api_names.py hält flyer für LuaEntity); andere
--- Dateien binden sie als flyer_lib.
+-- Pflege und /arrakis-uninstall (seit 0.7.0 räumt der Befehl auch die Würmer, scripts/worms.lua). Bibliothek für
+-- __core__/lualib/event_handler. Daten nur in storage (Schema 3, siehe scripts/migrate.lua), Schlüssel ist
+-- unit_number. Ereignisse kommen ungefiltert: Jeder Handler prüft zuerst den Namen und kehrt sofort zurück. Die
+-- Modultabelle heißt lib (tools/check/api_names.py hält flyer für LuaEntity); andere Dateien binden sie als flyer_lib.
 --
 -- Getragen wird so (DOC 4.2): Der Ernter steht gesperrt (Zustand carried, scripts/harvester.lua) auf der Ablage
 -- arrakis-hold (scripts/hold.lua), am Ornithopter hängen sein Bild und sein Schatten. Jeder Fall gehört genau einem
@@ -24,6 +24,7 @@
 
 local harvester = require("scripts.harvester")
 local hold = require("scripts.hold")
+local worms_lib = require("scripts.worms")
 local speed = require("prototypes.ornithopter-speed")
 
 local lib = {}
@@ -1168,6 +1169,7 @@ local function uninstall_command(command)
     local surface = hold.surface() or game.get_surface(hold.NAME)
     local count = surface and surface.count_entities_filtered{name = HARVESTER} or 0
     reply(player, {"arrakis-message.uninstall-warn", count})
+    reply(player, {"arrakis-message.uninstall-worms-warn", table_size(storage.hunts.list)})
     return
   end
   local n, rest = lib.uninstall()
@@ -1176,6 +1178,8 @@ local function uninstall_command(command)
   else
     reply(player, {"arrakis-message.uninstall-stuck", n, rest})
   end
+  -- Danach die Würmer (docs/plan-3d1.md 4.16): Jagden ohne Biss, Markierungen, Fenster, Anzeigen, 10 min Pause.
+  reply(player, {"arrakis-message.uninstall-worms", worms_lib.uninstall()})
 end
 
 -- Takte ------------------------------------------------------------------------------------------
