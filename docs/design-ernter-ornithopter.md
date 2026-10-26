@@ -1,6 +1,6 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 25.10.2026 · Mod-Stand 0.6.0 (Baupläne: Phase 3b docs/plan-3b.md, Phase 3c docs/plan-3c.md; wo ein Plan abweicht, gilt der Plan, und dieses Dokument ist ihm angeglichen) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
+Stand: 26.10.2026 · Mod-Stand 0.7.0 (Baupläne: Phase 3b docs/plan-3b.md, Phase 3c docs/plan-3c.md, Phase 3d1 docs/plan-3d1.md; wo ein Plan abweicht, gilt der Plan, und dieses Dokument ist ihm angeglichen) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
 1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json. **Überholt seit 23.10.2026:** 2.1 ist stabil, Max spielt 2.1.23; Ziel ist jetzt 2.1 (5.2).
@@ -52,10 +52,10 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 
 ### 2.1 Stufe 1: manuell
 
-0. **Briefing.** Mit der Forschung „Entdeckung Arrakis“ erscheint ein Tipps-und-Tricks-Eintrag: Fels ist sicher, Sand lebt, Maschinen auf Sand erzeugen Vibration, Wurmzeichen bedeutet Lebensgefahr.
+0. **Briefing.** Mit der Forschung „Entdeckung Arrakis“ erscheint ein Tipps-und-Tricks-Eintrag „Arrakis“: Fels ist sicher, Sand lebt, Maschinen auf Sand erzeugen Vibration, Wurmzeichen bedeutet Lebensgefahr. Mit „Spice-Ernte“ folgt der Eintrag „Wurmzeichen“. Beide stehen in der Kategorie Space Age hinter Aquilo (`arrakis-briefing`, `arrakis-wormsign-tip`, Auslöser `research`); ob Tipps erscheinen, entscheidet das Szenario. Dazu kommt immer je eine Chatzeile an die Force (docs/plan-3d1.md 4.13).
 1. **Erster Spice.** Spice-Sand wird von Hand abgebaut. Das löst wie bisher „Spice-Verarbeitung“ aus. Normale Bohrer bauen Spice nicht ab (Entscheidung 2).
 2. **Spice-Ernte.** Diese Trigger-Forschung (10 Melange herstellen) schaltet Spice-Ernter, Spice-Annahme und Tankstutzen frei.
-3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger, gebaut in 0.6.0). Ab diesem Moment läuft die **Schonfrist** (kommt mit 3d1), sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde.
+3. **Erster Ernter.** Sobald der erste Ernter hergestellt ist, ist der **Ornithopter** erforscht (Trigger, gebaut in 0.6.0). Ab diesem Moment läuft die **Schonfrist** (seit 0.7.0), sichtbar oben links: „Die Wüste regt sich in 10:00“. Sie endet spätestens 30 Minuten nach der ersten Landung auf Arrakis, auch wenn noch kein Ernter gebaut wurde. Jede Force hat ihre eigene; als Landung zählt ein verbundener Spieler der Force, dessen `physical_surface` Arrakis ist (die Fernsicht zählt nicht). Bis zum Ende gibt es Vibration und Unruhe, aber kein Wurmzeichen; danach „Die Wüste ist erwacht“, für immer.
 4. **Zum Feld bringen.**
    - Das garantierte Startfeld ist das **Lehrfeld**. Es liegt 40 bis 60 Kacheln vom Inselrand entfernt (Karte 0.5.4: 41 bis 59, siehe 2.4), dorthin kann man noch kriechen (etwa 1,4 Kacheln/s).
    - Alle anderen Felder liegen mindestens 100 Kacheln tief im Sand. Dorthin kommt man praktisch nur mit dem Ornithopter.
@@ -63,12 +63,12 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
    - Nach 5 s ist der Ernter verankert.
    - Er fördert 5 Spice-Sand pro Sekunde aus einem 13×13-Feld und verbraucht dabei 400 kW Treibstoff.
    - Die Statuszeile zeigt „Erntet“, „Laderaum voll“, „Feld erschöpft“ oder „Kein Treibstoff“.
-6. **Unruhe.** Nach etwa 25 s wirbelt Sand auf, es rumpelt, und der Status meldet „Der Sand bebt“.
-   - Im Ernterfenster gibt es den Schalter **Vorsichtsmodus**: Dann packt die Crew bei Unruhe selbst ein und baut wieder auf, wenn es ruhig geworden ist.
-   - Das ist sicher, bringt aber nur etwa ein Drittel der Ausbeute. Gedacht ist er für Zeiten, in denen der Spieler woanders ist.
-7. **Wurmzeichen** nach etwa 55 s Ernten:
-   - Alarm am Ernter, Kartenmarkierung, Warnton, roter Gefahrenring,
-   - Countdown 60 s. Die allererste Jagd ist eine **Lehrjagd** mit 90 s.
+6. **Unruhe.** Nach etwa 25 s wirbelt Sand auf, es rumpelt, und der Status meldet „Der Sand bebt“. Das gilt ab kaltem Sand (per Ornithopter abgesetzt oder vorher 2 min gestanden); nach der Anfahrt aufs Lehrfeld liegt schon Wärme an, dann nach etwa 17 s (4.3).
+   - Im Ernterfenster gibt es den Schalter **Vorsichtsmodus**: Dann packt die Crew bei Unruhe selbst ein (ohne Vibration) und baut wieder auf, wenn es ruhig geworden ist.
+   - So wird der Ernter nie selbst Ziel, solange er aufgebaut ist oder aufbaut. Vor einer schon laufenden Jagd schützt der Modus nicht, ebenso wenig als Nachbar im Bissradius eines anderen Ziels. Er bringt gut ein Viertel der Ausbeute (Zyklus 16 s / 36 s / 5 s, 4.1). Gedacht ist er für Zeiten, in denen der Spieler woanders ist.
+7. **Wurmzeichen** nach etwa 55 s Ernten (nach der Anfahrt aufs Lehrfeld etwa 47 s), immer erst nach Unruhe:
+   - Alarm am Ernter, Kartenmarkierung, Warnton, roter Gefahrenring mit Sekunden, eine Zeile im Fenster oben links und eine Chatzeile. Steht das Ziel sicher (ganz auf Fels oder außer Reichweite des Wurms, Schritt 9), wird der Ring grün, und Fenster und Status sagen „sicher“.
+   - Countdown 60 s, er verlängert sich nie. Die erste Jagd jeder Force auf einen Spice-Ernter ist eine **Lehrjagd** mit 90 s; solange sie läuft, bekommt dieselbe Force keine zweite. Jagden auf Gebäude und Fahrzeuge haben immer 60 s.
 8. **Rettung.**
    - *Mit Ornithopter:* über den Ernter fliegen und `Umschalt+C` drücken. Gleichwertig sind die Verknüpfung „Ernter anheben oder absetzen“ in der Leiste (`arrakis-carry`, geht auch in der Kartenansicht) und der Knopf im Ornithopter-Fenster. Die Taste ist nie der einzige Weg: `ALT+O` kam in T12 nie an.
      - Nach 2 s Ankoppeln wird der Ernter samt Verankerung herausgerissen; ein Einpacken ist nicht nötig (Notstart aus Aufbau, aufgebaut, Einpacken; ein angedockter wird abgedockt). Der Ernter darf während des Ankoppelns weiterfahren.
@@ -76,11 +76,11 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
      - Danach schwebt man einfach über der Stelle oder fliegt weg. Mit denselben Wegen wird der Ernter wieder abgesetzt; die Insassen bleiben dabei im Ornithopter, und der Knopf „In den Ernter steigen“ setzt einen zurück ans Steuer.
    - *Aus der Kartenansicht:* Den Ornithopter mit der Spidertron-Fernbedienung hinschicken und Taste oder Verknüpfung drücken, solange er ausgewählt ist. Die Fernbedienung gibt die eigene Verknüpfung „Fernbedienung für Ornithopter“ (`arrakis-give-remote`, frei mit „Ornithopter“; die Vanilla-Verknüpfung erst mit „Spidertron“) oder der Knopf „Fernbedienung“ im Ornithopter-Fenster, der den Ornithopter gleich auswählt. Alternativ fährt man ihn aus der Karte fern (`allow_remote_driving = true`) und drückt dort die Taste. Ob Taste, Auswahl und Fernfahren in der Kartenansicht so wirken, ist noch ungeprüft (T17, docs/plan-3c.md 4.16 U1 bis U5).
    - *Solo-Rettung:* im Ernter sitzen, den Ornithopter per Fernbedienung herholen und die Taste drücken. Danach sitzt man als Pilot im Ornithopter, der Ernter hängt dran.
-   - *Ohne Ornithopter:* einpacken (10 s) und auf Fels kriechen. Das gelingt nur auf dem Lehrfeld.
-9. **Der Wurm kommt an.**
-   - *Ziel weg:* Er sucht 10 s und taucht ab.
-   - *Ziel noch da:* Eine Sandfontäne bricht hervor, und der Ernter wird gefressen (Standard Totalverlust, per Mod-Einstellung abschwächbar, Entscheidung 4). Mit ihm stirbt alles im Umkreis von 4 Kacheln, das auf Sand steht.
-   - Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand.
+   - *Ohne Ornithopter:* einpacken (10 s) und auf Fels kriechen. Das gelingt nur auf dem Lehrfeld; in der Lehrjagd (90 s) auch von regulären Feldern bis etwa 111 Kacheln vom Fels (2.4).
+9. **Der Wurm kommt an.** In 3d1 (0.7.0) gibt es noch keinen sichtbaren Wurm: Entschieden wird erst genau bei 0, mit dem Ort von dann (4.3 „Jagd in 3d1“).
+   - *Ziel weg:* Er sucht 10 s und taucht ab. Weg heißt: getragen, ganz auf Fels oder weiter vom Ort des Wurmzeichens entfernt, als der Wurm in der Zeit käme (3,5 Kacheln je Sekunde Countdown, also 210 Kacheln bei 60 s); eine harmlose Fontäne zeigt, wo er ins Leere beißt. Wurde das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter, mit derselben harmlosen Fontäne an seiner letzten Stelle auf Sand.
+   - *Ziel noch da:* Eine Sandfontäne bricht hervor, und der Ernter wird gefressen (Standard Totalverlust, per Mod-Einstellung abschwächbar, Entscheidung 4). Mit ihm stirbt alles im Umkreis von 4 Kacheln, das auf Sand steht, auch die Insassen. Mit „Schwer beschädigt“ überlebt jeder Spice-Ernter im Umkreis mit 10 % Gesundheit samt Insassen, die Ladung ist weg; andere Fahrzeuge und Gebäude sterben trotzdem. Der Biss folgt dem Ziel, aber nur so weit, wie der Wurm käme.
+   - Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand (ab 3d2).
    - Danach ist die Wärme der Gegend null, und der Sektor bleibt 2 bis 4 Minuten ruhig.
 10. **Entladen.** Den Ernter auf den Andockplatz einer Spice-Annahme fahren oder dort absetzen; die Annahme steht auf Fels.
     - Der Ernter dockt an, und die Annahme zeigt seinen Laderaum. Greifarme ziehen den Spice-Sand auf Bänder.
@@ -120,7 +120,8 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 ### 2.4 Feste Regeln und Zahlenregeln
 
 **Regeln**
-- Was vollständig auf Fels steht oder getragen wird, wird nie gefressen. Vollständig heißt: Unter der Kollisionsbox liegt keine einzige Sandkachel.
+- Was vollständig auf Fels steht oder getragen wird, wird nie gefressen. Vollständig heißt: Unter der Kollisionsbox liegt keine einzige Sandkachel. Sand ist jede natürliche Kachel außer Fels (`terrain.has_sand_under`): Gepflasterter Fels ist Fels, gepflasterter Sand bleibt Sand.
+- Angedockt gibt es keine Ausnahme: Ein angedockter Ernter ist nur sicher, wenn seine ganze Box auf Fels steht. Die Annahme sichert nur ±5 Kacheln Fels, der Ernter reicht im Andockkreis bis 4 + 1,58 = 5,58 Kacheln.
 - Würmer betreten nie Fels.
 - Ornithopter und Carryall in der Luft werden vom Wurm weder getroffen noch gebremst.
 - Anheben, Tragen und Absetzen verlieren nichts. Laderaum, Treibstoff, Gesundheit, Qualität und Farbe bleiben erhalten. (Einen Namen haben Autos nicht; T3 zeigte, dass `entity_label` bei ihnen nicht geht.)
@@ -134,11 +135,11 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 | Aufbauen / Einpacken | 5 s / 10 s | Flucht per Fahrt kostet Zeit |
 | Ankoppeln am Flieger | 2 s, ohne Einpacken | Fliegen ist der schnelle Weg |
 | Fernsteuerung des Ernters | aus (`allow_remote_driving = false`) | Sonst flieht man aus der Kartenansicht |
-| Vorwarnzeit | 60 s, Lehrjagd 90 s | |
+| Vorwarnzeit | 60 s, Lehrjagd 90 s | Lehrjagd nur bei der ersten Jagd jeder Force auf einen Spice-Ernter |
 | Abstand Spicefeld → Fels | ≥ 100 Kacheln Sand; Lehrfeld 40–60 | 10 s + 100 / 1,41 ≈ 81 s > 60 s; Lehrfeld: (60 − 10) · 1,41 ≈ 70 Kacheln |
 | Tempo Ornithopter / Carryall | Ornithopter leer 8, beladen 5,6 Kacheln/s (0,7 × leer; 0.6.0, je ein eigener Sticker); Carryall ≥ 6 | 300 Kacheln in 50 bis 60 s: beladen 54 s, leer 38 s. Kriterium aus T1 war ≥ 5 bzw. ≥ 6 Kacheln/s |
 
-**Abnahmekriterium** (Phase 3d1): Auf einem Feld, das nicht das Lehrfeld ist, entkommt ein Ernter ohne Flieger nicht innerhalb der Vorwarnzeit.
+**Abnahmekriterium** (Phase 3d1): Auf einem Feld, das nicht das Lehrfeld ist, entkommt ein Ernter ohne Flieger nicht innerhalb der Vorwarnzeit. Die Lehrjagd ist die bewusste Ausnahme: In 90 s schafft er nach dem Einpacken 80 s · 1,41 ≈ 113 Kacheln, also auch von regulären Feldern bis etwa 111 Kacheln vom Fels (docs/plan-3d1.md 1, „Flucht per Fahrt“). Die Reichweite des Wurms (210 bzw. 315 Kacheln) erreicht ein Ernter nie.
 
 **Karte** (ab 0.5.4, nach dem T11-Lauf vom 25.10.2026 mit 0.5.3; Ausdrücke `arrakis_v2_*` in `prototypes/noise.lua`, das reguläre Spice ab 0.5.5 aus `arrakis_v3_spice_*`)
 
@@ -204,8 +205,8 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 | Spice-Abbau (`arrakis-spice-harvest`) | `resource-category` | Nur Ernter und Hand | – | – |
 | Tasten (`arrakis-harvester-toggle`, `arrakis-carry-toggle`) | `custom-input` | Aufbauen/Einpacken/Abdocken (`Umschalt+H`), Anheben/Absetzen (`Umschalt+C`) | 1 | – |
 | Verknüpfungen (`arrakis-carry`, `arrakis-give-remote`) | `shortcut`, frei mit „Ornithopter“ | Anheben/Absetzen wie die Taste (`action = "lua"`, auch in der Kartenansicht); Spidertron-Fernbedienung in die Hand (`spawn-item`) | 1 | Panzer-Icon in Ernter-Tönung; Vanilla-Fernbedienungs-Icon |
-| Vibrationsanzeige (`arrakis-vibration-overlay`) | `shortcut` | Zeigt dem Spieler die Wärme pro Chunk | 1 | Getöntes Icon |
-| Briefings (`arrakis-briefing`, `arrakis-wormsign-tip`) | `tips-and-tricks-item` | Einführung der Gefahr | 1 | nur Text |
+| Vibrationsanzeige (`arrakis-vibration-overlay`) | `shortcut`, umschaltbar, frei mit „Spice-Ernte“ | Zeigt nur diesem Spieler die 3×3-Summe der Wärme für die 7×7 Chunks um die Stelle, die er sieht (grün, gelb ab 600, rot ab 1000, grau in Ruhe) | 1 | Alarm-Icon sandfarben getönt |
+| Briefings (`arrakis-briefing`, `arrakis-wormsign-tip`) | `tips-and-tricks-item`, Kategorie `space-age` hinter Aquilo, Auslöser `research` | Einführung der Gefahr; dazu je eine Chatzeile | 1 | nur Text |
 | Ablage (`arrakis-hold`) | Oberfläche, per Skript erzeugt | Stellplätze für getragene Ernter | 1 | Laborkacheln, versteckt |
 
 ### 3.1 Kosten, Beute, Durchsatz (Startwerte)
@@ -229,9 +230,9 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
 
 ### 4.0 Grundgerüst [2.0]
 
-- **Dateien.** `control.lua` lädt nur Module über `__core__/lualib/event_handler`. Die Module sind `scripts/compat.lua`, `hold.lua`, `harvester.lua`, `flyer.lua`, `worms.lua`, `fleet.lua`, `migrate.lua` und `debug.lua`. In der Datenstufe kommen `prototypes/compat.lua` und `settings.lua` dazu.
+- **Dateien.** `control.lua` lädt nur Module über `__core__/lualib/event_handler`. Die Module sind (Stand 0.7.0) `scripts/migrate.lua`, `arrakis-surface.lua`, `harvester.lua`, `harvester-gui.lua`, `intake.lua`, `hold.lua`, `flyer.lua`, `flyer-gui.lua`, `vibration.lua`, `worms.lua` und `worms-gui.lua`, dazu die Bibliothek `terrain.lua`; `fleet.lua` kommt mit 3e. Ein `debug.lua` gibt es nicht: Der eine Befehl `/arrakis-worm` steht in worms.lua (docs/plan-3d1.md 1). In der Datenstufe kommen `prototypes/compat.lua` und `settings.lua` dazu.
 - **Zustand.** Alles liegt in `storage`, Schlüssel ist jeweils `unit_number`.
-  - Aufgeräumt wird über `script.register_on_object_destroyed` und `on_object_destroyed`, auch für `LuaSegmentedUnit` (A20 :500-512).
+  - Aufgeräumt wird über `script.register_on_object_destroyed` und `on_object_destroyed`, auch für `LuaSegmentedUnit` (A20 :500-512). Ausnahme sind die Vibrationsquellen (0.7.0): Sie haben keine eigene Anmeldung, weil `register_on_object_destroyed` für einen Ernter dieselbe Nummer wie in harvester.lua liefert und `storage.reg` überschriebe; der Takt wirft ungültige Quellen hinaus (docs/plan-3d1.md 4.3).
   - `on_load` schreibt nichts.
   - Zufall kommt aus einem gespeicherten `game.create_random_generator()`, also deterministisch und im Mehrspieler sicher (A20 :16187, :24574).
 - **Takt.** `on_tick` gibt es nur für den Tempo-Deckel (4.1). Er steht fest in der `events`-Tabelle und kehrt sofort zurück, wenn kein Ernter gefahren wird; ein eigenes `script.on_event` würde den zusammengefassten Handler von event_handler (auch den des Prüfstands) ersetzen (V20 core/lualib/event_handler.lua:69-76).
@@ -248,9 +249,9 @@ Diese Punkte standen in v0.2 noch als Fragen da. Sie sind aber durch Max' Vorgab
   - Spielwerte sind globale Mod-Einstellungen.
 - **Debug.**
   - `/arrakis` gibt es schon.
-  - `/arrakis-worm` hetzt einen Wurm auf die ausgewählte Entity.
+  - `/arrakis-worm [Sekunden|lehr]` (ab 0.7.0, in worms.lua) startet eine Jagd auf die ausgewählte Entity: 5 bis 600 s, Standard 60, `lehr` 90; ohne Schonfrist und Grenzen, am Ende ohne Rücksetzen, Ruhe, Statistik und Lehrjagd-Merker.
   - `/arrakis-test <Tn>` ist der Prüfstand (Abschnitt 8).
-  - Die Vibrationsanzeige ist ein normales Spielerwerkzeug (Shortcut), kein Debug-Befehl.
+  - Die Vibrationsanzeige ist ein normales Spielerwerkzeug (Shortcut, 7×7 Chunks mit der 3×3-Summe), kein Debug-Befehl.
 
 ### 4.1 Spice-Ernter
 
@@ -299,17 +300,18 @@ mobil, steht im Andockkreis einer Annahme --> angedockt --Umschalt+H / Anheben /
 7. Zur Einordnung: Mit Kohle reichen 3 Slots für 25 min Ernten, mit Spice-Brikett etwa 2 h (Kohle 4 MJ, Stapel 50; V20 base/prototypes/item.lua:72, :78).
 
 **Einpacken** [2.0]
-- 10 s Ring; in dieser Zeit vibriert der Ernter weiter mit 30.
+- 10 s Ring; in dieser Zeit vibriert der Ernter weiter mit 30, beim Einpacken durch den Vorsichtsmodus mit 0.
 - Danach `disabled_by_script = false`, Renderings und Status zurücksetzen. `minable_flag` bleibt `false`, solange auf Arrakis Sand unter dem Ernter liegt; erst auf Fels lässt er sich aufheben. Sonst flieht man per Aufheben in 22 s ohne Ornithopter.
 - Vibrationsgewicht: 10, solange er fährt, 0, solange er steht.
 
 **Vorsichtsmodus** [2.0]
-- Ein Schalter pro Ernter. Erreicht die Wärme in seiner Nachbarschaft 600, packt der Ernter ein; fällt sie unter 300, baut er wieder auf.
-- Mit einem einzelnen Ernter ergibt das einen Zyklus aus etwa 14 s Ernten und 34 s Pause.
+- Ein Schalter pro Ernter (Kontrollkästchen im Ernterfenster). Erreicht die Wärme W in seiner Nachbarschaft 600, packt der Ernter ein, und zwar mit Gewicht 0 (beim Aufbauen bricht er ab); steht er noch an der Stelle (≤ 0,25 Kacheln) und fällt W unter 300, baut er wieder auf. Fahren, Anheben, Andocken oder `Umschalt+H` beenden das Warten. Mit Gewicht 30 beim Einpacken stiege die Wärme von zwei Erntern im selben Chunk über die Wurmzeichen-Schwelle (docs/plan-3d1.md 1).
+- Mit einem einzelnen Ernter ergibt das einen Zyklus aus 16 s Ernten (267 → 608), 36 s Warten samt 10 s Einpacken (608 → 296) und 5 s Aufbauen: 57 s, 28 % Erntezeit, gut ein Viertel der Ausbeute, etwa 7 Pakete/min (3.1).
+- **Schutz:** Nie selbst Ziel, solange er aufgebaut ist oder aufbaut: Ein Wurmzeichen verlangt W ≥ 600 im Takt davor, und in dem Takt packt er schon ein. Fahrend (10) und beim Einpacken von Hand (30) zählt er wie jeder Ernter. Er schützt nicht als Nachbar im Bissradius eines anderen Ziels und nicht vor einer schon laufenden Jagd; dann wird bei 0 gebissen, wo er steht.
 
 **Tod** [2.0]
-- `on_entity_died` (gefiltert) räumt auf und beendet die Jagd als „gefressen“.
-- Es bleibt ein Wrack wie beim Panzer.
+- `on_entity_died` (gefiltert) räumt auf. Stirbt ein gejagter Ernter vor 0 (nicht durch den Biss), läuft der Countdown als „Ziel verloren“ weiter, und die Jagd endet bei 0 als `gone`, nicht als „gefressen“; „gefressen“ (`bitten`) ist nur der Biss selbst (docs/plan-3d1.md 4.7).
+- Es bleibt ein Wrack wie beim Panzer (`tank-remnants`).
 
 **Spice-Annahme und Tankstutzen** [2.0]
 - Beide sind `proxy-container` (V20 base/prototypes/entity/entities.lua:10080). `proxy_target_entity` und `proxy_target_inventory` sind schreibbar (A20 :5535-5548).
@@ -377,7 +379,7 @@ for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus 
    - `harvester.teleport(slot, hold)`; der Rückgabewert wird geprüft. Bei false wird der Ernter wieder mobil, die Insassen steigen wieder ein, und es gibt einen Hinweis.
    - **Sitze:** Der Fahrer des Ernters bekommt den ersten freien Sitz des Fliegers, Pilot zuerst, der Beifahrer den übrigen (`set_driver`/`set_passenger`, für Spider-Vehicles erlaubt, A20 :3425). Ist der Spieler in der Fernsicht, verlässt er sie vorher (5.5); fuhr er den Flieger fern, ist der Pilotensitz danach frei. Sitzt eine Figur nicht, wird sie an den Flieger gestellt und noch einmal gesetzt. Erst wenn auch das scheitert oder kein Sitz frei ist, bleibt sie am Boden und bekommt eine Warnung.
    - Bild und Schatten werden am **Flieger** gezeichnet: `rendering.draw_sprite{sprite = "arrakis-harvester-carried-<i>", target = {entity = flyer, offset = {0, -1.5}}, render_layer = "smoke", …}` mit i = floor(Ausrichtung · 16 + 0,5) mod 16, der Schatten mit `{1, 1}` auf `"floor"`. Kein `forces`: Alle sehen es (4.0). Der Offset gilt ab dem Bodenpunkt des Spider-Vehicles, den Rumpf zeichnet die Engine um `height` = 3 höher; mit `{0, 0.5}` lägen Bild und Schatten fast an derselben Stelle am Boden. Beide Werte sind Konstanten, Max beurteilt sie in T17. Render-Objekte verschwinden, sobald ihr Ziel die Oberfläche wechselt (A20 :27115); stirbt der Flieger, verschwindet das Bild also von selbst, und nach einem Teleport zeichnet die Pflege es neu.
-   - `flyer.minable_flag = false`, Sticker „beladen“. Jagden auf einen getragenen Ernter enden ab 3d1 als ENTKOMMEN.
+   - `flyer.minable_flag = false`, Sticker „beladen“. Eine Jagd auf einen getragenen Ernter endet dadurch nicht: Sie läuft weiter (Alarm und Ring weg, das Fenster sagt „wird getragen“), entschieden wird erst bei 0. Wird er dann noch getragen, ist er entkommen; wird er vorher auf Sand in Reichweite abgesetzt, beißt der Wurm dort (3d1, docs/plan-3d1.md 4.7).
 5. **Last kostet Treibstoff von selbst.** Das Tempo einer Spinne ist nicht schreibbar (A20 :4166-4172), deshalb drosselt der Sticker. RUN055 T1 maß mit und ohne Sticker konstant etwa 810 kW, also kostet jede Kachel mit Last mehr (bei 800 kW 100 kJ je Kachel leer, 143 beladen; 100 Kohle reichen für etwa 500 s Flug). Einen Abzug per Skript gibt es deshalb nicht.
 
 **Absetzen** [2.0]
@@ -430,34 +432,42 @@ for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus 
   - Der Ernter bekommt sie nicht in seine Maske.
 
 **Vibration** [2.0]
-- **Fahrzeuge** (Ernter, Auto, Panzer, Spidertron, Lokomotive) werden immer angemeldet. Ob sie auf Sand stehen, prüft jeder Vibrationstakt mit einem `get_tile` an ihrer Position. So zählt auch ein Panzer, der vom Fels in den Sand fährt.
-- **Feste Gebäude** werden über `on_built_entity`, `on_robot_built_entity`, `script_raised_built` und `script_raised_revive` angemeldet. Voraussetzung: auf Arrakis, und unter der Box liegt mindestens eine Sandkachel (`count_tiles_filtered{…, name = {"sand-1","sand-2","sand-3"}}`, A20 :30844). Bei Kachel-Ereignissen wird neu bewertet.
+- **Fahrzeuge** (Auto, Panzer, Spidertron, Lokomotive) werden bei Bau, Klon und Einsteigen auf Arrakis angemeldet; Ernter laufen immer über `storage.harvesters`. Ob sie auf Sand stehen, prüft jeder Vibrationstakt an ihrer Mitte (natürliche Kachel, `terrain.natural_tile_name`). So zählt auch ein Panzer, der vom Fels in den Sand fährt.
+- **Feste Gebäude** werden über `on_built_entity`, `on_robot_built_entity`, `script_raised_built` und `script_raised_revive` angemeldet. Voraussetzung: auf Arrakis, und unter der Box liegt Sand (`terrain.has_sand_under`: eine natürliche Kachel außer Fels, gepflastert oder nicht). Bei Kachel-Ereignissen wird neu bewertet.
+- **Keine eigene Anmeldung für `on_object_destroyed`** (4.0): Der Takt wirft ungültige Quellen und solche auf anderen Oberflächen hinaus.
 - **Gewichte** (Vibration pro Sekunde; Fabriken und Öfen nur bei `status == working`):
 
   | Quelle | Gewicht |
   |---|---|
-  | Ernter aufgebaut / beim Einpacken | 30 |
-  | Ernter fahrend | 10 |
-  | Ernter stehend, eingepackt oder angedockt | 0 |
+  | Ernter aufgebaut (jeder Status, auch „Laderaum voll“) / beim Einpacken | 30 (Einpacken durch den Vorsichtsmodus: 0) |
+  | Ernter fahrend (`math.abs(speed) ≥ 0,001`) | 10 |
+  | Ernter beim Aufbauen, stehend, angedockt oder getragen | 0 |
   | Thumper | 60 |
-  | Panzer / Spidertron / Auto (fahrend) | 8 / 6 / 4 |
-  | Lokomotive (fahrend) | 6 |
-  | Großbohrer / Bohrer / Pumpe | 8 / 3 / 2 |
-  | Fabrik oder Ofen | 1 |
-  | Bänder, Rohre, Masten, Spieler zu Fuß, Flieger | 0 |
+  | Panzer / Spidertron / Auto (nur fahrend) | 8 / 6 / 4 |
+  | Lokomotive (nur fahrend) | 6 |
+  | Großbohrer / Bohrer / Pumpe (nur bei `status == working`) | 8 / 3 / 2 |
+  | Fabrik oder Ofen (nur bei `status == working`) | 1 |
+  | Wagen, Bänder, Rohre, Masten, Spieler zu Fuß; der Ornithopter ist keine Quelle | 0 |
 
   Bänder bleiben also der vibrationsfreie Weg über den Sand. Ein Wurm, der vorbeizieht, zerstört sie aber trotzdem.
-- **Wärme pro Chunk:** `H ← H · 0,98^Δs + ΣV · Δs`. Gewertet wird die Summe über die 3×3-Nachbarschaft.
-- **Schwellen:** Unruhe ab 600, Wurmzeichen ab 1000, großer Wurm ab 2000.
-  - Ein Ernter allein strebt gegen 1500. Er erreicht 600 nach etwa 25 s und 1000 nach ln 3 / 0,0202 ≈ 55 s.
+- **Wärme pro Chunk** (je Oberfläche, 60-Tick-Takt): `H ← H · 0,98^Δs + ΣV · min(Δs, 2)`. Δs ist im 60-Tick-Takt immer 1; `min(Δs, 2)` sichert nur ab wie beim Ernter (4.0). Gewertet wird die Summe S über die 3×3-Nachbarschaft (`sum3`, dazu `prev3` aus dem Takt davor). Am Ort einer Quelle gilt W = größtes S über die 3×3 Chunks um ihren Chunk: der Wert, mit dem irgendein Wurmzeichen-Kandidat sie erfasst.
+- **Schwellen:** Unruhe ab W = 600; Wurmzeichen, wo S ≥ 1000 ist und im Takt davor ≥ 600 war, also immer erst nach Unruhe, auch bei vielen Quellen; großer Wurm ab 2000 (3d3).
+  - Ein Ernter allein strebt gegen 1500: H_n = 1500 · (1 − 0,98^n). Ab kaltem Sand erreicht er 600 im 26. Takt (etwa 25 s) und 1000 im 55. Takt (ln 3 / 0,0202 ≈ 55 s). Nach der Anfahrt aufs Lehrfeld (41 bis 59 Kacheln mit Gewicht 10, dann 5 s Aufbau) liegen schon etwa 200 bis 260 an: Unruhe nach etwa 17 s, Wurmzeichen nach etwa 47 s (docs/plan-3d1.md 1, „Zeiten“).
   - Ein Thumper allein strebt gegen 3000 und erreicht 1000 nach etwa 20 s.
 - **Grenzen:**
-  - Höchstens eine Jagd pro Sektor (4×4 Chunks), höchstens drei gleichzeitig. Thumper-Jagden zählen nicht mit.
-  - Endet eine Jagd auf einen Ernter oder ein Gebäude (gefressen oder entkommen), wird die Wärme der 3×3-Nachbarschaft des Ursprungs auf 0 gesetzt.
+  - Höchstens eine Jagd pro Sektor (4×4 Chunks), höchstens drei gleichzeitig über alle Forces und Oberflächen, je Takt und Oberfläche höchstens eine neue. Befehlsjagden (`/arrakis-worm`) zählen nicht mit und sperren nichts; ab 3d3 ebenso Thumper-Jagden.
+  - Endet eine Jagd (gefressen, entkommen oder Ziel weg; nicht per Befehl), wird die Wärme der 3×3-Nachbarschaft des Ursprungs auf 0 gesetzt.
   - Danach ist der Sektor 2 bis 4 Minuten ruhig, die Dauer würfelt der gespeicherte Zufallsgenerator. Während der Ruhe bleibt die Wärme bei 0. Danach kündigt sich jedes neue Wurmzeichen wieder mit Unruhe an.
-- **Schonfrist:** Würmer werden aktiv 10 Minuten nach Abschluss der Ornithopter-Forschung, spätestens 30 Minuten nach der ersten Landung. Die Restzeit steht in einer kleinen Anzeige. Vibration und Unruhe-Staub gibt es schon vorher.
+- **Schonfrist** je Force: Würmer werden aktiv 10 Minuten nach Abschluss der Ornithopter-Forschung, spätestens 30 Minuten nach der ersten Landung (`active_from = min(ornithopter_tick + 36000, landed_tick + 108000)`). Erste Landung: ein verbundener Spieler der Force mit `physical_surface` Arrakis, geprüft bei `on_player_changed_surface` und jede Sekunde; die Prüfstand-Fläche zählt nicht. Einmal wach, immer wach. Die Restzeit steht im Fenster oben links. Vibration und Unruhe-Staub gibt es schon vorher.
 
-**Jagd als Zustandsmaschine** (`storage.hunts`)
+**Jagd in 3d1 (0.7.0): ohne Wurm-Entity** (docs/plan-3d1.md 4.7 bis 4.9)
+- Zustände `warning` → am Biss-Tick `biting` (nur innerhalb des Biss-Aufrufs) bzw. `searching` (10 s) → Ende. Ziel ist die stärkste berechtigte Quelle in der 3×3-Nachbarschaft des heißen Chunks (bei Gleichstand Ernter vor anderen, dann kleinste `unit_number`); Ursprung ist sein Chunk.
+- Der Countdown ist fest (`eta_tick` ein Vielfaches von 10, der Biss fällt im 10-Tick-Takt genau bei 0). Entschieden wird erst am Biss-Tick, mit dem Ort von dann: ungültig oder verloren → weg (`gone`); getragen oder auf einer anderen Oberfläche → entkommen; ganz auf Fels (auch angedockt) → entkommen; weiter als `reach = 3,5 · Countdown in s` Kacheln vom Ort des Wurmzeichens (60 s: 210, Lehrjagd: 315) → entkommen; sonst Biss an der jetzigen Position. Der Biss folgt dem Ziel also, aber nur so weit, wie ein Wurm käme.
+- Ohne Biss bricht eine harmlose Eruption an der letzten Stelle auf Sand hervor (bei „zu weit“ am Ort des Wurmzeichens), danach sucht die Jagd 10 s. Wird das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter.
+- Steht das Ziel sicher (`safe = "rock"` oder `"far"`, geprüft im 10-Tick-Takt), werden Ring und Sekunden grün, und Fenster und Status sagen „sicher“; zurück auf Sand wieder rot. Das ist nur Anzeige. Wechselt das Ziel die Force (`entity.force = …`, ohne Ereignis), merkt es der 10-Tick-Takt: Die Jagd läuft weiter, Warnungen gehen an die neue Force.
+- Die Spawnplanung aus WURMZEICHEN und die Schritte ROUTING bis ABTAUCHEN unten kommen mit 3d2; bis dahin gilt dieser Abschnitt.
+
+**Jagd als Zustandsmaschine** (`storage.hunts`, ab 3d2 mit Wurm-Entity)
 ```
 WURMZEICHEN -> [ROUTING] -> WARTEN (bis Spawnzeit) -> ANNÄHERUNG -> ANGRIFF -> BISS -> ABTAUCHEN
 Ziel getragen / ganz auf Fels / ungültig -> ENTKOMMEN -> SUCHEN (max. 10 s) -> ABTAUCHEN
@@ -469,8 +479,8 @@ Wurm getötet -> Beute, Ende          Zeitlimit t_warn + 60 s -> ABTAUCHEN
    - *Warnung:*
      - `add_custom_alert` für jeden Spieler der Force; in 2.0 gibt es das nur pro Spieler (A20 :22996).
      - Eine Kartenmarkierung mit `force.add_chart_tag` (A20 :15317).
-     - Warnton, Gefahrenring und Countdown-GUI.
-   - *Spawnplanung mit verzögertem Spawn:*
+     - Warnton, Gefahrenring und Countdown-GUI (Fenster oben links, `scripts/worms-gui.lua`); grün, sobald das Ziel sicher steht (3d1).
+   - *Spawnplanung mit verzögertem Spawn* (3d2):
      - Abstand `D = clamp(v · t_warn, 80, 160)` Kacheln.
      - Geprüft werden 16 Richtungen. Ein Kandidat muss in einem generierten Chunk auf Sand liegen, und die gerade Linie zum Ziel muss Sand sein (`get_tile` alle 4 Kacheln, synchron).
      - Spawnzeit `spawn_tick = warn_tick + (t_warn − D/v) · 60`. Der Wurm existiert also nur für die letzten 23 bis 46 s. Das spart Rechenzeit und vermeidet ungenerierte Chunks. Auch eine längere Frühwarnung vergrößert den Abstand nicht.
@@ -491,7 +501,7 @@ Wurm getötet -> Beute, Ende          Zeitlimit t_warn + 60 s -> ABTAUCHEN
    - `minimum_activity_mode = full`.
    - Sprint mit `set_ai_state{type = attacking, target = ziel}` nur, wenn T5 zeigt, dass der Wurm ein Auto als Ziel hält. Demolisher ignorieren Fahrzeuge als Störung (CL:3677).
 6. **BISS**, wenn der Kopf näher als 3 Kacheln plus Zielradius ist **und** `game.tick ≥ eta_tick`.
-   - Eruption und Ton, dann `ziel.die("arrakis-sandworm")`. Dazu sterben alle Bodenentities im Umkreis von 4 Kacheln, deren Kollisionsbox Sand berührt; Flieger nicht.
+   - Eruption und Ton, dann `ziel.die("arrakis-sandworm")`: Täter ist die Force, ohne `cause`. Dazu sterben alle Entities mit Gesundheit, deren Box höchstens 4 Kacheln von der Zielmitte liegt und Sand berührt. Ausgenommen sind Ornithopter samt Insassen, Spinnenbeine, Ressourcen, Leichen, Geister, Klippen, `destructible == false` und die Sandwurm-Force. Insassen teilen das Los ihres Fahrzeugs: Beim Totalverlust sterben die des Ernters mit. „Schwer beschädigt“ gilt nur für Spice-Ernter (10 % Gesundheit, Kofferraum leer, Treibstoff bleibt, mobil, Insassen bleiben sitzen); alles andere stirbt trotzdem. Erst sammeln, dann töten, weil `die()` `on_entity_died` sofort auslöst (docs/plan-3d1.md 4.9).
    - Kommt der Kopf zu früh in Reichweite, drosselt das Skript `speed` (schreibbar, A20 :28198) bis zum Ende des Countdowns.
    - Der Biss ist geskriptet, weil im Modus „minimal“ weniger Trigger-Effekte laufen (A20 runtime/generated/defines.d.ts:3218-3222).
 7. **ABTAUCHEN** direkt nach dem Biss
@@ -508,7 +518,7 @@ Wurm getötet -> Beute, Ende          Zeitlimit t_warn + 60 s -> ABTAUCHEN
   - Liegt dort Fels, wird ein neuer Wegpunkt gesucht: um ±30°, ±60° und ±90° gedreht, 30 Kacheln weit, mit Sandlinie.
   - Gibt es keinen, folgt ROUTING oder Abtauchen.
 - **ANGRIFF:** geprüft wird nur die Strecke Kopf → Ziel, nie darüber hinaus. Liegt Fels dazwischen, geht die Jagd mit Umweg zurück in ANNÄHERUNG.
-- **Auf Fels heißt:** `count_tiles_filtered{area = ziel.bounding_box, name = Sandkacheln, limit = 1} == 0`.
+- **Auf Fels heißt:** `not terrain.has_sand_under(ziel)`: Unter der Box (umschließendes Rechteck) liegt keine natürliche Kachel außer Fels. Gepflasterter Fels ist Fels, gepflasterter Sand bleibt Sand (docs/plan-3d1.md 1, „Sand“).
 - Der Körper folgt der Spur des Kopfes. Deshalb reicht es, den Kopf zu überwachen, solange der Spawn sauber war.
 
 **Thumper** [2.0]
@@ -587,18 +597,22 @@ Verworfen:
 
 ### 4.5 storage-Struktur
 
-Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2, der für Phase 3c (Ornithopter, Ablage) in docs/plan-3c.md, Abschnitt 4.2; dort gelten sie. Die Schema-Nummer zählt je Phase hoch: 3b = 1, 3c = 2 (0.6.0), 3d1 = 3. Der Block unten zeigt das Gesamtbild nach Phase 3f; seine Schema-Nummer steht deshalb nicht fest.
+Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2, der für Phase 3c (Ornithopter, Ablage) in docs/plan-3c.md, Abschnitt 4.2; dort gelten sie. Die Schema-Nummer zählt je Phase hoch: 3b = 1, 3c = 2 (0.6.0), 3d1 = 3 (0.7.0, genauer in docs/plan-3d1.md, Abschnitt 4.2). Der Block unten zeigt das Gesamtbild nach Phase 3f; seine Schema-Nummer steht deshalb nicht fest.
 
 ```lua
 storage = {
   schema = …,                           -- je Phase hochgezählt (3c: 2)
-  rng   = LuaRandomGenerator,
+  rng   = LuaRandomGenerator,            -- nur für Ruhezeiten (0.7.0)
   hold  = {surface = LuaSurface|nil},    -- keine Liste freier Plätze: frei ist, worauf nichts steht (0.6.0)
-  grace = {landed_tick = nil, ornithopter_tick = nil, active_from = nil, first_hunt_done = false},
+  grace = { [force_index] = {landed_tick = nil, ornithopter_tick = nil, active_from = nil, awake = false,
+            announced = nil, first_hunt = hunt_id|nil, first_hunt_done = false} },   -- je Force (0.7.0)
   harvesters = { [un] = {entity, state = "mobile"|"deploying"|"deployed"|"packing"|"carried"|"docked",
-                 timer_tick = nil, careful = false, resources = {LuaEntity...}, progress = 0,
+                 timer_tick = nil, resources = {LuaEntity...}, progress = 0,
                  drain_rest = 0, prod_rest = 0, last_tick = 0, renders = {...},
                  home = MapPosition|nil, carried_by = flyer_un|nil, lift_pos = {surface, x, y}|nil,
+                 careful = false, careful_wait = true|nil, careful_pos = {surface, x, y}|nil, careful_packing = true|nil,
+                 vib_weight = 0, vib_key = chunk_key|nil, vib_sand = false,              -- Stand des letzten Takts (0.7.0)
+                 alarm_unrest = true|nil, alarm_hunt_eta = tick|nil, alarm_hunt_safe = true|nil, status_written = string|nil,
                  dock = un|nil, hangar = un|nil, job = id|nil} },
   flyers     = { [un] = {un, entity, kind = "ornithopter"|"carryall", cargo = un|nil,
                  coupling = {harvester = un, start_tick, done_tick, player_index}|nil,
@@ -614,20 +628,27 @@ storage = {
   hangars    = { [un] = {entity, out = LuaEntity, range = 300, target_count = 0, slots = {...}} },
   jobs       = { next_id = 1, list = { [id] = {type, prio, harvester = un, flyer = un|nil,
                  target = MapPosition, step, created_tick} } },
-  vib        = { sources = { [un] = {entity, weight, mobile = bool} },
-                 heat = { [chunk_key] = {h = 0, tick = 0} }, cursor = un|nil,
-                 overlay = { [player_index] = {LuaRenderObject...} } },
-  hunts      = { next_id = 1, list = { [id] = {kind = "harvest"|"building"|"thumper",
-                 target = LuaEntity, target_un, origin_chunk, sector, state, warn_tick,
-                 spawn_tick, eta_tick, candidates = {...}, spawn = MapPosition|nil,
+  vib        = { sources = { [un] = {un, entity, kind = "vehicle"|"fixed", base, sand, weight, key, surface} },  -- ohne Ernter
+                 heat = { [surface_index] = {tick, chunks = {[chunk_key] = h},
+                          sum3 = {[chunk_key] = s}, prev3 = {[chunk_key] = s}} },               -- je Oberfläche (0.7.0)
+                 rumble = { [surface_index] = {[sector_key] = tick} },
+                 overlay = { [player_index] = {surface, cells = {[chunk_key] = {rect, text, stage}}} },
+                 testbench = { [force_index] = true } },                                         -- nur Prüfstand
+  hunts      = { next_id = 1, paused_until = tick|nil, list = { [id] = {id, kind = "harvest"|"vehicle"|"building"|"thumper",
+                 debug, teaching, bite, target = LuaEntity, target_un, force_index, surface_index, target_name,
+                 origin_key, sector_key, state = "warning"|"biting"|"searching", warn_tick, eta_tick, end_tick,
+                 warn_pos, last_pos, reach, safe = false|"rock"|"far", lost, outcome, hidden, second, alerted, redraw,
+                 spawn_tick, candidates = {...}, spawn = MapPosition|nil,             -- spawn_tick bis worm ab 3d2
                  path_request = uint|nil, route = {...}, worm = LuaSegmentedUnit|nil,
-                 tag = LuaCustomChartTag|nil, renders = {...}} } },
+                 tag = LuaCustomChartTag|nil, tag_logged, renders = {ring, text}} } },
   path_requests   = { [request_id] = hunt_id },
-  sector_cooldown = { [sector_key] = tick },
+  sector_cooldown = { [surface_index] = {[sector_key] = until_tick} },                 -- je Oberfläche (0.7.0)
+  worm_stats      = { [force_index] = {bitten = 0, escaped = 0, gone = 0, first_escape_tick = nil} },
   spice_chunks    = { [chunk_key] = {count, reserved_by = un|nil} },
   thumpers        = { [un] = {entity, until_tick} },
   reg             = { [registration_number] = {kind = "harvester"|"intake"|"nozzle"|"flyer"|…, un} },
-  migration       = { pending_chunks = {ChunkPosition...}, done = false },
+  migration       = { spice_drills = {...}, old_map_notice = true|nil, worms_pending = true|nil, worm_notice = true|nil,
+                      pending_chunks = {ChunkPosition...}|nil },   -- pending_chunks erst für die Feldsuche (3f)
 }
 ```
 Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject, LuaCustomChartTag, LuaSurface, LuaRandomGenerator) dürfen in `storage` stehen.
@@ -636,8 +657,8 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
 
 - **0.3.0 → 0.5.0** (`on_configuration_changed`, gesteuert über `storage.schema`):
   - **Bohrer auf Spice:** Durch die neue Kategorie bauen sie nichts mehr ab. Das Skript sucht auf Arrakis einmal `find_entities_filtered{type = "mining-drill"}`, prüft `mining_target` (A20 :4614) und zusätzlich, ob in `mining_area` Spice liegt (nach dem Laden ist `mining_target` vermutlich leer), und meldet jeden Treffer mit Alarm und Kartenmarkierung.
-  - **Erstbefüllung:** `on_chunk_generated` feuert für alte Chunks nicht noch einmal. Deshalb werden die Positionen aus `surface.get_chunks()` (A20 :31304) einmal in `storage.migration` kopiert und budgetiert abgearbeitet: Spice zählen und feste Vibrationsquellen auf Sand anmelden.
-  - **Schonfrist:** Gibt es Arrakis schon, gilt `landed_tick = game.tick`; die Schonfrist beginnt also jetzt.
+  - **Erstbefüllung:** `on_chunk_generated` feuert für alte Chunks nicht noch einmal. Die Vibrationsquellen meldet seit 0.7.0 ein einziger `vibration.scan` auf Arrakis in `on_configuration_changed` an (Fahrzeuge und feste Gebäude auf Sand, nicht budgetiert, docs/plan-3d1.md 4.16). Spice je Chunk zählt erst die Feldsuche (3f); erst dafür werden die Positionen aus `surface.get_chunks()` (A20 :31304) in `storage.migration.pending_chunks` kopiert und budgetiert abgearbeitet.
+  - **Schonfrist:** Gibt es Arrakis schon, gilt `landed_tick = game.tick`; die Schonfrist beginnt also jetzt (umgesetzt in 0.7.0, unten).
 - **0.5.3 → 0.5.4** (Karte, 2.4):
   - Die neue Karte hängt sich nur über die `map_gen_settings` des Planeten ein. Eine schon angelegte Arrakis-Oberfläche behält ihre gespeicherten Einstellungen und erzeugt weiter die alte Karte, auch in neu erkundeten Gebieten, ohne Kanten zwischen alten und neuen Chunks (gefolgert, A23 classes.d.ts:21036-21039; im Spiel noch nicht geprüft). Die alten Ausdrücke `arrakis_*` und die Autoplace-Regeln der Prototypen bleiben dafür unverändert.
   - Ein vor 0.5.4 begonnener Spielstand, in dem Arrakis noch nicht angelegt ist: Ob die Oberfläche beim ersten Anlegen Karte 2 oder Karte 1 bekommt, ist ungeprüft. `planet.create_surface()` (`scripts/arrakis-surface.lua:8`) nimmt die Einstellungen des Planeten, und der Planet hält eigene, die vom Prototyp abweichen können (`LuaPlanet::reset_map_gen_settings`, A23 classes.d.ts:15857-15860; gefolgert). T11 und T14 lesen immer die Einstellungen des Prototyps und zeigen diesen Fall nicht. Möglich wäre `planet.reset_map_gen_settings()` in `on_configuration_changed`, solange `planet.surface == nil`; das setzt aber auch die Regler aus dem Fenster „Neues Spiel“ zurück. Entscheidung bei Max, bis dahin nicht eingebaut.
@@ -650,9 +671,14 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
   - Schema 2: `migrate.init()` legt `flyers`, `couplings`, `stranded`, `hold` und `flyer_gui_open` an.
   - **Forschung:** Der Trigger „ersten Spice-Ernter herstellen“ feuert nicht für früher hergestellte Ernter. `migrate.ornithopter_research(force)` setzt „Ornithopter“ deshalb auf erforscht, wenn „Spice-Ernte“ erforscht ist und die Force einen Ernter hat (Datensatz in `storage.harvesters`) oder je einen hergestellt hat (Produktionsstatistik irgendeiner Oberfläche). Es setzt nur, was fehlt.
   - **Waisen:** Ein Ernter auf der Ablage ohne gültigen Träger und ohne Eintrag in `storage.stranded` geht an die Landesuche (4.2, ohne Absturzstelle, also Abhebepunkt, sonst Startpunkt). Fehlt sein Datensatz, wird er vorher eingetragen und wieder als getragen gesperrt; ohne Abhebepunkt gilt nur der Startpunkt.
-  - Die Schonfrist speichert 3c noch nicht; die Migration von 3d1 startet sie beim Laden, wenn „Ornithopter“ schon erforscht ist.
+  - Die Schonfrist speichert 3c noch nicht; die Migration von 3d1 startet sie beim Laden (0.7.0, unten).
   - **Herunterstufen** auf 0.5.x mit getragenem Ernter ist nicht unterstützt: vorher absetzen. 0.5.x kennt den Zustand `carried` nicht.
-- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bliebe die leere Oberfläche `arrakis-hold`. Dafür gibt es seit 0.6.0 den Admin-Befehl `/arrakis-uninstall` (zweistufig: ohne Argument eine Warnung mit der Zahl der getragenen Ernter, dann mit `ja`, englisch auch `yes`): Er setzt jeden Ernter auf der Ablage ab, mit Träger an diesem, sonst über die Landesuche, und löscht die Ablage dann mit `game.delete_surface`. Findet ein Ernter keinen Platz, bleibt die Ablage, der Ernter wartet in `storage.stranded`, und der Befehl kann wiederholt werden. Hebt vorher jemand wieder an, legt die Mod die Ablage neu an. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
+- **0.6.x und 0.5.x → 0.7.0** (Würmer, gebaut nach docs/plan-3d1.md 4.16):
+  - Schema 3: `migrate.init()` legt `rng`, `grace`, `vib`, `hunts`, `sector_cooldown` und `worm_stats` an und trägt jedem Ernter `careful = false`, `vib_weight = 0` und `vib_sand = false` nach; `storage.migration.worms_pending` übergibt an worms.lua. Aus 0.5.x läuft das Nachholen der Forschung „Ornithopter“ vorher, die Schonfrist sieht es also.
+  - `worms.migrate_schema3()` (nach migrate): je Force nur, was fehlt: „Ornithopter“ erforscht → `ornithopter_tick` = jetzt; gibt es Arrakis und hat die Force Spieler → `landed_tick` = jetzt. Ein Spielstand mit Ornithopter ist also 10 min später wach, einer ohne nach 30 min. Dann `vibration.scan` auf Arrakis und einmal je Force mit Spielern die Chatzeile `msg-worms-migrated` mit der Restzeit (ohne Termin `msg-worms-migrated-later`), Merker `storage.migration.worm_notice`.
+  - Offene Ernterfenster schließt harvester-gui in jedem `on_configuration_changed`; ein in 0.6.x gespeichertes Fenster hat die neuen Elemente nicht.
+  - **Herunterstufen** auf 0.6.x: vorher `/arrakis-uninstall ja`, sonst bleiben Kartenmarkierungen laufender Jagden und die Sandwurm-Force; die übrigen neuen Felder ignoriert 0.6.x.
+- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bliebe die leere Oberfläche `arrakis-hold`. Dafür gibt es seit 0.6.0 den Admin-Befehl `/arrakis-uninstall` (zweistufig: ohne Argument eine Warnung mit der Zahl der getragenen Ernter, dann mit `ja`, englisch auch `yes`): Er setzt jeden Ernter auf der Ablage ab, mit Träger an diesem, sonst über die Landesuche, und löscht die Ablage dann mit `game.delete_surface`. Findet ein Ernter keinen Platz, bleibt die Ablage, der Ernter wartet in `storage.stranded`, und der Befehl kann wiederholt werden. Hebt vorher jemand wieder an, legt die Mod die Ablage neu an. Seit 0.7.0 nennt der Befehl ohne Argument auch die Zahl laufender Jagden und räumt mit `ja` danach die Würmer (`worms.uninstall`): alle Jagden enden ohne Biss, ohne Rücksetzen und ohne Statistik; Kartenmarkierungen, Ringe, Sekunden, Alarme, Fenster und Vibrationsanzeigen sind weg, die Verknüpfung ist aus, 10 min lang kommt kein Wurmzeichen (`storage.hunts.paused_until`, bis dahin zeigt auch das Fenster nichts), und die Sandwurm-Force wird mit `enemy` verschmolzen (`game.merge_forces`); bleibt die Mod, legt sie die Force bei Bedarf neu an. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
 
 ## 5. Versionsstrategie 2.0 und 2.1
 
@@ -794,7 +820,7 @@ Die [2.1]-Punkte stehen in 4.1 bis 4.4. Seit 0.5.1 ist 2.1 das Ziel, sie können
 ## 7. Roadmap ab Phase 3
 
 Ersetzt die alte Phase 3 und holt den Ornithopter aus Phase 5 nach vorn. Jede Phase endet mit einem Test, den Max im Spiel machen kann.
-Gebaut sind 3.0 bis 3c (Stand 0.6.0); 3c nach dem Bauplan docs/plan-3c.md, die Abnahme durch Max steht dort in Abschnitt 8.
+Gebaut sind 3.0 bis 3d1 (Stand 0.7.0); 3c nach dem Bauplan docs/plan-3c.md, 3d1 nach docs/plan-3d1.md, die Abnahme durch Max steht jeweils in Abschnitt 8.
 
 | Phase | Version | Inhalt | Testbares Ergebnis |
 |---|---|---|---|
@@ -802,7 +828,7 @@ Gebaut sind 3.0 bis 3c (Stand 0.6.0); 3c nach dem Bauplan docs/plan-3c.md, die A
 | 3a | 0.4.0 | Prüfstand `/arrakis-test` mit Test-Prototypen: T1–T7, T9, T11, T12 | Protokoll entscheidet: Spider oder Auto als Flieger, Proxy oder Skript, wie der Wurm gesteuert wird, Ernter-Tempo, Noise-Schwelle |
 | 3b | 0.5.0, Karte 0.5.4 | Ernter (Abbau, Aufbauen/Einpacken, Tempo-Deckel, Vorsichtsmodus), Ressourcenkategorie samt Migration, Annahme und Tankstutzen, Forschung „Spice-Ernte“, Spice-Brikett, Mod-Einstellung Wurmbiss; Kartengenerator (Startinsel, Graben, Lehrfeld, Mindestabstand, steile Felskante) erst in 0.5.4, nur für neue Spiele (2.4) | Ernter fährt höchstens 1,5 Kacheln/s, erntet 2000 Spice-Sand, die Annahme leert ihn per Greifarm, der Tankstutzen tankt; die Statistik zeigt Spice. Ein 0.3.0-Spielstand meldet Bohrer auf Spice. Karte: T11 bestätigt Regel B (sonst Regel A), T14 findet auf allen Seeds kein reguläres Spice näher als 100 Kacheln am Fels und alle Lehrfeld-Kacheln 40–60 Kacheln vom Fels, ab 0.5.5 auch genug nutzbare reguläre Felder („Felder“, „Feldgröße“) |
 | 3c | 0.6.0, **gebaut** | Ornithopter mit Trigger-Forschung, Ablage, Anheben/Absetzen per Taste, Verknüpfung und Fensterknopf, eigene Fernbedienungs-Verknüpfung und Fernfahren aus der Karte, Insassen fliegen mit (Pilot zuerst), Absturzregeln mit Landesuche und Warteliste, `/arrakis-uninstall`; Prüfstand T15–T17 | Vollen Ernter von Feld A nach B tragen, Inhalt identisch; der Fahrer fliegt mit. Ornithopter mit Last zerstören: Der Ernter fällt mit 30 % Schaden |
-| 3d1 | 0.7.0 | Vibration, Wärme, Unruhe, Wurmzeichen, Countdown, Schonfrist, Briefings, Vibrationsanzeige; **geskripteter Biss mit Eruption, noch ohne Wurm-Entity** | Ein einzelner Ernter: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s; Lehrjagd 90 s. Mit Rettung bleibt er heil, ohne Rettung kommt der Biss genau bei 0. Auf einem Nicht-Lehrfeld scheitert die Flucht per Fahrt |
+| 3d1 | 0.7.0, **gebaut** | Vibration, Wärme, Unruhe, Wurmzeichen, Countdown, Schonfrist je Force, Briefings, Vorsichtsmodus, Vibrationsanzeige, `/arrakis-worm`; **geskripteter Biss mit Eruption, noch ohne Wurm-Entity**; Prüfstand T18–T20 | Ein einzelner Ernter: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s; Lehrjagd 90 s. Mit Rettung bleibt er heil, ohne Rettung kommt der Biss genau bei 0. Auf einem Nicht-Lehrfeld scheitert die Flucht per Fahrt |
 | 3d2 | 0.8.0 | Wurm-Entity mit verzögertem Spawn, Körperprüfung, Route/ROUTING, Fels-Wächter, Abtauchen, ohne Ascheeffekte (T5–T7) | Biss höchstens 3 s nach Countdown-Ende. Vor einer Felsinsel biegt der Wurm ab. Ein Ernter 10 Kacheln vor Fels wird trotzdem gebissen. Ein Ornithopter über dem Kopf verliert kein Tempo |
 | 3d3 | 0.9.0 | Thumper (Ablenkung/Köder), Beute und Wurmzahn, großer Wurm, Mod-Einstellungen, Balancing-Runde | Ein Thumper lenkt eine laufende Jagd um. Ein getöteter Wurm wirft Zähne. 1 Ernter liefert im Wurm-Rhythmus etwa 15 Pakete/min |
 | 3e | 0.10.0 | Leitstelle, Carryall, RETTUNG (Schweben), TANKEN, ENTLADEN, RÜCKKEHR, Alarm „Rettung nicht möglich“ | 3 Ernter, eine Leitstelle, 2 Carryalls, Kohle in der Leitstelle: 60 min ohne Eingriff, kein Ernter verloren, kein Ernter ohne Treibstoff |
@@ -833,10 +859,11 @@ Im Container läuft kein Factorio. Deshalb baut Phase 3a einen **Prüfstand**:
 | T11 | Die Spice-Regel ergibt nicht ≥ 100 Kacheln Sand zwischen Spicefeld und Fels. Regel B (2.4) ist nur gefolgert: Sie setzt voraus, dass `spot_noise` das Maximum linearer Kegel ist, dass verzerrter und unverzerrter Aufruf dieselben Kegelmitten setzen und dass `clamp` die Verzerrung begrenzt | `/arrakis-test T11` (ab 0.4.1) rechnet auf leeren Testoberflächen mit 9 Seeds (`lang`: 30) die Rauschwerte auf einem 8-Kachel-Raster aus: Felsanteil, Inseln, euklidischer Felsabstand und die Spice-Schwelle t100 für die Karte 0.5.4, die von 0.4.0 und die Kandidaten. Lauf vom 25.10.2026 (0.5.3): c4 mit Felsschwelle 0 gewählt. Seit 0.5.4 die Prüfungen „Zone“ (Spicezone nach Regel B ≥ 100 Kacheln vom Fels auf dem Raster) und „Kegel“ (t100 von `c4u` ≥ −1,53 auf jedem Seed); leere Zone bzw. kein c4-Fels auf allen Seeds ist ein FEHLER „nicht prüfbar“ | „Kegel“ scheitert: Regel A einhängen (`SPICE_RULE` in `prototypes/planet/planet-map-gen.lua`), Spicezone etwa ein Viertel so groß. „Zone“ scheitert: Ausdruck anpassen (nach der Veröffentlichung von 0.5.4 unter neuen Namen) |
 | T14 | Die erzeugte Karte hält die Regeln nicht ein (Fels zwischen den Rasterpunkten, Lehrfeld, Startinsel); der Schlüssel `tile:arrakis-rock:probability` wirkt in den `map_gen_settings` des Planeten nicht (in Vanilla nicht benutzt) | `/arrakis-test T14` (ab 0.5.4) erzeugt die Karte auf Testoberflächen (9 Seeds, `lang` 30, je 800 × 800 Kacheln) und prüft auf Kacheln: reguläres Spice ≥ 100 Kacheln vom Fels (auf keinem Seed reguläres Spice: FEHLER „nicht prüfbar“), Lehrfeld 40–60 Kacheln vom Fels mit 100 000 Spice-Sand ± 5 % (auch bei Spice-Größe 0), bei Spice-Größe 0 kein reguläres Spice, kein Spice auf Fels, kein Erz auf Sand, Tiefenwasser mit allen 3 × 3 Kacheln auf Fels, Graben bis 220 Kacheln, Startinsel mit allen Erzen und einem Tiefenbrunnen. Seit 0.5.5 über alle Seeds: im Mittel mindestens 2 nutzbare reguläre Felder (ab 300 Kacheln) je Seed und höchstens ein Neuntel der Seeds ohne („Felder“), Median der nutzbaren Felder mindestens 500 Kacheln („Feldgröße“). Lauf mit 0.5.4 im Spiel: alles bestanden, aber nur 0,9 Felder je Seed, Median 134 Kacheln (Anlass für 0.5.5). Misst die Dauer der Chunk-Erzeugung gegen die alte Karte | Ausdruck anpassen (unter neuen Namen); kein Laufzeit-Skript, das die Karte nachträglich repariert |
 | T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken. Ergebnis 0.4.0: `ALT+O` kam nie an | Seit 0.6.0 ist die Taste nie der einzige Weg: Verknüpfung `arrakis-carry` (auch in der Karte) und Fensterknopf rufen dieselbe Funktion, die eigene Verknüpfung `arrakis-give-remote` gibt die Fernbedienung schon mit „Ornithopter“. Die Suche nach dem Flieger hat vier Stufen (4.2). T17 prüft das am echten Ornithopter |
+| T18–T20 | Die erste Wurm-Stufe (0.7.0) hängt an 22 ungeprüften Engine-Annahmen V1 bis V22 (docs/plan-3d1.md 4.17): etwa dass `die(force)` `on_entity_died` sofort auslöst, dass ein eigener Alarm mit virtuellem Signal erscheint und sich gezielt entfernen lässt, dass Render-Objekte und Alarme Speichern/Laden überleben, dass das Einsteigen ein ohne Bau-Ereignis entstandenes Fahrzeug meldet und dass `status == working` auch auf Laborkacheln gilt | T18 Wärme (automatisch), T19 Jagd (automatisch), T20 Bedienung (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3d1.md 4.17, z. B. Alarm-Symbol `item`, Alarme per `get_alerts` neu setzen, `scan` im Takt, `mining_progress` statt `status` |
 | T15–T17 | Der echte Ornithopter (0.6.0) hängt an 28 ungeprüften Engine-Annahmen U1 bis U28 (docs/plan-3c.md 4.16): etwa Taste und Fernbedienung in der Kartenansicht, Sitzwechsel aus einigen Kacheln Abstand, lineare Wirkung des Tempo-Stickers, Probe gleich Ernter-Maske, Teleport nach dem Notstart verlustfrei | T15 echter Code (automatisch), T16 Flugphysik (automatisch), T17 Bedienung (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3c.md 4.16, z. B. Modifier aus der T16-INFO, Teleport der Figur an den Flieger, Absetzen per `clone` |
 
 Weitere Risiken:
-- **Spielgefühl und Balancing.** Alle Zeiten und Schwellen sind Mod-Einstellungen. 3d1 testet das Timing früh, noch ohne Wurm-Technik, und 3d3 enthält eine eigene Balancing-Runde.
+- **Spielgefühl und Balancing.** Alle Zeiten und Schwellen werden Mod-Einstellungen (3d3); in 0.7.0 sind sie Konstanten im Code (docs/plan-3d1.md 1). 3d1 testet das Timing früh, noch ohne Wurm-Technik, und 3d3 enthält eine eigene Balancing-Runde.
 - **Mehrspieler.** Render-Sortierung (CL:1004, kosmetisch) und ein Desync, wenn Spinnen getötet und neu gebaut werden (CL:81; offen, ob 2.0.77 betroffen ist). Einmal mit zwei Spielern testen, dabei einen Ornithopter zerstören und neu bauen.
 - **Platzhalter-Optik.** Getönte Panzer und Spidertrons erkennt man nicht sofort als Ernter und Ornithopter. Bis Phase 6 erklären Factoriopedia-Texte und Briefings die Rollen.
 
@@ -854,5 +881,6 @@ Das hier ist geplant, aber erst ein Test im Spiel kann es klären. Alles andere 
 - **Fehler aus 2.1.18 in 2.0.77 (T7, Mehrspieler-Test).** Ob 2.0.77 von den dort behobenen Fehlern betroffen ist: Absturz bei kleiner Knotenzahl, Spinnen-Desync.
 - ~~**2.1 und alte Mods (T10).**~~ Beantwortet: 2.1 lädt keine Mods mit `factorio_version "2.0"` (MS).
 - **Ornithopter (T15–T17).** Die 28 Engine-Annahmen aus docs/plan-3c.md 4.16, auf denen 0.6.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob `Umschalt+C` im Ornithopter, in der Kartenansicht und beim Fernfahren ankommt (U1 bis U4), ob die eigene Fernbedienung ohne „Spidertron“ steuert (U5), ob die Sticker linear wirken (U6) und ob das Lastbild aus den Panzer-Sheets richtig erscheint (U27).
+- **Würmer 3d1 (T18–T20).** Die 22 Engine-Annahmen aus docs/plan-3d1.md 4.17, auf denen 0.7.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob `die(force)` `on_entity_died` noch im Aufruf auslöst (V1), ob ein eigener Alarm mit dem Wurmzeichen-Symbol erscheint und sich über `icon` gezielt entfernen lässt (V5), ob Render-Objekte und eigene Alarme Speichern und Laden überleben (V10) und ob `on_player_driving_changed_state` reicht, um Fahrzeuge ohne Bau-Ereignis zu finden (V12). Dazu die Zeiten aus dem Trockenlauf (T18 etwa 2 min, T19 etwa 7 min Spielzeit), die im Spiel noch nicht gemessen sind.
 - **Leistung (T8).** Die Kosten bei großen Flotten.
 - **Spielspaß.** Ob 55 s bis zum Wurmzeichen, 60 s Vorwarnung, 2 bis 4 Minuten Ruhe und etwa 15 Pakete/min pro Ernter sich gut anfühlen, zeigt nur Spielen.
