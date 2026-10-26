@@ -6,7 +6,8 @@ Code 0.5.5 (main 7d784f9), Prüfstand-Lauf 0.5.5 vom 25.10.2026 ohne Spieler mit
 Ergebnisse 0.4.0 (/mnt/project-files/pruefstand/2026-10-07/ergebnisse.md, kurz ERG). API-Belege: A23 = factorio-types 1.2.72
 (API 2.1.23, `dist/classes.d.ts`, `events.d.ts`, `prototypes.d.ts`), A20 = typed-factorio 3.36.0 (API 2.0.75),
 V23 = Vanilla-Daten 2.1.23. Dieser Plan ist der Bauvertrag: Namen, Dateien, Zustände und Texte gelten so, wie sie hier
-stehen. Wo der Plan von DOC abweicht, gilt der Plan; DOC wird danach angeglichen (Liste in 7).
+stehen. Wo der Plan von DOC abweicht, gilt der Plan; DOC wird danach angeglichen (Liste in 7). Nachtrag 0.6.1 vom 26.10.2026
+(U6, U7 und U11 halten nicht, Ausweichwege genommen) in 9.
 
 Max' Wunsch: „es muss wie in den filmen und den büchern Spice harvester maschinen geben die mobil sind und die man via
 ornikopter transportiert (und auch vor den würmern retten kann). Am anfang manuell, später in einer automatisierten form“.
@@ -49,7 +50,7 @@ sagt je Annahme, welcher Test sie entscheidet und was gilt, wenn sie nicht hält
 | Punkt | Festlegung | Grund |
 |---|---|---|
 | Tempo | Ziel leer 8, beladen 5,6 Kacheln/s (beladen = 0,7 × leer) | DOC 2.4 verlangt ≥ 5 und „300 Kacheln in 50 bis 60 s“: beladen 54 s, leer 38 s. Der Ernter fährt 1,41 |
-| Drossel | Immer genau ein eigener Sticker: `arrakis-ornithopter-empty` mit `vehicle_speed_modifier = 0.52` (= 8 / 15,4), `arrakis-ornithopter-loaded` mit `0.364` (= 0,7 · 0,52); Tausch beim Anheben und Absetzen | RUN055 T1: Sticker 0,7 → 70,1 % (10,8 von 15,4 Kacheln/s), zum dritten Mal gleich. Die Beine sind keine Stellschraube (doppelte Beinwerte ergeben 19,6 statt 15,4, nicht das Doppelte) |
+| Drossel | Immer genau ein eigener Sticker: `arrakis-ornithopter-empty` mit `vehicle_speed_modifier = 0.52` (= 8 / 15,4), `arrakis-ornithopter-loaded` mit `0.364` (= 0,7 · 0,52); Tausch beim Anheben und Absetzen. 0.6.1: Familien je Brennstoff-Stufe, 0,603 / t und 0,427 / t (9) | RUN055 T1: Sticker 0,7 → 70,1 % (10,8 von 15,4 Kacheln/s), zum dritten Mal gleich. Die Beine sind keine Stellschraube (doppelte Beinwerte ergeben 19,6 statt 15,4, nicht das Doppelte) |
 | Last kostet Treibstoff | Kein Abzug per Skript (DOC 4.2 Punkt 5 entfällt) | RUN055 T1: Leistung konstant ≈ 810 kW, also kostet Last je Kachel von selbst mehr (75,0 statt 52,7 kJ/Kachel) |
 | Antrieb | 4 Beine (Trab wie T1), Bein unverändert aus T1 (Faktor 1), Brenner `chemical` mit 2 Slots, `movement_energy_consumption = 800kW` | Das ist der in T1 gemessene Prüfling. 100 kJ/Kachel leer, 143 beladen; 100 Kohle reichen 500 s Flug |
 | Werte | Konstanten im Code, keine Mod-Einstellung | Wie die Deckel-Werte in 3b; Balancing-Runde 3d3 |
@@ -141,6 +142,7 @@ Die Shortcuts hängen über `technology_to_unlock` an ihr.
 
 **Sticker** `arrakis-ornithopter-empty` und `arrakis-ornithopter-loaded`: `type = "sticker"`, `hidden = true`, `flags = {"not-on-map"}`,
 `duration_in_ticks = 216000` (1 h), `vehicle_speed_modifier = 0.52` bzw. `0.364`, keine Animation (wie flyers.lua:114–123, in T1 geladen und wirksam).
+0.6.1: statt der beiden je Zustand 106 Sticker `arrakis-ornithopter-empty-<p>`/`-loaded-<p>` aus `prototypes/ornithopter-speed.lua` (9).
 
 **Lastbild** `arrakis-harvester-carried-<i>` und `arrakis-harvester-carried-shadow-<i>` für i = 0 … 15 (`type = "sprite"`, je zwei Ebenen),
 aus den Panzer-Sheets (V23 base/prototypes/entity/entities.lua:8079–8222, `tank_shift_y = 6` in Z. 43). Mit d = 4 · i (von 64 Richtungen, 0 = Nord, im Uhrzeigersinn):
@@ -194,6 +196,7 @@ mehr auf ihm steht (4.11). Ereignis: `on_force_created` (neue Force bekommt die 
 (wie der 10-Tick-Takt), `state_text(record)`, `board_harvester(record, player)`, `give_remote(record, player)`, `uninstall() → n, rest`,
 Konstanten `COUPLE_TICKS = 120`, `COUPLE_RANGE = 4`, `DEBOUNCE = 15`, `CRASH_DAMAGE = 0.3`, `SEARCH_RADII = {6, 16, 32}`,
 `SPAWN_RADII = {6, 16, 32, 64}`, `STICKER_EMPTY`, `STICKER_LOADED`, `IMAGE_OFFSET = {0, -1.5}`, `SHADOW_OFFSET = {1, 1}`.
+0.6.1: `speed` (das Modul aus 9), `wanted_sticker(record)` und `sticker_state(name)` statt `STICKER_EMPTY` und `STICKER_LOADED`.
 Eintragen gilt wie beim Ernter (scripts/harvester.lua:519, :821): Wer einen Ornithopter braucht, ruft `get(entity) or register(entity)`.
 So bekommt auch einer, der per Skript oder von einer anderen Mod ohne `raise_built` entstand, beim ersten Kontakt Datensatz und Sticker.
 Ereignisse von flyer.lua:
@@ -402,6 +405,9 @@ unit_number und Ausrichtung bleiben beim Teleport erhalten (RUN055 T3 b: 10/10 g
   (A23 classes.d.ts:8615), nie geschrieben [U9]. Fremde Sticker (z. B. Verlangsamungskapsel) bleiben und wirken zusätzlich.
 - Ausweichweg, falls U6 nicht hält: T16 gibt die passenden Modifier als INFO aus; sie werden als Konstanten übernommen.
   Erst wenn auch das nicht linear genug ist: `vehicle_speed_max` (T16 misst es, [U22]).
+- 0.6.1: U6 und U7 hielten nicht (T16 vom 26.10.2026). Beide Ausweichwege sind genommen: Basis 0,603 und 0,427 aus der T16-INFO,
+  dazu je Zustand eine Familie von Stickern, eine je Stufe des Brennstoff-Höchsttempos t. Die Pflege wählt den Sticker nach dem
+  Brennstoff; die Namen sind nicht mehr nur `-empty` und `-loaded`. Einzelheiten in 9.
 
 ### 4.10 Absturzregeln und Sonderfälle
 - **Landesuche** `land_cargo(h, crash_pos, damage)`, gemeinsam für Absturz, „anders entfernt“, Waisen, gelöschte Oberflächen und
@@ -487,6 +493,7 @@ Knopf `arrakis_give_remote`, Knopf `arrakis_board_harvester` (4.7). Auffrischen 
 `arrakis-ornithopter` wird von der Engine erforscht, sobald die Force den ersten `spice-harvester` herstellt (Hand oder Maschine) [U11].
 Voraussetzung „Spice-Ernte“ schaltet das Ernter-Rezept frei, also kommt der Trigger nie zu früh. Ab dann sind Rezept und beide
 Shortcuts frei. Keine Paketkosten (DOC 6, DOC 2.5 „Ornithopter per Trigger“).
+0.6.1: U11 hielt von Hand nicht (T15 Schritt 2 vom 26.10.2026). Der Trigger bleibt, zusätzlich erforscht das Skript (9).
 
 ### 4.15 Migration und Entfernen
 - `migrate.lua`: `SCHEMA = 2` (Z. 25), `init()` legt die neuen Tabellen an (4.2). In `on_configuration_changed`: `local old = storage.schema or 0`;
@@ -516,12 +523,12 @@ Shortcuts frei. Keine Paketkosten (DOC 6, DOC 2.5 „Ornithopter per Trigger“)
 | U3 | `player.selected` und `spidertron_remote_selection` sind in der Kartenansicht gesetzt (2.1.23) | T17 Schritt 5 | Rettung aus der Karte nur per Fernfahren |
 | U4 | Ein Klick auf den Shortcut lässt die Fernbedienung in der Hand und die Auswahl stehen | T17 Schritt 5 | Taste statt Shortcut aus der Karte |
 | U5 | Die vom eigenen Shortcut erzeugte `spidertron-remote` steuert den Ornithopter ohne Forschung „Spidertron“; `spidertron_remote_selection` ist schreibbar | T17 Schritt 5 | Fernbedienung erst mit „Spidertron“; bis dahin Fernfahren |
-| U6 | `vehicle_speed_modifier` wirkt linear: 0,52 → 8,0, 0,364 → 5,6 Kacheln/s (gemessen nur 0,7) | T16 | Modifier aus der T16-INFO übernehmen |
-| U7 | Brennstoff ändert das Tempo des Ornithopters nicht (T1 flog nur mit Raketentreibstoff) | T16 | Sticker je Brennstoff, wie `apply_fuel_normalization` beim Ernter |
+| U6 | `vehicle_speed_modifier` wirkt linear: 0,52 → 8,0, 0,364 → 5,6 Kacheln/s (gemessen nur 0,7) | T16 | Modifier aus der T16-INFO übernehmen. **26.10.: hält nicht** (Kohle 6,90 und 4,77); 0.6.1 nimmt 0,603 und 0,427 (9) |
+| U7 | Brennstoff ändert das Tempo des Ornithopters nicht (T1 flog nur mit Raketentreibstoff) | T16 | Sticker je Brennstoff, wie `apply_fuel_normalization` beim Ernter. **26.10.: hält nicht** (Tempo ∝ t des Brennstoffs, bis 1,385); 0.6.1: Sticker-Familien je Stufe von t (9) |
 | U8 | Qualität des Ornithopters ändert das Tempo nicht | T16 | wie U7, je Qualität |
 | U9 | Der Sticker bleibt über Speichern/Laden am Flieger; Zerstören und Neuerzeugen wirkt sofort | T15 Schritt 15; Speichern/Laden bei der Abnahme | Neuanheften im ersten 60-Tick-Takt (`on_load` schreibt nie): höchstens 1 s volles Tempo |
 | U10 | Ein Spider-Vehicle ohne Ziel verbraucht keinen Brennstoff | T16 Bahn „Schweben“ (MESSUNG, kein FEHLER) | Hinnehmen, Verbrauch in docs/pruefstand.md nennen |
-| U11 | `craft-item` feuert bei Handarbeit (auch einer Figur ohne Spieler) und in Maschinen | T15 Schritt 2; Abnahme von Hand | Trigger `scripted`, ausgelöst im Skript (DOC 6: `force.script_trigger_research`) |
+| U11 | `craft-item` feuert bei Handarbeit (auch einer Figur ohne Spieler) und in Maschinen | T15 Schritt 2; Abnahme von Hand | Trigger `scripted`, ausgelöst im Skript (DOC 6: `force.script_trigger_research`). **26.10.: hält von Hand nicht** (Figur ohne Spieler); 0.6.1: Skript erforscht zusätzlich, Trigger bleibt (9) |
 | U12 | Der Trigger wirkt nicht rückwirkend | Abnahme mit 0.5.5-Spielstand | Migration schadet nicht (setzt nur, was fehlt) |
 | U13 | Teleport eines eben per Notstart gelösten Ernters zur Ablage und zurück verliert nichts (T3 prüfte nur einen mobilen) | T15 Schritte 5 und 6 | Absetzen per `clone` (DOC 8, T3) |
 | U14 | `set_driver(nil)`/`set_passenger(nil)` stellen die Figur neben das Auto; `set_driver`/`set_passenger(Figur)` setzt sie in den Ornithopter, auch aus einigen Kacheln Abstand | T15 Schritt 3 (Figuren, MESSUNG welche Stufe griff); T17 Schritt 1 (Spieler) | Stufe 1 (4.7): Figur per `teleport` an den Flieger, erneut setzen. Erst wenn auch das scheitert: Insassen bleiben am Boden + Hinweis, „der Fahrer fliegt mit“ (Roadmap 3c) fällt dann aus; DOC anpassen |
@@ -601,7 +608,8 @@ Zeitüberschreitung und Skriptfehler, `tb.finish`, scripts/testbench/runner.lua:
 3. Nur in `start`: dann `tb.prepare`; gebaut wird frühestens 2 Ticks danach.
 Zahlen zur Ablage prüft T15 relativ zum Stand vor dem Schritt, nie absolut: Ein anderer Test oder der Spielstand kann Lasten tragen.
 
-**T15 „Ornithopter: echter Code“** (automatisch, etwa 3 min Spielzeit, bei Tempo 10 etwa 18 s). Eigene Fläche auf `arrakis-testbench`:
+**T15 „Ornithopter: echter Code“** (automatisch, etwa 3 min Spielzeit, bei Tempo 10 etwa 18 s; gemessen 108 s, mit 0.6.1 etwa 2 min;
+Schritte 1, 2 und 15 seit 0.6.1 wie in 9). Eigene Fläche auf `arrakis-testbench`:
 Sand mit zwei Spice-Teppichen A und B, 150 Kacheln auseinander (Hilfsfunktion nach dem Muster von scripts/testbench/t_ernter.lua),
 Felsinsel mit Annahme, Wasser- und Mauerfeld. Ornithopter und Ernter entstehen mit `raise_built = true`; Piloten sind `tb.dummy_driver`. Schritte:
 1. Prototypen: `arrakis-ornithopter` ist `spider-vehicle`, 4 Beine, Brenner `chemical` mit 2 Slots, `allow_remote_driving`; beide Sticker,
@@ -698,6 +706,7 @@ flyer.lua (also mit echtem Sticker), Dummy-Pilot, Ziel 400 Kacheln voraus; gemes
   außerhalb 0,65–0,75; größtes/kleinstes Tempo der leeren Brennstoff-Bahnen > 1,10 [U7]; Qualität ändert das Tempo um > 10 % [U8].
 - MESSUNG: Tempo, kJ/Kachel und kW je Bahn; Rohwert ohne Sticker; `vehicle_speed_max`-Bahnen.
 - INFO am Ende: vorgeschlagene Modifier `0,52 · 8 / v_leer` und `0,364 · 5,6 / v_beladen` aus den Ost-Bahnen mit Kohle [U6].
+  0.6.1: aus den Modulkonstanten (`BASE_EMPTY · 8 / v_leer`, `BASE_LOADED · 5,6 / v_beladen`), dazu eine Bahn mit `effectivity_modifier` (9).
 
 **T17 „Ornithopter: Bedienung“** (interaktiv, nur mit Max im Spiel, `alle` lässt ihn aus; endet nach 6 min Spielzeit oder mit `stop`).
 Neben Max: ein Ornithopter mit Kohle, ein Ernter mit 500 Spice-Sand, dazu 30 Kacheln weiter eine Annahme auf Fels. Jeder Tastendruck
@@ -778,3 +787,68 @@ löscht sie“; Bekannte Grenzen: Lastbild dreht nicht mit, T16 misst N und S we
 - Mit zwei Spielern einen Ornithopter zerstören und neu bauen: kein Desync [U20].
 - Auf einer Kopie: `/arrakis-uninstall`, dann `/arrakis-uninstall ja`: getragene Ernter stehen am Boden, die Ablage ist weg.
 - Offen aus 3b: die Abnahme-Punkte von Hand aus plan-3b.md 8 (T13 manuell, ERG053).
+
+## 9. Nachtrag 0.6.1 (26.10.2026)
+
+Grundlage: Prüfstand-Lauf 0.6.0 vom 26.10.2026, `alle` ohne Spieler mit game.speed 10
+(/mnt/project-files/pruefstand/2026-10-26/2026-10-26_0.6.0_63a29ea/arrakis-test-20261026-020919.txt, kurz RUN060). Alle Tests bis
+T14 ohne FEHLER; T15 15/17 (FEHLER in 2 und 15), T16 Kriterien 2/5 (FEHLER leer, beladen, Brennstoff).
+
+**Befunde**
+- U6 und U7 halten nicht (T16). Leer mit 0,52: Kohle 6,90, Spice-Brikett 6,94, Festbrennstoff 7,25, Raketentreibstoff 7,95,
+  Atomtreibstoff 7,92, legendärer Raketentreibstoff 9,56 Kacheln/s (max/min 1,385); beladen mit 0,364: Kohle 4,77, Raketentreibstoff
+  5,50. Das passt zu Tempo ∝ t, dem Höchsttempo-Faktor des Brennstoffs samt Qualitätsbonus (Kohle und Brikett 1, Festbrennstoff 1,05,
+  Raketen- und Atomtreibstoff 1,15, legendärer Raketentreibstoff 1,375). Beladen/leer 0,69 (OK), Richtung ohne Einfluss, Qualität des
+  Ornithopters höchstens 0,8 % (U8 hält). INFO: `0,52 · 8 / 6,90 = 0,603`, `0,364 · 5,6 / 4,77 = 0,427`.
+- U11 hält von Hand nicht (T15 Schritt 2): Die Figur ohne Spieler stellte den Ernter nach 600 Ticks her, 60 Ticks später war
+  „Ornithopter“ nicht erforscht. Ob die Statistik das Item zählte, maß 0.6.0 nicht; Weg b) lief nicht (nur ohne Item aus a).
+- T15 Schritt 15 b): Nach einem zweiten Sticker gleichen Namens hing nach 62 Ticks genau ein beladener Sticker, aber nicht mehr der
+  gemerkte. Vermutlich ersetzt die Engine einen gleichnamigen Sticker am selben Ziel; die Pflege hängt dann einen neuen an. Am Tempo
+  ändert das nichts. 0.6.1 trennt die Fälle (Schritt 15 b und e).
+
+**Tempo [U6, U7]** (Ausweichwege aus 4.16 genommen)
+- `prototypes/ornithopter-speed.lua`, reines Lua ohne `data`, `game` und `storage` (Vorbild: migrate.lua lädt planet-map-gen):
+  `BASE_EMPTY = 0.603`, `BASE_LOADED = 0.427` für t = 1; Stufen t_j = 1,02^j für j = −35 … 70 (t ≈ 0,50 … 3,99); `bucket(t)` (nächste
+  Stufe im logarithmischen Abstand, auf das Raster begrenzt, t ≤ 0 wie 1), `name(state, j)`, `modifier(state, j) = BASE / t_j`,
+  `parse(name)`, `factor(j)`, `percent(j)`, `factor_text(j)`. Tempo-Fehler höchstens ±1 %; Fäulnis (t = 0,5) bekommt die Randstufe.
+- Sticker: je Zustand 106, `arrakis-ornithopter-empty-<p>` und `arrakis-ornithopter-loaded-<p>` mit p = floor(100 · t_j + 0,5), alle p
+  verschieden (assert im Modul); Kohle p = 100, Raketentreibstoff p = 115. Sonst wie in 3, `localised_name` aus den Schlüsseln von 5.
+  Die beiden Sticker aus 0.6.0 entfallen. Beim Laden entfernt die Engine sie (Prototyp fehlt), `care` in `on_configuration_changed`
+  heftet den passenden an. Kein neues Schema.
+- `ensure_sticker` (4.9): Zustand aus `cargo`, Stufe aus `burner.currently_burning`, sonst aus dem ersten Stapel in `burner.inventory`
+  (den verbrennt er als Nächstes), sonst die des eigenen Stickers (leerer Tank: Er fliegt ohnehin nicht), sonst t = 1.
+  t = `fuel_top_speed_multiplier` + Qualitätsstufe · `fuel_top_speed_multiplier_quality_bonus` (wie `apply_fuel_normalization`). Die Stufe je
+  Item und Qualität bleibt je Lua-Sitzung gemerkt, nie in `storage`. Der 60-Tick-Takt tauscht nach einem Brennstoffwechsel binnen 1 s.
+- `checks.lua`: Familienregeln statt zweier Sticker (je Zustand 106, Name unabhängig aus 1,02^j, Modifier BASE / t_j auf 1e-9, Dauer,
+  hidden, `localised_name`, `parse`), p = 100 und 115 da, jeder `arrakis-ornithopter-*`-Sticker gehört zu einer Stufe, alte Namen weg.
+
+**Forschung [U11]** (Ausweichweg abgewandelt: der Trigger `craft-item` bleibt, auch für den Tooltip; das Skript erforscht zusätzlich)
+- `migrate.ornithopter_pending(force)`: Technologie da und nicht erforscht, „Spice-Ernte“ erforscht. Jede Sekunde (`on_nth_tick` 60,
+  event_handler fasst ihn mit flyer.lua zusammen) je Force mit ausstehender Forschung dieselbe Prüfung wie `migrate.ornithopter_research`
+  (Datensatz oder Produktionsstatistik, 4.15); `on_player_crafted_item` mit `spice-harvester` (Stapel, sonst Rezeptname) erforscht sofort.
+  Erforscht das Skript, bekommt die Force die Chatzeile `msg-ornithopter-researched`; die Migration aus 0.5.x bleibt stumm.
+- Grenze: Zählt die Statistik das Item einer Figur ohne Spieler nicht, erforscht auch das Skript nichts, bis ein Ernter gebaut ist.
+  Mit Spieler greift `on_player_crafted_item`.
+
+**Prüfstand**
+- Runner: `[defines.events.on_research_finished] = forward("research_finished")` (Vertrag ergänzt).
+- T15 Schritt 1: Familien je Zustand, p = 100 und 115, Namen aus 0.6.0 weg. Stickertexte nennen die Stufe („beladen t1,00“); wo
+  Kohle brennt, verlangen die Prüfungen p = 100.
+- T15 Schritt 2: beide Wege nacheinander, a) Hand, b) Montagemaschine 3, vor b) Figur samt Item weg und zurücksetzen. Nach dem
+  Item bis zu 130 Ticks warten (60-Tick-Takt plus Reserve). MESSUNG je Weg: Ticks bis erforscht, wer (`on_research_finished`,
+  `by_script`), Herstellzähler. FEHLER: b) Item, aber nicht erforscht; a) Item gezählt, aber nicht erforscht. a) Item nicht gezählt und
+  nichts erforscht: nur MESSUNG. Die INFO „nicht prüfbar“ bleibt.
+- T15 Schritt 15: Teile a–f. b) Sticker des anderen Zustands; gut, wenn genau ein eigener, beladen, und der gemerkte gültig
+  (ohne `==`). e) neu: zweiter Sticker gleichen Namens; MESSUNG, was die Engine tat (Rückgabe, gemerkter gültig, Zahl), dann gut = ein
+  eigener beladener mit Bild und Schatten, gemerkter gültig. f) neu: Brennstoff Kohle → Raketentreibstoff (Inventar leeren,
+  `currently_burning` schreiben); gut, wenn beladen mit p = 115 binnen 61 Ticks.
+- T16: Bahn-MESSUNG nennt den Sticker mit Stufe; neue Bahn ohne Sticker, Raketentreibstoff, `effectivity_modifier = 0,5` per pcall
+  (nur MESSUNG: ob schreibbar, gelesen, Tempo zum Rohwert); INFO-Vorschlag aus den Modulkonstanten mit Dateinamen. Kriterien
+  unverändert, 21 Bahnen.
+
+**Abnahme 0.6.1** (zusätzlich zu 8)
+- `pruefstand.py` mit `T15 T16`: beide ohne FEHLER; T16 leer etwa 8,0 und beladen etwa 5,6 Kacheln/s mit jedem Brennstoff.
+- Mit Spieler einen Spice-Ernter von Hand herstellen: „Ornithopter“ ist sofort erforscht. Kommt die Chatzeile, hat das Skript erforscht,
+  sonst die Engine.
+- Einen 0.6.0-Spielstand mit Ornithopter laden: leer 8 und beladen 5,6 Kacheln/s nach höchstens 1 s, Last und Bild bleiben.
+- Im Flug Raketentreibstoff statt Kohle tanken: Das Tempo bleibt gleich.

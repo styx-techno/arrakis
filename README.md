@@ -2,13 +2,15 @@
 
 Factorio-Mod für **Factorio 2.1 + Space Age** (ab 2.1.23): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Factorio 2.1 lädt keine Mods für 2.0. Für **Factorio 2.0.77** gibt es den Zweig `factorio-2.0` (Mod 0.5.0): im Mod-Ordner `arrakis` einmal `git fetch` und dann `git checkout factorio-2.0` ausführen.
 
-Stand: Phase 3c (0.6.0). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Seit 0.5.0 gibt es den Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern).
+Stand: Phase 3c (0.6.1). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Seit 0.5.0 gibt es den Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt erst mit den Sandwürmern).
 
 Neu in 0.5.4 ist die Karte von Arrakis: Der Start liegt auf einer Startinsel mit allen Erzen und einem Tiefenbrunnen, ringsum bis 220 Kacheln vom Start nur Sand, dahinter gleich große Felsinseln. Ein Lehrfeld mit etwa 100 000 Spice-Sand liegt 41–59 Kacheln vom Inselrand, alle anderen Spicefelder mindestens 100 Kacheln vom Fels. **Sicher gibt es die neue Karte nur in einem neuen Spiel.** Spielstände, in denen Arrakis schon angelegt ist, behalten die alte Karte, auch in neu erkundeten Gebieten. Ob ein älterer Spielstand, in dem Arrakis noch nicht angelegt ist, beim ersten Besuch die neue oder die alte Karte bekommt, ist noch nicht geprüft. Bekommt Arrakis die alte Karte, sagt die Mod das einmal im Chat.
 
 Neu in 0.5.5: Die regulären Spicefelder sind häufiger und größer (geschätzt etwa 5 Felder in den 800 × 800 Kacheln um den Start statt knapp einem, im Median etwa 1150 statt 134 Kacheln). Auch das gilt nur für eine neu angelegte Arrakis-Oberfläche; eine Oberfläche aus 0.5.4 behält ihre wenigen kleinen Felder.
 
 Neu in 0.6.0 ist der **Ornithopter**: ein bemannter Flieger, der einen Spice-Ernter anhebt, trägt und absetzt (leer 8, beladen 5,6 Kacheln/s; der Ernter selbst fährt höchstens 1,5). Die Forschung „Ornithopter“ erforscht sich von selbst, sobald der erste Spice-Ernter hergestellt ist. Über den eigenen Ernter fliegen und `Umschalt+C` drücken, die Verknüpfung „Ernter anheben oder absetzen“ in der Leiste klicken oder im Ornithopter-Fenster „Ernter anheben“ wählen: Nach 2 s Ankoppeln hängt der Ernter dran, auch ein aufgebauter oder angedockter, mit Laderaum, Treibstoff, Gesundheit, Qualität und Farbe. Wer im Ernter sitzt, fliegt mit. Dieselben Wege setzen ihn wieder ab; über einer Spice-Annahme dockt er an. Aus der Karte holt man den Ornithopter mit der Verknüpfung „Fernbedienung für Ornithopter“ oder fährt ihn fern. Stürzt ein beladener Ornithopter ab, fällt der Ernter mit 30 % Schaden herunter. Sandwürmer, vor denen man ihn rettet, kommen erst mit 0.7.0.
+
+Neu in 0.6.1: Der Ornithopter fliegt mit jedem Brennstoff gleich schnell, leer 8,0 und beladen 5,6 Kacheln/s (in 0.6.0 mit Kohle nur 6,9 und 4,8, mit Raketentreibstoff schneller). Wechselt der Brennstoff, passt die Mod das Tempo binnen 1 s an. Die Forschung „Ornithopter“ erforscht seit 0.6.1 auch die Mod selbst, sobald die Force einen Spice-Ernter hergestellt hat; dann steht eine Zeile im Chat.
 
 **Vor dem Entfernen der Mod** als Admin `/arrakis-uninstall` und dann `/arrakis-uninstall ja` eingeben: Das setzt alle getragenen Ernter ab und löscht die versteckte Ablage-Oberfläche `arrakis-hold`. **Zurück auf 0.5.x** mit einem getragenen Ernter geht nicht; vorher jeden Ernter absetzen.
 
@@ -35,7 +37,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 3. **Befehle** im Chat (nur Admins; im Einzelspiel ist man Admin):
    - `/arrakis-test`: Liste aller Tests mit Dauer und Hinweisen
    - `/arrakis-test T1` (bzw. `T2` … `T17`, `T2b`): einen Test starten; `T11 lang` und `T14 lang` mit 30 statt 9 Seeds. T9, T12 und T17 sind interaktiv und brauchen dich im Spiel
-   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (ohne Zeitraffer geschätzt knapp 16 min)
+   - `/arrakis-test alle`: alle nicht-interaktiven Tests nacheinander (ohne Zeitraffer knapp 15 min)
    - `/arrakis-test stop`: laufenden Test abbrechen
    - `/arrakis-test zurück`: zurück an die Stelle vor dem Test
    - `/arrakis-test tempo 10`: Zeitraffer (`game.speed`, 1 bis 50), die Ergebnisse bleiben gleich; `/arrakis-test tempo 1` stellt zurück, im eigenen Spielstand bitte vor dem Ausschalten der Einstellung ([Zeitraffer](docs/pruefstand.md#zeitraffer-arrakis-test-tempo))
@@ -54,7 +56,8 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/tiles.lua` | Arrakis-Fels |
 | `prototypes/resources.lua` | Spice-Sand, Tiefenwasser |
 | `prototypes/harvester.lua` | Spice-Ernter, Spice-Annahme, Tankstutzen, Spice-Brikett, Forschung Spice-Ernte, Taste `Umschalt+H`, Ressourcenkategorie `arrakis-spice-harvest` |
-| `prototypes/ornithopter.lua` | Ornithopter mit unsichtbarem Bein, Item, Rezept und Forschung, zwei Tempo-Sticker, Lastbild (16 Richtungen samt Schatten), Absetz-Probe, Taste `Umschalt+C`, Verknüpfungen „Ernter anheben oder absetzen“ und „Fernbedienung für Ornithopter“ |
+| `prototypes/ornithopter.lua` | Ornithopter mit unsichtbarem Bein, Item, Rezept und Forschung, Tempo-Sticker (ab 0.6.1 je Zustand 106, eine je Brennstoff-Stufe), Lastbild (16 Richtungen samt Schatten), Absetz-Probe, Taste `Umschalt+C`, Verknüpfungen „Ernter anheben oder absetzen“ und „Fernbedienung für Ornithopter“ |
+| `prototypes/ornithopter-speed.lua` | Tempo des Ornithopters je Brennstoff (ab 0.6.1): Basiswerte, Stufen, Stickernamen; reines Lua für Datenstufe, Laufzeit und Prüfstand |
 | `prototypes/windtrap.lua` | Windfalle |
 | `prototypes/spice.lua` | Spice-Raffinerie, Melange, Spice-Essenz, Sand, Spice-Wissenschaft |
 | `prototypes/compat.lua` | Versionsweiche: Prototypen in 2.0-Syntax, unter 2.1 umgeschrieben (bleibt, falls der Zweig `factorio-2.0` noch einmal aus diesem Code gebaut wird) |
@@ -66,7 +69,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Lädt die Laufzeit-Bibliotheken (`event_handler`) |
 | `scripts/arrakis-surface.lua` | Oberfläche von Arrakis anlegen, Entwicklerbefehl `/arrakis` |
-| `scripts/migrate.lua` | `storage` anlegen (Schema 2), Meldung alter Bohrer auf Spice, Hinweis auf die alte Karte, Forschung „Ornithopter“ für Spielstände aus 0.5.x nachholen |
+| `scripts/migrate.lua` | `storage` anlegen (Schema 2), Meldung alter Bohrer auf Spice, Hinweis auf die alte Karte, Forschung „Ornithopter“ für Spielstände aus 0.5.x nachholen und ab 0.6.1 jede Sekunde sowie beim Herstellen von Hand per Skript erforschen |
 | `scripts/harvester.lua` | Spice-Ernter: Zustände (ab 0.6.0 auch „getragen“), Abbau, Treibstoff, Tempo-Deckel, Abbausperre, Andocken, Taste |
 | `scripts/harvester-gui.lua` | Fenster am Fahrzeugfenster des Ernters |
 | `scripts/intake.lua` | Spice-Annahme und Tankstutzen: Bauen, Felsprüfung, Andock-Takt |
