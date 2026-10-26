@@ -71,7 +71,7 @@ local GRACE_LANDING = 108000
 local PAUSE_TICKS = 36000
 local HEAVY_SHARE = 0.1
 local BITE_RADIUS = 4
--- Unruhe und Wurmzeichen ab kaltem Sand mit Gewicht 30: H_k = 1500 · (1 − 0,98^k), H_26 = 612,3, H_55 = 1006,2.
+-- Unruhe und Wurmzeichen ab kaltem Sand mit Gewicht 30: H_k = 1500 · (1 − 0,98^k), H_26 = 612,9, H_55 = 1006,2.
 local UNREST_TAKE = 26
 local WORMSIGN_TAKE = 55
 local HEAT_TOLERANCE = 0.01

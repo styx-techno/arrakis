@@ -39,8 +39,9 @@
 --   storage.migration       zusätzlich worms_pending (hier gesetzt, von worms.lua abgearbeitet), worm_notice
 -- 0.6.x/0.5.x → 0.7.0: fehlende Ernter-Felder nachtragen, worms_pending setzen; Schonfrist, Quellen-Scan und Chatzeile
 -- macht worms.lua in seinem on_configuration_changed (läuft danach). old < 2 läuft vor old < 3: Die Schonfrist sieht
--- die nachgeholte Forschung „Ornithopter“. Herunterstufen auf 0.6.x: vorher /arrakis-uninstall ja (Markierungen und
--- die Sandwurm-Force blieben sonst im Spielstand).
+-- die nachgeholte Forschung „Ornithopter“. worms_pending steht schon vor old < 2: researched = true löst
+-- on_research_finished sofort aus [V2], und worms.lua nennt den Termin dann nicht ein zweites Mal. Herunterstufen auf
+-- 0.6.x: vorher /arrakis-uninstall ja (Markierungen und die Sandwurm-Force blieben sonst im Spielstand).
 --
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
@@ -255,6 +256,8 @@ migrate.on_configuration_changed = function()
     local surface = planet and planet.surface
     if surface then storage.migration.spice_drills = migrate.report_drills(surface) end
   end
+  -- 0.6.x/0.5.x → 0.7.0: vor old < 2 merken (siehe oben); die Ernter-Felder folgen unten.
+  if old < 3 then storage.migration.worms_pending = true end
   if old < 2 then
     -- 0.5.x → 0.6.0: Forschung „Ornithopter“ für Forces mit Ernter nachholen (siehe oben).
     for _, force in pairs(game.forces) do
@@ -268,7 +271,6 @@ migrate.on_configuration_changed = function()
       if h.vib_weight == nil then h.vib_weight = 0 end
       if h.vib_sand == nil then h.vib_sand = false end
     end
-    storage.migration.worms_pending = true
   end
   storage.schema = math.max(old, SCHEMA)
   -- 0.5.3 → 0.5.4: Hinweis auf die alte Karte (siehe oben).

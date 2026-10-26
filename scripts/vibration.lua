@@ -886,11 +886,14 @@ local function on_tiles(event)
   retile(game.get_surface(event.surface_index), event.tiles)
 end
 
+-- Klick: storage gilt, nicht der Zustand der Verknüpfung. Der kann bis zum nächsten overlay_tick abweichen (Laden im
+-- Einzelspieler [V9], fremdes set_shortcut_toggled); sonst ersetzte ein Klick einen bestehenden Eintrag, und dessen
+-- Render-Objekte blieben für immer liegen.
 local function on_shortcut(event)
   if event.prototype_name ~= OVERLAY then return end
   local player = game.get_player(event.player_index)
   if not player then return end
-  local on = not player.is_shortcut_toggled(OVERLAY)
+  local on = storage.vib.overlay[player.index] == nil
   set_toggled(player, on)
   if on then
     local entry = {surface = player.surface.index, cells = {}}

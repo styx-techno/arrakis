@@ -531,7 +531,8 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
   sind, löscht `unrest_tick` am Ende (sie sperren nichts mehr), eine leere Tabelle `vib.rumble[s]` ebenso; sonst wüchse `vib.rumble` mit jedem Sektor, der je bebte.
 
 **Vibrationsanzeige** (`overlay_tick` und Verknüpfung):
-- Klick: `on = not player.is_shortcut_toggled(name)` (A23 classes.d.ts:16186), `player.set_shortcut_toggled(name, on)` (:16323; A20 :23342);
+- Klick: `on = vib.overlay[i] == nil` (storage gilt, nicht `is_shortcut_toggled`, das bis zum nächsten Takt abweichen kann; sonst ersetzte ein Klick
+  einen bestehenden Eintrag, und seine Objekte blieben liegen), `player.set_shortcut_toggled(name, on)` (A23 classes.d.ts:16323; A20 :23342);
   an → `vib.overlay[i] = {surface, cells = {}}`, aus → `overlay_off(i)` (alle Objekte `destroy()`, dann `vib.overlay[i] = nil`).
 - Takt je eingeschaltetem, verbundenem Spieler: Oberfläche `player.surface`, Mitte `player.position`; nicht erlaubt → alle Zellen weg. Wechselt die
   Oberfläche gegenüber `cells`, erst alles weg. Für die 7×7 Chunks c um den Chunk der Mitte: Stufe `rest` (Sektor ruht), sonst nach `sum3[c]`:
@@ -579,6 +580,8 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 - **migrate.lua:** `SCHEMA = 3` (Z. 40), `init()` legt die Tabellen aus 4.2 an (`storage.rng = storage.rng or game.create_random_generator()`).
   `on_configuration_changed`: wie bisher `old < 1`, `old < 2`, neu `old < 3` → jedem Datensatz in `storage.harvesters` fehlende Felder nachtragen
   (`careful = false`, `vib_weight = 0`, `vib_sand = false`) und `storage.migration.worms_pending = true`; dann Schema. Kopfkommentar um Schema 3.
+  `worms_pending` steht schon vor `old < 2`: `researched = true` löst `on_research_finished` sofort aus [V2], und solange `worms_pending` steht,
+  merkt sich worms dort nur `ornithopter_tick`, `active_from` und `announced` ohne `msg-grace-start`; den Termin nennt die Chatzeile der Migration einmal.
 - **worms `on_init`:** `ensure_force()`; je Force `grace_of(force)`. **worms `on_configuration_changed`** (läuft nach migrate): `ensure_force()`; mit
   `worms_pending`: `migrate_schema3()`, dann `worms_pending = nil`. Außerdem immer: Verknüpfungszustände angleichen, verwaiste Render-Objekte und Fenster neu;
   jede Oberfläche in `vib.heat`, `sector_cooldown` und `vib.rumble`, die es nicht mehr gibt oder die nicht mehr erlaubt ist (Startup-Einstellung

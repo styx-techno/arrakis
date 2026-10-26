@@ -1143,7 +1143,13 @@ local function on_research_finished(event)
     local g = lib.grace_of(force)
     if g and not g.awake and not g.ornithopter_tick then
       g.ornithopter_tick = game.tick
-      reschedule(force, g, game.tick)
+      if storage.migration.worms_pending then
+        -- Mitten in der Migration (migrate.lua holt die Forschung nach): nur merken, den Termin nennt msg-worms-migrated.
+        g.active_from = compute_active(g)
+        g.announced = g.active_from
+      else
+        reschedule(force, g, game.tick)
+      end
     end
   elseif name == DISCOVERY_TECH then
     force.print({"arrakis-message.msg-briefing"})
