@@ -18,7 +18,8 @@
 --     run.data gehört dem Test; Schlüssel mit "tb_" benutzt der Runner (z. B. tb_protect).
 --   tb = diese Bibliothek (Funktionen unten), liegt nie in storage.
 --   Weitergeleitete Ereignisse (name): spider_command_completed, test_key, entity_died, driving_changed, script_path,
---   carry_key (Taste arrakis-carry-toggle) und shortcut (on_lua_shortcut), beide zusätzlich zu scripts/flyer.lua.
+--   carry_key (Taste arrakis-carry-toggle) und shortcut (on_lua_shortcut), beide zusätzlich zu scripts/flyer.lua, und
+--   research_finished (on_research_finished, ab 0.6.1 für T15 Schritt 2: Engine oder Skript).
 --
 -- storage.testbench = {
 --   run = run | nil,                         -- laufender Test (höchstens einer)
@@ -820,7 +821,8 @@ runner.events =
   [defines.events.on_script_path_request_finished] = forward("script_path"),
   ["arrakis-test-key"] = forward("test_key"),
   ["arrakis-carry-toggle"] = forward("carry_key"),
-  [defines.events.on_lua_shortcut] = forward("shortcut")
+  [defines.events.on_lua_shortcut] = forward("shortcut"),
+  [defines.events.on_research_finished] = forward("research_finished")
 }
 
 runner.on_init = function()

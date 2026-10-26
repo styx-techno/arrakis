@@ -24,6 +24,7 @@
 
 local harvester = require("scripts.harvester")
 local hold = require("scripts.hold")
+local speed = require("prototypes.ornithopter-speed")
 
 local lib = {}
 
@@ -66,16 +67,15 @@ lib.DROP_RADIUS = 6
 lib.PRECISION = 0.5
 -- „In den Ernter steigen“ nur bis zu diesem Abstand (Kacheln, Plan 4.7).
 lib.BOARD_RANGE = 6
--- Tempo-Sticker (Plan 1: 0,52 → 8 Kacheln/s leer, 0,364 → 5,6 beladen) [U6].
-lib.STICKER_EMPTY = "arrakis-ornithopter-empty"
-lib.STICKER_LOADED = "arrakis-ornithopter-loaded"
+-- Tempo-Sticker (seit 0.6.1 je Zustand und Brennstoff-Stufe, 8 Kacheln/s leer, 5,6 beladen) [U6, U7]: Namen, Stufen und
+-- Modifier aus prototypes/ornithopter-speed.lua; für den Prüfstand exportiert.
+lib.speed = speed
 -- Ein Sticker mit weniger Restzeit wird ersetzt (Ticks; halbe Laufzeit von 216000).
 lib.STICKER_MIN_TTL = 108000
 -- Lastbild und Schatten relativ zum Bodenpunkt des Fliegers (Kacheln, Plan 4.12) [U27].
 lib.IMAGE_OFFSET = {0, -1.5}
 lib.SHADOW_OFFSET = {1, 1}
 
-local OWN_STICKER = {[lib.STICKER_EMPTY] = true, [lib.STICKER_LOADED] = true}
 local RING_COLOR = {r = 0.45, g = 1, b = 0.55, a = 0.8}
 -- Grund → Hinweis (toggle_carry).
 local REASON_HINT =
@@ -207,14 +207,73 @@ end
 
 -- Tempo-Sticker (Plan 4.9) --------------------------------------------------------------------------
 
--- Genau ein eigener Sticker je Flieger, Name nach Zustand. Der gemerkte taugt, wenn er gültig ist, am Flieger hängt
--- (sticked_to, A23 classes.d.ts:8552), richtig heißt und noch lange genug lebt (time_to_live nur lesen [U9]).
--- Jeder andere eigene Sticker in flyer.stickers (A23 classes.d.ts:8564) wird zerstört; 0,52 · 0,364 ergäbe sonst
--- etwa 2,9 Kacheln/s. Fremde Sticker (z. B. Verlangsamungskapsel) bleiben.
+-- Das Tempo des Ornithopters ist proportional zum Höchsttempo-Faktor t des Brennstoffs (T16 vom 26.10.2026) [U7].
+-- Deshalb gibt es je Zustand eine Familie von Stickern, eine je Stufe von t (prototypes/ornithopter-speed.lua), und
+-- jeder Brennstoff fliegt gleich schnell: 8 Kacheln/s leer, 5,6 beladen, auf ±1 % (Ausweichweg aus Plan 4.16 wie
+-- apply_fuel_normalization beim Ernter, scripts/harvester.lua). t wie dort: fuel_top_speed_multiplier
+-- + Qualitätsstufe · fuel_top_speed_multiplier_quality_bonus (A23 classes.d.ts:14576–14580). Die Qualität des
+-- Ornithopters wirkt nicht (T16) [U8].
+
+-- Stufe je Brennstoff und Qualität ("item/qualität" → j). Prototypen ändern sich nur, wenn die Mods neu geladen werden;
+-- deshalb nur je Lua-Sitzung gemerkt, nie in storage (wie fuel_top_speed_acts in scripts/harvester.lua). Jeder Rechner
+-- rechnet denselben Wert, ein leerer Merker nach dem Laden ändert also nichts.
+local fuel_buckets = {}
+
+local function fuel_bucket(item, quality)
+  local key = item.name .. "/" .. (quality and quality.name or "normal")
+  local j = fuel_buckets[key]
+  if not j then
+    local level = quality and quality.level or 0
+    j = speed.bucket(item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus)
+    fuel_buckets[key] = j
+  end
+  return j
+end
+
+-- Stufe zum Brennstoff des Fliegers: was gerade brennt (currently_burning: name ist der Item-, quality der
+-- Qualitätsprototyp, A23 concepts.d.ts ItemIDAndQualityIDPair), sonst der erste Stapel im Brennstoffinventar (den
+-- verbrennt er als Nächstes), sonst die Stufe des eigenen Stickers, den er schon hat (Tank leer: Er fliegt ohnehin
+-- nicht, also kein Tausch), sonst t = 1.
+local function wanted_bucket(record)
+  local burner = record.entity.burner
+  if burner then
+    local burning = burner.currently_burning
+    if burning then return fuel_bucket(burning.name, burning.quality) end
+    local inventory = burner.inventory
+    for i = 1, #inventory do
+      local stack = inventory[i]
+      if stack.valid_for_read then return fuel_bucket(stack.prototype, stack.quality) end
+    end
+  end
+  local sticker = record.sticker
+  if sticker and sticker.valid then
+    local _, j = speed.parse(sticker.name)
+    if j then return j end
+  end
+  return speed.bucket(1)
+end
+
+-- Name des Stickers, den der Flieger jetzt haben soll: Zustand (beladen, wenn cargo gesetzt ist, sonst leer) und
+-- Brennstoff-Stufe. Für den Prüfstand exportiert.
+function lib.wanted_sticker(record)
+  return speed.name(record.cargo and "loaded" or "empty", wanted_bucket(record))
+end
+
+-- Zustand ("empty", "loaded") und Stufe eines Stickernamens, nil für fremde Sticker (Prüfstand).
+function lib.sticker_state(name)
+  return speed.parse(name)
+end
+
+-- Genau ein eigener Sticker je Flieger, Name nach Zustand und Brennstoff. Der gemerkte taugt, wenn er gültig ist, am
+-- Flieger hängt (sticked_to, A23 classes.d.ts:8552), so heißt, wie er soll, und noch lange genug lebt (time_to_live nur
+-- lesen [U9]). Jeder andere eigene Sticker in flyer.stickers (A23 classes.d.ts:8564), erkannt am Namen über
+-- speed.parse, wird zerstört; zwei eigene multiplizierten sich sonst (leer · beladen etwa 3,4 Kacheln/s). Fremde
+-- Sticker (z. B. Verlangsamungskapsel) bleiben. Der 60-Tick-Takt ruft das für jeden Flieger (care): Wechselt der
+-- Brennstoff (anderes Item brennt, anderer Stapel vorn), hat er nach höchstens 1 s den passenden Sticker.
 local function ensure_sticker(record)
   local flyer = record.entity
   if not flyer.valid then return end
-  local wanted = record.cargo and lib.STICKER_LOADED or lib.STICKER_EMPTY
+  local wanted = lib.wanted_sticker(record)
   local sticker = record.sticker
   local keep = nil
   if sticker and sticker.valid and sticker.name == wanted and sticker.sticked_to == flyer
@@ -222,7 +281,7 @@ local function ensure_sticker(record)
     keep = sticker
   end
   for _, other in pairs(flyer.stickers or {}) do
-    if other.valid and OWN_STICKER[other.name] and other ~= keep then other.destroy() end
+    if other.valid and other ~= keep and speed.parse(other.name) then other.destroy() end
   end
   if keep then return end
   if sticker and sticker.valid then sticker.destroy() end
@@ -1305,6 +1364,8 @@ lib.on_nth_tick =
 }
 
 -- Nach Mod-Änderungen (nach migrate und harvester): alle Flieger pflegen, dann Waisen auf der Ablage landen (Plan 4.15).
+-- 0.6.0 → 0.6.1: Die Sticker arrakis-ornithopter-empty/-loaded gibt es nicht mehr, die Engine entfernt sie beim Laden;
+-- record.sticker ist dann ungültig, und care heftet den Sticker der Familie an (ensure_sticker).
 lib.on_configuration_changed = function()
   for _, record in pairs(storage.flyers) do
     care(record)

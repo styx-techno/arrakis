@@ -29,6 +29,7 @@ local hold = require("scripts.hold")
 local intake = require("scripts.intake")
 local migrate = require("scripts.migrate")
 local terrain = require("scripts.terrain")
+local speed = require("prototypes.ornithopter-speed")
 
 local FLYER = "arrakis-ornithopter"
 local NAME = "spice-harvester"
@@ -38,9 +39,10 @@ local SPICE = "spice-sand"
 local ROCK = "arrakis-rock"
 local SAND = "sand-1"
 local HOLD = "arrakis-hold"
-local STICKER_EMPTY = "arrakis-ornithopter-empty"
-local STICKER_LOADED = "arrakis-ornithopter-loaded"
-local OWN_STICKER = {[STICKER_EMPTY] = true, [STICKER_LOADED] = true}
+-- Die beiden Tempo-Sticker aus 0.6.0; seit 0.6.1 gibt es nur noch die Familien aus prototypes/ornithopter-speed.lua.
+local OLD_STICKERS = {"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}
+-- Stufe für Kohle (t = 1) und Raketentreibstoff (t = 1,15), Plan 4.9.
+local COAL_P, ROCKET_P = 100, 115
 local IMAGE_SPRITE = "arrakis-harvester-carried-"
 local SHADOW_SPRITE = "arrakis-harvester-carried-shadow-"
 local CARRY_INPUT = "arrakis-carry-toggle"
@@ -278,24 +280,63 @@ local function car_state(car)
   return h and h.state or "ohne Datensatz"
 end
 
--- Eigene Sticker am Flieger (arrakis-ornithopter-empty/-loaded in flyer.stickers, A23 classes.d.ts:8564).
+-- Eigene Sticker am Flieger: die Familien arrakis-ornithopter-empty-<p> und -loaded-<p> in flyer.stickers (A23
+-- classes.d.ts:8564), erkannt mit speed.parse (prototypes/ornithopter-speed.lua).
 local function own_stickers(flyer)
   local list = {}
   if not valid(flyer) then return list end
   local stickers = read(function() return flyer.stickers end)
   for _, sticker in pairs(stickers or {}) do
-    if sticker.valid and OWN_STICKER[sticker.name] then table.insert(list, sticker) end
+    if sticker.valid and speed.parse(sticker.name) then table.insert(list, sticker) end
   end
   return list
+end
+
+-- Zustand und Stufe eines eigenen Stickers als Text, z. B. "beladen t1,00".
+local function sticker_label(sticker)
+  local state, j = speed.parse(sticker.name)
+  if not state then return sticker.name end
+  return (state == "loaded" and "beladen" or "leer") .. " t" .. speed.factor_text(j)
 end
 
 local function sticker_text(list)
   if #list == 0 then return "keiner" end
   local names = {}
-  for _, sticker in ipairs(list) do
-    table.insert(names, sticker.name == STICKER_LOADED and "beladen" or "leer")
-  end
+  for _, sticker in ipairs(list) do table.insert(names, sticker_label(sticker)) end
   return table.concat(names, " + ")
+end
+
+-- p der Stufe eines Stickers oder nil.
+local function sticker_p(sticker)
+  local _, j = speed.parse(sticker.name)
+  return j and speed.percent(j)
+end
+
+-- Brennt der Flieger nur Kohle oder gar nichts? Dann muss sein Sticker die Stufe p = 100 haben (Kohle t = 1; ohne
+-- Brennstoff bekommt der erste Sticker t = 1, Plan 4.9). Andere Brennstoffe prüft der Schritt selbst (15 f, T16).
+local function coal_only(flyer)
+  local burner = read(function() return flyer.burner end)
+  if not burner then return false end
+  local burning = read(function() return burner.currently_burning end)
+  if burning then
+    local name = burning.name
+    if type(name) ~= "string" then name = name.name end
+    if name ~= "coal" then return false end
+  end
+  local inventory = burner.inventory
+  for i = 1, #inventory do
+    local stack = inventory[i]
+    if stack.valid_for_read and stack.name ~= "coal" then return false end
+  end
+  return true
+end
+
+-- Genau ein eigener Sticker im Zustand state ("empty", "loaded"); mit Kohle oder ohne Brennstoff in Stufe p = 100.
+local function sticker_ok(flyer, stickers, state)
+  if #stickers ~= 1 then return false end
+  local got = speed.parse(stickers[1].name)
+  if got ~= state then return false end
+  return sticker_p(stickers[1]) == COAL_P or not coal_only(flyer)
 end
 
 local function render_ok(object)
@@ -336,27 +377,28 @@ local function check(failed, ok, label)
   return ok
 end
 
--- „beladen“ (Plan 4.3, 4.6 Schritt 7): Datensatz trägt car, nicht abbaubar, genau ein eigener Sticker „beladen“,
--- Lastbild und Schatten gültig.
+-- „beladen“ (Plan 4.3, 4.6 Schritt 7): Datensatz trägt car, nicht abbaubar, genau ein eigener Sticker „beladen“ (mit
+-- Kohle t1,00), Lastbild und Schatten gültig.
 local function check_loaded(failed, label, flyer, car)
   local record = valid(flyer) and flyer_lib.get(flyer)
   if not check(failed, record ~= nil and record ~= false, label .. ": Ornithopter ohne Datensatz") then return false end
   local ok = check(failed, valid(car) and record.cargo == car.unit_number, label .. ": nicht beladen (" .. flyer_state(flyer) .. ")")
   ok = check(failed, flyer.minable_flag == false, label .. ": Ornithopter abbaubar") and ok
   local stickers = own_stickers(flyer)
-  ok = check(failed, #stickers == 1 and stickers[1].name == STICKER_LOADED, label .. ": Sticker " .. sticker_text(stickers)) and ok
+  ok = check(failed, sticker_ok(flyer, stickers, "loaded"), label .. ": Sticker " .. sticker_text(stickers)) and ok
   ok = check(failed, render_ok(record.renders.image) and render_ok(record.renders.shadow), label .. ": Lastbild oder Schatten fehlt") and ok
   return ok
 end
 
--- „leer“: Datensatz da, keine Last, keine Kopplung, abbaubar, genau ein eigener Sticker „leer“, kein Lastbild.
+-- „leer“: Datensatz da, keine Last, keine Kopplung, abbaubar, genau ein eigener Sticker „leer“ (mit Kohle t1,00), kein
+-- Lastbild.
 local function check_empty(failed, label, flyer)
   local record = valid(flyer) and flyer_lib.get(flyer)
   if not check(failed, record ~= nil and record ~= false, label .. ": Ornithopter ohne Datensatz (" .. flyer_state(flyer) .. ")") then return false end
   local ok = check(failed, record.cargo == nil and record.coupling == nil, label .. ": nicht leer (" .. flyer_state(flyer) .. ")")
   ok = check(failed, flyer.minable_flag == true, label .. ": Ornithopter nicht abbaubar") and ok
   local stickers = own_stickers(flyer)
-  ok = check(failed, #stickers == 1 and stickers[1].name == STICKER_EMPTY, label .. ": Sticker " .. sticker_text(stickers)) and ok
+  ok = check(failed, sticker_ok(flyer, stickers, "empty"), label .. ": Sticker " .. sticker_text(stickers)) and ok
   ok = check(failed, not render_ok(record.renders.image) and not render_ok(record.renders.shadow), label .. ": Lastbild noch da") and ok
   return ok
 end
@@ -619,9 +661,25 @@ function t15_steps.s1_check(run, tb, d)
   check(failed, slots == 2, "Brennstoff-Slots " .. tostring(slots) .. " statt 2")
   table.insert(parts, string.format("%s: %s, %s Beine, Brenner chemical %s, %s Slots", FLYER, tostring(p.type),
     tostring(legs), tostring(chemical == true), tostring(slots)))
-  for _, name in ipairs({STICKER_EMPTY, STICKER_LOADED}) do
-    local sticker = prototypes.entity[name]
-    check(failed, sticker ~= nil and sticker.type == "sticker", "Sticker " .. name .. " fehlt")
+  -- Tempo-Sticker (0.6.1): je Zustand eine Familie von speed.COUNT Stufen; Stichproben Kohle und Raketentreibstoff,
+  -- die beiden Sticker aus 0.6.0 gibt es nicht mehr.
+  local families = {}
+  for _, state in ipairs(speed.STATES) do
+    local n = 0
+    for j = speed.MIN_J, speed.MAX_J do
+      local sticker = prototypes.entity[speed.name(state, j)]
+      if sticker and sticker.type == "sticker" then n = n + 1 end
+    end
+    check(failed, n == speed.COUNT, "Tempo-Sticker " .. state .. " " .. n .. "/" .. speed.COUNT)
+    for _, p in ipairs({COAL_P, ROCKET_P}) do
+      local name = speed.PREFIX[state] .. p
+      local sticker = prototypes.entity[name]
+      check(failed, sticker ~= nil and sticker.type == "sticker", "Sticker " .. name .. " fehlt")
+    end
+    table.insert(families, (state == "loaded" and "beladen " or "leer ") .. n .. "/" .. speed.COUNT)
+  end
+  for _, name in ipairs(OLD_STICKERS) do
+    check(failed, read(function() return prototypes.entity[name] end) == nil, "Sticker " .. name .. " aus 0.6.0 gibt es noch")
   end
   local sprites, missing = 0, {}
   for i = 0, 15 do
@@ -634,7 +692,8 @@ function t15_steps.s1_check(run, tb, d)
     end
   end
   check(failed, sprites == 32, "Lastbild-Sprites " .. sprites .. "/32, fehlen: " .. table.concat(missing, ", "))
-  table.insert(parts, "Sticker leer und beladen, Lastbild " .. sprites .. "/32")
+  table.insert(parts, "Tempo-Sticker " .. table.concat(families, ", ") .. " (p = " .. COAL_P .. " und " .. ROCKET_P
+    .. " da, 0.6.0-Namen weg), Lastbild " .. sprites .. "/32")
   check(failed, prototypes.entity[PROBE] ~= nil, "Probe " .. PROBE .. " fehlt")
   local key = prototypes.custom_input[CARRY_INPUT]
   if check(failed, key ~= nil, "Taste " .. CARRY_INPUT .. " fehlt") then
@@ -660,7 +719,11 @@ function t15_steps.s1_check(run, tb, d)
 end
 
 -- Schritt 2: Forschung [U11]. Die Force behält ihren Stand von Lauf zu Lauf, deshalb erst herstellen: „Spice-Ernte“
--- erforscht, „Ornithopter“ nicht, Herstellzähler 0, Rezept frei. Dann a) von Hand, b) Montagemaschine 3, c) MESSUNG.
+-- erforscht, „Ornithopter“ nicht, Herstellzähler 0, Rezept frei. Dann beide Wege nacheinander: a) von Hand (Figur ohne
+-- Spieler), b) Montagemaschine 3; vor b) wieder zurücksetzen. Seit 0.6.1 erforscht auch das Skript (scripts/migrate.lua,
+-- 60-Tick-Takt, sobald die Statistik zählt), deshalb 130 Ticks Wartezeit nach dem Item. MESSUNG je Weg: Ticks bis
+-- erforscht, wer erforscht hat (on_research_finished mit by_script, weitergeleitet vom Runner) und ob die
+-- Produktionsstatistik der Force das Item zählt. Befund 26.10.2026 (0.6.0): Von Hand kam das Item, erforscht war nichts.
 
 -- Zutaten des Ernter-Rezepts (prototypes/harvester.lua:171–177).
 local S2_INGREDIENTS =
@@ -673,7 +736,7 @@ local S2_INGREDIENTS =
 }
 local S2_HAND_ITEM = 660       -- 10 s von Hand (Tempo 1) plus 1 s
 local S2_MACHINE_ITEM = 540    -- 10 s / 1,25 = 480 Ticks plus 1 s
-local S2_RESEARCH = 60
+local S2_RESEARCH = 130        -- 60-Tick-Takt der Mod plus Reserve
 
 -- Warum migrate.ornithopter_research für die Force true gäbe (vor dem Lauf schon ein Ernter da).
 function t15_steps.s2_reason(force)
@@ -687,21 +750,73 @@ function t15_steps.s2_reason(force)
   return "unbekannt"
 end
 
-function t15_steps.s2_start(run, tb, d)
-  local s = d.s2
-  local force = t15_force()
-  s.force = force
+-- Herstellzähler spice-harvester der Force, Summe über alle Oberflächen.
+function t15_steps.s2_counted(force)
+  local total = 0
+  for _, surface in pairs(game.surfaces) do
+    local count = read(function() return force.get_item_production_statistics(surface).get_input_count(NAME) end)
+    if type(count) == "number" then total = total + count end
+  end
+  return total
+end
+
+-- Zurücksetzen (Beginn und vor b): „Ornithopter“ nicht erforscht, Herstellzähler 0 auf allen Oberflächen, Ereignis
+-- vergessen. Gibt false zurück, wenn migrate.ornithopter_research trotzdem schon true gäbe (dann nicht prüfbar).
+function t15_steps.s2_reset(s)
+  local force = s.force
   local ornithopter = force.technologies[ORNITHOPTER_TECH]
-  local harvesting = force.technologies[HARVESTING_TECH]
-  if not (ornithopter and harvesting) then return fail(run, tb, 2, "Technologien " .. HARVESTING_TECH .. "/" .. ORNITHOPTER_TECH .. " fehlen") end
-  harvesting.researched = true
   ornithopter.researched = false
   for _, surface in pairs(game.surfaces) do
     pcall(function() force.get_item_production_statistics(surface).set_input_count(NAME, 0) end)
   end
-  force.recipes[NAME].enabled = true
+  s.event = nil
   if migrate.ornithopter_research(force) then
     ornithopter.researched = false
+    s.event = nil
+    return false
+  end
+  return true
+end
+
+-- Wartet auf das Item (count > 0, höchstens limit Ticks ab path.start), dann höchstens S2_RESEARCH Ticks auf die
+-- Forschung. Schreibt in path: item_ticks, research_ticks, counted (Herstellzähler am Ende), by ("Engine" oder "Skript"),
+-- no_item. Gibt "poll" zurück, solange gewartet wird, sonst 1.
+function t15_steps.s2_wait(run, tb, s, path, count, limit, label)
+  local tick = game.tick
+  if not path.item_tick then
+    if count == 0 then
+      if tick - path.start <= limit then return "poll" end
+      path.no_item = true
+      tb.trace(run, "2) " .. label .. ": kein Item bis Tick " .. limit)
+      return 1
+    end
+    path.item_tick = tick
+    path.item_ticks = tick - path.start
+    tb.trace(run, "2) " .. label .. ": Item nach " .. path.item_ticks .. " Ticks")
+  end
+  local researched = s.force.technologies[ORNITHOPTER_TECH].researched
+  if not researched and tick - path.item_tick <= S2_RESEARCH then return "poll" end
+  if researched then path.research_ticks = tick - path.item_tick end
+  path.counted = t15_steps.s2_counted(s.force)
+  local event = s.event
+  if event then path.by = event.by_script and "Skript" or "Engine" end
+  tb.trace(run, string.format("2) %s: %s, Herstellzähler der Force %d, on_research_finished %s", label,
+    researched and ("erforscht nach " .. path.research_ticks .. " Ticks") or ("nach " .. S2_RESEARCH .. " Ticks nicht erforscht"),
+    path.counted, event and ("Tick " .. event.tick .. ", by_script " .. tostring(event.by_script)) or "keins"))
+  return 1
+end
+
+function t15_steps.s2_start(run, tb, d)
+  local s = d.s2
+  local force = t15_force()
+  s.force = force
+  s.a, s.b = {}, {}
+  local ornithopter = force.technologies[ORNITHOPTER_TECH]
+  local harvesting = force.technologies[HARVESTING_TECH]
+  if not (ornithopter and harvesting) then return fail(run, tb, 2, "Technologien " .. HARVESTING_TECH .. "/" .. ORNITHOPTER_TECH .. " fehlen") end
+  harvesting.researched = true
+  force.recipes[NAME].enabled = true
+  if not t15_steps.s2_reset(s) then
     tb.log(run, "INFO", "2) nicht prüfbar: migrate.ornithopter_research gibt schon vor dem Herstellen true (" .. t15_steps.s2_reason(force)
       .. "); „Ornithopter“ wieder auf nicht erforscht gesetzt")
     run.data.results[2] = "INFO"
@@ -719,12 +834,11 @@ function t15_steps.s2_start(run, tb, d)
   end
   if #missing > 0 then return fail(run, tb, 2, "Zutaten passen nicht ins Inventar der Figur: " .. table.concat(missing, ", ")) end
   local ok, started = pcall(function() return character.begin_crafting{count = 1, recipe = NAME, silent = true} end)
-  s.started = ok and started or 0
-  s.craft_tick = game.tick
+  s.a.start = game.tick
   tb.trace(run, "2) a) begin_crafting{recipe = " .. NAME .. ", count = 1}: " .. (ok and tostring(started) or ("Fehler " .. tostring(started))))
-  if s.started == 0 then
-    tb.log(run, "INFO", "2) a) begin_crafting startete nichts (" .. (ok and "Rückgabe 0" or tostring(started)) .. "); weiter mit der Montagemaschine")
-    s.hand_skipped = true
+  if not (ok and started and started > 0) then
+    s.a.skipped = "begin_crafting startete nichts" .. (ok and "" or (": " .. tostring(started)))
+    tb.log(run, "INFO", "2) a) " .. s.a.skipped .. "; weiter mit der Montagemaschine")
   end
   return 1
 end
@@ -732,41 +846,28 @@ end
 -- a) Item im Inventar der Figur, dann Forschung.
 function t15_steps.s2_hand(run, tb, d)
   local s = d.s2
-  if s.hand_skipped then return 1 end
-  local force = s.force
+  if s.a.skipped then return 1 end
   local inventory = valid(s.character) and s.character.get_inventory(defines.inventory.character_main)
   local count = inventory and inventory.get_item_count(NAME) or 0
-  local waited = game.tick - s.craft_tick
-  if not s.item_tick then
-    if count > 0 then
-      s.item_tick = game.tick
-      tb.trace(run, "2) a) Item von Hand nach " .. waited .. " Ticks")
-    elseif waited > S2_HAND_ITEM then
-      tb.log(run, "INFO", "2) a) kein Item bis Tick " .. S2_HAND_ITEM .. " nach begin_crafting (eine Figur ohne Spieler craftet womöglich nie); weiter mit der Montagemaschine")
-      s.hand_skipped = true
-      return 1
-    end
-    return "poll"
-  end
-  local researched = force.technologies[ORNITHOPTER_TECH].researched
-  if researched then
-    s.research_ticks = game.tick - s.item_tick
-    s.done = "a"
-    return 1
-  end
-  if game.tick - s.item_tick > S2_RESEARCH then
-    s.done = "a"
-    s.research_failed = true
-    return 1
-  end
-  return "poll"
+  return t15_steps.s2_wait(run, tb, s, s.a, count, S2_HAND_ITEM, "a) von Hand")
 end
 
--- b) Montagemaschine 3 (Tempo 1,25) mit Strom wie scripts/testbench/t_harvester.lua:1145–1146, nur wenn a) kein Item gab.
+-- b) Montagemaschine 3 (Tempo 1,25) mit Strom wie scripts/testbench/t_harvester.lua:1145–1146. Vorher die Figur samt
+-- Item von Hand und Warteschlange weg, dann zurücksetzen wie zu Beginn.
 function t15_steps.s2_machine_build(run, tb, d)
   local s = d.s2
-  if s.done then return 1 end
   local force = s.force
+  if valid(s.character) then
+    local inventory = s.character.get_inventory(defines.inventory.character_main)
+    local n = inventory and inventory.get_item_count(NAME) or 0
+    if n > 0 then inventory.remove{name = NAME, count = n} end
+    s.character.destroy()
+  end
+  if not t15_steps.s2_reset(s) then
+    s.b.skipped = "migrate.ornithopter_research gibt nach a) schon vor dem Herstellen true (" .. t15_steps.s2_reason(force) .. ")"
+    tb.log(run, "INFO", "2) b) nicht prüfbar: " .. s.b.skipped)
+    return 1
+  end
   local c = at(d.pos.s2, 12, 0)
   s.machine = create(run, tb, {name = "assembling-machine-3", position = at(c, 0.5, 0.5), force = force})
   s.pole = create(run, tb, {name = "medium-electric-pole", position = at(c, 2.5, 0.5), force = force})
@@ -781,55 +882,54 @@ function t15_steps.s2_machine_build(run, tb, d)
     if n < ingredient.count then table.insert(missing, ingredient.name .. " " .. n .. "/" .. ingredient.count) end
   end
   if #missing > 0 then return fail(run, tb, 2, "Zutaten passen nicht in die Montagemaschine: " .. table.concat(missing, ", ")) end
-  s.recipe_tick = game.tick
-  s.item_tick = nil
+  s.b.start = game.tick
   return 1
 end
 
 function t15_steps.s2_machine(run, tb, d)
   local s = d.s2
-  if s.done then return 1 end
-  local force = s.force
+  if s.b.skipped then return 1 end
   local output = valid(s.machine) and s.machine.get_inventory(defines.inventory.crafter_output)
   local count = output and output.get_item_count(NAME) or 0
-  if not s.item_tick then
-    if count > 0 then
-      s.item_tick = game.tick
-      tb.trace(run, "2) b) Item aus der Montagemaschine nach " .. (game.tick - s.recipe_tick) .. " Ticks")
-    elseif game.tick - s.recipe_tick > S2_MACHINE_ITEM then
-      s.done = "c"
-      return 1
-    end
-    return "poll"
-  end
-  if force.technologies[ORNITHOPTER_TECH].researched then
-    s.research_ticks = game.tick - s.item_tick
-    s.done = "b"
-    return 1
-  end
-  if game.tick - s.item_tick > S2_RESEARCH then
-    s.done = "b"
-    s.research_failed = true
-    return 1
-  end
-  return "poll"
+  return t15_steps.s2_wait(run, tb, s, s.b, count, S2_MACHINE_ITEM, "b) Montagemaschine 3")
 end
 
+-- Ein Weg als Text für die Ergebniszeile.
+function t15_steps.s2_text(path, label, limit)
+  if path.skipped then return label .. ": nicht gelaufen (" .. path.skipped .. ")" end
+  if path.no_item then return label .. ": kein Item bis Tick " .. limit end
+  return string.format("%s: Item nach %d Ticks, Herstellzähler %d, %s", label, path.item_ticks or -1, path.counted or 0,
+    path.research_ticks and ("erforscht nach " .. path.research_ticks .. " Ticks (" .. (path.by or "ohne Ereignis") .. ")") or "nicht erforscht")
+end
+
+-- FEHLER: b) gab ein Item und nichts erforschte; a) gab ein Item, das die Statistik zählt, und nichts erforschte.
+-- Zählt die Statistik das Item von Hand nicht und erforscht nichts, ist das die Grenze ohne Spieler (nur MESSUNG): Mit
+-- Spieler greifen der Auslöser der Engine oder on_player_crafted_item, geprüft bei der Abnahme von Hand. Ohne jede
+-- Forschung und ohne FEHLER steht dort nur eine MESSUNG.
 function t15_steps.s2_check(run, tb, d)
   local s = d.s2
-  if s.done == "c" then
-    tb.log(run, "MESSUNG", "2) c) auch aus der Montagemaschine kein Item bis Tick " .. S2_MACHINE_ITEM
-      .. " nach set_recipe; die Forschung prüfst du von Hand (Abnahme, docs/plan-3c.md 8)")
+  local a, b = s.a, s.b
+  local failed = {}
+  local values = t15_steps.s2_text(a, "a) von Hand", S2_HAND_ITEM) .. "; " .. t15_steps.s2_text(b, "b) Montagemaschine 3", S2_MACHINE_ITEM)
+  if b.item_tick and not b.research_ticks then
+    table.insert(failed, "b) Item da, „Ornithopter“ " .. S2_RESEARCH .. " Ticks später nicht erforscht")
+  end
+  if a.item_tick and not a.research_ticks then
+    if (a.counted or 0) > 0 then
+      table.insert(failed, "a) Item da und gezählt, „Ornithopter“ " .. S2_RESEARCH .. " Ticks später nicht erforscht")
+    else
+      tb.log(run, "MESSUNG", "2) a) Das Item von Hand zählt die Produktionsstatistik nicht, und nichts erforscht „Ornithopter“:"
+        .. " Grenze ohne Spieler. Mit Spieler greifen der Auslöser der Engine oder on_player_crafted_item; das prüfst du bei der"
+        .. " Abnahme von Hand (docs/plan-3c.md 8)")
+    end
+  end
+  if #failed == 0 and not (a.research_ticks or b.research_ticks) then
+    tb.log(run, "MESSUNG", "2) Forschung „Ornithopter“ beim ersten Ernter [U11]: " .. values
+      .. "; die Forschung prüfst du von Hand (Abnahme, docs/plan-3c.md 8)")
     run.data.results[2] = "MESSUNG"
     return "end"
   end
-  local how = s.done == "a" and "a) von Hand" or "b) Montagemaschine 3"
-  local item_ticks = s.done == "a" and (s.item_tick - s.craft_tick) or (s.item_tick - s.recipe_tick)
-  local failed = {}
-  check(failed, not s.research_failed, "Item da, „Ornithopter“ " .. S2_RESEARCH .. " Ticks später nicht erforscht")
-  return verdict(run, tb, 2, "Forschung „Ornithopter“ beim ersten Ernter [U11]", failed, string.format(
-    "%s: Item nach %d Ticks, erforscht %s", how, item_ticks,
-    s.research_ticks and ("nach " .. s.research_ticks .. " Ticks") or "nicht"))
+  return verdict(run, tb, 2, "Forschung „Ornithopter“ beim ersten Ernter [U11]", failed, values)
 end
 
 -- Schritt 3: Anheben mit Insassen [U14].
@@ -2200,15 +2300,22 @@ function t15_steps.s14_run(run, tb, d)
     tostring(r1), tostring(after1), tostring(r2), tostring(r3), tostring(before.harvesting), tostring(before.ornithopter)))
 end
 
--- Schritt 15: Pflege [U9, U16]: Sticker weg, zweiter Sticker, Bild weg, Teleport auf arrakis-test-hold und zurück.
+-- Schritt 15: Pflege [U7, U9, U16]: Sticker weg, zweiter eigener Sticker (anderer Zustand), Bild weg, Teleport auf
+-- arrakis-test-hold und zurück, zweiter Sticker gleichen Namens, Brennstoffwechsel Kohle → Raketentreibstoff.
+-- Befund 26.10.2026 (0.6.0): Mit einem zweiten Sticker gleichen Namens (damals Teil b) wurde der Zustand nie „gut“, weil
+-- der Test den gemerkten Sticker erwartete; vermutlich ersetzt die Engine einen Sticker gleichen Namens. Teil b nimmt
+-- deshalb den anderen Zustand, Teil e misst, was die Engine bei gleichem Namen tut. LuaEntity-Vergleiche (==) braucht
+-- dafür keiner der Teile: gültig, Zahl und Zustand reichen.
 
-local S15_PARTS = {"a", "b", "c", "d"}
+local S15_PARTS = {"a", "b", "c", "d", "e", "f"}
 local S15_LABEL =
 {
   a = "Sticker zerstört",
-  b = "zweiter eigener Sticker",
+  b = "zweiter eigener Sticker, anderer Zustand",
   c = "Bild zerstört",
-  d = "Teleport auf die Prüfstand-Ablage und zurück"
+  d = "Teleport auf die Prüfstand-Ablage und zurück",
+  e = "zweiter eigener Sticker, gleicher Name",
+  f = "Brennstoff Kohle → Raketentreibstoff"
 }
 
 function t15_steps.s15_build(run, tb, d)
@@ -2220,42 +2327,90 @@ function t15_steps.s15_build(run, tb, d)
   return COUPLE_WAIT
 end
 
--- Pflege-Zustand gut? Genau ein eigener Sticker „beladen“ (b: der gemerkte), am Flieger, Bild und Schatten gültig.
-function t15_steps.s15_good(s)
+-- Pflege-Zustand gut? Genau ein eigener Sticker im Zustand „beladen“, Bild und Schatten gültig. Dazu je Teil:
+-- b) der gemerkte Sticker ist noch gültig (die Pflege hat den „leeren“ zerstört, nicht den gemerkten);
+-- e) der Datensatz zeigt auf einen gültigen Sticker (die Pflege hat übernommen, was die Engine auch tat);
+-- f) Stufe p = 115 (Raketentreibstoff);
+-- sonst (a, c, d, f) hängt der Sticker am Flieger (sticked_to).
+function t15_steps.s15_good(s, key)
   local record = flyer_lib.get(s.flyer)
   if not record then return false end
   local stickers = own_stickers(s.flyer)
-  if #stickers ~= 1 or stickers[1].name ~= STICKER_LOADED then return false end
-  if read(function() return stickers[1].sticked_to == s.flyer end) ~= true then return false end
-  if s.remembered and stickers[1] ~= s.remembered then return false end
+  if #stickers ~= 1 or speed.parse(stickers[1].name) ~= "loaded" then return false end
+  if key == "b" then
+    if not valid(s.remembered) then return false end
+  elseif key == "e" then
+    if not valid(record.sticker) then return false end
+  elseif read(function() return stickers[1].sticked_to == s.flyer end) ~= true then
+    return false
+  end
+  if key == "f" and sticker_p(stickers[1]) ~= ROCKET_P then return false end
   return render_ok(record.renders.image) and render_ok(record.renders.shadow)
+end
+
+-- f) Raketentreibstoff statt Kohle: Inventar leeren, currently_burning schreiben (LuaBurner, schreibbar; jeder Brennstoff
+-- gilt, A23 classes.d.ts:4818–4870) und den Rest auf den vollen Brennwert. Gibt ok, Fehlertext zurück.
+function t15_steps.s15_refuel(flyer)
+  return pcall(function()
+    local burner = flyer.burner
+    burner.inventory.clear()
+    burner.currently_burning = {name = "rocket-fuel", quality = "normal"}
+    burner.remaining_burning_fuel = prototypes.item["rocket-fuel"].fuel_value
+  end)
 end
 
 function t15_steps.s15_poke(run, tb, d)
   local s = d.s15
   if s.part == 0 and not (check_loaded(s.failed, "vorher", s.flyer, s.car)) then
-    return verdict(run, tb, 15, "Pflege [U9, U16]", s.failed, "Anheben ging nicht")
+    return verdict(run, tb, 15, "Pflege [U7, U9, U16]", s.failed, "Anheben ging nicht")
   end
   s.part = s.part + 1
   local key = S15_PARTS[s.part]
   if not key then
-    return verdict(run, tb, 15, "Pflege [U9, U16]", s.failed, table.concat(s.parts, "; "))
+    return verdict(run, tb, 15, "Pflege [U7, U9, U16]", s.failed, table.concat(s.parts, "; "))
   end
   local record = flyer_lib.get(s.flyer)
+  local sticker = record and record.sticker
+  local function attach(name)
+    return remember(run, s.flyer.surface.create_entity{name = name, position = s.flyer.position, target = s.flyer, force = s.flyer.force})
+  end
   s.remembered = nil
   if key == "a" then
-    local sticker = record and record.sticker
     if valid(sticker) then sticker.destroy() end
   elseif key == "b" then
-    s.remembered = record and record.sticker
-    remember(run, s.flyer.surface.create_entity{name = STICKER_LOADED, position = s.flyer.position, target = s.flyer, force = s.flyer.force})
+    -- Sticker der Familie „leer“ in derselben Stufe wie der gemerkte „beladen“.
+    s.remembered = sticker
+    local j = nil
+    if valid(sticker) then j = select(2, speed.parse(sticker.name)) end
+    attach(speed.name("empty", j or speed.bucket(1)))
   elseif key == "c" then
     local image = record and record.renders.image
     if render_ok(image) then image.destroy() end
-  else
+  elseif key == "d" then
     s.home = copy_pos(s.flyer.position)
     s.flyer.teleport({x = -40, y = 40}, tb.hold_surface())
     s.away = true
+  elseif key == "e" then
+    local name = valid(sticker) and sticker.name or flyer_lib.wanted_sticker(record)
+    local second = attach(name)
+    local list = own_stickers(s.flyer)
+    -- Nur MESSUNG: Ob create_entity den gemerkten zurückgibt, sagt der Vergleich; das Kriterium (s15_good) braucht ihn nicht.
+    local same = valid(second) and valid(sticker) and read(function() return second == sticker end)
+    tb.trace(run, string.format("15) e) gleich nach dem zweiten %s: Rückgabe %s%s, gemerkter %s, eigene Sticker %d (%s)", name,
+      valid(second) and "gültig" or "ungültig", same and " (der gemerkte selbst)" or "", valid(sticker) and "gültig" or "ungültig",
+      #list, sticker_text(list)))
+  else
+    local before = own_stickers(s.flyer)
+    if not (#before == 1 and sticker_p(before[1]) == COAL_P) then
+      table.insert(s.failed, "f) vorher nicht genau ein Sticker t1,00 (Kohle), sondern " .. sticker_text(before))
+    end
+    local ok, err = t15_steps.s15_refuel(s.flyer)
+    if not ok then table.insert(s.failed, "f) Brennstoffwechsel ging nicht: " .. tostring(err)) end
+    local burner = read(function() return s.flyer.burner end)
+    tb.trace(run, string.format("15) f) vorher %s; danach brennt %s (Rest %s MJ), Inventar %s, gewollt %s", sticker_text(before),
+      item_pair_name(burner and read(function() return burner.currently_burning end)),
+      tb.num(burner and read(function() return burner.remaining_burning_fuel / 1e6 end), 1),
+      contents_text(burner and burner.inventory), tostring(record and read(function() return flyer_lib.wanted_sticker(record) end))))
   end
   s.count_after_poke = #own_stickers(s.flyer)
   s.poke_tick = game.tick
@@ -2273,9 +2428,10 @@ function t15_steps.s15_wait(run, tb, d)
     return "poll"
   end
   local waited = game.tick - s.poke_tick
-  if t15_steps.s15_good(s) then
-    tb.trace(run, string.format("15) %s) %s: nach %d Ticks wieder gut, eigene Sticker gleich danach %d, jetzt %d",
-      key, S15_LABEL[key], waited, s.count_after_poke, #own_stickers(s.flyer)))
+  if t15_steps.s15_good(s, key) then
+    local list = own_stickers(s.flyer)
+    tb.trace(run, string.format("15) %s) %s: nach %d Ticks wieder gut, eigene Sticker gleich danach %d, jetzt %d (%s)",
+      key, S15_LABEL[key], waited, s.count_after_poke, #list, sticker_text(list)))
     table.insert(s.parts, string.format("%s) %s: %d Ticks", key, S15_LABEL[key], waited))
     s.phase_back = true
     return 1
@@ -2297,8 +2453,8 @@ function t15_steps.s15_loop(run, tb, d)
     d.phase = 1  -- t15_tick zählt danach auf 2 (s15_poke) weiter
     return 1
   end
-  return verdict(run, tb, 15, "Pflege [U9, U16]", s.failed, table.concat(s.parts, "; ") .. "; eigene Sticker am Ende "
-    .. #own_stickers(s.flyer))
+  return verdict(run, tb, 15, "Pflege [U7, U9, U16]", s.failed, table.concat(s.parts, "; ") .. "; eigene Sticker am Ende "
+    .. sticker_text(own_stickers(s.flyer)))
 end
 
 -- Schritt 16: Fremde Force und Unterflug [U21].
@@ -2514,6 +2670,16 @@ local function t15_tick(run, tb)
 end
 
 local function t15_on_event(run, tb, name, event)
+  if name == "research_finished" then
+    -- Schritt 2: Wer hat „Ornithopter“ für die Force arrakis-t15 erforscht (Engine oder Skript)?
+    local s2 = run.data.s2
+    local research = event.research
+    if s2 and s2.force and s2.force.valid and valid(research) and research.name == ORNITHOPTER_TECH
+        and research.force.index == s2.force.index then
+      s2.event = {tick = event.tick, by_script = event.by_script == true}
+    end
+    return
+  end
   if name ~= "spider_command_completed" then return end
   local s = run.data.s6
   local vehicle = event.vehicle
@@ -2547,6 +2713,9 @@ end
 -- Vergleichsbahnen (raw): create_entity ohne raise_built; care sieht sie nie, und eine Puppe ohne Spieler löst kein
 -- on_player_driving_changed_state aus. Bei einem eingetragenen Flieger hängte care binnen 60 Ticks den eigenen
 -- Sticker wieder an, und im Messfenster wirkten beide.
+-- Seit 0.6.1 wählt die Mod den Sticker je Brennstoff (prototypes/ornithopter-speed.lua): Jede Bahn nennt ihren Sticker
+-- samt Stufe (z. B. „leer t1,15“). Die Bahn „effectivity_modifier 0,5“ (ohne Sticker, nur MESSUNG) zeigt, ob dieses
+-- Feld bei einer Spinne wirkt; beim Ernter wirkt es (scripts/harvester.lua, apply_fuel_normalization).
 
 local T16_HALF_A = {x = 140, y = 95}
 local T16_B = {x = 400, y = 0}
@@ -2598,7 +2767,9 @@ local T16_LANES =
    loaded = true, pair = "north"},
   {key = "loaded_rocket_north", label = "beladen, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {20, 125},
    check = "loaded", loaded = true},
-  {key = "south", label = "leer, Kohle, S", fuel = "coal", count = 10, dir = "S", region = "B", start = {35, -125}, check = "empty"}
+  {key = "south", label = "leer, Kohle, S", fuel = "coal", count = 10, dir = "S", region = "B", start = {35, -125}, check = "empty"},
+  {key = "effectivity", label = "ohne Sticker, Raketentreibstoff, effectivity_modifier 0,5, O", fuel = "rocket-fuel", count = 2, dir = "O",
+   start = {-125, -70}, raw = true, effectivity = 0.5}
 }
 
 local function t16_build(run, tb, d)
@@ -2619,6 +2790,12 @@ local function t16_build(run, tb, d)
         lane.pilot = lane.flyer.get_driver() ~= nil
         if spec.sticker then
           lane.sticker = create(run, tb, {name = spec.sticker, position = lane.flyer.position, target = lane.flyer, force = lane.flyer.force})
+        end
+        if spec.effectivity then
+          -- Ob das Feld bei einer Spinne schreibbar ist, sagt die API nicht („the car“); pcall, gelesen wird zurück.
+          local ok, err = pcall(function() lane.flyer.effectivity_modifier = spec.effectivity end)
+          lane.eff_probe = {ok = ok, err = not ok and tostring(err) or nil,
+            value = read(function() return lane.flyer.effectivity_modifier end)}
         end
         if spec.loaded then
           lane.car = new_car(run, tb, at(start, 0, 1.5), {})
@@ -2653,8 +2830,14 @@ local function t16_go(run, tb, d)
     end
     if lane.lost then tb.log(run, "FEHLER", "Bahn " .. spec.label .. ": " .. lane.lost) end
     if lane.flyer then
-      tb.trace(run, string.format("Bahn %s: Start %s, %d Brennstoffe, Pilot %s, Sticker %s%s", spec.label, pos_text(tb, lane.start),
-        lane.fuel_in or 0, tostring(lane.pilot), sticker_text(own_stickers(lane.flyer)), spec.sticker and (" + " .. spec.sticker) or ""))
+      local effectivity = lane.eff_probe
+      local extra = ""
+      if effectivity then
+        extra = ", effectivity_modifier " .. tb.num(spec.effectivity, 2) .. " " .. (effectivity.ok and "geschrieben" or ("nicht schreibbar ("
+          .. tostring(effectivity.err) .. ")")) .. ", gelesen " .. tostring(effectivity.value and tb.num(effectivity.value, 3))
+      end
+      tb.trace(run, string.format("Bahn %s: Start %s, %d Brennstoffe, Pilot %s, Sticker %s%s%s", spec.label, pos_text(tb, lane.start),
+        lane.fuel_in or 0, tostring(lane.pilot), sticker_text(own_stickers(lane.flyer)), spec.sticker and (" + " .. spec.sticker) or "", extra))
     end
   end
   if #failed > 0 then tb.trace(run, "Anheben: " .. table.concat(failed, "; ")) end
@@ -2665,7 +2848,8 @@ end
 local function t16_sample(lane, key)
   local flyer = lane.flyer
   if not valid(flyer) then return end
-  lane[key] = {position = copy_pos(flyer.position), energy = fuel_energy(flyer), items = fuel_items(flyer)}
+  lane[key] = {position = copy_pos(flyer.position), energy = fuel_energy(flyer), items = fuel_items(flyer),
+    sticker = sticker_text(own_stickers(flyer))}
 end
 
 -- Tempo (Kacheln/s), kJ/Kachel und kW zwischen den beiden Messpunkten; nil, wenn nicht gemessen.
@@ -2697,9 +2881,9 @@ local function t16_evaluate(run, tb, d)
     local v = lane.values
     if v then
       speeds[lane.spec.key] = v.speed
-      tb.trace(run, string.format("Bahn %s: %s Kacheln/s, %s Kacheln in 10 s, %s kJ/Kachel, %s kW, Brennstoffe %d → %d",
+      tb.trace(run, string.format("Bahn %s: %s Kacheln/s, %s Kacheln in 10 s, %s kJ/Kachel, %s kW, Brennstoffe %d → %d, Sticker %s → %s",
         lane.spec.label, tb.num(v.speed, 2), tb.num(v.distance), tb.num(v.kj_tile, 1), tb.num(v.kw, 0),
-        lane.from.items or 0, lane.to.items or 0))
+        lane.from.items or 0, lane.to.items or 0, lane.from.sticker or "–", lane.to.sticker or "–"))
     end
   end
   local criteria, ok_count = 0, 0
@@ -2788,11 +2972,23 @@ local function t16_evaluate(run, tb, d)
       rule("Qualität ändert das Tempo um höchstens 10 % [U8]", failed, "Kohle normal " .. tostring(coal and tb.num(coal, 2)) .. "; " .. table.concat(parts, ", "))
     end
   end
-  -- Vergleichsbahnen [U22] und Schweben [U10]: nur MESSUNG/INFO.
-  for _, key in ipairs({"raw", "max_tick", "max_second"}) do
+  -- Vergleichsbahnen [U22], effectivity_modifier und Schweben [U10]: nur MESSUNG/INFO.
+  for _, key in ipairs({"raw", "max_tick", "max_second", "effectivity"}) do
     local lane = by_key[key]
     local v = lane and lane.values
     tb.trace(run, string.format("Vergleich %s: %s Kacheln/s", lane and lane.spec.label or key, tostring(v and tb.num(v.speed, 2))))
+  end
+  do
+    local lane = by_key.effectivity
+    local effectivity = lane and lane.eff_probe
+    local raw = speed_of("raw")
+    local v = speed_of("effectivity")
+    if effectivity then
+      tb.trace(run, string.format("effectivity_modifier bei der Spinne: %s, gelesen %s; Tempo %s statt %s Kacheln/s ohne (Verhältnis %s)",
+        effectivity.ok and "geschrieben" or ("nicht schreibbar (" .. tostring(effectivity.err) .. ")"),
+        tostring(effectivity.value and tb.num(effectivity.value, 3)), tostring(v and tb.num(v, 2)), tostring(raw and tb.num(raw, 2)),
+        (v and raw and raw > 0) and tb.num(v / raw, 3) or "–"))
+    end
   end
   local hover = by_key.hover
   local hv = hover and hover.values
@@ -2804,10 +3000,12 @@ local function t16_evaluate(run, tb, d)
       tb.log(run, "INFO", "U10 hält nicht: Schweben kostet " .. tb.num(hv.kw, 1) .. " kW (docs/plan-3c.md 4.16 nimmt das hin)")
     end
   end
+  -- Kohle hat t = 1, ihr Sticker also genau BASE (prototypes/ornithopter-speed.lua).
   local empty, loaded = speed_of("coal"), speed_of("loaded_coal")
-  tb.log(run, "INFO", string.format("Vorschlag aus den Ost-Bahnen mit Kohle [U6]: vehicle_speed_modifier leer 0,52 · 8 / %s = %s, beladen 0,364 · 5,6 / %s = %s",
-    tostring(empty and tb.num(empty, 2)), (empty and empty > 0) and tb.num(0.52 * 8 / empty, 3) or "–",
-    tostring(loaded and tb.num(loaded, 2)), (loaded and loaded > 0) and tb.num(0.364 * 5.6 / loaded, 3) or "–"))
+  tb.log(run, "INFO", string.format("Vorschlag aus den Ost-Bahnen mit Kohle [U6]: BASE_EMPTY %s · 8 / %s = %s, BASE_LOADED %s · 5.6 / %s = %s"
+    .. " (prototypes/ornithopter-speed.lua)",
+    tb.num(speed.BASE_EMPTY, 3), tostring(empty and tb.num(empty, 2)), (empty and empty > 0) and tb.num(speed.BASE_EMPTY * 8 / empty, 3) or "–",
+    tb.num(speed.BASE_LOADED, 3), tostring(loaded and tb.num(loaded, 2)), (loaded and loaded > 0) and tb.num(speed.BASE_LOADED * 5.6 / loaded, 3) or "–"))
   for _, lane in ipairs(d.lanes) do
     if valid(lane.flyer) then pcall(function() lane.flyer.autopilot_destination = nil end) end
   end

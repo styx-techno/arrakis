@@ -252,7 +252,6 @@ for t, names in pairs(expected_3c) do for _, n in ipairs(names) do
 end end
 local expected_3c_hidden = {
   ["spider-leg"] = {"arrakis-flyer-leg"},
-  sticker = {"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"},
   ["simple-entity-with-owner"] = {"arrakis-harvester-probe"},
 }
 for t, names in pairs(expected_3c_hidden) do for _, n in ipairs(names) do
@@ -322,11 +321,46 @@ if orni_tech then
 end
 local orni_recipe = raw.recipe["arrakis-ornithopter"]
 if orni_recipe and orni_recipe.enabled ~= false then add("FEHLER 3c: recipe arrakis-ornithopter von Anfang an frei") end
-local sticker_modifiers = {["arrakis-ornithopter-empty"] = 0.52, ["arrakis-ornithopter-loaded"] = 0.364}
-for n, modifier in pairs(sticker_modifiers) do
-  local s = raw.sticker[n]
-  if s and (type(s.vehicle_speed_modifier) ~= "number" or math.abs(s.vehicle_speed_modifier - modifier) > 1e-9) then add("FEHLER 3c: sticker " .. n .. " vehicle_speed_modifier " .. tostring(s.vehicle_speed_modifier)) end
-  if s and s.duration_in_ticks ~= 216000 then add("FEHLER 3c: sticker " .. n .. " duration_in_ticks " .. tostring(s.duration_in_ticks)) end
+-- Tempo-Sticker (0.6.1, docs/plan-3c.md 4.9): je Zustand eine Familie, eine Stufe t_j = STEP^j je Sticker, Name mit
+-- p = floor(100 · t_j + 0,5), versteckt, vehicle_speed_modifier = BASE / t_j, 216000 Ticks. Name und Modifier rechnet
+-- die Regel aus den Konstanten von prototypes/ornithopter-speed.lua selbst nach, nicht mit dessen Tabellen. Das Modul
+-- liest sie per loadfile (aus dem Repo-Root wie die Laufzeitdateien unten). Die beiden Sticker aus 0.6.0 gibt es nicht mehr.
+local speed_chunk = loadfile("prototypes/ornithopter-speed.lua")
+local speed_ok, speed = false, nil
+if speed_chunk then speed_ok, speed = pcall(speed_chunk) end
+local speed_count = {empty = 0, loaded = 0}
+if not (speed_ok and type(speed) == "table") then add("FEHLER 3c: prototypes/ornithopter-speed.lua nicht ladbar (aus dem Repo-Root starten): " .. tostring(speed))
+else
+  local base = {empty = speed.BASE_EMPTY, loaded = speed.BASE_LOADED}
+  for _, state in ipairs({"empty", "loaded"}) do
+    for j = speed.MIN_J, speed.MAX_J do
+      local t = speed.STEP ^ j
+      local n = "arrakis-ornithopter-" .. state .. "-" .. math.floor(100 * t + 0.5)
+      local s = raw.sticker[n]
+      if not s then add("FEHLER 3c: sticker " .. n .. " fehlt") else
+        speed_count[state] = speed_count[state] + 1
+        if s.hidden ~= true then add("FEHLER 3c: sticker " .. n .. " nicht hidden") end
+        if type(s.vehicle_speed_modifier) ~= "number" or math.abs(s.vehicle_speed_modifier - base[state] / t) > 1e-9 then add("FEHLER 3c: sticker " .. n .. " vehicle_speed_modifier " .. tostring(s.vehicle_speed_modifier) .. " statt " .. base[state] / t) end
+        if s.duration_in_ticks ~= 216000 then add("FEHLER 3c: sticker " .. n .. " duration_in_ticks " .. tostring(s.duration_in_ticks)) end
+        local ln = s.localised_name
+        if not (type(ln) == "table" and ln[1] == "entity-name.arrakis-ornithopter-" .. state) then add("FEHLER 3c: sticker " .. n .. " localised_name") end
+        local parsed_state, parsed_j = speed.parse(n)
+        if parsed_state ~= state or parsed_j ~= j then add("FEHLER 3c: speed.parse(" .. n .. ") = " .. tostring(parsed_state) .. ", " .. tostring(parsed_j)) end
+      end
+    end
+    if speed_count[state] ~= 106 then add("FEHLER 3c: " .. speed_count[state] .. " Tempo-Sticker " .. state .. " statt 106") end
+    -- Kohle (t = 1) und Raketentreibstoff (t = 1,15) wie im Plan
+    for _, p in ipairs({100, 115}) do
+      if not raw.sticker["arrakis-ornithopter-" .. state .. "-" .. p] then add("FEHLER 3c: sticker arrakis-ornithopter-" .. state .. "-" .. p .. " fehlt") end
+    end
+  end
+  if speed.percent(speed.bucket(1)) ~= 100 or speed.percent(speed.bucket(1.15)) ~= 115 then add("FEHLER 3c: speed.bucket: Kohle oder Raketentreibstoff in falscher Stufe") end
+  for n in pairs(raw.sticker) do
+    if n:find("^arrakis%-ornithopter%-") and not speed.parse(n) then add("FEHLER 3c: sticker " .. n .. " gehört zu keiner Stufe") end
+  end
+end
+for _, n in ipairs({"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}) do
+  if raw.sticker[n] then add("FEHLER 3c: sticker " .. n .. " aus 0.6.0 gibt es noch") end
 end
 -- Lastbild: 16 Richtungen, je Bild und Schatten zwei Ebenen mit scale 0.5 (HR-Bilder wie Vanilla; ohne gälte 1).
 local sprite_count = 0
@@ -389,7 +423,7 @@ local give_remote = raw.shortcut["arrakis-give-remote"]
 if give_remote and (give_remote.action ~= "spawn-item" or give_remote.item_to_spawn ~= "spidertron-remote" or give_remote.associated_control_input ~= nil or give_remote.technology_to_unlock ~= "arrakis-ornithopter") then add("FEHLER 3c: shortcut arrakis-give-remote action/Item/Taste/Forschung") end
 local carry_key = raw["custom-input"]["arrakis-carry-toggle"]
 if carry_key and (carry_key.key_sequence ~= "SHIFT + C" or carry_key.consuming ~= "none") then add("FEHLER 3c: custom-input arrakis-carry-toggle " .. tostring(carry_key.key_sequence) .. " / " .. tostring(carry_key.consuming)) end
-add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Lastbild " .. sprite_count .. "/32 Sprites")
+add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Tempo-Sticker leer " .. speed_count.empty .. "/106, beladen " .. speed_count.loaded .. "/106, Lastbild " .. sprite_count .. "/32 Sprites")
 
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]

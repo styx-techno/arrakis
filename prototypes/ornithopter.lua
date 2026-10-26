@@ -1,5 +1,6 @@
--- Phase 3c (docs/plan-3c.md 3): Ornithopter mit Bein, Item, Rezept und Forschung „Ornithopter“, zwei Tempo-Sticker,
--- 32 Sprites des Lastbilds (getragener Spice-Ernter und Schatten), Absetz-Probe, Taste und zwei Verknüpfungen.
+-- Phase 3c (docs/plan-3c.md 3): Ornithopter mit Bein, Item, Rezept und Forschung „Ornithopter“, Tempo-Sticker (seit
+-- 0.6.1 je Zustand und Brennstoff-Stufe, prototypes/ornithopter-speed.lua), 32 Sprites des Lastbilds (getragener
+-- Spice-Ernter und Schatten), Absetz-Probe, Taste und zwei Verknüpfungen.
 -- Anheben, Tragen und Absetzen steuert das Skript (scripts/flyer.lua, scripts/hold.lua).
 -- 2.0-Schreibweise wie überall; compat.finish (prototypes/compat.lua) schreibt unter 2.1 um. Hier braucht nichts eine
 -- Umschreibung: Das Rezept hat keine Kategorie, die Forschung einen craft-item-Trigger, kein Item ist Brennstoff.
@@ -7,6 +8,7 @@
 -- (prototypes/testbench/flyers.lua); eigene Grafik kommt mit Phase 6.
 -- Muss nach prototypes/harvester.lua laufen: Die Probe liest die Kollisionsmaske des Ernters (data.lua).
 local collision_mask_util = require("collision-mask-util")
+local speed = require("prototypes.ornithopter-speed")
 
 local sand_tint = {r = 1, g = 0.85, b = 0.55}
 -- Ernter-Tönung wie prototypes/harvester.lua:8, damit das Lastbild aussieht wie der Ernter am Boden.
@@ -132,20 +134,32 @@ item.order = "b[personal-transport]-z[spice-ornithopter]"
 item.stack_size = 1
 item.default_import_location = "arrakis"
 
--- Tempo-Sticker (Plan 1 „Drossel“, 4.9). Genau einer hängt am Flieger; das Skript tauscht ihn beim Anheben und Absetzen.
--- RUN055 T1: 15,4 Kacheln/s ohne Sticker, 10,8 mit vehicle_speed_modifier = 0,7 (70,1 %). Daraus leer 0,52 = 8 / 15,4
--- → 8,0 Kacheln/s, beladen 0,364 = 0,7 · 0,52 → 5,6 [U6]. Wie der T1-Sticker (prototypes/testbench/flyers.lua:114–122),
--- ohne Animation. Dauer 1 h = 216 000 Ticks; die Pflege heftet ab time_to_live < 108 000 einen neuen an (Plan 4.9).
-local function speed_sticker(name, modifier)
+-- Tempo-Sticker (Plan 1 „Drossel“, 4.9). Genau einer hängt am Flieger; das Skript tauscht ihn beim Anheben und Absetzen
+-- und wenn der Brennstoff wechselt. Seit 0.6.1 je Zustand eine Familie von 106 Stickern, eine je Stufe des
+-- Höchsttempo-Faktors t (prototypes/ornithopter-speed.lua): vehicle_speed_modifier = 0,603 / t_j leer, 0,427 / t_j
+-- beladen, also 8,0 bzw. 5,6 Kacheln/s mit jedem Brennstoff (T16 vom 26.10.2026) [U6, U7]. Die beiden Sticker aus 0.6.0
+-- (arrakis-ornithopter-empty, -loaded) gibt es nicht mehr; ihre Entities entfernt die Engine beim Laden, die Pflege in
+-- on_configuration_changed heftet den passenden neuen an. Wie der T1-Sticker (prototypes/testbench/flyers.lua:114–122),
+-- ohne Animation; der Name im Spiel bleibt je Zustand einer. Dauer 1 h = 216 000 Ticks; die Pflege heftet ab
+-- time_to_live < 108 000 einen neuen an (Plan 4.9).
+local function speed_sticker(state, j)
   return
   {
     type = "sticker",
-    name = name,
+    name = speed.name(state, j),
+    localised_name = {"entity-name.arrakis-ornithopter-" .. state},
     hidden = true,
     flags = {"not-on-map"},
     duration_in_ticks = 60 * 60 * 60,
-    vehicle_speed_modifier = modifier
+    vehicle_speed_modifier = speed.modifier(state, j)
   }
+end
+
+local speed_stickers = {}
+for _, state in ipairs(speed.STATES) do
+  for j = speed.MIN_J, speed.MAX_J do
+    table.insert(speed_stickers, speed_sticker(state, j))
+  end
 end
 
 -- Lastbild: 16 Richtungen aus den Panzer-Sheets (V23 base/prototypes/entity/entities.lua:8079–8222), Rumpf und Turm
@@ -259,8 +273,10 @@ data:extend({
 
   -- Forschung „Ornithopter“ (Plan 4.14): erforscht, sobald die Force den ersten Spice-Ernter herstellt, von Hand oder
   -- in einer Maschine [U11] (A23 types.d.ts:3373–3377). „Spice-Ernte“ schaltet das Ernter-Rezept frei, der Trigger kommt
-  -- also nie zu früh. Keine Paketkosten. Alte Spielstände holt scripts/migrate.lua nach (Plan 4.15) [U12].
-  -- Die beiden Verknüpfungen hängen über technology_to_unlock an ihr.
+  -- also nie zu früh. Keine Paketkosten. Alte Spielstände holt scripts/migrate.lua nach (Plan 4.15) [U12]. Seit 0.6.1
+  -- erforscht sie auch das Skript (scripts/migrate.lua, jede Sekunde und bei on_player_crafted_item): Im Prüfstand-Lauf
+  -- vom 26.10.2026 feuerte der Auslöser für eine Figur ohne Spieler nicht. Der Auslöser bleibt, damit der Tooltip den
+  -- Ernter nennt. Die beiden Verknüpfungen hängen über technology_to_unlock an ihr.
   {
     type = "technology",
     name = "arrakis-ornithopter",
@@ -276,11 +292,9 @@ data:extend({
       item = "spice-harvester",
       count = 1
     }
-  },
-
-  speed_sticker("arrakis-ornithopter-empty", 0.52),
-  speed_sticker("arrakis-ornithopter-loaded", 0.364)
+  }
 })
+data:extend(speed_stickers)
 
 local sprites = {}
 for i = 0, 15 do
