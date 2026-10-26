@@ -11,3 +11,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-25 17:20 | 0.5.4 | d10cf33 | 0 (kein FEHLER, T14 neu: 9 Seeds bestanden) |
 | 2026-10-25 21:15 | 0.5.5 | 7d784f9 | 0 (kein FEHLER, erstmals Zeitraffer 10×: 2 min statt 13) |
 | 2026-10-26 02:09 | 0.6.0 | 63a29ea | 1 (FEHLER in T15 Schritt 2 und 15, T16 3 von 5 Kriterien) |
+| 2026-10-26 15:44 | 0.6.1 | 0f9d582 | 0 (kein FEHLER, T15 17/17, T16 5/5) |
