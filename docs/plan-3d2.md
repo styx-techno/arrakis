@@ -83,7 +83,7 @@ welcher Test sie entscheidet und was gilt, wenn sie nicht hält. W statt V, weil
 | Grenze | Reguläre Jagden bekommen immer einen Wurm (höchstens 3 zugleich, P3D1 4.5). Befehlsjagden nur, solange weniger als `MAX_DEBUG_WORMS = 3` Befehlsjagden in den Phasen `warten` bis `angriff` oder mit Wurm in der Suche sind; darüber Phase `ohne` (`"grenze"`). Zusammen also höchstens 6 Würmer | P3D1 1 „Grenzen“: Befehlsjagden zählen nicht mit und sperren nichts; ein Admin mit vielen `/arrakis-worm` nimmt regulären Jagden so keinen Wurm. Die Doku rät ab, viele Einheiten aktiv zu halten (A23 classes.d.ts:19087) |
 | Anzeige | `hunt.state` bleibt warning/biting/searching; Fenster, Ring, Alarm, Status und Chat wie 0.7.0; neu sind nur `hunt.phase` und `hunt.no_worm` | Der Spieler sieht den Wurm selbst. worms-gui und T19 bleiben unverändert |
 | Befehlsjagd | `/arrakis-worm` bekommt ab 27 s einen Wurm (höchstens 3 zugleich), darunter beißt es wie 0.7.0 | Zum Ausprobieren im eigenen Spielstand; der Hilfetext sagt es (5) |
-| Force | Vor dem ersten `sandworm.step` eines Takts holt worms die Sandwurm-Force (`game.forces[FORCE] or lib.ensure_force()`) und gibt die LuaForce weiter; sandworm nennt die Force nie als Text. Gibt es keine (64er-Grenze), wird jede Jagd mit Wurm-Phase `ohne` (`"keine-force"`) | Nach `/arrakis-uninstall ja` ist die Force einen Tick später verschmolzen, die Pause sperrt aber nur Wurmzeichen, nicht `/arrakis-worm`. In 0.7.0 legt nur `bite` sie neu an (scripts/worms.lua:726) |
+| Force | Vor dem ersten `sandworm.step` eines Takts holt worms die Sandwurm-Force (`game.forces[FORCE] or lib.ensure_force()`) und gibt die LuaForce weiter; sandworm nennt die Force nie als Text. Gibt es keine (64er-Grenze), wird jede Jagd mit Wurm-Phase `ohne` (`"keine-force"`); ein schon erzeugter Wurm taucht dabei ab (4.3 „Wechsel auf `ohne`“) | Nach `/arrakis-uninstall ja` ist die Force einen Tick später verschmolzen, die Pause sperrt aber nur Wurmzeichen, nicht `/arrakis-worm`. In 0.7.0 legt nur `bite` sie neu an (scripts/worms.lua:726) |
 | Migration | Schema 4; laufende Jagden ohne `phase` oder `r` (aus 0.7.0, auch nach einem Umweg über 0.7.0) bekommen bei jedem `on_configuration_changed` Phase `ohne` (`"migration"`); jeder `on_configuration_changed` räumt Würmer unseres Prototyps ohne Jagd | Eine 0.7.0-Jagd hat keine Planung, und ihr Countdown ist vielleicht schon zu kurz. Nach 0.8.0 → 0.7.0 → 0.8.0 steht `schema` schon auf 4 (`math.max`), deshalb hängt das nicht an `old < 4` |
 | Entfernen | `/arrakis-uninstall ja` lässt zusätzlich alle Würmer abtauchen und räumt Waisen auf allen Oberflächen, vor dem Verschmelzen der Force; die Meldung zählt beide | Beim Entfernen der Mod löscht Factorio unsere Würmer ohnehin; bleibt die Mod, sollen keine Waisen bleiben |
 | Herunterstufen | Auf 0.7.0: vorher `/arrakis-uninstall ja`. Sonst löscht die Engine die Würmer (Prototyp fehlt), und laufende Jagden beißen in 0.7.0 ohne Wurm | 0.7.0 kennt Phase und Wurm nicht |
@@ -104,8 +104,8 @@ Geändert: `data.lua` (require `prototypes.sandworm` direkt nach `prototypes.wor
 Force vor dem Takt, Grenze, `killed` in `stats_for` und `on_forces_merging`, Prüfstand-Felder in `on_force_created`, neuer Handler
 `on_pre_surface_cleared`, Migration Schema 4, Entfernen, Haken), `scripts/migrate.lua` (Schema 4), `scripts/flyer.lua` (nur `/arrakis-uninstall`: zweite Zahl),
 `locale/{de,en}/arrakis.cfg`, `locale/{de,en}/messages.cfg`, `scripts/testbench/runner.lua` (ORDER, Modulliste, zwei Weiterleitungen, Vertrag),
-`scripts/testbench/t_jagd.lua` (T18 Schritt 1 Schemaprüfung, T19 und T20 ohne Wurm), `tools/check/checks.lua`, `tools/check/api_names.py` (neue Namen, 7),
-`tools/pc/pruefstand.py` (Hilfetexte Z. 34 und 767), `info.json`, `changelog.txt`, `README.md`, `docs/pruefstand.md` (6), DOC (danach, 7).
+`scripts/testbench/t_jagd.lua` (T18 Schritt 1 Schemaprüfung, T19 und T20 ohne Wurm, T19 Statistik mit `killed`), `tools/check/checks.lua`,
+`tools/check/api_names.py` (neue Namen, 7), `tools/pc/pruefstand.py` (Hilfetexte Z. 34 und 767), `info.json`, `changelog.txt`, `README.md`, `docs/pruefstand.md` (6), DOC (danach, 7).
 
 Unverändert: `prototypes/testbench/worms.lua` und `scripts/testbench/t_worm.lua` (T5 bis T7), `prototypes/worms.lua`, `prototypes/noise.lua`
 (die veröffentlichten Ausdrücke `arrakis_v2_*` und `arrakis_v3_*` bleiben, wie sie sind), `scripts/vibration.lua`, `scripts/worms-gui.lua`,
@@ -166,13 +166,15 @@ Keine Änderung an Forschungen, Rezepten, Items, Tasten, Verknüpfungen, Kacheln
 
 `scripts.sandworm` stellt bereit: `begin(hunt, opts) → phase, no_worm` (beim Start, 4.4), `step(hunt, tick, worm_force)` (10-Tick-Takt, 4.3), `head_of(hunt) →
 position|nil, nodes|nil`, `dive(hunt, why, quiet)` (4.11), `forget(hunt)` (Wurm und Anfragen vergessen, ohne zu zerstören), `drop_requests(hunt)`,
+`to_none(hunt, why, dive_why)` (jeder Wechsel auf `ohne`, 4.3), `tidy(tick)` (alte Anfragen räumen, 4.5),
 `counted(debug) → n` (für die Grenze, nur Befehlsjagden bzw. nur reguläre), `sweep(surfaces|nil) → n` (Waisen, 4.14), Prüfstand-Haken (4.18), Konstanten
 `NAME = "arrakis-sandworm-small"`, `PREFIX = "arrakis-sandworm-"`, `V = 3.5`, `V_SPRINT = 6` (Kacheln/s), `LEAD = 3` (s), `T_MIN = 27` (s), `D_MAX = 160`,
 `D_MIN = 80`, `D_STEPS = {120, 80}`, `DIRECTIONS = 16`, `LINE_STEP = 4`, `LINE_END = 6`, `BODY_LEN = 20`, `BODY_STEP = 4`, `BODY_CLEAR = 4`, `CHECKS_PER_TICK = 8`,
 `PLAN_EARLY = 300`, `SPAWN_DEADLINE = 1440`, `SPAWN_MAX = 3`, `PATH_MAX = 2`, `PATH_RETRY = 60`, `PATH_TRIES = 5`, `PATH_TIMEOUT = 300`, `PATH_RADIUS = 8`,
 `PATH_RESOLUTION = -2`, `PATH_BOX = 3.5`, `PATH_BOX_MIN = 1.5`, `WP_NEAR = 6`, `STATE_TICKS = 30`, `GOAL_MOVE = 2`, `LOOKAHEAD = 18`, `LOOK_STEP = 2`, `SIDE = 1.5`,
 `DETOUR_RADII = {30, 15, 8}`, `DETOUR_ANGLES = {30, -30, 60, -60, 90, -90}`, `DETOUR_REACHED = {10, 6, 6}` (je Umweglänge), `DETOUR_MAX = 900`, `REROUTE_MAX = 1`, `HOLD_MAX = 300`,
-`STALL_TICKS = 300`, `STALL_DIST = 0.5`, `ATTACK_RANGE = 40`, `ATTACK_LEAVE = 50`, `BEHIND = 20`, `BEHIND_MIN = 6`, `SEARCH_REACHED = 8`, `DUST_PER_NODE = 2`.
+`STALL_TICKS = 300`, `STALL_DIST = 0.5`, `ATTACK_RANGE = 40`, `ATTACK_LEAVE = 50`, `BEHIND = 20`, `BEHIND_MIN = 6`, `SEARCH_REACHED = 8`, `DUST_PER_NODE = 2`,
+`BOOST_MIN = 0.9`, `BOOST_TAKTS = 2`, `PUSH_MAX = 0.4` (Kacheln je Takt), `TIDY_AGE = 600` (Ticks).
 
 `scripts.worms` bekommt dazu: `set_worm_off(force, on)`, `set_spawn_dir(force, k|nil)`, `migrate_schema4(opts)`, `hunt_log() → storage.hunts.log`
 (Haken, 4.18), Konstanten `BITE_REACH = 3`, `BITE_WINDOW = 180`, `CRUSH_RADIUS = 2.5`, `ZONE_RADIUS = 5` (= `BITE_RADIUS + 1`), `MAX_DEBUG_WORMS = 3`,
@@ -192,8 +194,10 @@ nie (4.10), also bleibt `on_target_removed` (scripts/worms.lua:1100–1108) rich
 der Wurm (4.11). Eine geleerte Oberfläche kannte worms in 0.7.0 nicht (nur vibration.lua:951 hört auf `on_surface_cleared`): Ziel und Wurm verschwänden
 ohne Ereignis, die Jagd ginge „verloren“, und bei 0 bräche eine Eruption auf der leeren Fläche hervor; deshalb der neue Handler oben. worms
 `on_configuration_changed`: zusätzlich Migration Schema 4 und Waisen (4.14). `on_force_created` (:1163–1170) löscht zusätzlich `storage.hunts.worm_off[i]` und
-`storage.hunts.spawn_dir[i]` (Indizes werden wiederverwendet); `on_forces_merging` (:1182–1191) addiert zusätzlich `killed`; `stats_for` (:282–290) legt
-`killed = 0` mit an. Der Runner leitet zusätzlich `on_segmented_unit_died` als `segmented_unit_died` und `script_raised_destroy_segmented_unit` als
+`storage.hunts.spawn_dir[i]` (Indizes werden wiederverwendet); `on_forces_merging` (:1182–1191) addiert zusätzlich `killed` (nil-sicher wie die anderen
+Zähler) und löscht `worm_off` und `spawn_dir` der Quelle; `stats_for` (:282–290) legt `killed = 0` mit an. Die Sekundenarbeit (`hunts_second`, :912) ruft
+vor ihrer Rückkehr bei leerer Liste `sandworm.tidy(tick)`, wenn `storage.path_requests` nicht leer ist (4.5).
+Der Runner leitet zusätzlich `on_segmented_unit_died` als `segmented_unit_died` und `script_raised_destroy_segmented_unit` als
 `segmented_unit_destroyed` weiter (6).
 
 `start_hunt` (scripts/worms.lua:414–473) setzt zusätzlich `r` (halbe Diagonale der Box, `LuaEntity.bounding_box`, A23 classes.d.ts:7662) und ruft am
@@ -204,7 +208,7 @@ fester Reihenfolge, wie P3D1 4.9 Schritte 3 bis 5) benutzt auch das Zerdrücken 
 ### 4.2 storage (Schema 4)
 ```lua
 storage.schema = 4
-storage.path_requests[request_id] = {hunt = hunt_id, kind = "plan"|"reroute", sent = tick}
+storage.path_requests[request_id] = {hunt = hunt_id, kind = "plan"|"reroute", sent = tick}   -- weg bei Antwort, Zeitablauf, Ende, to_none, tidy (4.5)
 storage.hunts = {next_id, list, paused_until,               -- wie Schema 3
   worm_off = {[force_index] = true},                        -- nur Prüfstand (4.18)
   spawn_dir = {[force_index] = k},                          -- nur Prüfstand: Startrichtung auch regulärer Jagden (4.18)
@@ -213,16 +217,17 @@ hunt = {…Schema 3 (P3D1 4.2)…,
   r = Kacheln,                                              -- halbe Diagonale der Zielbox beim Start; R = 3 + r
   phase = "warten"|"routing"|"anfahrt"|"angriff"|"suche"|"ohne",
   no_worm = nil|"aus"|"kurz"|"grenze"|"kein-weg"|"keine-force"|"migration"|"verloren"|"abgetaucht",
-  dive = nil|"fels"|"stillstand"|"kein-weg"|"suche"|"ende"|…,  -- Grund des Abtauchens (4.11), bleibt nach dem Abtauchen
+  dive = nil|"fels"|"stillstand"|"kein-weg"|"keine-force"|"suche"|"ende"|…,  -- Grund des Abtauchens (4.11), bleibt nach dem Abtauchen
   zone = {x, y},                                            -- Schutzpunkt dieses Takts (4.10)
   plan_tick, spawn_tick = tick|nil, d = D,
   plan = {k0, list = {{k, d}…}, next = i, checked = n, route_cands = {i…},
-          chosen = {position, direction, route = {{x, y}…}, length}|nil, spawns = 0, paths = 0},
+          chosen = {position, direction, route = {{x, y}…}, length, box = 3.5|1.5|nil}|nil, spawns = 0, paths = 0},
   path = {id, cand = i, tries = n, sent = tick, retry_tick = tick|nil, kind, box = 3.5|1.5}|nil,
   worm = {unit = LuaSegmentedUnit, un, spawned = tick, route = {{x, y}…}, wp = i,
           dest = {x, y}, set_tick = tick, set_dest = {x, y}, mode = activity_mode,
           detour = {x, y, tick, reached}|nil, reroutes = 0, hold_since = tick|nil, head = {x, y},
-          moved = {x, y, tick}, detours = 0, samples = 0, rock_box = 0, vmax = 0, crushed = 0}|nil,
+          moved = {x, y, tick}, detours = 0, samples = 0, rock_box = 0, vmax = 0, crushed = 0,
+          sprint = 0, boost = 0|1|2, slow = 0}|nil,         -- Sprint-Takte, Ersatzstufe, Sprint-Takte in Folge zu langsam (4.9)
   bite_tick = tick|nil, bite_dist = Kacheln|nil, ersatz = true|nil,
   spawn_hook = {position, direction, tick|nil}|nil, spawn_dir = k|nil,   -- nur Prüfstand (4.18)
 }
@@ -239,7 +244,8 @@ zurück, wenn `storage.hunts.list` leer ist), in dieser Reihenfolge:
 2. Je Jagd nach `id` (scripts/worms.lua:756 `sorted_ids`):
    a. `state == "warning"`: `track(hunt, tick)` wie 0.7.0 (:555–607).
    b. Phase `warten`, `routing`, `anfahrt`, `angriff` oder `suche` mit Wurm: `sandworm.step(hunt, tick, worm_force)` (4.4 bis 4.9, 4.11); kann auf `ohne`
-      wechseln. `worm_force` holt worms einmal je Takt vor der ersten solchen Jagd (Festlegung „Force“); ohne Force Phase `ohne` (`"keine-force"`).
+      wechseln. `worm_force` holt worms einmal je Takt vor der ersten solchen Jagd (Festlegung „Force“); ohne Force `to_none(hunt, "keine-force")`
+      (ein vorhandener Wurm taucht ab).
    c. Mit Wurm: Zerdrücken (4.10).
    d. `state == "warning"` und `tick ≥ eta_tick`: Biss-Fenster (4.9).
    e. `state == "searching"` und `tick ≥ end_tick`: `end_hunt(hunt)` (taucht einen verbliebenen Wurm ab).
@@ -256,6 +262,13 @@ zurück, wenn `storage.hunts.list` leer ist), in dieser Reihenfolge:
 Übergänge von außen, in jeder Phase mit Wurm: Kopf auf Fels, in ungeneriertem Chunk, Stillstand oder kein Weg nach Umweg und Neuplanung → abtauchen,
 vor dem Biss Phase `ohne` (`"abgetaucht"`), in der Suche bleibt `suche`; Wurm ungültig oder fremd zerstört → `ohne` (`"verloren"`); Wurm getötet → Ende `killed`.
 Ende einer Jagd (jede Art, P3D1 4.7 „Ende“) → Wurm abtauchen, Anfragen weg.
+
+**Wechsel auf `ohne`** (jeder Grund, auch `"kein-weg"` an der Frist, `"keine-force"`, `"verloren"`, `"abgetaucht"`) geht immer über
+`to_none(hunt, why, dive_why)`: ein vorhandener gültiger Wurm taucht ab (`dive(hunt, dive_why or why)`), `drop_requests(hunt)`, `hunt.path = nil`,
+`phase = "ohne"`, `no_worm = why`. In der Suche räumt dieselbe Funktion ebenso auf, lässt aber die Phase `suche` stehen. Damit gilt in Phase `ohne`
+immer `hunt.worm == nil`, `hunt.path == nil` und kein Eintrag in `storage.path_requests`; eine späte Antwort findet keinen Eintrag mehr (4.5), und
+kein Wurm fährt ohne Steuerung bis zum Ende der Jagd weiter. **Lebensdauer:** Jeder Wurm endet spätestens mit seiner Jagd, und die endet spätestens
+bei `eta + 180` (Biss oder Ersatzbiss) bzw. `end_tick = eta + 600` (Suche); Waisen ohne Jagd räumt jeder `on_configuration_changed` (4.14).
 
 **Zeitlinie, 60 s, freier Sand** (Ticks relativ zum Wurmzeichen w, `eta = w + 3600`): w + 370 Planung (ein Takt), w + 670 Spawn 160 Kacheln entfernt,
 Anfahrt mit 3,5 Kacheln/s, bei Abstand 40 (w + 2730) Angriff mit etwa 2,4 Kacheln/s, Ankunft in Reichweite kurz vor `eta`, halten, Biss bei `eta`, Abtauchen
@@ -276,7 +289,8 @@ im selben Takt. Der Wurm lebt 48,8 s; mit Suche höchstens 58,8 s, mit Ersatzbis
    k0: `local v = target.valid and target.speed` (`speed` ist nil außer bei Auto, Schienenfahrzeug, Einheit, Projektil und Spidertron, A23
    classes.d.ts:8519–8523); fährt das Ziel (`v ~= nil` und `math.abs(v) ≥ 0,001`), dann `floor(o · 16 + 0,5) mod 16` mit `o = target.orientation` (:8241,
    0 = Norden, im Uhrzeigersinn), rückwärts (`v < 0`) `o + 0,5`: Der Wurm kommt ihm entgegen. Sonst `storage.rng(0, 15)` (A23 classes.d.ts:17436–17439,
-   Grenzen einschließlich). Prüfstand: `opts.spawn_dir`, sonst `storage.hunts.spawn_dir[force_index]` (auch für reguläre Jagden, 4.18).
+   Grenzen einschließlich). Prüfstand: `opts.spawn_dir`, sonst `storage.hunts.spawn_dir[force_index]` (auch für reguläre Jagden, 4.18); ein Haken geht
+   vor Fahrtrichtung und Zufall (T21 Schritt 12 braucht k0 = 2, auch wenn der Ernter bei der Planung schon fährt).
 4. **Prüfen** (höchstens 8 Kandidaten je Takt): „Sand“ heißt `terrain.natural_tile_name(surface, x, y) ~= "arrakis-rock"` (scripts/terrain.lua:30–33) und
    `surface.is_chunk_generated{floor(x / 32), floor(y / 32)}` (A23 classes.d.ts:20707). (a) Spawnpunkt und Körperlinie: c und die Punkte 4, 8, 12, 16, 20 Kacheln
    weiter weg von P (die Lagen der Knoten 1, 5, …, 21), dazu `surface.count_entities_filtered{area = Rechteck um c und den Punkt 20 dahinter, 4 Kacheln
@@ -309,6 +323,8 @@ local id = surface.request_path{                     -- A23 classes.d.ts:20777, 
 storage.path_requests[id] = {hunt = hunt.id, kind = "plan", sent = tick}
 hunt.path = {id = id, cand = i, tries = 1, sent = tick, kind = "plan", box = b}
 ```
+Der Aufruf läuft in `pcall`: Ein Fehler (etwa eine Box, die der Pfadfinder ablehnt) schreibt eine Logzeile und zählt wie eine Antwort mit `path == nil`
+(unten), es entsteht kein Eintrag.
 `cache = false`: Die Kacheln können sich ändern (Bau, Prüfstand), und jede Jagd fragt neu. Entities zählen nicht (Maske nur Fels): Gebäude im Weg zerdrückt
 der Wurm, Fahrzeuge und Figuren fährt er nach [W10] an. **Box:** erst ±3,5, damit der Weg dem breiteren Körper und dem Wenderadius Platz lässt; liegt im Quadrat
 ±3,5 um den Start eine Felskachel (dann stünde der Pfadfinder schon am Start im Fels), oder kommt mit ±3,5 `path == nil`, einmal mit ±1,5 (zählt nicht zu
@@ -326,7 +342,12 @@ oder ist `hunt.path.id ~= id` (Jagd vorbei, neu gefragt), nichts tun.
   Liste (es wandert). Länge L = Summe der Strecken plus Abstand letzter Wegpunkt–P. Passt `L / 3,5 + 1 ≤ (eta − tick) / 60`, gilt der Weg: Planung
   `chosen = {c, Blickrichtung auf den ersten Wegpunkt (auf 16 Richtungen gerundet), route, L}`, `spawn_tick` nach 4.4 Schritt 5; Neuplanung: `worm.route`
   ersetzen, `wp = 1`, Halten endet, im Angriff zurück in die Anfahrt. Passt er nicht → Fehlschlag.
-- **Zeitablauf:** `sent + 300 ≤ tick` ohne Antwort (auch nach Speichern und Laden, [W5]) → Eintrag löschen und neu fragen (`tries + 1`).
+- **Zeitablauf:** `sent + 300 ≤ tick` ohne Antwort (auch nach Speichern und Laden, [W5]) → Eintrag löschen, nur wenn er noch zu dieser Jagd gehört
+  (`path_requests[id].hunt == hunt.id`; nach dem Laden kann die Engine eine Kennung neu vergeben haben), und neu fragen (`tries + 1`); nach 5 Versuchen
+  wie Fehlschlag.
+- **Aufräumen:** `tidy(tick)` (aus der Sekundenarbeit von worms, auch ohne laufende Jagd, 4.1) löscht jeden Eintrag, dessen Jagd fehlt, deren
+  `hunt.path` nicht mehr auf ihn zeigt oder dessen `sent` mindestens `TIDY_AGE = 600` Ticks zurückliegt. So bleibt kein Eintrag liegen, auch wenn eine
+  Antwort nie kommt [W5].
 - Planung mit gewähltem Weg und Blickrichtung nicht auf P: Körperlinie (4.4 Schritt 4 a) für diese Richtung noch einmal prüfen; schlecht → Fehlschlag.
 
 ### 4.6 Erzeugen, Körperprüfung, Auftauchen
@@ -336,8 +357,8 @@ local unit = surface.create_segmented_unit{name = "arrakis-sandworm-small", posi
   extended = true, force = worm_force}               -- A23 classes.d.ts:20316, :22143–22160, :22175–22188; A20 :31182
 ```
 Ohne `territory` patrouilliert er um den Spawn (:22157); deshalb führt das Skript den Zustand nach (4.7). `extended = false` erzeugte nur den Kopf (:22183).
-1. `nil` [W14] → `spawns + 1`, weiter mit dem nächsten Kandidaten der Liste (Prüfung nach 4.4, neues `spawn_tick`; liegt es in der Vergangenheit, im nächsten Takt,
-   wenn `L / 3,5 + 1 ≤ Restzeit`).
+1. `nil` oder Fehler [W14] (der Aufruf läuft in `pcall`, ein Fehler schreibt eine Logzeile) → `spawns + 1`, weiter mit dem nächsten Kandidaten der Liste
+   (Prüfung nach 4.4, neues `spawn_tick`; liegt es in der Vergangenheit, im nächsten Takt, wenn `L / 3,5 + 1 ≤ Restzeit`).
 2. Körperprüfung: `nodes = unit.get_body_nodes()` (A23 classes.d.ts:19021, vorne zuerst, Kopie); `for i = 1, #nodes, 4` Sand und generierter Chunk. Ein Fehler →
    `unit.destroy{}` (ohne `raise_destroy`: niemand hat ihn gesehen), `spawns + 1`, nächster Kandidat wie 1. Nach 3 Erzeugungen → `ohne` (`"kein-weg"`).
 3. Gut: `hunt.worm = {unit, un = unit.unit_number (:19121), spawned = tick, route, wp = 1, …}`, `unit.minimum_activity_mode =
@@ -399,11 +420,15 @@ je 10 Ticks).
   zum Biss. d > 50, ein Umweg (4.8 Schritt 4) oder eine neue Route (Neuplanung) → `anfahrt`.
   Beispiel 60 s auf freiem Sand: Abstand 40 nach (160 − 40) / 3,5 = 34,3 s Fahrt, Restzeit 14,5 s, v = (40 − 4,58) / 14,5 = 2,4 Kacheln/s. Weil die Engine
   zwischen zwei Schreibvorgängen um bis zu 0,09 Kacheln/s beschleunigt, kommt er knapp vor 0 an und hält.
-- **Sprint-Ersatz** [W3]: Hält ein geschriebenes Tempo über `target_speed` nicht, schiebt der Takt zusätzlich `unit.move_forward(Δ)` (A23 classes.d.ts:19026,
-  A20 :28085) mit Δ = (v − gemessenes Tempo) · 10 / 60 Kacheln. Hilft auch das nicht, schiebt er die Knotenkette selbst: `set_body_nodes` (A23
-  classes.d.ts:19040, A20 :28130) mit einem neuen Kopf Δ Kacheln voraus längs der Richtung zu `dest` und den übrigen Knoten im Abstand 1 längs der alten Spur
-  (der letzte fällt weg), höchstens bis 6 Kacheln/s insgesamt. Das hängt an keiner Engine-Annahme außer dem Setzen der Knoten selbst; der Wächter prüft den
-  neuen Kopf im selben Takt.
+- **Sprint-Ersatz** [W3]: Ein Sprint-Takt ist jeder Takt, in dem das Skript v über 3,5 schreibt (`worm.sprint + 1`). Gemessen wird das Tempo aus dem
+  Kopfweg seit dem letzten Takt (`|Kopf − worm.head| · 6` Kacheln/s). Liegt es in `BOOST_TAKTS = 2` Sprint-Takten hintereinander unter `BOOST_MIN = 0,9`
+  des im Takt davor geschriebenen v (`worm.slow` zählt mit, jeder andere Takt setzt ihn auf 0), steigt `worm.boost` um 1 (höchstens 2, nie zurück, je
+  Stufe eine Logzeile). Stufe 1: zusätzlich je Sprint-Takt `unit.move_forward(Δ)` (A23 classes.d.ts:19026, A20 :28085) mit
+  Δ = min(0,4, (v − gemessenes Tempo) · 10 / 60) Kacheln (`PUSH_MAX`). Stufe 2: statt `move_forward` die Knotenkette selbst schieben: `set_body_nodes`
+  (A23 classes.d.ts:19040, A20 :28130, in `pcall`, ein Fehler schreibt eine Logzeile und der Takt schiebt nicht) mit einem neuen Kopf Δ Kacheln voraus
+  längs der Richtung zu `dest` und den übrigen Knoten im Abstand 1 längs der alten Spur (der letzte fällt weg), höchstens bis 6 Kacheln/s insgesamt. Das
+  hängt an keiner Engine-Annahme außer dem Setzen der Knoten selbst; der Wächter prüft den neuen Kopf im selben Takt. `sprint` und `boost` stehen im
+  Protokoll (4.16).
 - **Biss-Fenster** (worms.lua, Schritt 2 d in 4.3), mit Wurm:
   1. Regeln nach P3D1 4.7 Schritte 1 bis 4 (`decide` ohne Wirkung, scripts/worms.lua:743–753) → nicht beißbar: `miss(hunt, outcome, Kopf)` (Eruption am Kopf,
      Chat wie 0.7.0), `state = "searching"`, `end_tick = eta + 600`, Phase `suche`.
@@ -459,7 +484,8 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
   `end_hunt(hunt)` mit dem schon gesetzten `outcome` (escaped bzw. gone, scripts/worms.lua:480 überschriebe es sonst) und `killed + 1` zusätzlich (nicht
   bei Befehlsjagden). Befehlsjagd: nur Aufräumen und Chat. Die Leiche entfällt im Prototyp; Haut- und Panzerteile fliegen.
 - **Wurm verloren:** `script_raised_destroy_segmented_unit` (A23 events.d.ts:5305) mit `segmented_unit` einer Jagd, oder im Takt `unit.valid == false`:
-  `hunt.worm = nil`, Anfragen weg, Phase `ohne`, `no_worm = "verloren"`; bei 0 Biss wie 0.7.0. Kein `register_on_object_destroyed` (A23 classes.d.ts:4729):
+  `hunt.worm = nil`, dann `to_none(hunt, "verloren")` (Anfragen weg, Phase `ohne`; in der Suche bleibt `suche`); bei 0 Biss wie 0.7.0.
+  Kein `register_on_object_destroyed` (A23 classes.d.ts:4729):
   Der Takt sieht es binnen 10 Ticks, und ein Ereignis je Wurm bringt nichts dazu.
 
 ### 4.12 Zusammenspiel mit den Regeln aus 3d1 und allen Enden
@@ -526,8 +552,9 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
 
 ### 4.16 Protokoll und Log
 `end_hunt` schreibt je Jagd einen Eintrag nach `storage.hunts.log[log_next]` (Ring mit 20, `log_next` läuft um): `{id, kind, debug, force_index, outcome,
-phase, no_worm, warn_tick, eta_tick, plan_tick, spawn_tick, bite_tick, bite_dist, ersatz, k, d, length, paths, reroutes, detours, samples, rock_box, vmax,
-crushed, dive}`. Je Jagd mit Wurm dazu eine Zeile `log("Arrakis: Jagd …")` mit denselben Zahlen (eine Zeile, kein Spam). `storage.hunts.ersatz` zählt
+phase, no_worm, warn_tick, eta_tick, plan_tick, spawn_tick, bite_tick, bite_dist, ersatz, k, d, length, paths, box, spawns, reroutes, detours, samples,
+rock_box, vmax, sprint, boost, crushed, dive}` (nur Zahlen, Texte und Wahrheitswerte, keine Lua-Objekte). Je Jagd mit Wurm dazu eine Zeile
+`log("Arrakis: Jagd …")` mit denselben Zahlen (eine Zeile, kein Spam). `storage.hunts.ersatz` zählt
 Ersatzbisse seit Spielbeginn.
 
 ### 4.17 Ungeprüfte Engine-Annahmen
@@ -537,7 +564,7 @@ Ersatzbisse seit Spielbeginn.
 | W2 | Tempo 0 alle 10 Ticks hält den Wurm fest (Kriechen höchstens 0,1 Kacheln/s) | T21 Schritte 2 und 5 (MESSUNG Weg beim Halten) | Fahrziel beim Halten auf den Kopf (Engine: `patrolling` mit 1 Kachel/s); die Reichweite R reicht dafür |
 | W3 | Ein Tempo über `target_speed` (Sprint 6 Kacheln/s) hält zwischen zwei Schreibvorgängen (Abbremsen mit der Beschleunigung, Mittel ≥ 5,5) | T21 Schritte 3, 9 und 12 (MESSUNG mittleres Tempo im Sprint, Sprint-Takte) | Ersatz 1: zusätzlich je Takt `unit.move_forward(Δ)` (A23 classes.d.ts:19026, A20 :28085) mit dem fehlenden Weg, höchstens 0,4 Kacheln je Takt. Ersatz 2: Knotenschub per `set_body_nodes` (A23 classes.d.ts:19040, A20 :28130, 4.9 „Sprint-Ersatz“), unabhängig vom Tempo der Engine. Ohne jeden Sprint bekäme ein fliehender Ernter meist den Ersatzbiss (4.9); das ist kein zulässiger Ausgang mehr |
 | W4 | `request_path` mit `collision_mask = {layers = {arrakis_rock = true}}` und Raster −2 findet Wege um Fels herum, die Antwort kommt mit `path`, `try_again_later` bei Last | T21 Schritt 4 (Sandtasche mit Knick), MESSUNG Wartezeit | Kein ROUTING: Ziele ohne gerade Sandlinie bekommen Phase `ohne` (Biss wie 0.7.0); der Wächter bleibt |
-| W5 | Eine Anfrage, die über Speichern und Laden läuft, meldet sich danach oder gar nicht (kein Fehler) | T22 Schritt 9 (Laden im `routing`) | Ist geplant: Zeitablauf 300 Ticks, dann neu fragen |
+| W5 | Eine Anfrage, die über Speichern und Laden läuft, meldet sich danach oder gar nicht (kein Fehler); eine Kennung, die nach dem Laden neu vergeben wird, trifft keinen alten Eintrag einer anderen Jagd | T22 Schritt 9 (Laden im `routing`), nur wenn beim Speichern eine Anfrage offen war (MESSUNG); sonst bleibt W5 offen | Ist geplant: Zeitablauf 300 Ticks, dann neu fragen; der Zeitablauf löscht nur den eigenen Eintrag, `tidy` räumt den Rest (4.5) |
 | W6 | `create_segmented_unit` mit `extended = true` liefert sofort alle 22 Knoten hinter dem Kopf, gegen die Blickrichtung | T21 Schritt 2 (Knoten, Lage); T7 belegt es für den Testwurm | Körperprüfung erst im nächsten Takt; bis dahin `speed = 0` |
 | W7 | `destroy{raise_destroy = true}` hinterlässt keine Leiche, keine Beute und kein `on_segmented_unit_died`, löst aber `script_raised_destroy_segmented_unit` aus | T21 Schritte 2 und 11 (Leichen im Feld, Ereignisse) | Leichen unseres Wurms im Bereich des Körpers nach dem Abtauchen entfernen |
 | W8 | `die()` auf unseren Wurm feuert `on_segmented_unit_died` mit gültiger Einheit und hinterlässt ohne `corpse` und ohne Leichen-Effekt weder Leiche noch Wolfram | T21 Schritt 10 | Zuordnung über `on_post_segmented_unit_died` mit `unit_number` (A23 events.d.ts:3544, :3580); Leichen und Wolfram im Bereich entfernen |
@@ -546,7 +573,7 @@ Ersatzbisse seit Spielbeginn.
 | W11 | Ein `LuaSegmentedUnit` in storage ist nach dem Laden gültig und dieselbe Einheit | T22 Schritt 9 (Laden in der Anfahrt) | `un` merken und nach dem Laden einmal über `get_segmented_units()` suchen, sonst verloren |
 | W12 | Der echte Ornithopter verliert über dem echten Wurm kein Tempo und keine Gesundheit | T21 Schritt 6 (Mitflug über dem Kopf: Tempo ≥ 98 % und Abstand zum Zielpunkt höchstens 0,5 Kacheln mehr als beim Vergleichsflieger; danach Flugzeit ≤ 1,02 ×), T22 Schritt 5 | Den bremsenden Effekt finden (checks.lua listet alle Effekte des Prototyps) und entfernen; bis dahin ist DOC 2.4 verletzt: Abnahme verweigern |
 | W13 | In `investigating` bleibt der Wurm auch ohne Spieler in der Nähe im Modus full, wie in T5 a (35 von 35); `minimal` tritt im Wurmleben nicht auf, also gelten Steuerung und Kosten von full. Ob er im Modus `minimal` ebenso folgen würde, prüft 3d2 nicht | T21 alle Schritte (MESSUNG `activity_mode` je Takt; `minimal` irgendwo: INFO) | Tritt `minimal` auf: Schritt 2 zeigt, ob Zeiten und Tempo trotzdem stimmen; sonst `minimum_activity_mode = full` für das ganze Wurmleben (höchstens 6) |
-| W14 | `create_segmented_unit` auf geprüftem Sand in generierten Chunks gibt nie nil | T21 (Zahl der Erzeugungen je Jagd = 1) | Geplant: nächster Kandidat, höchstens 3 |
+| W14 | `create_segmented_unit` auf geprüftem Sand in generierten Chunks gibt nie nil und wirft keinen Fehler | T21 (Zahl der Erzeugungen je Jagd = 1, `spawns` im Protokoll) | Geplant: `pcall`, nächster Kandidat, höchstens 3 |
 | W15 | Ein Ersatzbiss oder Biss mit `die()` im 10-Tick-Takt verträgt, dass dabei Einheiten und Ziele anderer Jagden ungültig werden | T21 Schritt 8 (Zerdrücken und Biss im selben Takt), Trockenlauf (7) | Je Opfer `valid` prüfen (wie 0.7.0) |
 | W16 | Ein schreibender Zugriff auf `minimum_activity_mode` mit `minimal` gilt bis zum Abtauchen und kostet bei 6 Würmern (im Modus full, W13) spürbar nichts | T8 (später), Abnahme mit 3 Jagden | Nur im Angriff setzen |
 | W17 | Der Wurm folgt einem Weg mit Box ±3,5 durch einen 16 Kacheln breiten Gang mit Knick, ohne dass die Kopfmitte Fels berührt und ohne Abtauchen; Sichtlinien-Ausdünnen, Wegpunktwechsel und kurze Umwege genügen | T21 Schritt 4 (Tasche mit Knick; OK: kein `dive` vor dem Biss, Wurm in der Tasche), MESSUNG Umwege, `rock_box` | Box auf ±5,5 und kein Rückgriff auf ±1,5: Für schmale Gänge findet der Pfadfinder dann keinen Weg, die Jagd wird `ohne` (`"kein-weg"`, Biss wie 0.7.0) |
@@ -599,12 +626,16 @@ x = −400, 0, 400, Reihen y = −600, −200, 200, 600 um den Ursprung; Feld 1 
 wären 1,92 Millionen Kacheln in einem Tick, T18 und T19 nehmen höchstens 360 000, und `pruefstand.py` bricht nach 90 s ohne Tick ab, `STALL`). Jedes Ziel
 steht in der Mitte seines Felds: Wurm und Körper bleiben darin (160 + 21 < 200), Felder in verschiedenen Sektoren. Die Schritte 2 bis 12 laufen in drei
 Wellen, damit nie mehr als 3 Befehlsjagden einen Wurm brauchen (Festlegung „Grenze“) und nie mehr als 6 Würmer fahren: Welle A ab Tick 13 mit den Schritten
-2, 10 und 12 (regulär) und 3, 4, 5; Welle B mit 6, 7, 8, sobald `counted(true) == 0`; Welle C mit 9 und 11 ebenso; danach 13 bis 15. „Bissverzug“ =
+2, 10 und 12 (regulär) und 3, 4, 5; Welle B mit 6, 7, 8, sobald `counted(true) == 0`; Welle C mit 9 und 11 ebenso; danach 13 bis 15 nacheinander in
+Feld 12. Die regulären Jagden der Schritte 2, 10 und 12 bekommen ihr Wurmzeichen in drei aufeinanderfolgenden 60-Tick-Takten (höchstens eine neue je Takt
+und Oberfläche, P3D1 4.5): `set_heat` 999 je Schritt einen Takt nach dem vorigen. Vorbedingung wie T19 Schritt 1: Laufen schon reguläre Jagden anderer
+Forces, ist für die drei nicht Platz (höchstens 3); dann INFO, und Schritt 12, danach 10, startet erst, wenn eine frei wird. „Bissverzug“ =
 `bite_tick − eta_tick`.
 Allgemein in jedem Schritt mit Wurm: Kopfmitte nie auf Fels (FEHLER beim ersten Mal); weil der Takt von worms vor dem Messtakt des Tests laufen kann und
 das Sicherheitsnetz den Wurm dann schon abgetaucht hat, zählt auch `hunt.dive == "fels"` als FEHLER, ebenso `"stillstand"` und `"kein-weg"`, wo der Schritt
 sie nicht erwartet, und `no_worm == "abgetaucht"` vor `eta` (gelesen aus der Jagd vor dem Ende und aus dem Protokolleintrag). `rock_box / samples` als
-MESSUNG (über 5 %: INFO), Erzeugungen je Jagd 1 [W14], `activity_mode` je Takt als MESSUNG [W13], nach dem Ende kein `arrakis-sandworm-*` mehr im Feld.
+MESSUNG (über 5 %: INFO), Erzeugungen je Jagd (`spawns`) 1 (mehr: INFO [W14]), `activity_mode` je Takt als MESSUNG (`minimal` irgendwo: INFO [W13]),
+Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Haltezeit: INFO [W2]), nach dem Ende kein `arrakis-sandworm-*` mehr im Feld.
 1. Prototypen und storage: `prototypes.entity["arrakis-sandworm-small"]` mit Typ `segmented-unit`, vier Rauchkopien und `arrakis-worm-dive` da; ein Probewurm im
    Feld 12 hat `max_body_nodes == 22` (dann sofort weg); `storage.schema == 4`, `path_requests`, `hunts.log`, `hunts.worm_off`, `hunts.spawn_dir` da,
    `stats_of(force).killed == 0` (die Force ist neu, `stats_for` legt `killed` an).
@@ -612,7 +643,8 @@ MESSUNG (über 5 %: INFO), Erzeugungen je Jagd 1 [W14], `activity_mode` je Takt 
    Wurmzeichen. Startrichtung k0 = 2 (Haken der Force): Die Anfahrtslinie von Nordost läuft mit 2,1 Kacheln Seitenabstand an der Nord- und der Ostkiste vorbei,
    die Kopfbox (±1,5) berührt keine (bei zufälligem k0 läge in 4 von 16 Richtungen eine Kiste vor dem Kopf; die Kiste im Weg prüft Schritt 8 [W10]).
    OK: `phase` warten ab dem Start, `routing` genau bei `eta − 3230`, Wurm genau bei `eta − 2930` (gerade Linie, `paths == 0`, k = 2) mit 22 Knoten, jeder vierte
-   auf Sand, Körper auf der von H1 abgewandten Seite; Tempo 1 s nach dem Spawn ≥ 3,3 Kacheln/s; `angriff` bei Abstand ≤ 40; vor `eta` kein `entity_died` im Feld
+   auf Sand, Körper auf der von H1 abgewandten Seite (letzter Knoten mindestens 18 Kacheln weiter von H1 als der Kopf);
+   Tempo 1 s nach dem Spawn ≥ 3,3 Kacheln/s; `angriff` bei Abstand ≤ 40; vor `eta` kein `entity_died` im Feld
    (die Kisten liegen in der Schutzzone); Bissverzug 0 bis 180 (MESSUNG, über 0: INFO), kein Ersatzbiss, Abstand Kopf–H1 beim Biss ≤ 4,58; im Biss-Takt H1 und
    alle vier Kisten tot; Wurm im selben Takt weg, kein `segmented_unit_died`, ein `segmented_unit_destroyed`; im Feld keine Entity vom Typ `simple-entity` und
    kein Bodenstapel mit Wolframerz; Protokolleintrag mit `phase == "angriff"`, `outcome == "bitten"`. MESSUNG: Ankunft in Reichweite (Ticks vor `eta`), Weg beim Halten,
@@ -657,8 +689,8 @@ MESSUNG (über 5 %: INFO), Erzeugungen je Jagd 1 [W14], `activity_mode` je Takt 
 10. Wurm getötet [W8, W9] (Feld 10): Ernter H10 aufgebaut, `set_heat` 999 (reguläre Jagd). 300 Ticks nach dem Spawn `unit.damage(1000, force)` (A23
     classes.d.ts:18991): MESSUNG Zustand nach 10, 20, 30, 40 Ticks (OK: spätestens nach 40 Ticks wieder `investigating`). 600 Ticks nach dem Spawn
     `unit.die(force)` (:19007). OK: im selben Tick `segmented_unit_died` und Jagd weg, Protokoll `outcome == "killed"`, Statistik `killed` + 1, `first_escape_tick`
-    gesetzt, Chat `msg-worm-killed` (Ziel gerettet), 9 Chunks um den Ursprung 0, Sektor ruht; H10 lebt bei `eta + 60`; keine `simple-entity` und kein
-    Wolframerz im Feld.
+    gesetzt, Chat `msg-worm-killed` (Ziel gerettet), 9 Chunks um den Ursprung 0, Sektor ruht noch mindestens 7200 Ticks (`vibration.resting`); H10 lebt bei
+    `eta + 60`; keine `simple-entity` und kein Wolframerz im Feld.
 11. Wurm verloren [W7] (Feld 11): zwei Kisten 60 Kacheln auseinander, je Befehlsjagd 60 s mit `spawn` von Westen bzw. Osten. 300 Ticks nach dem Spawn
     zerstört der Test Wurm a mit `destroy{raise_destroy = true}`, Wurm b mit `destroy{}`. OK: a im selben Tick `ohne`/`"verloren"`, b binnen 10 Ticks; beide
     Kisten sterben genau bei `eta` (Bissverzug 0) mit Eruption an der Kiste.
@@ -669,14 +701,16 @@ MESSUNG (über 5 %: INFO), Erzeugungen je Jagd 1 [W14], `activity_mode` je Takt 
 13. Grenzen (Feld 12, nach den Wellen): Vorbedingung: keine Jagd einer anderen Force (sonst INFO und nur MESSUNG). Vier Befehlsjagden mit 60 s auf vier Kisten
     im selben Tick: drei `warten`, die vierte `ohne`/`"grenze"`; danach ein Ernter mit `set_heat` 999: seine reguläre Jagd bekommt trotzdem `warten`
     (Befehlsjagden sperren nichts); eine Befehlsjagd mit 20 s → `ohne`/`"kurz"`; `set_worm_off(force, true)`, dann 60 s → `ohne`/`"aus"`, danach
-    `set_worm_off(force, false)`. Alle mit `"abort"` beenden: `path_requests` leer, kein Wurm entstanden.
+    `set_worm_off(force, false)`. Alle spätestens 300 Ticks nach den vier Befehlsjagden mit `"abort"` beenden, also vor dem ersten `plan_tick` (Start + 370;
+    die reguläre Jagd startet erst im nächsten 60-Tick-Takt): `path_requests` leer, kein Wurm entstanden.
 14. Migration und Waisen: Befehlsjagd 60 s, `hunt.phase = nil` und `hunt.r = nil` gesetzt (wie aus 0.7.0, auch nach 0.8.0 → 0.7.0 → 0.8.0 bei `schema` 4),
     `migrate_schema4{hunts = {hunt}}` → `ohne`/`"migration"`, `r` gesetzt; Ende `"abort"`. Ein `arrakis-sandworm-small` ohne Jagd und ein `arrakis-test-worm`
     im Feld: `sweep{Prüfstand}` → 1, der Testwurm ist noch gültig (dann entfernt ihn der Test).
 15. Entfernen (immer zuletzt): zwei Befehlsjagden mit 27 s (Spawn 60 Ticks nach dem Start); sobald beide einen Wurm haben, dazu ein Waisenwurm per
     `create_segmented_unit`, dann `worms_lib.uninstall()` → 2 und 3 (zwei Jagdwürmer und die Waise); kein `arrakis-sandworm-*` auf der Prüfstand-Fläche,
     `path_requests` leer, nach 1 Tick gibt es `arrakis-sandworm` nicht mehr. Danach ohne `ensure_force()` eine Befehlsjagd mit 27 s: kein Skriptfehler,
-    der Wurm entsteht (worms legt die Force selbst an), Ende `"abort"`. `cleanup` setzt `paused_until = nil`.
+    der Wurm entsteht 60 Ticks nach dem Start (worms legt die Force selbst an), Ende `"abort"`. `cleanup` stellt `paused_until` wie vor dem Test her
+    (wie T19, `d.saved.paused`).
 
 **T22 „Sandwurm: Optik und Laden“** (interaktiv, nur mit Max im Spiel, `alle` lässt ihn aus; endet nach 20 min Spielzeit oder mit `stop`). `start` wie T20:
 `grace_snapshot` und Statistik-Kopie von Max' Force, `vibration.testbench_enable`, `tb.protect`, Max' Force wach; Sandfläche ±250 mit einer Felsinsel.
@@ -696,14 +730,20 @@ MESSUNG (über 5 %: INFO), Erzeugungen je Jagd 1 [W14], `activity_mode` je Takt 
 7. Wurm getötet: Befehlsjagd 60 s; in der Anfahrt ruft der Test `die(player.force)`. FRAGE: „Stirbt der Wurm mit Sandstaub, ohne Leiche und ohne Wolfram, steht im
    Chat ‚… ist gerettet‘, und verschwindet die Jagd oben links?“
 8. Factoriopedia: FRAGE: „Steht der Sandwurm unter Gegner mit sandfarbenem Symbol, Name und Beschreibung?“
-9. Speichern und Laden [W5, W11]: Befehlsjagd 90 s (`lehr`). Max speichert in den ersten 30 s (Phase `warten` oder `routing`) und lädt; nach dem Spawn noch einmal
-   (Phase `anfahrt`). MESSUNG nach jedem Laden: Phase, `worm.unit.valid`, offene Anfrage. FRAGE: „Taucht der Wurm auf, fährt er nach dem Laden weiter und beißt bei 0?“
+9. Speichern und Laden [W5, W11]: Befehlsjagd 90 s (`lehr`). `routing` dauert nur von 36,2 s bis 41,2 s nach dem Wurmzeichen (`plan_tick = w + 2170`,
+   Spawn bei w + 2470); davor ist die Phase `warten`. Der Test sagt beides per INFO an; Max speichert zwischen 37 und 40 s und lädt (Phase `routing`,
+   Kandidat gewählt, Spawn noch offen), nach dem Spawn noch einmal (Phase `anfahrt`). MESSUNG jede Sekunde von 30 s bis zum Biss (ein Laden erkennt der Test
+   nicht, die Datei zeigt den Stand davor und danach): Phase, `plan.chosen`, `spawn_tick`, `hunt.path` (offene Anfrage ja/nein), `worm.unit.valid`.
+   Auf freiem Sand gibt es meist keine offene Anfrage: W5 gilt nur als geprüft, wenn beim Speichern eine offen war, sonst INFO „W5 offen“
+   (der Zeitablauf deckt beide Fälle, 4.5). FRAGE: „Taucht der Wurm auf, fährt er nach dem Laden weiter und beißt bei 0?“
 Was Max mit Auge und Ohr prüft (T22 und Abnahme): Farbe, Staub, Partikel, Auf- und Abtauchen, Fahrt um Fels, Ernter vor Fels, Halten vor dem Ziel, Biss, Wracks beim Zerdrücken,
 Ornithopter über dem Kopf, Tod des Wurms, Factoriopedia.
 
 **Geänderte alte Tests:**
 - T19 (scripts/testbench/t_jagd.lua): `start` ruft `worms_lib.set_worm_off(force, true)` für `arrakis-t19`, Schritt 5 e ebenso für `arrakis-t19b` beim Anlegen;
-  `cleanup` schaltet beide zurück. Alle Erwartungen bleiben (Biss genau bei 0, Eruption an `last_pos` bzw. `warn_pos`, Zahl der Explosionen in Schritt 4).
+  `cleanup` schaltet beide zurück. `start` setzt die Statistik heute auf `bitten, escaped, gone = 0, 0, 0` und löscht alle anderen Schlüssel
+  (t_jagd.lua:2958–2960); neu kommt `killed = 0` dazu, sonst fehlt das Feld der Test-Force (`stats_for` legt es nur in neuen Datensätzen an, die Migration
+  nur bei `old < 4`). Alle Erwartungen bleiben (Biss genau bei 0, Eruption an `last_pos` bzw. `warn_pos`, Zahl der Explosionen in Schritt 4).
 - T20: `start` `set_worm_off(player.force, true)`, `cleanup` zurück; sonst unverändert. Hinweis per INFO: „T20 prüft die Warnungen ohne Wurm; den Wurm zeigt T22.“
 - T18 (scripts/testbench/t_jagd.lua:728): Schritt 1 prüft heute `{"schema 3", storage.schema == 3}` und meldete mit Schema 4 FEHLER („storage.schema 3
   fehlt“). Neu `{"schema", storage.schema == migrate.SCHEMA}` (Wert aus scripts/migrate.lua:64), Text ohne Zahl; die Tabellen von Schema 4 prüft T21 Schritt 1.
@@ -723,6 +763,7 @@ Annahmen W1 bis W17; Hinweis, dass T19 und T20 ohne Wurm laufen; Bekannte Grenze
 
 ## 7. Prüfung vor der Übergabe
 - `tools/check/datastage.py` mit Vanilla 2.1.23 (`fd2123`), mit und ohne `arrakis-testbench`, und `datastage.py fd2123 --ohne quality --set arrakis-testbench=true`.
+  2.0.77 nur, wenn die Vanilla-Daten vorliegen (`fd2077` gibt es im Arbeitsordner derzeit nicht); dann prüft es nur die 2.0-Schreibweise.
   `datastage.py --dump` für `arrakis-sandworm-small` und ein Segment (was der deepcopy mitbringt, welche Effekte bleiben); `tools/check/proto_fields.py` ohne Treffer.
 - `tools/check/checks.lua` neu für 3d2 (`expected_3d2`, fest im Regelwerk, nicht aus dem Modul gelesen): `segmented-unit` arrakis-sandworm-small, `trivial-smoke`
   arrakis-sandworm-smoke-front, -small-top, -small-bottom, -big, `explosion` arrakis-worm-dive vorhanden. Für alles mit `^arrakis%-sandworm%-` (Kopf und Segmente):
@@ -753,7 +794,14 @@ Annahmen W1 bis W17; Hinweis, dass T19 und T20 ohne Wurm laufen; Bekannte Grenze
   Figur, Force in der Schonfrist) und der Schutzzone mehrerer Jagden; Zerdrücken beim Auftauchen; getötet vor 0 und in der Suche (Text, Ergebnis, `killed`),
   verloren (mit und ohne Ereignis); Grenze für Befehlsjagden neben 3 regulären; Force fehlt nach dem Entfernen; Migration aus Schema 3 und Rundweg über 0.7.0
   (`schema` 4, Jagd ohne `phase` und `r`); `stats_for` mit `killed`, `on_forces_merging` mit `killed`, `on_force_created` mit `worm_off` und `spawn_dir`;
-  geleerte Oberfläche (`on_pre_surface_cleared`); `sweep`; Entfernen mit m = Jagdwürmer + Waisen.
+  geleerte Oberfläche (`on_pre_surface_cleared`); `sweep`; Entfernen mit m = Jagdwürmer + Waisen. Dazu: jeder Wechsel auf `ohne` über `to_none` (danach
+  `hunt.worm`, `hunt.path` und Einträge der Jagd leer), `"keine-force"` mit lebendem Wurm (taucht ab), `"kein-weg"` an der Frist mit offener Anfrage
+  (späte Antwort ändert nichts); `tidy` mit verwaister, umgeleiteter und alter Anfrage; Zeitablauf, nachdem eine Kennung neu vergeben wurde (löscht nur
+  den eigenen Eintrag); Fehler aus `create_segmented_unit`, `request_path` und `set_body_nodes` (per `pcall` abgefangen, Logzeile); Sprint-Stufen mit einer
+  Attrappe, die v über 3,5 nicht hält (`boost` 1 nach 2 Takten unter 90 %) und danach auch `move_forward` schluckt (`boost` 2); ein Ziel mit der Mitte auf
+  Fels und einer Ecke auf Sand (Biss spätestens als Ersatzbiss oder nach Abtauchen bei 0). Am Ende jedes Laufs: kein Wurm ohne Jagd, keine Jagd mit
+  Wurm nach `eta + 600`.
+- Prüfstand-Trockenlauf: T21 in der Prüfstand-Attrappe (wie T18 bis T20 für 0.7.0) ohne Skriptfehler bis zum Ende, T22 bis zur ersten FRAGE.
 - Lua-Syntaxprüfung aller Dateien.
 - Gegenprüfung durch zwei unabhängige Durchsichten (Laufzeit und Prüfstand) wie bei 0.7.0, Befunde vor der Übergabe eingearbeitet.
 - Mit dabei: `info.json` 0.8.0; `changelog.txt` (Features: Sandwurm, Auf- und Abtauchen, Route um Fels, Zerdrücken; Changes: Biss bis 3 s nach 0, Befehlsjagd ab 27 s
@@ -771,7 +819,8 @@ Annahmen W1 bis W17; Hinweis, dass T19 und T20 ohne Wurm laufen; Bekannte Grenze
   6. ANGRIFF/BISS: erst nach dem letzten Wegpunkt, Fahrziel 20 bzw. mindestens 6 Kacheln hinter dem Ziel, Drosseln mit dem Restweg; Biss-Fenster bis 3 s,
      Ersatzbiss, Regeln in jedem Takt des Fensters (4.3 Schritte 5 und 6).
   7. ENTKOMMEN entfällt als Zustand: Zielpunkt `last_pos`, am Reichweitenkreis geklemmt, Entscheidung bei 0; SUCHEN bis 8 Kacheln an diesem Punkt
-     (Zustandsmaschine, Schritt 8).
+     (Zustandsmaschine, Schritt 8). Das „Zeitlimit t_warn + 60 s“ entfällt: Ein Wurm lebt höchstens bis `eta + 180` (Biss, Ersatzbiss) bzw. `eta + 600`
+     (Suche).
   8. Wurm getötet: vor 0 Ende `killed`, Ziel gerettet, in der Suche Ergebnis der Suche; Statistik, ohne Beute (Zustandsmaschine; Beute 3d3). Wurm verloren
      und Abtauchen vor 0: Biss wie 3d1.
   9. Fels-Wächter: ungenerierte Chunks als Fels, Seitenlinien, Haltepunkt für jedes Ziel, Umwege 30/15/8, einmalige Neuplanung, Stillstand (4.3 „Fels-Wächter“).
