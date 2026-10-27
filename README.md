@@ -13,3 +13,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-26 02:09 | 0.6.0 | 63a29ea | 1 (FEHLER in T15 Schritt 2 und 15, T16 3 von 5 Kriterien) |
 | 2026-10-26 15:44 | 0.6.1 | 0f9d582 | 0 (kein FEHLER, T15 17/17, T16 5/5) |
 | 2026-10-26 22:56 | 0.7.0 | 7d881a4 | 0 (kein FEHLER, T18 11/11, T19 10/10) |
+| 2026-10-27 15:54 | 0.8.0 | 80e1c6d | 1 (FEHLER in T21 Schritt 6: Ornithopter über dem Wurm 92 % statt ≥ 98 % Tempo) |
