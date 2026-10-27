@@ -1,4 +1,5 @@
--- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10; Schema 3: docs/plan-3d1.md 4.16).
+-- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10; Schema 3: docs/plan-3d1.md 4.16; Schema 4:
+-- docs/plan-3d2.md 4.14).
 -- Erste Bibliothek in control.lua: legt alle Tabellen in on_init und on_configuration_changed an, bevor die anderen
 -- Module sie benutzen. on_load schreibt nie (diese Bibliothek hat kein on_load).
 --
@@ -43,6 +44,16 @@
 -- on_research_finished sofort aus [V2], und worms.lua nennt den Termin dann nicht ein zweites Mal. Herunterstufen auf
 -- 0.6.x: vorher /arrakis-uninstall ja (Markierungen und die Sandwurm-Force blieben sonst im Spielstand).
 --
+-- Schema 4 (0.8.0, Phase 3d2, docs/plan-3d2.md 4.2), dazu:
+--   storage.path_requests[request_id] = {hunt, kind = "plan"|"reroute", sent}: offene Pfad-Anfragen (scripts/sandworm.lua)
+--   storage.hunts           zusätzlich worm_off, spawn_dir (Prüfstand), log, log_next, ersatz (Protokoll)
+--   storage.hunts.list[id]  zusätzlich r, phase, no_worm, dive, zone, plan_tick, spawn_tick, d, plan, path, worm,
+--                           bite_tick, bite_dist, ersatz, last_worm, spawn_hook, spawn_dir
+--   storage.worm_stats[force_index]  zusätzlich killed
+-- 0.7.0 → 0.8.0: killed nachtragen. Laufende Jagden ohne phase oder r normalisiert worms.lua in jedem
+-- on_configuration_changed, nicht nur bei old < 4: Nach 0.8.0 → 0.7.0 → 0.8.0 steht schema schon auf 4 (math.max).
+-- Herunterstufen auf 0.7.0: vorher /arrakis-uninstall ja (sonst löscht die Engine die Würmer, Jagden beißen ohne Wurm).
+--
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
 -- Oberfläche schon existiert, sonst beim Anlegen der Oberfläche. Ob ein vor 0.5.4 begonnener Spielstand
@@ -54,7 +65,7 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 3
+local SCHEMA = 4
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
@@ -95,6 +106,14 @@ function migrate.init()
   storage.hunts.list = storage.hunts.list or {}
   storage.sector_cooldown = storage.sector_cooldown or {}
   storage.worm_stats = storage.worm_stats or {}
+  -- Schema 4 (Phase 3d2)
+  storage.path_requests = storage.path_requests or {}
+  local hunts = storage.hunts
+  hunts.worm_off = hunts.worm_off or {}
+  hunts.spawn_dir = hunts.spawn_dir or {}
+  hunts.log = hunts.log or {}
+  hunts.log_next = hunts.log_next or 1
+  hunts.ersatz = hunts.ersatz or 0
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt
@@ -271,6 +290,10 @@ migrate.on_configuration_changed = function()
       if h.vib_weight == nil then h.vib_weight = 0 end
       if h.vib_sand == nil then h.vib_sand = false end
     end
+  end
+  if old < 4 then
+    -- 0.7.0 → 0.8.0: Statistik getöteter Würmer; Jagden normalisiert worms.lua (siehe oben).
+    for _, record in pairs(storage.worm_stats) do record.killed = record.killed or 0 end
   end
   storage.schema = math.max(old, SCHEMA)
   -- 0.5.3 → 0.5.4: Hinweis auf die alte Karte (siehe oben).

@@ -147,6 +147,9 @@ WRITE_WHITELIST = {
   "e.tick", "record.weight",
   # worms.lua: hunt = storage.hunts.list[id], Force der Jagd (docs/plan-3d1.md 4.2)
   "hunt.force_index",
+  # sandworm.lua: Wurm-Felder der Jagd (docs/plan-3d2.md 4.2): hunt.path = offene Pfad-Anfrage, path = hunt.path
+  # (Kennung der Anfrage), plan = hunt.plan (nächster Kandidat), worm = hunt.worm (zuletzt geschriebener activity_mode)
+  "hunt.path", "path.id", "plan.next", "worm.mode",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die

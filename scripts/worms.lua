@@ -1,6 +1,6 @@
 -- Würmer (Phase 3d1, docs/plan-3d1.md 4.4 bis 4.10, 4.13, 4.14, 4.16): Takte, Schonfrist je Force, Wurmzeichen,
--- Jagden ohne Wurm-Entity, Biss, Warnungen, Sandwurm-Force, Briefing-Chat, /arrakis-worm, Migration Schema 3 und
--- Entfernen. Bibliothek für __core__/lualib/event_handler. Daten nur in storage (Schema 3, siehe scripts/migrate.lua).
+-- Jagden, Biss, Warnungen, Sandwurm-Force, Briefing-Chat, /arrakis-worm, Migration Schema 3 und 4 und Entfernen.
+-- Bibliothek für __core__/lualib/event_handler. Daten nur in storage (Schema 4, siehe scripts/migrate.lua).
 -- Die Modultabelle heißt lib; andere Dateien binden sie als worms_lib.
 --
 -- Nur dieses Modul hat die Wurm-Takte (Plan 4.4): on_nth_tick(60) ruft in fester Reihenfolge 1. vibration.tick,
@@ -11,11 +11,18 @@
 -- Biss-Tick (Plan 4.7): weg, entkommen (getragen, andere Oberfläche, ganz auf Fels, außer Reichweite) oder Biss.
 -- Befehlsjagden (debug) zählen nicht mit, sperren nichts und enden ohne Rücksetzen, Ruhe, Statistik und Lehrjagd-Merker.
 -- [Vn] markiert ungeprüftes Engine-Verhalten (Plan 4.17).
+--
+-- Phase 3d2 (docs/plan-3d2.md 4.1, 4.3, 4.9 bis 4.14, 4.16, 4.18): Der Wurm selbst fährt in scripts/sandworm.lua; dieses
+-- Modul bleibt Herr der Jagd. Der 10-Tick-Takt ruft je Jagd in fester Reihenfolge track, sandworm.step, Zerdrücken und
+-- Biss-Fenster (Plan 4.3); der Biss kommt nie vor eta_tick und höchstens BITE_WINDOW Ticks danach (Ersatzbiss). Dazu
+-- Tod und Verlust des Wurms, Grenze der Befehlsjagden, Migration Schema 4, Protokoll und Waisen beim Entfernen.
+-- [Wn] markiert ungeprüftes Engine-Verhalten aus Plan 3d2 (4.17).
 
 local terrain = require("scripts.terrain")
 local harvester = require("scripts.harvester")
 local vibration_lib = require("scripts.vibration")
 local worms_gui = require("scripts.worms-gui")
+local sandworm_lib = require("scripts.sandworm")
 
 local lib = {}
 
@@ -53,6 +60,28 @@ lib.VEHICLE_TARGETS = true
 -- Standardwahl (Plan 1 „Totalverlust“): Beim Totalverlust sterben die Insassen des Ernters mit.
 lib.TOTAL_LOSS_OCCUPANTS = true
 
+-- Phase 3d2 (docs/plan-3d2.md 4.1). Reichweite des Bisses über die Zielbox hinaus: R = BITE_REACH + r (Kacheln, wie
+-- sandworm.lua); Biss-Fenster nach eta_tick (Ticks), danach Ersatzbiss.
+lib.BITE_REACH = sandworm_lib.BITE_REACH
+lib.BITE_WINDOW = 180
+-- Zerdrücken (Plan 4.10): Radius um die Kopfmitte, Schutzzone um den Zielpunkt jeder laufenden Jagd (BITE_RADIUS + 1).
+lib.CRUSH_RADIUS = 2.5
+lib.ZONE_RADIUS = 5
+-- Höchstens so viele Befehlsjagden mit Wurm zugleich (Plan 4.13); reguläre begrenzt MAX_HUNTS.
+lib.MAX_DEBUG_WORMS = 3
+-- Protokoll: die letzten so vielen beendeten Jagden (Plan 4.16).
+lib.LOG_SIZE = 20
+-- Standardwahl (Plan 1 „Zerdrücken“, Frage an Max): Das Zerdrücken schont Fahrzeuge (VEHICLE_TYPES, auch Spice-Ernter)
+-- und Figuren. false: Sie sterben im Weg mit, ein Spice-Ernter nach der Einstellung arrakis-worm-bite wie beim Biss.
+lib.CRUSH_SPARES_VEHICLES = true
+-- Standardwahl (Plan 1 „Wurm getötet“, Frage an Max): Ein Wurm, der vor 0 stirbt, beendet die Jagd als killed, das Ziel
+-- ist gerettet. false: Die Jagd läuft ohne Wurm weiter (Phase ohne, "verloren") und beißt bei 0 wie 0.7.0; killed
+-- zählt trotzdem.
+lib.KILL_RESCUES = true
+-- Standardwahl (Plan 1 „ROUTING“, Frage an Max): Ohne Sandlinie und ohne Weg (Phase ohne, "kein-weg") beißt es bei 0 wie
+-- 0.7.0. false: Die Jagd entfällt still (Ende "quiet": Rücksetzen und Ruhe, keine Statistik, kein Biss).
+lib.NO_ROUTE_BITE = true
+
 local FORCE = lib.FORCE
 local ICON = lib.ICON
 local ERUPTION = "arrakis-worm-eruption"
@@ -88,6 +117,22 @@ local NO_VICTIM =
   cliff = true,
   ["spider-leg"] = true
 }
+
+-- Nie zerdrückt (Plan 4.10 Schritt 2), dazu alles, was victim_ok ausnimmt; Fahrzeuge und Figuren nach
+-- CRUSH_SPARES_VEHICLES.
+local NO_CRUSH =
+{
+  ["elevated-straight-rail"] = true,
+  ["elevated-half-diagonal-rail"] = true,
+  ["elevated-curved-rail-a"] = true,
+  ["elevated-curved-rail-b"] = true,
+  segment = true,
+  ["segmented-unit"] = true
+}
+-- Halbe Diagonale, wenn das Ziel fehlt (Spice-Ernter, Plan 4.14).
+local DEFAULT_R = 1.58
+-- Phasen, in denen sandworm.step läuft (Plan 4.3 Schritt 2 b); suche nur mit Wurm.
+local STEP_PHASES = {warten = true, routing = true, anfahrt = true, angriff = true}
 
 local RING_RED = {r = 1, g = 0.15, b = 0.1, a = 0.9}
 local TEXT_RED = {r = 1, g = 0.3, b = 0.2}
@@ -283,7 +328,7 @@ local function stats_for(force_index)
   local stats = storage.worm_stats
   local record = stats[force_index]
   if not record then
-    record = {bitten = 0, escaped = 0, gone = 0}
+    record = {bitten = 0, escaped = 0, gone = 0, killed = 0}
     stats[force_index] = record
   end
   return record
@@ -408,9 +453,18 @@ function lib.hunt_of(entity)
   return nil
 end
 
--- Jagd starten (Plan 4.8). opts = {seconds, teaching, debug, bite}. Gibt die Jagd zurück oder nil plus Grund
+-- Halbe Diagonale der Box (Kacheln): R = BITE_REACH + r (docs/plan-3d2.md 1 „Biss“).
+local function half_diagonal(entity)
+  local box = entity.bounding_box
+  local w = box.right_bottom.x - box.left_top.x
+  local h = box.right_bottom.y - box.left_top.y
+  return math.sqrt(w * w + h * h) / 2
+end
+
+-- Jagd starten (Plan 4.8). opts = {seconds, teaching, debug, bite}, dazu nur Prüfstand (docs/plan-3d2.md 4.18)
+-- spawn = {position, direction, tick|nil} und spawn_dir = k. Gibt die Jagd zurück oder nil plus Grund
 -- "no-target"|"not-allowed"|"flyer"|"busy". Der Biss fällt im 10-Tick-Takt, deshalb ist eta_tick ein Vielfaches von 10
--- (aus dem 60-Tick-Takt ohnehin).
+-- (aus dem 60-Tick-Takt ohnehin). Am Ende entscheidet sandworm.begin, ob ein Wurm kommt (Phase, docs/plan-3d2.md 4.4).
 function lib.start_hunt(entity, opts)
   opts = opts or {}
   if not (entity and entity.valid and entity.is_entity_with_health and entity.unit_number) then return nil, "no-target" end
@@ -447,6 +501,7 @@ function lib.start_hunt(entity, opts)
     warn_pos = {x = position.x, y = position.y},
     last_pos = {x = position.x, y = position.y},
     reach = lib.WORM_SPEED * (eta - tick) / 60,
+    r = half_diagonal(entity),
     safe = false,
     lost = false,
     renders = {},
@@ -469,15 +524,53 @@ function lib.start_hunt(entity, opts)
   force.print({"arrakis-message.msg-wormsign", gps(surface, position), hunt.target_name, hunt.second})
   harvester_alarm(hunt, eta, nil)
   worms_gui.refresh_force(force)
+  -- Wurm oder nicht (docs/plan-3d2.md 4.4 Schritt 1): Phase warten oder ohne mit Grund.
+  sandworm_lib.begin(hunt, {spawn = opts.spawn, spawn_dir = opts.spawn_dir, max_debug = lib.MAX_DEBUG_WORMS})
   return hunt
+end
+
+-- Protokoll (docs/plan-3d2.md 4.16): Eintrag im Ring storage.hunts.log (nur Zahlen, Texte und Wahrheitswerte), je
+-- Jagd mit Wurm eine Logzeile.
+local function write_log(hunt)
+  local hunts = storage.hunts
+  if not hunts.log then return end
+  local plan = hunt.plan or {}
+  local chosen = plan.chosen or {}
+  local worm = hunt.last_worm or {}
+  local entry =
+  {
+    id = hunt.id, kind = hunt.kind, debug = hunt.debug, force_index = hunt.force_index, outcome = hunt.outcome,
+    phase = hunt.phase, no_worm = hunt.no_worm, warn_tick = hunt.warn_tick, eta_tick = hunt.eta_tick,
+    plan_tick = hunt.plan_tick, spawn_tick = hunt.spawn_tick, bite_tick = hunt.bite_tick, bite_dist = hunt.bite_dist,
+    ersatz = hunt.ersatz == true, k = chosen.k, d = hunt.d, length = chosen.length, paths = plan.paths, box = chosen.box,
+    spawns = plan.spawns, reroutes = worm.reroutes, detours = worm.detours, samples = worm.samples,
+    rock_box = worm.rock_box, vmax = worm.vmax, sprint = worm.sprint, boost = worm.boost, crushed = worm.crushed,
+    dive = hunt.dive
+  }
+  local i = hunts.log_next or 1
+  hunts.log[i] = entry
+  hunts.log_next = i % lib.LOG_SIZE + 1
+  if not worm.un then return end
+  local parts = {}
+  for _, key in ipairs({"id", "kind", "debug", "outcome", "phase", "no_worm", "warn_tick", "eta_tick", "plan_tick",
+                        "spawn_tick", "bite_tick", "bite_dist", "ersatz", "k", "d", "length", "paths", "box", "spawns",
+                        "reroutes", "detours", "samples", "rock_box", "vmax", "sprint", "boost", "crushed", "dive"}) do
+    local value = entry[key]
+    if type(value) == "number" and value ~= math.floor(value) then value = string.format("%.2f", value) end
+    parts[#parts + 1] = key .. "=" .. tostring(value)
+  end
+  log("Arrakis: Jagd " .. table.concat(parts, " "))
 end
 
 -- Ende einer Jagd (Plan 4.7 „Ende“). mode nil (normal), "quiet" (ohne Statistik, Prüfstand) oder "abort" (ohne
 -- Rücksetzen, Ruhe und Statistik; Lehrjagd-Merker nur first_hunt = nil). Befehlsjagden: nur Aufräumen.
+-- 3d2: Vor dem Austragen taucht der Wurm ab (bei "abort" still), Anfragen weg, Protokoll; gibt das Ergebnis von
+-- sandworm.dive zurück (true: eine gültige Einheit wurde zerstört).
 function lib.end_hunt(hunt, outcome, mode)
   local list = storage.hunts.list
-  if not (hunt and list[hunt.id] == hunt) then return end
+  if not (hunt and list[hunt.id] == hunt) then return false end
   if outcome then hunt.outcome = outcome end
+  local dived = sandworm_lib.dive(hunt, "ende", mode == "abort")
   drop_tag(hunt)
   destroy_marks(hunt)
   clear_alerts(hunt)
@@ -500,10 +593,13 @@ function lib.end_hunt(hunt, outcome, mode)
     if mode == nil and result then
       local stats = stats_for(hunt.force_index)
       stats[result] = (stats[result] or 0) + 1
-      if result == "escaped" and not stats.first_escape_tick then stats.first_escape_tick = game.tick end
+      -- killed (docs/plan-3d2.md 4.11): Die Jagd ist überstanden wie bei escaped.
+      if (result == "escaped" or result == "killed") and not stats.first_escape_tick then stats.first_escape_tick = game.tick end
     end
   end
+  write_log(hunt)
   refresh_forces(force_of(hunt.force_index))
+  return dived
 end
 
 -- Ziel verloren (Ereignis oder ungültig ohne Ereignis): Countdown läuft weiter, Warnungen weg.
@@ -653,46 +749,43 @@ local function occupants(vehicle)
   return out
 end
 
--- Biss am Biss-Tick (Plan 4.9): erst sammeln, dann töten, weil die() Ereignisse sofort auslöst [V1].
-local function bite(hunt)
-  hunt.state = "biting"
-  local target = hunt.target
-  local center = target.position
-  local surface = target.surface
-  local mode = hunt.bite or settings.global[BITE_SETTING].value
-  surface.create_entity{name = ERUPTION, position = center}
-  local cx, cy = center.x, center.y
-  local R = lib.BITE_RADIUS
-  local seen = {[target.unit_number] = true}
-  local characters, vehicles, others = {}, {}, {}
-  local function add(list, entity)
-    local un = entity.unit_number
-    if un then
-      if seen[un] then return end
-      seen[un] = true
-    end
-    list[#list + 1] = entity
+-- Opferliste (Plan 4.9 Schritt 3): Figuren, Fahrzeuge, Rest; seen verhindert Doppelte (unit_number).
+local function new_victims(seen)
+  return {seen = seen or {}, characters = {}, vehicles = {}, others = {}}
+end
+
+local function add_victim(victims, list, entity)
+  local un = entity.unit_number
+  if un then
+    if victims.seen[un] then return end
+    victims.seen[un] = true
   end
-  for _, entity in pairs(surface.find_entities_filtered{area = {{cx - R, cy - R}, {cx + R, cy + R}}}) do
-    if victim_ok(entity) and box_distance(entity, cx, cy) <= R and terrain.has_sand_under(entity) then
-      local typ = entity.type
-      if typ == "character" then
-        -- Figuren im Fahrzeug teilen dessen Los (unten über get_driver/get_passenger).
-        if not entity.vehicle then add(characters, entity) end
-      elseif VEHICLE_TYPES[typ] then
-        add(vehicles, entity)
-      else
-        add(others, entity)
-      end
-    end
+  list[#list + 1] = entity
+end
+
+-- In die passende Liste. Figuren im Fahrzeug teilen dessen Los (in devour über get_driver/get_passenger).
+local function sort_victim(victims, entity)
+  local typ = entity.type
+  if typ == "character" then
+    if not entity.vehicle then add_victim(victims, victims.characters, entity) end
+  elseif VEHICLE_TYPES[typ] then
+    add_victim(victims, victims.vehicles, entity)
+  else
+    add_victim(victims, victims.others, entity)
   end
-  -- Fahrzeuge (auch das Ziel): Ernter nach Einstellung, sonst Insassen auf die Liste. Gibt true zurück, wenn es stirbt.
-  local damaged = false
+end
+
+-- Gemeinsamer Kern von Biss und Zerdrücken (docs/plan-3d2.md 4.1, P3D1 4.9 Schritte 3 bis 5): Fahrzeuge regeln (Ernter
+-- nach mode, sonst Insassen auf die Liste), dann töten in fester Reihenfolge ohne cause, weil die() Ereignisse sofort
+-- auslöst [V1]. target nil beim Zerdrücken. Gibt damaged (das Ziel überlebt schwer beschädigt) und die Zahl der
+-- Getöteten zurück.
+local function devour(victims, target, mode, worm_force)
   local function add_occupants(vehicle)
     for _, character in pairs(occupants(vehicle)) do
-      if victim_ok(character) then add(characters, character) end
+      if victim_ok(character) then add_victim(victims, victims.characters, character) end
     end
   end
+  -- Gibt true zurück, wenn das Fahrzeug stirbt.
   local function settle(vehicle)
     if vehicle.name == HARVESTER then
       local h = harvester.get(vehicle)
@@ -714,23 +807,49 @@ local function bite(hunt)
     return true
   end
   local doomed = {}
-  for _, vehicle in ipairs(vehicles) do
+  for _, vehicle in ipairs(victims.vehicles) do
     if settle(vehicle) then doomed[#doomed + 1] = vehicle end
   end
-  local target_dies = true
-  if VEHICLE_TYPES[target.type] then
+  local damaged = false
+  local target_dies = target ~= nil
+  if target and VEHICLE_TYPES[target.type] then
     target_dies = settle(target)
     damaged = not target_dies
   end
-  -- Töten: erst Figuren (noch im Sitz) [V14], dann Fahrzeuge, dann der Rest, zuletzt das Ziel; ohne cause.
-  local worm = lib.ensure_force()
+  -- Töten: erst Figuren (noch im Sitz) [V14], dann Fahrzeuge, dann der Rest, zuletzt das Ziel; ohne cause. Jedes Opfer
+  -- erst auf valid prüfen: die() eines anderen kann es schon mitgenommen haben [W15].
+  local n = 0
   local function kill(entity)
-    if entity.valid then entity.die(worm) end
+    if entity.valid then
+      entity.die(worm_force)
+      n = n + 1
+    end
   end
-  for _, entity in ipairs(characters) do kill(entity) end
+  for _, entity in ipairs(victims.characters) do kill(entity) end
   for _, entity in ipairs(doomed) do kill(entity) end
-  for _, entity in ipairs(others) do kill(entity) end
+  for _, entity in ipairs(victims.others) do kill(entity) end
   if target_dies then kill(target) end
+  return damaged, n
+end
+
+-- Biss (Plan 4.9) an der Zielmitte: Eruption, devour, Ende. Der Wurm taucht im Ende ab (docs/plan-3d2.md 4.11).
+local function bite(hunt)
+  hunt.state = "biting"
+  hunt.bite_tick = game.tick
+  local target = hunt.target
+  local center = target.position
+  local surface = target.surface
+  local mode = hunt.bite or settings.global[BITE_SETTING].value
+  surface.create_entity{name = ERUPTION, position = center}
+  local cx, cy = center.x, center.y
+  local R = lib.BITE_RADIUS
+  local victims = new_victims({[target.unit_number] = true})
+  for _, entity in pairs(surface.find_entities_filtered{area = {{cx - R, cy - R}, {cx + R, cy + R}}}) do
+    if victim_ok(entity) and box_distance(entity, cx, cy) <= R and terrain.has_sand_under(entity) then
+      sort_victim(victims, entity)
+    end
+  end
+  local damaged = devour(victims, target, mode, lib.ensure_force())
   local force = force_of(hunt.force_index)
   lib.end_hunt(hunt, "bitten")
   if force then
@@ -739,17 +858,114 @@ local function bite(hunt)
   end
 end
 
--- Entscheidung am Biss-Tick (Plan 4.7, in dieser Reihenfolge).
-local function decide(hunt)
+-- Entscheidung ohne Wirkung (Plan 4.7 Schritte 1 bis 4, in dieser Reihenfolge): nil (beißbar) oder Ergebnis und Ort der
+-- Eruption ohne Wurm.
+local function judge(hunt)
   local target = hunt.target
-  if hunt.lost or not (target and target.valid) then return miss(hunt, "gone", hunt.last_pos) end
+  if hunt.lost or not (target and target.valid) then return "gone", hunt.last_pos end
   local h = hunt.kind == "harvest" and harvester.get(target) or nil
-  if (h and h.state == "carried") or target.surface.index ~= hunt.surface_index then
-    return miss(hunt, "escaped", hunt.last_pos)
-  end
-  if not terrain.has_sand_under(target) then return miss(hunt, "escaped", hunt.last_pos) end
-  if distance(target.position, hunt.warn_pos) > hunt.reach then return miss(hunt, "escaped", hunt.warn_pos) end
+  if (h and h.state == "carried") or target.surface.index ~= hunt.surface_index then return "escaped", hunt.last_pos end
+  if not terrain.has_sand_under(target) then return "escaped", hunt.last_pos end
+  if distance(target.position, hunt.warn_pos) > hunt.reach then return "escaped", hunt.warn_pos end
+  return nil
+end
+
+-- Entscheidung am Biss-Tick ohne Wurm (wie 0.7.0).
+local function decide(hunt)
+  local outcome, position = judge(hunt)
+  if outcome then return miss(hunt, outcome, position) end
   bite(hunt)
+end
+
+-- Biss-Fenster (docs/plan-3d2.md 4.9), jeder Takt mit state warning und tick ≥ eta_tick. Mit Wurm: nicht beißbar →
+-- Fehlbiss am Kopf und Suche; in Reichweite R → Biss; bis eta + BITE_WINDOW warten; dann Ersatzbiss. Ohne Wurm: decide.
+local function bite_window(hunt, tick)
+  local worm = hunt.worm
+  if not worm then
+    -- Noch in der Planung (nur mit Prüfstand-Haken möglich): auf ohne, dann wie 0.7.0.
+    if hunt.phase ~= "ohne" and hunt.phase ~= "suche" then sandworm_lib.to_none(hunt, "kein-weg") end
+    return decide(hunt)
+  end
+  local outcome = judge(hunt)
+  if outcome then
+    miss(hunt, outcome, worm.head)
+    hunt.phase = "suche"
+    return
+  end
+  local center = hunt.target.position
+  local dist = distance(worm.head, center)
+  hunt.bite_dist = dist
+  if dist <= lib.BITE_REACH + (hunt.r or DEFAULT_R) then return bite(hunt) end
+  if tick < hunt.eta_tick + lib.BITE_WINDOW then return end
+  hunt.ersatz = true
+  storage.hunts.ersatz = (storage.hunts.ersatz or 0) + 1
+  log(string.format("Arrakis: Ersatzbiss Jagd %d, Abstand %.1f, Phase %s", hunt.id, dist, tostring(hunt.phase)))
+  bite(hunt)
+end
+
+-- Zielpunkt P (docs/plan-3d2.md 1 „Zielpunkt“): Zielmitte, wenn das Ziel gültig, auf der Oberfläche der Jagd, nicht
+-- getragen und mit Sand darunter ist (nur im Zustand warning), sonst last_pos; am Reichweitenkreis um warn_pos geklemmt.
+local function aim_point(hunt)
+  local p = hunt.last_pos
+  local target = hunt.target
+  if hunt.state == "warning" and not hunt.lost and target and target.valid and target.surface.index == hunt.surface_index then
+    local h = hunt.kind == "harvest" and harvester.get(target) or nil
+    if not (h and h.state == "carried") and terrain.has_sand_under(target) then p = target.position end
+  end
+  local w = hunt.warn_pos
+  local dx, dy = p.x - w.x, p.y - w.y
+  local len = math.sqrt(dx * dx + dy * dy)
+  if len > hunt.reach and len > 0 then
+    local f = hunt.reach / len
+    return {x = w.x + dx * f, y = w.y + dy * f}
+  end
+  return {x = p.x, y = p.y}
+end
+
+-- Darf der Wurm die Entity am Punkt (hx, hy) zerdrücken (docs/plan-3d2.md 4.10 Schritt 2)? ctx = {zones, targets}.
+local function crushable(entity, hx, hy, surface_index, ctx)
+  if not victim_ok(entity) then return false end
+  local typ = entity.type
+  if NO_CRUSH[typ] then return false end
+  if lib.CRUSH_SPARES_VEHICLES and (typ == "character" or VEHICLE_TYPES[typ]) then return false end
+  local g = storage.grace[entity.force.index]
+  if g and not g.awake then return false end
+  if box_distance(entity, hx, hy) > lib.CRUSH_RADIUS then return false end
+  if not terrain.has_sand_under(entity) then return false end
+  local un = entity.unit_number
+  if un and ctx.targets[un] then return false end
+  for _, zone in ipairs(ctx.zones) do
+    if zone.surface_index == surface_index and box_distance(entity, zone.x, zone.y) <= lib.ZONE_RADIUS then return false end
+  end
+  return true
+end
+
+-- Zerdrücken (docs/plan-3d2.md 4.10): am Kopf dieses Takts, im Spawn-Takt an jedem vierten Knoten. Keine Eruption, kein
+-- Chat; worm.crushed zählt mit.
+local function crush(hunt, tick, ctx, worm_force)
+  local worm = hunt.worm
+  local unit = worm.unit
+  if not (unit and unit.valid) then return end
+  local surface = unit.surface
+  local points = {worm.head}
+  if worm.spawned == tick then
+    local _, nodes = sandworm_lib.head_of(hunt)
+    points = {}
+    for i = 1, #(nodes or {}), sandworm_lib.BODY_STEP do points[#points + 1] = nodes[i] end
+  end
+  local victims = new_victims()
+  local r = lib.CRUSH_RADIUS
+  for _, p in ipairs(points) do
+    local hx, hy = p.x, p.y
+    for _, entity in pairs(surface.find_entities_filtered{area = {{hx - r, hy - r}, {hx + r, hy + r}}}) do
+      if crushable(entity, hx, hy, hunt.surface_index, ctx) then sort_victim(victims, entity) end
+    end
+  end
+  if #victims.characters + #victims.vehicles + #victims.others == 0 then return end
+  local mode = settings.global[BITE_SETTING].value
+  local _, n = devour(victims, nil, mode, worm_force)
+  -- devour kann über Ereignisse anderer Mods den Wurm schon beendet haben.
+  if hunt.worm == worm then worm.crushed = worm.crushed + n end
 end
 
 -- Jagden in fester Reihenfolge (nach id), weil Aufrufe die Liste ändern.
@@ -760,21 +976,47 @@ local function sorted_ids()
   return ids
 end
 
--- 10-Tick-Takt: nachführen, beißen, Suche beenden.
+-- 10-Tick-Takt (docs/plan-3d2.md 4.3): 1. Zielpunkte und Ziele aller Jagden vor dem ersten Zerdrücken; 2. je Jagd nach
+-- id a. nachführen, b. sandworm.step, c. Zerdrücken, d. Biss-Fenster, e. Suche beenden. Die Sandwurm-Force holt der
+-- Takt einmal vor dem ersten step (docs/plan-3d2.md 1 „Force“).
 local function on_nth_tick_10(event)
   local list = storage.hunts.list
   if next(list) == nil then return end
   local tick = event.tick
-  for _, id in ipairs(sorted_ids()) do
+  local ids = sorted_ids()
+  local ctx = {zones = {}, targets = {}}
+  for _, id in ipairs(ids) do
+    local hunt = list[id]
+    local zone = aim_point(hunt)
+    hunt.zone = zone
+    ctx.zones[#ctx.zones + 1] = {x = zone.x, y = zone.y, surface_index = hunt.surface_index}
+    ctx.targets[hunt.target_un] = true
+  end
+  local worm_force
+  local function get_force()
+    if worm_force == nil then worm_force = game.forces[FORCE] or lib.ensure_force() or false end
+    return worm_force or nil
+  end
+  for _, id in ipairs(ids) do
     local hunt = list[id]
     if hunt then
-      if hunt.state == "warning" then
-        track(hunt, tick)
-        if list[id] == hunt and hunt.state == "warning" and tick >= hunt.eta_tick then decide(hunt) end
-      elseif hunt.state == "searching" then
-        if hunt.redraw then redraw(hunt) end
-        if tick >= hunt.end_tick then lib.end_hunt(hunt) end
+      if hunt.state == "warning" then track(hunt, tick) end
+      if list[id] == hunt and hunt.state == "searching" and hunt.redraw then redraw(hunt) end
+      if list[id] == hunt and (STEP_PHASES[hunt.phase] or (hunt.phase == "suche" and hunt.worm)) then
+        local force = get_force()
+        if force then
+          sandworm_lib.step(hunt, tick, force)
+        else
+          sandworm_lib.to_none(hunt, "keine-force")
+        end
       end
+      if not lib.NO_ROUTE_BITE and list[id] == hunt and hunt.state == "warning" and hunt.phase == "ohne"
+          and hunt.no_worm == "kein-weg" then
+        lib.end_hunt(hunt, nil, "quiet")
+      end
+      if list[id] == hunt and hunt.worm then crush(hunt, tick, ctx, get_force()) end
+      if list[id] == hunt and hunt.state == "warning" and tick >= hunt.eta_tick then bite_window(hunt, tick) end
+      if list[id] == hunt and hunt.state == "searching" and tick >= hunt.end_tick then lib.end_hunt(hunt) end
     end
   end
 end
@@ -910,6 +1152,9 @@ end
 
 -- 60-Tick-Takt Schritt 6: Alarme für Spieler, die ihn noch nicht haben, und Markierung nachholen [V6].
 local function hunts_second(tick)
+  -- Alte Pfad-Anfragen räumen, auch ohne laufende Jagd (docs/plan-3d2.md 4.5 „Aufräumen“).
+  local requests = storage.path_requests
+  if requests and next(requests) ~= nil then sandworm_lib.tidy(tick) end
   local list = storage.hunts.list
   if next(list) == nil then return end
   for _, id in ipairs(sorted_ids()) do
@@ -1029,19 +1274,39 @@ function lib.migrate_schema3(opts)
   end
 end
 
--- /arrakis-uninstall ja (scripts/flyer.lua): alle Jagden ohne Biss beenden, Alarme, Fenster und Anzeigen weg,
--- Verknüpfungen aus, Ernter-Status zurück, 10 min Pause, Sandwurm-Force mit enemy verschmelzen [V21]. Gibt die Zahl
--- der beendeten Jagden zurück.
+-- Schema 4 nachholen (docs/plan-3d2.md 4.14), bei jedem on_configuration_changed: Jede Jagd ohne phase oder ohne r (aus
+-- 0.7.0, auch nach 0.8.0 → 0.7.0 → 0.8.0) bekommt Phase ohne ("migration") und r aus dem Ziel (ungültig: 1,58).
+-- Prüfstand: opts = {hunts = {…}} nur diese Jagden.
+function lib.migrate_schema4(opts)
+  local hunts = opts and opts.hunts or storage.hunts.list
+  for _, hunt in pairs(hunts) do
+    if hunt.phase == nil or hunt.r == nil then
+      sandworm_lib.to_none(hunt, "migration")
+      if hunt.r == nil then
+        local target = hunt.target
+        hunt.r = (target and target.valid) and half_diagonal(target) or DEFAULT_R
+      end
+    end
+  end
+end
+
+-- /arrakis-uninstall ja (scripts/flyer.lua): alle Jagden ohne Biss beenden (Würmer tauchen still ab), Waisen auf allen
+-- Oberflächen, Alarme, Fenster und Anzeigen weg, Verknüpfungen aus, Ernter-Status zurück, 10 min Pause, Sandwurm-Force
+-- mit enemy verschmelzen [V21]. Gibt die Zahl der beendeten Jagden und die Zahl aller entfernten Sandwürmer zurück
+-- (docs/plan-3d2.md 4.14).
 function lib.uninstall()
-  local n = 0
+  local n, m = 0, 0
   local list = storage.hunts.list
   for _, id in ipairs(sorted_ids()) do
     local hunt = list[id]
     if hunt then
-      lib.end_hunt(hunt, nil, "abort")
+      if lib.end_hunt(hunt, nil, "abort") then m = m + 1 end
       n = n + 1
     end
   end
+  -- Vor dem Verschmelzen der Force: Waisen unseres Prototyps.
+  m = m + sandworm_lib.sweep()
+  storage.path_requests = {}
   storage.hunts.paused_until = game.tick + lib.PAUSE_TICKS
   for _, player in pairs(game.players) do
     player.remove_alert{type = defines.alert_type.custom, icon = ICON}
@@ -1057,7 +1322,7 @@ function lib.uninstall()
     local ok, err = pcall(game.merge_forces, FORCE, "enemy")
     if not ok then log("Arrakis: Sandwurm-Force nicht verschmolzen: " .. tostring(err)) end
   end
-  return n
+  return n, m
 end
 
 -- Prüfstand-Haken (Plan 4.18) ---------------------------------------------------------------------------
@@ -1092,6 +1357,21 @@ end
 -- Pause neuer Wurmzeichen bis zu diesem Tick (nil: keine).
 function lib.set_paused(until_tick)
   storage.hunts.paused_until = until_tick
+end
+
+-- Kein Wurm für Jagden der Force, die danach starten (docs/plan-3d2.md 4.18); on false oder nil schaltet zurück.
+function lib.set_worm_off(force, on)
+  storage.hunts.worm_off[force.index] = on and true or nil
+end
+
+-- Startrichtung k0 (0 bis 15) für jede danach startende Jagd der Force, auch reguläre; nil löscht.
+function lib.set_spawn_dir(force, k)
+  storage.hunts.spawn_dir[force.index] = k
+end
+
+-- Protokoll der letzten LOG_SIZE beendeten Jagden (Ring, log_next zeigt auf den nächsten Platz).
+function lib.hunt_log()
+  return storage.hunts.log
 end
 
 -- Ereignisse ---------------------------------------------------------------------------------------
@@ -1167,6 +1447,10 @@ local function on_force_created(event)
   if worm then set_hostile(worm, force) end
   storage.grace[force.index] = nil
   storage.worm_stats[force.index] = nil
+  -- Prüfstand-Merker (docs/plan-3d2.md 4.1); nil-sicher, falls eine andere Mod vor unserer Migration Forces anlegt.
+  local hunts = storage.hunts
+  if hunts.worm_off then hunts.worm_off[force.index] = nil end
+  if hunts.spawn_dir then hunts.spawn_dir[force.index] = nil end
 end
 
 -- Verschmelzen (Plan 4.14): Jagden zur Ziel-Force (redraw im 10-Tick-Takt), Statistik addieren, Datensätze der Quelle weg.
@@ -1186,20 +1470,84 @@ local function on_forces_merging(event)
     into.bitten = (into.bitten or 0) + (from.bitten or 0)
     into.escaped = (into.escaped or 0) + (from.escaped or 0)
     into.gone = (into.gone or 0) + (from.gone or 0)
+    into.killed = (into.killed or 0) + (from.killed or 0)
     local a, b = into.first_escape_tick, from.first_escape_tick
     if b and (not a or b < a) then into.first_escape_tick = b end
   end
   stats[source.index] = nil
   storage.grace[source.index] = nil
+  local hunts = storage.hunts
+  if hunts.worm_off then hunts.worm_off[source.index] = nil end
+  if hunts.spawn_dir then hunts.spawn_dir[source.index] = nil end
 end
 
--- Oberfläche wird gelöscht: Jagden dort ohne Biss beenden.
+-- Oberfläche wird gelöscht: Jagden dort ohne Biss beenden (der Wurm taucht still ab).
 local function on_pre_surface_deleted(event)
   local list = storage.hunts.list
   for _, id in ipairs(sorted_ids()) do
     local hunt = list[id]
     if hunt and hunt.surface_index == event.surface_index then lib.end_hunt(hunt, nil, "abort") end
   end
+end
+
+-- Oberfläche wird geleert (docs/plan-3d2.md 4.1): Ziel und Wurm verschwänden ohne Ereignis; deshalb jetzt Ende "abort",
+-- solange beide noch da sind (der Wurm taucht still ab).
+local on_pre_surface_cleared = on_pre_surface_deleted
+
+-- Jagd, zu deren Wurm diese Einheit gehört, oder nil.
+local function hunt_of_worm(unit)
+  if not (unit and unit.valid) then return nil end
+  local un = unit.unit_number
+  for _, hunt in pairs(storage.hunts.list) do
+    local worm = hunt.worm
+    if worm and worm.un == un then return hunt end
+  end
+  return nil
+end
+
+local function count_killed(hunt)
+  if hunt.debug then return end
+  local stats = stats_for(hunt.force_index)
+  stats.killed = (stats.killed or 0) + 1
+end
+
+-- Wurm getötet (docs/plan-3d2.md 4.11) [W8]: Wurm und Anfragen vergessen, Chat mit Ort; vor 0 Ende killed (das Ziel ist
+-- gerettet, KILL_RESCUES), in der Suche Ende mit dem schon gesetzten Ergebnis und killed + 1 dazu.
+local function on_segmented_unit_died(event)
+  local hunt = hunt_of_worm(event.segmented_unit)
+  if not hunt then return end
+  local where = hunt.worm.head
+  sandworm_lib.forget(hunt)
+  local target = hunt.target
+  local warning = hunt.state == "warning"
+  local rescued = lib.KILL_RESCUES and warning and not hunt.lost and target and target.valid
+  local force = force_of(hunt.force_index)
+  if force then
+    local place = gps_of(hunt.surface_index, where)
+    if rescued then
+      force.print({"arrakis-message.msg-worm-killed", place, hunt.target_name})
+    else
+      force.print({"arrakis-message.msg-worm-killed-plain", place})
+    end
+  end
+  if warning and lib.KILL_RESCUES then
+    lib.end_hunt(hunt, "killed")
+  elseif warning then
+    count_killed(hunt)
+    sandworm_lib.to_none(hunt, "verloren")
+  else
+    count_killed(hunt)
+    lib.end_hunt(hunt)
+  end
+end
+
+-- Wurm fremd zerstört (anderer Mod): Phase ohne ("verloren"), Biss bei 0 wie 0.7.0. Unser eigenes Abtauchen leert
+-- hunt.worm vorher und kommt hier nie an.
+local function on_worm_destroyed(event)
+  local hunt = hunt_of_worm(event.segmented_unit)
+  if not hunt then return end
+  sandworm_lib.forget(hunt)
+  sandworm_lib.to_none(hunt, "verloren")
 end
 
 lib.events =
@@ -1216,7 +1564,10 @@ lib.events =
   [defines.events.on_research_finished] = on_research_finished,
   [defines.events.on_force_created] = on_force_created,
   [defines.events.on_forces_merging] = on_forces_merging,
-  [defines.events.on_pre_surface_deleted] = on_pre_surface_deleted
+  [defines.events.on_pre_surface_deleted] = on_pre_surface_deleted,
+  [defines.events.on_pre_surface_cleared] = on_pre_surface_cleared,
+  [defines.events.on_segmented_unit_died] = on_segmented_unit_died,
+  [defines.events.script_raised_destroy_segmented_unit] = on_worm_destroyed
 }
 
 lib.on_nth_tick =
@@ -1230,11 +1581,34 @@ lib.on_init = function()
   for _, force in pairs(game.forces) do lib.grace_of(force) end
 end
 
--- Nach migrate (Schema 3): Force, Migration aus 0.6.x/0.5.x, Verknüpfungen angleichen [V9], Oberflächen, die es nicht
+-- Nach migrate (Schema 4): Force, Migration aus 0.6.x/0.5.x, Verknüpfungen angleichen [V9], Oberflächen, die es nicht
 -- mehr gibt oder die nicht mehr erlaubt sind, räumen (samt ihren Jagden), Fenster neu. Ring und Text prüft der
--- 10-Tick-Takt (valid) und zeichnet sie neu.
+-- 10-Tick-Takt (valid) und zeichnet sie neu. 3d2 (docs/plan-3d2.md 4.14), immer, unabhängig vom alten Schema: Tabellen
+-- anlegen, migrate_schema4, ungültige Würmer → verloren, Anfragen ohne Jagd weg, am Ende Waisen räumen.
 lib.on_configuration_changed = function()
   lib.ensure_force()
+  local hunts = storage.hunts
+  storage.path_requests = storage.path_requests or {}
+  hunts.worm_off = hunts.worm_off or {}
+  hunts.spawn_dir = hunts.spawn_dir or {}
+  hunts.log = hunts.log or {}
+  hunts.log_next = hunts.log_next or 1
+  hunts.ersatz = hunts.ersatz or 0
+  lib.migrate_schema4()
+  for _, id in ipairs(sorted_ids()) do
+    local hunt = hunts.list[id]
+    local worm = hunt.worm
+    if worm and not (worm.unit and worm.unit.valid) then
+      sandworm_lib.forget(hunt)
+      sandworm_lib.to_none(hunt, "verloren")
+    end
+  end
+  local requests = storage.path_requests
+  local orphans = {}
+  for request_id, entry in pairs(requests) do
+    if not hunts.list[entry.hunt] then orphans[#orphans + 1] = request_id end
+  end
+  for _, request_id in ipairs(orphans) do requests[request_id] = nil end
   local migration = storage.migration
   if migration.worms_pending then
     lib.migrate_schema3()
@@ -1259,6 +1633,9 @@ lib.on_configuration_changed = function()
     if hunt and gone[hunt.surface_index] then lib.end_hunt(hunt, nil, "abort") end
   end
   for s in pairs(gone) do vibration_lib.drop_surface(s) end
+  -- Würmer unseres Prototyps ohne Jagd auf allen Oberflächen (docs/plan-3d2.md 4.14).
+  local swept = sandworm_lib.sweep()
+  if swept > 0 then log("Arrakis: " .. swept .. " Sandwürmer ohne Jagd entfernt") end
   for _, player in pairs(game.connected_players) do
     worms_gui.destroy(player)
     worms_gui.refresh(player)

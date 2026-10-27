@@ -1178,8 +1178,10 @@ local function uninstall_command(command)
   else
     reply(player, {"arrakis-message.uninstall-stuck", n, rest})
   end
-  -- Danach die Würmer (docs/plan-3d1.md 4.16): Jagden ohne Biss, Markierungen, Fenster, Anzeigen, 10 min Pause.
-  reply(player, {"arrakis-message.uninstall-worms", worms_lib.uninstall()})
+  -- Danach die Würmer (docs/plan-3d1.md 4.16): Jagden ohne Biss, Markierungen, Fenster, Anzeigen, 10 min Pause; dazu
+  -- alle Sandwürmer (docs/plan-3d2.md 4.14), die zweite Zahl.
+  local hunts, worms = worms_lib.uninstall()
+  reply(player, {"arrakis-message.uninstall-worms", hunts, worms})
 end
 
 -- Takte ------------------------------------------------------------------------------------------
