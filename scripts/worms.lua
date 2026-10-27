@@ -121,13 +121,16 @@ local NO_VICTIM =
 }
 
 -- Nie zerdrückt (Plan 4.10 Schritt 2), dazu alles, was victim_ok ausnimmt; Fahrzeuge und Figuren nur mit
--- CRUSH_SPARES_VEHICLES = true.
+-- CRUSH_SPARES_VEHICLES = true. Rampen und Stützen gehören zur Hochbahn: Ohne sie hätte ein Zug, der über der Spur
+-- verschont bleibt, nichts mehr, worauf er fährt.
 local NO_CRUSH =
 {
   ["elevated-straight-rail"] = true,
   ["elevated-half-diagonal-rail"] = true,
   ["elevated-curved-rail-a"] = true,
   ["elevated-curved-rail-b"] = true,
+  ["rail-ramp"] = true,
+  ["rail-support"] = true,
   segment = true,
   ["segmented-unit"] = true
 }
