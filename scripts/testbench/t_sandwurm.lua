@@ -1672,17 +1672,21 @@ function steps.s6_eval(run, tb, d, s)
   local n = math.max(1, e.n)
   local d6, db, v6, vb = e.d6 / n, e.db / n, e.v6 / n, e.vb / n
   check(failed, e.n > 0 and d6 <= db + ESCORT_DIST, "mittlerer Abstand zum Zielpunkt O6 " .. tb.num(d6, 2) .. " statt ≤ O6b " .. tb.num(db, 2) .. " + 0,5")
-  check(failed, f.t6 and f.tb and f.t6 <= FLIGHT_RATIO * f.tb, "Flugzeit O6 " .. tostring(f.t6) .. " statt ≤ 1,02 × " .. tostring(f.tb))
   check(failed, f.over >= OVER_MIN, "O6 nur " .. f.over .. " Ticks des Flugs höchstens 3 Kacheln von einem Körperknoten statt ≥ 60")
-  check(failed, f.w6 and f.wb and f.w6 >= f.wb - OVER_LAG, "Weg O6 bis zum letzten Tick über dem Körper " .. tb.num(f.w6, 2) .. " statt ≥ O6b "
-    .. tb.num(f.wb, 2) .. " − 0,5")
+  -- Flugzeit und Weg vergleichen nur Flüge aus der Ruhe; sonst ist der Vergleich nicht aussagekräftig, und der Schritt sagt das
+  -- als eigenen FEHLER statt als Bremsen.
+  local r = s.rest or {}
+  if r.calm_ok then
+    check(failed, f.t6 and f.tb and f.t6 <= FLIGHT_RATIO * f.tb, "Flugzeit O6 " .. tostring(f.t6) .. " statt ≤ 1,02 × " .. tostring(f.tb))
+    check(failed, f.w6 and f.wb and f.w6 >= f.wb - OVER_LAG, "Weg O6 bis zum letzten Tick über dem Körper " .. tb.num(f.w6, 2) .. " statt ≥ O6b "
+      .. tb.num(f.wb, 2) .. " − 0,5")
+  else
+    check(failed, false, string.format("nach %s Ticks nicht in Ruhe (O6 %s, O6b %s Kacheln/s), Flugvergleich nicht aussagekräftig",
+      tostring(r.ticks), tb.num(r.v6, 2), tb.num(r.vb, 2)))
+  end
   -- Das Tempo im Mitflug ist MESSUNG: Die Zielpunkte springen mit Knoten 1 (W18), O6 folgt ihnen anders als O6b.
   if e.n > 0 and v6 < ESCORT_SPEED * vb then
     tb.log(run, "INFO", "6) mittleres Tempo O6 im Mitflug " .. tb.num(v6, 2) .. " unter 98 % von O6b " .. tb.num(vb, 2) .. " (nur MESSUNG)")
-  end
-  local r = s.rest or {}
-  if not r.calm_ok then
-    tb.log(run, "INFO", string.format("6) nach %s Ticks nicht in Ruhe (O6 %s, O6b %s Kacheln/s), Flug trotzdem", tostring(r.ticks), tb.num(r.v6, 2), tb.num(r.vb, 2)))
   end
   bite_checks(run, tb, s, w, {reach = w.R})
   general(run, tb, d, s, w)
