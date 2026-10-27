@@ -17,6 +17,9 @@ require("prototypes.planet.planet")
 require("prototypes.technology")
 -- Phase 3d1 (docs/plan-3d1.md 3): Eruption, Sandstaub, Signal, Geräusche, Vibrationsanzeige, Tipps.
 require("prototypes.worms")
+-- Phase 3d2 (docs/plan-3d2.md 3): Sandwurm, Bohrstaub, Auf- und Abtauchen. Direkt nach worms.lua: arrakis-worm-dive kopiert
+-- die Eruption.
+require("prototypes.sandworm")
 
 -- Prüfstand: nur mit Startup-Einstellung "arrakis-testbench".
 require("prototypes.testbench.init")
