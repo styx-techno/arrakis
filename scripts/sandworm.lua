@@ -67,10 +67,12 @@ lib.PATH_BOX_MIN = 1.5
 lib.WP_NEAR = 6
 lib.STATE_TICKS = 30
 lib.GOAL_MOVE = 2
--- Fels-Wächter (Plan 4.8): Vorausschau, Punktabstand, Seitenlinien (Kacheln).
+-- Fels-Wächter (Plan 4.8): Vorausschau, Punktabstand, Seitenlinien, Wenderadius des Prototyps (turn_radius bleibt
+-- Vanilla, Plan 2 „Tempo“) (Kacheln).
 lib.LOOKAHEAD = 18
 lib.LOOK_STEP = 2
 lib.SIDE = 1.5
+lib.TURN_RADIUS = 6
 -- Umwege: Längen, Winkel (Grad), erreicht je Länge (Kacheln), längste Dauer (Ticks); höchstens REROUTE_MAX Neuplanungen,
 -- dabei höchstens HOLD_MAX Ticks halten.
 lib.DETOUR_RADII = {30, 15, 8}
@@ -575,6 +577,7 @@ local function on_path(event)
     hunt.path = nil
     worm.route = route
     worm.wp = 1
+    worm.passing = nil
     worm.detour = nil
     worm.hold_since = nil
     worm.set_dest = nil
@@ -653,7 +656,7 @@ local function spawn(hunt, tick, force)
   local dest = chosen.route[1] or hunt.zone
   hunt.worm =
   {
-    unit = unit, un = unit.unit_number, spawned = tick, route = copy_points(chosen.route), wp = 1,
+    unit = unit, un = unit.unit_number, spawned = tick, route = copy_points(chosen.route), wp = 1, passing = nil,
     dest = {x = dest.x, y = dest.y}, set_tick = tick, set_dest = {x = dest.x, y = dest.y},
     mode = defines.segmented_unit_activity_mode.minimal, detour = nil, reroutes = 0, hold_since = nil,
     head = {x = head.x, y = head.y}, moved = {x = head.x, y = head.y, tick = tick}, detours = 0, samples = 0,
@@ -680,8 +683,9 @@ local function routing(hunt, tick, force)
   if plan.next <= #plan.list then
     if check_candidates(hunt, tick) then return end
     if plan.next <= #plan.list then return end
-    sort_route_cands(plan)
   end
+  -- Auch nach einem gescheiterten Spawn des letzten Listenkandidaten (dann kam der Takt nicht durch die Prüfung oben).
+  sort_route_cands(plan)
   next_route(hunt, tick, force)
 end
 
@@ -818,14 +822,32 @@ local function drive(hunt, tick, force)
     worm.detour = nil
     detour = nil
   end
-  -- Wegpunkt: weiter, sobald die Strecke zum folgenden (nach dem letzten: P) frei ist, spätestens 6 Kacheln davor.
+  -- Wegpunkt: weiter, sobald die Strecke zum folgenden frei ist (nach dem letzten: zum Reichweitenpunkt vor P, wie die
+  -- Vorausschau mit Haltepunkt R). Abweichung von Plan 4.7 (Trockenlauf 0.8.0, Tasche mit Knick): 6 Kacheln vor dem
+  -- Wegpunkt wechselt er nicht blind, denn dann schnitte die Strecke zum folgenden die innere Felsecke, und die Umwege um die
+  -- Kopfrichtung führten ihn aus dem Gang. Er fährt geradeaus weiter (Fahrziel 18 Kacheln voraus, die Engine patrouilliert
+  -- nicht), bis die Strecke frei ist; erst 6 Kacheln hinter dem Wegpunkt wechselt er doch, dann greift der Wächter.
   local route = worm.route
+  local straight = false
   if worm.wp <= #route then
     local current = route[worm.wp]
-    local following = route[worm.wp + 1] or P
-    if math.sqrt((current.x - hx) ^ 2 + (current.y - hy) ^ 2) <= lib.WP_NEAR
-        or line_clear(probe, hx, hy, following.x, following.y, lib.LOOK_STEP, lib.SIDE) then
+    local following = route[worm.wp + 1]
+    local fx, fy
+    if following then
+      fx, fy = following.x, following.y
+    else
+      local f = d > R and (d - R) / d or 0
+      fx, fy = hx + (P.x - hx) * f, hy + (P.y - hy) * f
+    end
+    if line_clear(probe, hx, hy, fx, fy, lib.LOOK_STEP, lib.SIDE) then
       worm.wp = worm.wp + 1
+      worm.passing = nil
+    elseif math.sqrt((current.x - hx) ^ 2 + (current.y - hy) ^ 2) <= lib.WP_NEAR then
+      worm.passing = true
+      straight = true
+    elseif worm.passing then
+      worm.wp = worm.wp + 1
+      worm.passing = nil
     end
   end
   local open = worm.wp <= #route
@@ -849,6 +871,7 @@ local function drive(hunt, tick, force)
     dest, hold = detour, detour.reached
   elseif open then
     dest, hold = route[worm.wp], lib.WP_NEAR
+    if straight then dest = {x = hx + h_x * lib.LOOKAHEAD, y = hy + h_y * lib.LOOKAHEAD} end
   elseif phase == "angriff" then
     local far_x, far_y = P.x + u_x * lib.BEHIND, P.y + u_y * lib.BEHIND
     if line_clear(probe, P.x, P.y, far_x, far_y, lib.LOOK_STEP, 0) and sand(probe, P.x, P.y) then
@@ -877,7 +900,12 @@ local function drive(hunt, tick, force)
         local g_x, g_y = unit_vector(dest.x - hx, dest.y - hy)
         blocked = not line_clear(probe, hx, hy, hx + g_x * L, hy + g_y * L, lib.LOOK_STEP, lib.SIDE)
         if not blocked and not detour then
-          blocked = not line_clear(probe, hx, hy, hx + h_x * L, hy + h_y * L, lib.LOOK_STEP, lib.SIDE)
+          -- Kopfrichtung nur so weit, wie der Bogen bis zur Drehung auf dest lang ist (Wenderadius · Winkel). Abweichung von
+          -- Plan 4.8 Schritt 3 (Trockenlauf 0.8.0): Nach dem Wechsel an einer Gangbiegung sähe die volle Länge die Wand
+          -- gegenüber, die er nie erreicht, und der Umweg um die Kopfrichtung führte aus dem Gang.
+          local a = math.acos(math.max(-1, math.min(1, h_x * g_x + h_y * g_y)))
+          local L_h = math.min(L, lib.TURN_RADIUS * a)
+          blocked = not line_clear(probe, hx, hy, hx + h_x * L_h, hy + h_y * L_h, lib.LOOK_STEP, lib.SIDE)
         end
       end
     end
@@ -958,9 +986,13 @@ local function drive(hunt, tick, force)
   end
 
   -- Sprint-Ersatz [W3]: Nach einem Sprint-Takt zählt slow, wenn der Kopf unter 0,9 des geschriebenen Tempos blieb.
+  -- Steht der Kopf (in STALL_TICKS käme er nicht STALL_DIST weit), hält ihn etwas auf [W10]: Das ist kein Sprintversagen,
+  -- sondern Sache des Stillstands (Plan 4.8 Schritt 6, 4.10 Schritt 4). Abweichung von Plan 4.9 (Trockenlauf 0.8.0): Sonst
+  -- schöbe die Ersatzstufe einen festgefahrenen Wurm in der Anfahrt weiter, und der Stillstand griffe nie.
   local last = worm.last_v
   if last and last > lib.V then
-    if measured < lib.BOOST_MIN * last then worm.slow = worm.slow + 1 else worm.slow = 0 end
+    local standing = measured * lib.STALL_TICKS / 60 < lib.STALL_DIST
+    if measured < lib.BOOST_MIN * last and not standing then worm.slow = worm.slow + 1 else worm.slow = 0 end
     if worm.slow >= lib.BOOST_TAKTS and worm.boost < 2 then
       worm.boost = worm.boost + 1
       worm.slow = 0
