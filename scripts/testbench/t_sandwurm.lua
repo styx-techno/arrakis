@@ -816,6 +816,9 @@ local function sample(run, tb, d, w, hunt, worm)
   w.sprint_n = worm.sprint
   if not w.v1 and w.spawn_tick and tick >= w.spawn_tick + 60 then w.v1 = read(function() return unit.speed end) end
   if w.v1 and not w.v1_tps then w.v1_tps = w.v1 * 60 end
+  -- W1 aus Schritt 2 gleich bei der Messung merken: Schritt 3 (Befehlsjagd, früheres eta) wertet vor Schritt 2 aus und
+  -- fände d.w1 sonst nie gesetzt (Nachprüfung 0.8.0).
+  if w.number == 2 and w.v1_tps and d.w1 == nil then d.w1 = w.v1_tps >= V_W1 end
   if not w.arrived and rec.d <= w.R then w.arrived = tick end
   if tick % 60 == 5 then
     tb.trace(run, string.format("%d) %s: %s, Phase %s, Kopf %s, Abstand %s, Tempo %s, Ziel %s", w.number, rel(tick, w.eta), state,
@@ -962,7 +965,9 @@ local function bite_checks(run, tb, s, w, opts)
   check(failed, delay and delay >= 0 and delay <= BITE_WINDOW, "Bissverzug " .. tostring(delay) .. " statt 0 bis 180")
   if delay and delay > 0 then tb.log(run, "INFO", w.number .. ") Bissverzug " .. delay .. " Ticks") end
   if not opts.ersatz_ok then check(failed, e.ersatz ~= true, "Ersatzbiss") end
-  if opts.reach then
+  -- Ein erlaubter Ersatzbiss kommt per Definition außer Reichweite (Plan 4.9 Biss-Fenster Fall 4); sonst würde Schritt 3
+  -- daraus doch FEHLER statt INFO (Nachprüfung 0.8.0).
+  if opts.reach and not (opts.ersatz_ok and e.ersatz) then
     check(failed, e.bite_dist and e.bite_dist <= opts.reach + R_TOLERANCE,
       "Abstand beim Biss " .. tb.num(e.bite_dist, 2) .. " statt ≤ " .. tb.num(opts.reach, 2))
   end
