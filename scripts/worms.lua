@@ -955,14 +955,15 @@ local function crushable(entity, hx, hy, surface_index, ctx)
   return true
 end
 
--- Zerdrücken (docs/plan-3d2.md 4.10): am Kopf dieses Takts, im Spawn-Takt an jedem vierten Knoten. Keine Eruption, kein
--- Chat, kein Alarm; worm.crushed zählt mit (Getötete; ein schwer beschädigter Ernter zählt nicht).
+-- Zerdrücken (docs/plan-3d2.md 4.10): am Kopf dieses Takts (Knoten 1, bis zu 1 Kachel hinter dem wahren Kopf, W18; steht
+-- er an etwas, auch an der Front worm.front), im Spawn-Takt an jedem vierten Knoten. Keine Eruption, kein Chat, kein Alarm;
+-- worm.crushed zählt mit (Getötete; ein schwer beschädigter Ernter zählt nicht).
 local function crush(hunt, tick, ctx, worm_force)
   local worm = hunt.worm
   local unit = worm.unit
   if not (unit and unit.valid) then return end
   local surface = unit.surface
-  local points = {worm.head}
+  local points = {worm.head, worm.front}
   if worm.spawned == tick then
     local _, nodes = sandworm_lib.head_of(hunt)
     points = {}

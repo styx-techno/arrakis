@@ -98,6 +98,12 @@ lib.DUST_PER_NODE = 2
 lib.BOOST_MIN = 0.9
 lib.BOOST_TAKTS = 2
 lib.PUSH_MAX = 0.4
+-- Tempo aus der Spur (W18): Knoten 1 springt im Raster von NODE_STEP Kacheln; Sprintprüfung über höchstens SPEED_TAKTS
+-- Sprint-Takte, Engine-Tempo und Kopftempo über MEAN_TAKTS Takte, Stehen nach STAND_TAKTS Takten ohne Knotensprung.
+lib.NODE_STEP = 1
+lib.SPEED_TAKTS = 30
+lib.MEAN_TAKTS = 12
+lib.STAND_TAKTS = 2
 -- tidy löscht Anfragen, die mindestens so alt sind (Ticks).
 lib.TIDY_AGE = 600
 
@@ -668,8 +674,8 @@ local function spawn(hunt, tick, force)
     unit = unit, un = unit.unit_number, spawned = tick, route = copy_points(chosen.route), wp = 1, passing = nil,
     dest = {x = dest.x, y = dest.y}, set_tick = tick, set_dest = {x = dest.x, y = dest.y},
     mode = defines.segmented_unit_activity_mode.minimal, detour = nil, reroutes = 0, hold_since = nil,
-    head = {x = head.x, y = head.y}, moved = {x = head.x, y = head.y, tick = tick}, detours = 0, samples = 0,
-    rock_box = 0, vmax = 0, crushed = 0, sprint = 0, boost = 0, slow = 0
+    head = {x = head.x, y = head.y}, moved = {x = head.x, y = head.y, tick = tick, want = 0}, detours = 0, samples = 0,
+    rock_box = 0, vmax = 0, crushed = 0, sprint = 0, boost = 0, slow = 0, trail = {}, judge = 0
   }
   hunt.spawn_tick = tick
   unit.minimum_activity_mode = defines.segmented_unit_activity_mode.minimal
@@ -772,6 +778,30 @@ local function push_nodes(hunt, unit, nodes, dx, dy, delta)
   return hx, hy
 end
 
+-- Spur des Kopfes (Plan 4.9, W18): Knoten 1 ist der letzte Spurpunkt der Engine. Er springt im Raster von NODE_STEP Kacheln
+-- und bleibt bis zu NODE_STEP hinter dem wahren Kopf zurück; je Takt kommt er bei 6 Kacheln/s 0, 1 oder 2 Kacheln weit, ein
+-- Takt allein misst also 0 oder 6 Kacheln/s (Prüfstand 2026-10-27, T21). Über ein Fenster aus n Takten bleibt der Fehler des
+-- Wegs unter NODE_STEP, gleich wie lang es ist: Nur Fenster messen das Tempo. Je Takt ein Eintrag: s = Weg von Knoten 1, w =
+-- im vorigen Takt geschriebenes Tempo (nil: die Engine fuhr V), p = Schub des vorigen Takts. judge zählt die Sprint-Takte am
+-- Ende der Spur für die Sprintprüfung. Würmer aus 0.8.0 bekommen die Spur hier (ohne Migration, Schema bleibt 4).
+local function record(worm, step)
+  local trail = worm.trail
+  if not trail then
+    trail = {}
+    worm.trail = trail
+    worm.judge = 0
+  end
+  local w = worm.last_v
+  trail[#trail + 1] = {s = step, w = w, p = worm.push or 0}
+  if #trail > lib.SPEED_TAKTS then table.remove(trail, 1) end
+  if w and w > lib.V then worm.judge = math.min(worm.judge + 1, lib.SPEED_TAKTS) else worm.judge = 0 end
+  -- Kopftempo der letzten MEAN_TAKTS Takte fürs Protokoll und den Prüfstand (Kacheln/s, Fehler unter 6 · NODE_STEP / n).
+  local n = math.min(#trail, lib.MEAN_TAKTS)
+  local sum = 0
+  for i = #trail - n + 1, #trail do sum = sum + trail[i].s end
+  worm.v_head = sum * 6 / n
+end
+
 -- Ein Takt mit Wurm (Phasen anfahrt, angriff, suche).
 local function drive(hunt, tick, force)
   local worm = hunt.worm
@@ -788,8 +818,8 @@ local function drive(hunt, tick, force)
   local h_x, h_y = unit_vector(hx - back.x, hy - back.y)
   if not h_x then h_x, h_y = unit_vector(worm.dest.x - hx, worm.dest.y - hy) end
   if not h_x then h_x, h_y = 0, -1 end
-  -- Tempo aus dem Kopfweg seit dem letzten Takt (Kacheln/s, Plan 4.9 „Sprint-Ersatz“).
-  local measured = math.sqrt((hx - worm.head.x) ^ 2 + (hy - worm.head.y) ^ 2) * 6
+  -- Kopfweg seit dem letzten Takt in die Spur (Plan 4.9 „Sprint-Ersatz“, W18); ausgewertet wird er unten beim Tempo.
+  record(worm, math.sqrt((hx - worm.head.x) ^ 2 + (hy - worm.head.y) ^ 2))
   worm.head = {x = hx, y = hy}
   local probe = new_probe(surface)
 
@@ -964,12 +994,31 @@ local function drive(hunt, tick, force)
     worm.mode = mode
   end
 
-  -- Stillstand (Plan 4.8 Schritt 6): nicht haltend und 300 Ticks weniger als 0,5 Kacheln Bewegung.
+  -- Stillstand (Plan 4.8 Schritt 6): nicht haltend und 300 Ticks weniger als 0,5 Kacheln Bewegung. Im Raster (W18) heißt
+  -- das: 300 Ticks kein Knotensprung, der wahre Kopf kam also weniger als NODE_STEP weit. Abweichung von Plan 4.8 Schritt 6
+  -- (0.8.1, W18): Es zählt nur, wenn ihn das geschriebene Tempo (ohne Schreiben V) seit dem letzten Sprung mindestens
+  -- STALL_DIST + NODE_STEP weit getragen hätte (want). Sonst tauchte ein Wurm ab, der vor der Zeit langsam fährt (v = S / t
+  -- unter 0,2 Kacheln/s, etwa nach dem Halten): Bis Knoten 1 springt, vergehen dabei mehr als 300 Ticks. Ein Wurm aus 0.8.0
+  -- (ohne want) zählt wie bisher bis zum nächsten Sprung.
   local moved = worm.moved
   if worm.hold_since or math.sqrt((moved.x - hx) ^ 2 + (moved.y - hy) ^ 2) > lib.STALL_DIST then
-    worm.moved = {x = hx, y = hy, tick = tick}
-  elseif tick - moved.tick >= lib.STALL_TICKS then
-    return abort_worm(hunt, "stillstand")
+    worm.moved = {x = hx, y = hy, tick = tick, want = 0}
+  else
+    if moved.want then moved.want = moved.want + (worm.last_v or lib.V) / 6 end
+    if tick - moved.tick >= lib.STALL_TICKS and (moved.want or math.huge) >= lib.STALL_DIST + lib.NODE_STEP then
+      return abort_worm(hunt, "stillstand")
+    end
+  end
+  -- Front (W18): Kam Knoten 1 seit dem letzten Sprung nicht weiter, obwohl ihn das Tempo STALL_DIST + NODE_STEP weit
+  -- getragen hätte, hält ihn etwas vor dem Kopf auf, und der wahre Kopf steht bis zu NODE_STEP vor Knoten 1. Dort zerdrückt
+  -- er dann auch (worms.lua); sonst erreichte er ein Fahrzeug, an dem er steht [W10], im Raster nicht immer und tauchte nach
+  -- dem Stillstand ab, statt es zu zerdrücken (Trockenlauf 0.8.1). Fährt er frei und hält die Engine das Tempo, springt
+  -- Knoten 1 vorher (spätestens nach 1 Kachel wahrem Weg), und es gibt keine.
+  local carried = worm.moved.want
+  if carried and carried >= lib.STALL_DIST + lib.NODE_STEP then
+    worm.front = {x = hx + h_x * lib.NODE_STEP, y = hy + h_y * lib.NODE_STEP}
+  else
+    worm.front = nil
   end
 
   -- Tempo (Plan 4.9): v in Kacheln/s, nil = nichts schreiben (die Engine fährt V).
@@ -1001,26 +1050,59 @@ local function drive(hunt, tick, force)
     worm.hold_since = nil
   end
 
-  -- Sprint-Ersatz [W3]: Nach einem Sprint-Takt zählt slow, wenn der Kopf unter 0,9 des geschriebenen Tempos blieb.
-  -- Steht der Kopf (in STALL_TICKS käme er nicht STALL_DIST weit), hält ihn etwas auf [W10]: Das ist kein Sprintversagen,
-  -- sondern Sache des Stillstands (Plan 4.8 Schritt 6, 4.10 Schritt 4). Abweichung von Plan 4.9 (Trockenlauf 0.8.0): Sonst
-  -- schöbe die Ersatzstufe einen festgefahrenen Wurm in der Anfahrt weiter, und der Stillstand griffe nie.
+  -- Sprint-Ersatz [W3] über die Spur (W18): Nach einem Sprint-Takt zählt slow, wenn der Kopfweg im Fenster (die letzten
+  -- judge Sprint-Takte) samt Schub auch mit dem Rasterfehler NODE_STEP unter BOOST_MIN des geschriebenen Wegs blieb. So
+  -- zählt kein Takt, in dem die Engine das Tempo hält, und ein Wurm, der nur V fährt, fällt nach etwa 7 Sprint-Takten auf;
+  -- nach einer neuen Stufe beginnt das Fenster neu. Abweichung von Plan 4.9 (Prüfstand 2026-10-27): Er verglich den Weg
+  -- eines Takts, der im Raster nur 0 oder 6 Kacheln/s zeigt, und hätte nie gegriffen.
+  -- Steht der Kopf (in STAND_TAKTS Takten unter STALL_DIST Weg, im Raster: kein Knotensprung, wahr unter 3 Kacheln/s und
+  -- damit unter V), hält ihn etwas auf [W10]: Das ist kein Sprintversagen, sondern Sache des Stillstands (Plan 4.8 Schritt 6,
+  -- 4.10 Schritt 4), und das Fenster beginnt neu. Abweichung von Plan 4.9 (Trockenlauf 0.8.0): Sonst schöbe die Ersatzstufe
+  -- einen festgefahrenen Wurm in der Anfahrt weiter, und der Stillstand griffe nie.
+  local trail = worm.trail
   local last = worm.last_v
   if last and last > lib.V then
-    local standing = measured * lib.STALL_TICKS / 60 < lib.STALL_DIST
-    if measured < lib.BOOST_MIN * last and not standing then worm.slow = worm.slow + 1 else worm.slow = 0 end
+    local n, k = #trail, worm.judge
+    local recent, walked, want = 0, 0, 0
+    for i = math.max(1, n - lib.STAND_TAKTS + 1), n do recent = recent + trail[i].s end
+    for i = n - k + 1, n do
+      walked = walked + trail[i].s
+      want = want + trail[i].w / 6
+    end
+    if n >= lib.STAND_TAKTS and recent < lib.STALL_DIST then
+      worm.slow = 0
+      worm.judge = 0
+    elseif walked + lib.NODE_STEP < lib.BOOST_MIN * want then
+      worm.slow = worm.slow + 1
+    else
+      worm.slow = 0
+    end
     if worm.slow >= lib.BOOST_TAKTS and worm.boost < 2 then
       worm.boost = worm.boost + 1
       worm.slow = 0
-      log(string.format("Arrakis: Sandwurm der Jagd %d sprintet nicht (%.2f statt %.2f Kacheln/s), Ersatzstufe %d",
-        hunt.id, measured, last, worm.boost))
+      worm.judge = 0
+      log(string.format("Arrakis: Sandwurm der Jagd %d sprintet nicht (%.2f statt %.2f Kacheln/s in %d Takten), Ersatzstufe %d",
+        hunt.id, walked * 6 / k, want * 6 / k, k, worm.boost))
     end
   else
     worm.slow = 0
   end
-  -- Der fehlende Weg zählt gegen das Tempo der Engine allein: Der Kopfweg des letzten Takts enthält den Schub von damals,
-  -- sonst wechselten volle und fast leere Schübe ab (im Mittel etwa 4,7 statt 6 Kacheln/s).
-  local engine = measured - (worm.push or 0) * 6
+  -- Tempo der Engine allein für den Schub: Kopfweg ohne die eigenen Schübe über die letzten MEAN_TAKTS Sprint-Takte (Fehler
+  -- unter 6 · NODE_STEP / n Kacheln/s), bei weniger als der Hälfte davon V. Ein Takt allein enthielte den Rasterfehler ganz,
+  -- und ohne den Abzug wechselten volle und fast leere Schübe ab (im Mittel etwa 4,7 statt 6 Kacheln/s).
+  local engine = lib.V
+  do
+    local sum, n = 0, 0
+    for i = #trail, 1, -1 do
+      local e = trail[i]
+      if e.w and e.w > lib.V then
+        sum = sum + e.s - e.p
+        n = n + 1
+        if n >= lib.MEAN_TAKTS then break end
+      end
+    end
+    if n >= lib.MEAN_TAKTS / 2 then engine = sum * 6 / n end
+  end
   local pushed = 0
   if v then
     unit.speed = v / 60
