@@ -74,8 +74,8 @@ lib.LOG_SIZE = 20
 -- Plan 1 „Zerdrücken“, Max 27.10.: Auch Fahrzeuge (VEHICLE_TYPES, auch Spice-Ernter) und Figuren sterben im Weg, ohne
 -- eigenen Alarm; ein Spice-Ernter nach der Einstellung arrakis-worm-bite wie beim Biss (devour), Insassen wie beim
 -- Totalverlust. true: Das Zerdrücken schont Fahrzeuge und Figuren (die alte Standardwahl des Plans bis 27.10.).
--- Diesen Wert nennen auch die Texte arrakis-sandworm-small und arrakis-wormsign-tip (locale/*/arrakis.cfg), T21
--- Schritt 8 liest ihn hier.
+-- Diesen Wert nennen auch die Texte arrakis-sandworm-small und arrakis-wormsign-tip (locale/*/arrakis.cfg) und
+-- gui-careful-tooltip (locale/*/messages.cfg); T21 Schritt 8 liest ihn hier.
 lib.CRUSH_SPARES_VEHICLES = false
 -- Plan 1 „Wurm getötet“, Max 27.10.: ja. Ein Wurm, der vor 0 stirbt, beendet die Jagd als killed, das Ziel ist gerettet.
 -- false: Die Jagd läuft ohne Wurm weiter (Phase ohne, "verloren") und beißt bei 0 wie 0.7.0; killed zählt trotzdem.
@@ -130,6 +130,15 @@ local NO_CRUSH =
   ["elevated-curved-rail-b"] = true,
   segment = true,
   ["segmented-unit"] = true
+}
+-- Schienenfahrzeuge: Über dem Boden (draw_data.height > 0, auf Hochschiene oder Rampe) zerdrückt der Wurm sie nicht,
+-- wie die Hochschiene darunter (Gegenprüfung 0.8.0; draw_data gibt es nur für diese Typen, A23 classes.d.ts:7849).
+local ROLLING_STOCK =
+{
+  locomotive = true,
+  ["cargo-wagon"] = true,
+  ["fluid-wagon"] = true,
+  ["artillery-wagon"] = true
 }
 -- Halbe Diagonale, wenn das Ziel fehlt (Spice-Ernter, Plan 4.14).
 local DEFAULT_R = 1.58
@@ -930,6 +939,7 @@ local function crushable(entity, hx, hy, surface_index, ctx)
   local typ = entity.type
   if NO_CRUSH[typ] then return false end
   if lib.CRUSH_SPARES_VEHICLES and (typ == "character" or VEHICLE_TYPES[typ]) then return false end
+  if ROLLING_STOCK[typ] and entity.draw_data.height > 0 then return false end
   local g = storage.grace[entity.force.index]
   if g and not g.awake then return false end
   if box_distance(entity, hx, hy) > lib.CRUSH_RADIUS then return false end

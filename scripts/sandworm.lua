@@ -152,9 +152,17 @@ local function spawn_lead(L)
   return math.ceil((L / lib.V + lib.LEAD) * 6 - EPS) * 10
 end
 
--- Passt ein Weg der Länge L noch in die Restzeit (L / V + 1 ≤ (eta − tick) / 60, Plan 4.5)?
-local function fits(hunt, L, tick)
-  return L / lib.V + 1 <= (hunt.eta_tick - tick) / 60
+-- Passt ein Weg der Länge L noch in die Restzeit (L / V + 1 ≤ (eta − tick) / 60, Plan 4.5)? deadline statt eta_tick
+-- für die Neuplanung (reroute_deadline).
+local function fits(hunt, L, tick, deadline)
+  return L / lib.V + 1 <= ((deadline or hunt.eta_tick) - tick) / 60
+end
+
+-- Frist der Neuplanung vom Kopf: eta, in der Suche end_tick. Abweichung von Plan 4.5 und 4.8 Schritt 5 (Gegenprüfung
+-- 0.8.0): Gemessen an eta passte in der Suche nie ein Weg; der Wurm hielt bis zur Antwort und tauchte mit "kein-weg" ab.
+local function reroute_deadline(hunt)
+  if hunt.state == "searching" and hunt.end_tick then return hunt.end_tick end
+  return hunt.eta_tick
 end
 
 -- Sand (Plan 4.4 Schritt 4): Chunk erzeugt und natürliche Kachel kein Fels. Ungenerierte Chunks zählen als Fels.
@@ -570,7 +578,8 @@ local function on_path(event)
     return failed(hunt, tick)
   end
   local route, L = take_route(hunt, path.start, event.path)
-  if not route or not fits(hunt, L, tick) then return failed(hunt, tick) end
+  local deadline = path.kind == "reroute" and reroute_deadline(hunt) or nil
+  if not route or not fits(hunt, L, tick, deadline) then return failed(hunt, tick) end
   if path.kind == "reroute" then
     local worm = hunt.worm
     if not worm then return lib.drop_requests(hunt) end
@@ -808,11 +817,15 @@ local function drive(hunt, tick, force)
     return
   end
 
-  -- Offene Neuplanung: Wiederholung, Zeitablauf, höchstens HOLD_MAX halten.
+  -- Offene Neuplanung: Wiederholung, Zeitablauf, höchstens HOLD_MAX halten; passt kein Weg mehr in die Frist (unter 1 s
+  -- Rest), endet sie gleich als Fehlschlag (Gegenprüfung 0.8.0, wie reroute_deadline).
   if hunt.path then
     path_takt(hunt, tick, force)
     if hunt.worm ~= worm then return end
-    if hunt.path and worm.hold_since and tick - worm.hold_since >= lib.HOLD_MAX then return failed(hunt, tick, force) end
+    if hunt.path and worm.hold_since
+        and (tick - worm.hold_since >= lib.HOLD_MAX or not fits(hunt, 0, tick, reroute_deadline(hunt))) then
+      return failed(hunt, tick, force)
+    end
   end
   local rerouting = hunt.path ~= nil
 
@@ -918,7 +931,10 @@ local function drive(hunt, tick, force)
         dest, hold = found, found.reached
         force_state = true
         if phase == "angriff" then phase = "anfahrt" end
-      elseif worm.reroutes < lib.REROUTE_MAX then
+      elseif worm.reroutes < lib.REROUTE_MAX and fits(hunt, 0, tick, reroute_deadline(hunt)) then
+        -- Nur, solange überhaupt ein Weg in die Frist passen kann (Gegenprüfung 0.8.0): Ab 1 s vor eta (in der Suche vor
+        -- end_tick) hielte er sonst für eine Antwort, die nie gilt. So taucht er gleich ab ("kein-weg"), und ohne Wurm beißt
+        -- es bei 0 wie 0.7.0, nach 0 im selben Takt (Biss-Fenster).
         hunt.phase = phase
         start_reroute(hunt, tick, force, hx, hy)
         if hunt.worm ~= worm then return end

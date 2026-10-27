@@ -1563,7 +1563,10 @@ end
 
 -- Schritt 8: Zerdrücken (Feld 8) [W10, W15]. Linie westlich von K8. Max 27.10.: Auto samt Fahrer und Figur auf der
 -- Linie sterben mit (worms.CRUSH_SPARES_VEHICLES = false); ein Auto 6 Kacheln neben der Spur und der Ernter H8 6 Kacheln
--- daneben (Plan: 3; die Box ±1,1 läge dann in der Spur) bleiben.
+-- daneben (Plan: 3; die Box ±1,1 läge dann in der Spur) bleiben. Die Felskiste steht im Zerdrückradius (Gegenprüfung
+-- 0.8.0: bei −30 und 4 Kacheln neben der Linie lag sie außerhalb, und nichts prüfte die Sandregel): Felsfleck 2 × 2 mit
+-- dem Rand 1,5 Kacheln neben der Linie bei −14, also erst im Angriff (Kopf höchstens 40 vor K8), in dem die Vorausschau
+-- nur die Mittellinie prüft; die Vorausschau der Anfahrt reicht höchstens bis −22.
 function steps.s8_build(run, tb, d, s)
   local c = field(d, 8)
   s.c = c
@@ -1598,8 +1601,15 @@ function steps.s8_build(run, tb, d, s)
   if iron then iron.destructible = false end
   add(s.keep, "Eisenkiste (unzerstörbar)", iron)
   s.cross.iron = iron and iron.position.x
-  tiles(surface, n - 32, m + 3, n - 29, m + 6, ROCK)
-  add(s.keep, "Felskiste", make(run, tb, s, {name = CHEST, position = {x = n - 30 + 0.5, y = m + 4 + 0.5}, force = force}))
+  tiles(surface, n - 14, m + 2, n - 13, m + 3, ROCK)
+  local rock_chest = make(run, tb, s, {name = CHEST, position = {x = n - 14 + 0.5, y = m + 2 + 0.5}, force = force})
+  add(s.keep, "Felskiste", rock_chest)
+  s.rock_box = rock_chest and box_copy(rock_chest.bounding_box)
+  -- Nur die Sandregel darf sie schützen: Box höchstens CRUSH_RADIUS von der Linie und ganz auf Fels.
+  local rock_gap = rock_chest and box_distance(s.rock_box, rock_chest.position.x, c.y)
+  if rock_chest and (rock_gap >= worms_lib.CRUSH_RADIUS or terrain.has_sand_under(rock_chest)) then
+    return fail(run, tb, 8, "Felskiste nicht ganz auf Fels im Zerdrückradius der Linie (Abstand " .. tb.num(rock_gap, 2) .. ")")
+  end
   local flyer = new_flyer(run, tb, d, s, at(c, -25, 0), {pilot = true})
   add(s.keep, "Ornithopter", flyer)
   add(s.keep, "Pilot", pilot_of(flyer))
@@ -1681,6 +1691,14 @@ function steps.s8_eval(run, tb, d, s)
     if not ok then table.insert(hurt, entry.label) end
   end
   check(failed, #hurt == 0, "nicht heil: " .. table.concat(hurt, ", "))
+  -- Sonst sagt „Felskiste heil“ nichts über die Sandregel.
+  local closest
+  for _, p in ipairs(s.track or {}) do
+    local gap = box_distance(s.rock_box, p.x, p.y)
+    if gap and (not closest or gap < closest) then closest = gap end
+  end
+  check(failed, closest and closest <= worms_lib.CRUSH_RADIUS, "Kopf nie im Zerdrückradius der Felskiste (kleinster Abstand "
+    .. tb.num(closest, 2) .. "): Sandregel ungeprüft")
   local z = died(d, s.z_un)
   check(failed, z and z.tick == e.bite_tick, "Kiste Z " .. (z and rel(z.tick, w.eta) or "lebt") .. " statt im Biss-Takt")
   check(failed, e.dive ~= "stillstand", "abgetaucht wegen Stillstand")
@@ -1694,7 +1712,7 @@ function steps.s8_eval(run, tb, d, s)
     end
   end
   tb.log(run, "MESSUNG", "8) Weg des Kopfes 60 Ticks vor/nach: " .. travel_text(tb, s) .. "; Lage danach: " .. (#where > 0 and table.concat(where, ", ") or "–")
-    .. "; zerdrückt laut Protokoll " .. tostring(e.crushed))
+    .. "; zerdrückt laut Protokoll " .. tostring(e.crushed) .. "; Kopf bis " .. tb.num(closest, 2) .. " an der Felskiste")
   return verdict(run, tb, 8, "Zerdrücken [W10, W15]", failed, string.format("%d zerdrückt (Fahrzeuge und Figuren %s), %d heil, Z %s, Biss %s",
     #s.crush, worms_lib.CRUSH_SPARES_VEHICLES and "verschont" or "mit", #s.keep, z and rel(z.tick, w.eta) or "lebt", rel(e.bite_tick, w.eta)))
 end
@@ -2451,9 +2469,11 @@ t22_enter[4] = function(run, tb, d)
   t22_make(run, tb, d, {name = CHEST, position = at(o, 10, y), force = d.force})
   new_car(run, tb, d, d.made, at(o, 30, y), {force = d.force})
   new_car(run, tb, d, d.made, at(o, 30, y - 6), {force = d.force})
+  -- Felskiste im Zerdrückradius, nur durch die Sandregel geschützt; 16 Kacheln vor dem Ziel, also im Angriff (wie T21
+  -- Schritt 8, Gegenprüfung 0.8.0).
   local n, m = math.floor(o.x), math.floor(o.y) + y
-  tiles(surface, n + 48, m + 3, n + 51, m + 6, ROCK)
-  t22_make(run, tb, d, {name = CHEST, position = {x = n + 50 + 0.5, y = m + 4 + 0.5}, force = d.force})
+  tiles(surface, n + 84, m + 2, n + 85, m + 3, ROCK)
+  t22_make(run, tb, d, {name = CHEST, position = {x = n + 84 + 0.5, y = m + 2 + 0.5}, force = d.force})
   local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, y), force = d.force})
   if not chest then return tb.log(run, "FEHLER", "4) Kiste ließ sich nicht bauen") end
   t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, y), direction = defines.direction.east}},

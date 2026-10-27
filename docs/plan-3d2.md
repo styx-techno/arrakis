@@ -16,7 +16,8 @@ welcher Test sie entscheidet und was gilt, wenn sie nicht hält. W statt V, weil
 
 **Antworten von Max (27.10.2026):** Alle vier Fragen in 1 mit „ja“ beantwortet (ROUTING, Sprint, Zerdrücken, Wurm getötet). Neu ist damit nur das
 Zerdrücken: Der Wurm zerdrückt auf seinem Weg auch Fahrzeuge (Autos, Panzer, Spice-Ernter) und Figuren, ohne eigenen Alarm (Festlegung „Zerdrücken“).
-Abschnitte 0, 4.10, 4.12, 6 und 7 nennen stellenweise noch die alte Standardwahl („Fahrzeuge und Figuren nie“); dort gilt die Festlegung in 1.
+Abschnitte 0, 4.10, 6 und 7 nennen stellenweise noch die alte Standardwahl („Fahrzeuge und Figuren nie“); dort gilt die Festlegung in 1 (4.12 ist seit der
+Gegenprüfung angeglichen).
 Im Code ist jede Antwort eine benannte Konstante: `CRUSH_SPARES_VEHICLES = false`, `KILL_RESCUES = true`, `NO_ROUTE_BITE = true` (scripts/worms.lua),
 `SPRINT = true` (scripts/sandworm.lua).
 
@@ -80,7 +81,7 @@ Im Code ist jede Antwort eine benannte Konstante: `CRUSH_SPARES_VEHICLES = false
 | Wächter | Alle 10 Ticks: Kopfmitte auf Fels oder in ungeneriertem Chunk → sofort abtauchen. Vorausschau längs Kopfrichtung und zum Ziel, je höchstens 18 Kacheln und nie über den Haltepunkt hinaus, Mittellinie und zwei Seitenlinien (±1,5) alle 2 Kacheln. Fels → Umweg ±30/60/90°, erst 30, dann 15, dann 8 Kacheln weit; ohne Umweg einmal Neuplanung vom Kopf (`request_path`), sonst abtauchen. 300 Ticks ohne 0,5 Kacheln Bewegung → abtauchen | DOC 4.3 „Fels-Wächter“, Werte aus T6 C (0 Messpunkte auf Fels). Die Seitenlinien sollen die 14 Berührungen der Kopfbox senken; „nie über das Ziel hinaus“ (DOC, Angriff) gilt für jedes Ziel, auch Wegpunkt und Suchort. T6 C prüfte 30 Kacheln nur auf offenem Sand; in einem Gang passen erst die kurzen Umwege [W17] |
 | Angriff | Erst, wenn kein Wegpunkt und kein Umweg mehr offen ist, der Kopf höchstens 40 Kacheln von P ist und die Linie Kopf → Reichweitenpunkt Sand ist (zurück zur Anfahrt über 50, bei einem Umweg oder neuer Route): Fahrziel 20 Kacheln hinter P, wenn die Linie P → dort Sand ist, sonst 6 Kacheln hinter P (auch über Fels); `minimum_activity_mode = full`; Tempo je Takt `clamp(S / Restzeit, 0, 6)` mit dem Restweg S; in Reichweite vor 0: Tempo 0 (halten) | DOC 4.3 Schritte 5 und 6; T5 c: Drosseln per `speed` alle 10 Ticks wirkt. Mit offenen Wegpunkten schnitte die Linie zu P den Fels der Route. Das Fahrziel liegt nie näher als 6 Kacheln hinter dem Haltepunkt, weil die Engine 4 Kacheln vor dem Fahrziel auf `patrolling` wechselt (T5 a) und ein kleines Ziel (R unter 4, etwa Pumpe oder Bohrer) sonst nie erreicht würde; gehalten wird über das Tempo |
 | Sprint | Zu spät (Restweg / 3,5 > Restzeit − 1 s) oder nach 0 noch nicht in Reichweite: `speed` je Takt bis 6 Kacheln/s, also über `target_speed` [W3]; Ersatz 1 `move_forward`, Ersatz 2 Knotenschub per `set_body_nodes` (4.9) (Frage an Max; Max 27.10.: ja, `SPRINT = true`) | DOC nannte 6 Kacheln/s; `attacking` scheitert (T5 b), also Tempo per Skript. Ohne Sprint bekommt ein Ernter, der einpackt und davonfährt, in etwa 40 % der Anfahrtsrichtungen den Ersatzbiss bei 0 + 3 s, während der Wurm noch etwa 50 Kacheln zurück ist (4.9); die Reichweite (P am Kreis) bleibt 3,5 Kacheln je Sekunde Countdown |
-| Zerdrücken | Nur der Kopf, alle 10 Ticks, und beim Auftauchen einmal an jedem vierten Knoten: Es stirbt jede Entity mit Gesundheit, deren Box höchstens 2,5 Kacheln von der Mitte liegt und Sand berührt, auch Fahrzeuge (`VEHICLE_TYPES`: Autos, Panzer, Spice-Ernter) und Figuren (Max 27.10.). Ein Spice-Ernter folgt dabei `arrakis-worm-bite` wie beim Biss (`devour`): Totalverlust samt Insassen oder schwer beschädigt; andere Fahrzeuge sterben samt Insassen. Ausgenommen ist alles, was der Biss ausnimmt (Ornithopter samt Insassen, Spinnenbeine, Ressourcen, Leichen, Geister, Klippen, `destructible == false`, Sandwurm-Force), dazu Hochschienen, Segmente, Entities einer Force, die noch nicht wach ist (`storage.grace[i].awake == false`), jedes Ziel einer laufenden Jagd und alles bis 5 Kacheln um deren Schutzpunkt. Keine Eruption, kein Chat, kein Alarm (Frage an Max: auch Fahrzeuge und Figuren? Max 27.10.: ja, auch Fahrzeuge und Figuren; `CRUSH_SPARES_VEHICLES = false`, mit `true` die alte Standardwahl) | DOC 2.1 Schritt 9: „Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand“. Bis 27.10. galt hier „Fahrzeuge und Figuren nicht“ mit dieser Begründung: Ein Ernter im Vorsichtsmodus darf nur einer laufenden Jagd auf sich selbst oder einem Biss nebenan zum Opfer fallen (DOC 2.1 Schritt 6, P3D1 1 „Grenze Vorsicht“), und ein Nachbar im Gang der Anfahrt bekäme weder Alarm noch Countdown. Forces in der Schonfrist verlieren nichts (DOC 2.1 Schritt 3). Der Körper folgt der Kopfspur (DOC 4.3), also reicht der Kopf. Die Schutzzone (Bissradius 4 + 1) hält „nie vor 0“ für alles, was der Biss treffen könnte |
+| Zerdrücken | Nur der Kopf, alle 10 Ticks, und beim Auftauchen einmal an jedem vierten Knoten: Es stirbt jede Entity mit Gesundheit, deren Box höchstens 2,5 Kacheln von der Mitte liegt und Sand berührt, auch Fahrzeuge (`VEHICLE_TYPES`: Autos, Panzer, Spice-Ernter) und Figuren (Max 27.10.). Ein Spice-Ernter folgt dabei `arrakis-worm-bite` wie beim Biss (`devour`): Totalverlust samt Insassen oder schwer beschädigt; andere Fahrzeuge sterben samt Insassen. Ausgenommen ist alles, was der Biss ausnimmt (Ornithopter samt Insassen, Spinnenbeine, Ressourcen, Leichen, Geister, Klippen, `destructible == false`, Sandwurm-Force), dazu Hochschienen samt Schienenfahrzeugen darauf (`draw_data.height > 0`, auch auf der Rampe; Gegenprüfung 0.8.0), Segmente, Entities einer Force, die noch nicht wach ist (`storage.grace[i].awake == false`), jedes Ziel einer laufenden Jagd und alles bis 5 Kacheln um deren Schutzpunkt. Keine Eruption, kein Chat, kein Alarm (Frage an Max: auch Fahrzeuge und Figuren? Max 27.10.: ja, auch Fahrzeuge und Figuren; `CRUSH_SPARES_VEHICLES = false`, mit `true` die alte Standardwahl) | DOC 2.1 Schritt 9: „Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand“. Bis 27.10. galt hier „Fahrzeuge und Figuren nicht“ mit dieser Begründung: Ein Ernter im Vorsichtsmodus darf nur einer laufenden Jagd auf sich selbst oder einem Biss nebenan zum Opfer fallen (DOC 2.1 Schritt 6, P3D1 1 „Grenze Vorsicht“), und ein Nachbar im Gang der Anfahrt bekäme weder Alarm noch Countdown. Forces in der Schonfrist verlieren nichts (DOC 2.1 Schritt 3). Der Körper folgt der Kopfspur (DOC 4.3), also reicht der Kopf. Die Schutzzone (Bissradius 4 + 1) hält „nie vor 0“ für alles, was der Biss treffen könnte |
 | Flieger | Ornithopter samt Insassen werden nie getroffen und nie gebremst: kein Kontaktschaden, keine Sticker, die Maske des Fliegers hat nur `trigger_target` (V23 collision-mask-defaults.lua:190) | DOC 2.4; T5 d mit dem Testwurm; T21 prüft es mit dem echten Wurm und dem echten Flug [W12] |
 | Abtauchen | Nach dem Biss im selben Takt; in der Suche, sobald der Kopf höchstens 8 Kacheln von P (`last_pos`, am Kreis geklemmt) ist, spätestens bei `end_tick = eta_tick + 600`. Staub an jedem vierten Knoten, `arrakis-worm-dive` und Rumpeln am Kopf, dann `destroy{raise_destroy = true}` | DOC 4.3 Schritte 7 und 8; `raise_destroy` meldet anderen Mods das Ende (A23 classes.d.ts:18996) |
 | Auftauchen | Dieselben Effekte am Spawn | Wer in der Nähe ist, sieht, woher der Wurm kommt |
@@ -345,7 +346,8 @@ oder ist `hunt.path.id ~= id` (Jagd vorbei, neu gefragt), nichts tun.
   generierter Chunk); gepflasterter Fels hat die Ebene `arrakis_rock` nicht, der Pfadfinder hält ihn für frei → Fehlschlag. Dann nach Sichtlinie ausdünnen:
   Ein Wegpunkt fällt weg, wenn die Strecke vom letzten behaltenen Wegpunkt (anfangs c) zum Wegpunkt danach Sand ist (Mittellinie und Parallelen ±1,5, alle
   2 Kacheln); sonst bleibt er. So schneidet keine Sehne eine innere Felsecke, die der Pfadfinder umfahren hat. Der letzte bleibt; P kommt nicht in die
-  Liste (es wandert). Länge L = Summe der Strecken plus Abstand letzter Wegpunkt–P. Passt `L / 3,5 + 1 ≤ (eta − tick) / 60`, gilt der Weg: Planung
+  Liste (es wandert). Länge L = Summe der Strecken plus Abstand letzter Wegpunkt–P. Passt `L / 3,5 + 1 ≤ (eta − tick) / 60` (Neuplanung in der Suche:
+  `end_tick` statt `eta`, Gegenprüfung 0.8.0; an `eta` gemessen passte dort nie ein Weg), gilt der Weg: Planung
   `chosen = {c, Blickrichtung auf den ersten Wegpunkt (auf 16 Richtungen gerundet), route, L}`, `spawn_tick` nach 4.4 Schritt 5; Neuplanung: `worm.route`
   ersetzen, `wp = 1`, Halten endet, im Angriff zurück in die Anfahrt. Passt er nicht → Fehlschlag.
 - **Zeitablauf:** `sent + 300 ≤ tick` ohne Antwort (auch nach Speichern und Laden, [W5]) → Eintrag löschen, nur wenn er noch zu dieser Jagd gehört
@@ -407,7 +409,9 @@ In jedem Takt mit Wurm (Phasen `anfahrt`, `angriff`, `suche`), vor dem Tempo:
    `detours + 1`; im Angriff zurück in `anfahrt`. Der Umweg endet bei 10 (30er) bzw. 6 Kacheln Nähe (15er, 8er) oder nach 900 Ticks (T6). Werte für 30 wie
    T6 C, dort ohne Parallelen und mit Schritt 4 für die Umweglinie; die kurzen Umwege passen in Gänge, in denen 30 Kacheln immer im Fels enden [W17].
 5. **Kein Umweg:** erste Neuplanung (`REROUTE_MAX = 1`): `request_path` vom Kopf nach P (4.5, Art `reroute`, Box wie dort), währenddessen halten (Tempo 0
-   je Takt, [W2]), höchstens 300 Ticks. Weg da → neue Route. Fehlschlag, Zeitablauf oder zweites Mal → `dive(hunt, "kein-weg")`.
+   je Takt, [W2]), höchstens 300 Ticks. Weg da → neue Route. Fehlschlag, Zeitablauf oder zweites Mal → `dive(hunt, "kein-weg")`. Gegenprüfung 0.8.0:
+   Passt nicht einmal ein Weg der Länge 0 mehr in die Frist (unter 1 s bis `eta`, in der Suche bis `end_tick`), fragt er nicht und hält nicht, sondern taucht
+   gleich ab (`"kein-weg"`); eine offene Neuplanung endet dann ebenso. Ohne Wurm beißt es bei 0 wie 0.7.0, nach 0 im selben Takt (Biss-Fenster).
 6. **Stillstand:** nicht haltend und seit 300 Ticks weniger als 0,5 Kacheln von `moved` → `dive(hunt, "stillstand")`. `moved` wird bei jeder Bewegung über
    0,5 Kacheln neu gesetzt.
 7. **Messung** (für T21 und das Protokoll): `samples + 1`; berührt die Kopfbox ±1,5 eine Felskachel (vier Ecken und Mitte), `rock_box + 1`; `vmax` = größtes
@@ -459,7 +463,9 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
 2. Je Entity: `victim_ok` (scripts/worms.lua:629–636: gültig, mit Gesundheit, `destructible ~= false` (A23 classes.d.ts:7811), kein `NO_VICTIM`-Typ, nicht
    `arrakis-ornithopter`, nicht Force `arrakis-sandworm`); Typ nicht `character`, nicht in `VEHICLE_TYPES` (scripts/worms.lua:71–79, darunter der Spice-Ernter
    als `car`), nicht `elevated-straight-rail`, `elevated-half-diagonal-rail`, `elevated-curved-rail-a`, `elevated-curved-rail-b` (V23
-   elevated-rails/prototypes/entity/elevated-rails.lua:115, :149, :196, :242), `segment`, `segmented-unit`; Force wach oder ohne Schonfrist-Datensatz
+   elevated-rails/prototypes/entity/elevated-rails.lua:115, :149, :196, :242), `segment`, `segmented-unit`; kein Schienenfahrzeug (`locomotive`,
+   `cargo-wagon`, `fluid-wagon`, `artillery-wagon`) über dem Boden, `draw_data.height > 0` (A23 classes.d.ts:7849, concepts.d.ts:8850; A20 classes.d.ts:5311;
+   Gegenprüfung 0.8.0: sonst stürbe ein Zug auf der Hochschiene, die selbst heil bleibt); Force wach oder ohne Schonfrist-Datensatz
    (`g = storage.grace[entity.force.index]`, `g == nil or g.awake`; enemy und neutral haben keinen, scripts/worms.lua:202–212);
    `box_distance(entity, hx, hy) ≤ 2.5` (scripts/worms.lua:148–164); `terrain.has_sand_under(entity)` (scripts/terrain.lua:47–66); `unit_number` nicht in der
    Zielmenge; für jede laufende Jagd `box_distance(entity, zone) > 5`.
@@ -497,7 +503,7 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
 ### 4.12 Zusammenspiel mit den Regeln aus 3d1 und allen Enden
 | Regel oder Ende (P3D1) | 0.7.0 | 0.8.0 mit Wurm |
 |---|---|---|
-| Countdown fest, Biss nie vor 0 | fest | fest; Biss nur im Fenster; kein Kontaktschaden; Zerdrücken nie an Zielen, in Schutzzonen, an Fahrzeugen und Figuren |
+| Countdown fest, Biss nie vor 0 | fest | fest; Biss nur im Fenster; kein Kontaktschaden; Zerdrücken nie an Zielen und in Schutzzonen (an Fahrzeugen und Figuren nur mit `CRUSH_SPARES_VEHICLES = true` nicht, Max 27.10.) |
 | Biss genau bei 0 | ja | ohne Wurm genau bei 0; mit Wurm bei 0, höchstens 3 s später |
 | Getragen, andere Oberfläche | bei 0 entkommen, Eruption an `last_pos` | P = `last_pos`, der Wurm wartet dort; bei 0 Fehlbiss am Kopf, Suche, Abtauchen; der Ornithopter darüber bleibt unberührt |
 | Ganz auf Fels | entkommen | P = `last_pos` am Felsrand, der Wächter hält ihn auf Sand; Fehlbiss am Kopf |
@@ -506,7 +512,7 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
 | Zurück auf Sand vor 0 | gebissen, wo es dann steht | P folgt; Biss, wenn er rechtzeitig dort ist, sonst Ersatzbiss bis 3 s danach |
 | Force-Wechsel, Verschmelzen von Spieler-Forces | läuft weiter | läuft weiter; der Wurm gehört `arrakis-sandworm` |
 | Lehrjagd | 90 s | Spawn 2470 Ticks nach dem Wurmzeichen |
-| Vorsichtsmodus | – | unverändert: Ein Ernter stirbt nur durch eine Jagd auf sich selbst oder als Nachbar im Bissradius (DOC 2.1 Schritt 6); Zerdrücken trifft keine Fahrzeuge |
+| Vorsichtsmodus | – | Ein Ernter stirbt durch eine Jagd auf sich selbst oder als Nachbar im Bissradius (DOC 2.1 Schritt 6) und seit Max 27.10. auch, wenn ein Wurm auf dem Weg an ihm vorbeikommt (Zerdrücken, ohne Alarm); der Tooltip `gui-careful-tooltip` sagt es (Gegenprüfung 0.8.0) |
 | Schonfrist | kein Wurmzeichen | dazu: Ein Wurm einer anderen Force zerdrückt nichts von einer Force, die noch nicht wach ist |
 | `heavy-damage` | Ernter im Bissradius | unverändert, nur beim Biss |
 | Ende normal, `"quiet"`, `"abort"` | P3D1 4.7 | dazu Abtauchen (bei `"abort"` ohne Effekte), Anfragen weg, Protokoll |
@@ -682,11 +688,14 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
    O7 und Pilot unverändert; Wurm spätestens 30 Ticks nach `eta` abgetaucht (er steht schon dort); Ende bei `eta + 600`.
 8. Zerdrücken [W10, W15] (Feld 8): Kiste K8, Befehlsjagd 60 s, `spawn = {160 westlich, Richtung Ost}`; auf der Linie westlich von K8: 5 Bänder quer bei −100,
    Holzkiste bei −90, gerade Schiene quer bei −80, Auto mit Puppe als Fahrer bei −70, Figur zu Fuß bei −60, Hochschiene `elevated-straight-rail` bei −50 (per Skript,
-   ohne Stütze), Eisenkiste mit `destructible = false` bei −40, Felsfleck 4 × 4 mit Rand 2,5 Kacheln neben der Linie bei −30 mit einer Kiste ganz darauf,
+   ohne Stütze), Eisenkiste mit `destructible = false` bei −40, Felsfleck 2 × 2 mit Rand 1,5 Kacheln neben der Linie bei −14 mit einer Kiste ganz darauf
+   (Box 1,65 Kacheln von der Linie, also im Zerdrückradius; der Kopf erreicht sie erst im Angriff, dessen Vorausschau nur die Mittellinie prüft. Gegenprüfung
+   0.8.0: Bei −30 mit Rand 2,5 lag die Kiste 3,65 Kacheln neben der Linie, und „Felskiste heil“ prüfte die Sandregel nicht),
    Ornithopter mit Pilot schwebend bei −25, Ernter H8 (stehend, Vorsichtsmodus an, Puppe als Fahrer) mit Mitte 3 Kacheln neben der Linie bei −20, Kiste Z
    3 Kacheln westlich von K8. OK: vor `eta` mit Force `arrakis-sandworm` gestorben: 5 Bänder, Holzkiste, Schiene, je in dem Takt, in dem der Kopf höchstens
    2,5 + 0,6 Kacheln entfernt ist; am Leben und mit voller Gesundheit: Auto und Fahrer, Figur, Hochschiene, Eisenkiste, Felskiste, Ornithopter und Pilot, H8 samt
-   Fahrer und Laderaum; Z lebt bis `eta` und stirbt im Biss-Takt; kein Abtauchen wegen Stillstand. MESSUNG: ob der Kopf an Eisenkiste, Auto und Figur stehen
+   Fahrer und Laderaum; der Kopf kommt der Felskiste auf höchstens 2,5 Kacheln nahe (sonst ist die Sandregel ungeprüft); Z lebt bis `eta` und stirbt im
+   Biss-Takt; kein Abtauchen wegen Stillstand. MESSUNG: ob der Kopf an Eisenkiste, Auto und Figur stehen
    blieb oder durchfuhr (Weg in 60 Ticks davor und danach), Lage von Auto und Figur danach.
 9. Ersatzbiss [W3] (Feld 9): Kiste K9, Befehlsjagd 60 s, `spawn = {160 westlich, Richtung Ost, tick = eta − 840}`: Für 155,4 Kacheln braucht er selbst mit
    8,4 Kacheln/s (Sprint und `move_forward`) 18,5 s, das Fenster endet 17 s nach dem Spawn; der Körper bleibt im Feld (160 + 21 < 200).
@@ -728,7 +737,8 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
 3. Felsinsel: Befehlsjagd 60 s, Spawn so, dass die Insel zwischen Wurm und Ziel liegt. FRAGE: „Biegt er glatt vor der Insel ab, ohne den Fels zu berühren?“
    Danach ein Ernter 10 Kacheln vor dem Inselrand, Befehlsjagd 60 s mit Spawn frontal auf den Fels hinter ihm. FRAGE: „Wird der Ernter trotzdem gebissen,
    und bleibt der Wurm dabei auf dem Sand?“
-4. Zerdrücken: Band, Kisten und ein Auto auf der Linie, eine Kiste auf der Felsinsel daneben. FRAGE: „Verschwinden Band und Kisten am Kopf (Wracks), bleiben das
+4. Zerdrücken: Band, Kisten und ein Auto auf der Linie, eine Kiste auf einem Felsfleck dicht daneben (im Zerdrückradius, 16 Kacheln vor dem Ziel;
+   Gegenprüfung 0.8.0). FRAGE: „Verschwinden Band und Kisten am Kopf (Wracks), bleiben das
    Auto und die Kiste auf dem Fels heil, und fährt der Wurm am Auto vorbei oder hindurch, ohne hängen zu bleiben?“
 5. Ornithopter [W12]: Max steigt in einen Ornithopter und schwebt über dem fahrenden Kopf, dann fliegt er voll weg. MESSUNG je Sekunde Tempo und Gesundheit.
    FRAGE: „Merkst du ein Bremsen, Ruckeln oder Schaden?“
