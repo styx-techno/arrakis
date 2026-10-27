@@ -1115,7 +1115,19 @@ local function drive(hunt, tick, force)
       elseif delta > 0 and worm.boost >= 2 then
         local g_x, g_y = unit_vector(dest.x - hx, dest.y - hy)
         if g_x then
-          local nx, ny = push_nodes(hunt, unit, nodes, g_x, g_y, delta)
+          -- Schub vom wahren Kopf (W18, W20): Hat der vorige Takt geschoben, stand der Kopf danach auf push_head, und die Engine
+          -- fuhr ihn seither etwa v_now / 6 weiter; Knoten 1 kam davon nur in ganzen Kacheln mit. Der Rest (lead, unter
+          -- NODE_STEP) kommt zum Schub dazu. Sonst setzte set_body_nodes den Kopf jeden Takt auf Knoten 1 zurück, der Weg der
+          -- Engine ginge verloren, und der Wurm führe mit dem Schub allein (0,4 je Takt, 2,4 Kacheln/s) langsamer als ganz
+          -- ohne Schub (Gegenprüfung 0.8.1). lead ist Weg der Engine, kein Schub: pushed bleibt delta. push_head ohne Migration.
+          local lead = 0
+          local ph = worm.push_head
+          if ph and (worm.push or 0) > 0 then
+            lead = v_now / 6 - math.sqrt((hx - ph.x) ^ 2 + (hy - ph.y) ^ 2)
+            lead = math.max(0, math.min(0.99 * lib.NODE_STEP, lead))
+          end
+          local nx, ny = push_nodes(hunt, unit, nodes, g_x, g_y, delta + lead)
+          worm.push_head = nx and {x = nx, y = ny} or nil
           if nx then pushed = delta end
           -- Der Wächter prüft den neuen Kopf im selben Takt.
           if nx and not sand(probe, nx, ny) then return abort_worm(hunt, "fels") end
