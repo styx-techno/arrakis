@@ -413,7 +413,10 @@ In jedem Takt mit Wurm (Phasen `anfahrt`, `angriff`, `suche`), vor dem Tempo:
    Passt nicht einmal ein Weg der Länge 0 mehr in die Frist (unter 1 s bis `eta`, in der Suche bis `end_tick`), fragt er nicht und hält nicht, sondern taucht
    gleich ab (`"kein-weg"`); eine offene Neuplanung endet dann ebenso. Ohne Wurm beißt es bei 0 wie 0.7.0, nach 0 im selben Takt (Biss-Fenster).
 6. **Stillstand:** nicht haltend und seit 300 Ticks weniger als 0,5 Kacheln von `moved` → `dive(hunt, "stillstand")`. `moved` wird bei jeder Bewegung über
-   0,5 Kacheln neu gesetzt.
+   0,5 Kacheln neu gesetzt. 0.8.1 [W18]: Knoten 1 springt im Kachelraster, „über 0,5“ heißt also „ein Knotensprung“. Gezählt wird nur, wenn das geschriebene
+   Tempo (ohne Schreiben 3,5) ihn seit dem letzten Sprung mindestens 1,5 Kacheln weit getragen hätte (`moved.want`); sonst tauchte ein Wurm ab, der vor der
+   Zeit langsam fährt (v = S / t unter 0,2 Kacheln/s, etwa nach dem Halten), weil Knoten 1 dabei länger als 300 Ticks nicht springt (Trockenlauf 0.8.1,
+   D7 „früh“). Ab derselben Schwelle steht der wahre Kopf bis 1 Kachel vor Knoten 1 an etwas an: `worm.front` = Knoten 1 + 1 · h, dort zerdrückt er auch (4.10).
 7. **Messung** (für T21 und das Protokoll): `samples + 1`; berührt die Kopfbox ±1,5 eine Felskachel (vier Ecken und Mitte), `rock_box + 1`; `vmax` = größtes
    `unit.speed · 60`.
 
@@ -430,11 +433,19 @@ je 10 Ticks).
   zum Biss. d > 50, ein Umweg (4.8 Schritt 4) oder eine neue Route (Neuplanung) → `anfahrt`.
   Beispiel 60 s auf freiem Sand: Abstand 40 nach (160 − 40) / 3,5 = 34,3 s Fahrt, Restzeit 14,5 s, v = (40 − 4,58) / 14,5 = 2,4 Kacheln/s. Weil die Engine
   zwischen zwei Schreibvorgängen um bis zu 0,09 Kacheln/s beschleunigt, kommt er knapp vor 0 an und hält.
-- **Sprint-Ersatz** [W3]: Ein Sprint-Takt ist jeder Takt, in dem das Skript v über 3,5 schreibt (`worm.sprint + 1`). Gemessen wird das Tempo aus dem
-  Kopfweg seit dem letzten Takt (`|Kopf − worm.head| · 6` Kacheln/s). Liegt es in `BOOST_TAKTS = 2` Sprint-Takten hintereinander unter `BOOST_MIN = 0,9`
-  des im Takt davor geschriebenen v (`worm.slow` zählt mit, jeder andere Takt setzt ihn auf 0), steigt `worm.boost` um 1 (höchstens 2, nie zurück, je
-  Stufe eine Logzeile). Stufe 1: zusätzlich je Sprint-Takt `unit.move_forward(Δ)` (A23 classes.d.ts:19026, A20 :28085) mit
-  Δ = min(0,4, (v − gemessenes Tempo) · 10 / 60) Kacheln (`PUSH_MAX`). Stufe 2: statt `move_forward` die Knotenkette selbst schieben: `set_body_nodes`
+- **Sprint-Ersatz** [W3]: Ein Sprint-Takt ist jeder Takt, in dem das Skript v über 3,5 schreibt (`worm.sprint + 1`). Gemessen wird über die Spur
+  `worm.trail` (0.8.1, W18): je Takt der Weg von Knoten 1 seit dem letzten Takt, das im Takt davor geschriebene v und der Schub des Takts davor, die letzten
+  `SPEED_TAKTS = 30` Takte. Knoten 1 springt im Kachelraster und liegt bis zu `NODE_STEP = 1` Kachel hinter dem wahren Kopf; ein Takt allein zeigt bei
+  6 Kacheln/s nur 0 oder 6 (Prüfstand 2026-10-27, T21), über ein Fenster bleibt der Fehler des Wegs unter 1 Kachel. `worm.slow` zählt einen Sprint-Takt,
+  wenn der Weg im Fenster (die letzten `worm.judge` Sprint-Takte, höchstens 30) samt Schub auch mit dem Rasterfehler unter `BOOST_MIN = 0,9` des geschriebenen
+  Wegs bleibt: Weg + 1 < 0,9 · Σ v / 6. So zählt kein Takt, in dem die Engine das Tempo hält; ein Wurm, der nur 3,5 fährt, fällt nach etwa 7 Sprint-Takten
+  auf. Jeder andere Takt setzt `slow` auf 0. Steht der Kopf (2 Takte ohne Knotensprung, wahr unter 3 Kacheln/s, also unter 3,5), zählt das nicht als
+  Sprintversagen (Sache des Stillstands, 4.8 Schritt 6), und das Fenster beginnt neu. Nach `BOOST_TAKTS = 2` gezählten Takten hintereinander steigt
+  `worm.boost` um 1 (höchstens 2, nie zurück, je Stufe eine Logzeile mit den Tempi im Fenster), das Fenster beginnt neu. Bis 0.8.0 verglich er den Weg eines
+  Takts und hätte im Raster nie gegriffen (0 zählte als Stehen, 6 nie als zu langsam). Stufe 1: zusätzlich je Sprint-Takt `unit.move_forward(Δ)` (A23
+  classes.d.ts:19026, A20 :28085) mit Δ = min(0,4, (v − Tempo der Engine) · 10 / 60) Kacheln (`PUSH_MAX`); das Tempo der Engine ist der Weg ohne die
+  eigenen Schübe über die letzten `MEAN_TAKTS = 12` Sprint-Takte (bei weniger als 6 solchen Takten 3,5). `worm.v_head` ist das Kopftempo der letzten
+  12 Takte für Protokoll und Prüfstand. Stufe 2: statt `move_forward` die Knotenkette selbst schieben: `set_body_nodes`
   (A23 classes.d.ts:19040, A20 :28130, in `pcall`, ein Fehler schreibt eine Logzeile und der Takt schiebt nicht) mit einem neuen Kopf Δ Kacheln voraus
   längs der Richtung zu `dest` und den übrigen Knoten im Abstand 1 längs der alten Spur (der letzte fällt weg), höchstens bis 6 Kacheln/s insgesamt. Das
   hängt an keiner Engine-Annahme außer dem Setzen der Knoten selbst; der Wächter prüft den neuen Kopf im selben Takt. `sprint` und `boost` stehen im
@@ -472,7 +483,11 @@ In Schritt 2 c (4.3) je Jagd mit Wurm, nach dem Steuern, mit dem Kopf dieses Tak
 3. Töten in fester Reihenfolge (Sammeln, dann `die(worm_force)` ohne `cause`, A23 classes.d.ts:6724, wie P3D1 4.9 Schritt 5; `devour` mit leerer
    Fahrzeugliste). Keine Eruption, kein Chat; `worm.crushed + n`. `arrakis-worm-bite` und `heavy-damage` betreffen nur den Biss.
 4. Fahrzeuge und Figuren im Weg zerdrückt er nicht: Der Wurm fährt durch sie hindurch oder bleibt an ihnen stehen [W10]; bleibt er stehen, taucht er nach
-   300 Ticks ab (4.8 Schritt 6), und der Biss kommt bei 0 wie 0.7.0. Auf ihnen auftauchen kann er nicht (4.4 Schritt 4 a).
+   300 Ticks ab (4.8 Schritt 6), und der Biss kommt bei 0 wie 0.7.0. Auf ihnen auftauchen kann er nicht (4.4 Schritt 4 a). (Das gilt mit
+   `CRUSH_SPARES_VEHICLES = true`; mit dem Standard seit Max 27.10. zerdrückt er sie wie alles andere.) 0.8.1 [W18]: Der Kopf dieses Takts ist Knoten 1,
+   bis 1 Kachel hinter dem wahren Kopf; das Zerdrücken kommt so höchstens einen Takt später, nie weiter weg. Steht er an etwas an (4.8 Schritt 6,
+   `worm.front`), prüft der Takt auch an der Front; sonst erreichte er ein Auto, an dem der Kopf (Box ±1,5) steht, im Raster nicht immer (Trockenlauf
+   0.8.1, D6 „auto“).
    Der Körper zerdrückt nach dem Auftauchen nichts: Er fährt die Spur des Kopfes nach, und was dort stand, ist schon weg. Was später in den Körper fährt,
    hält die Maske auf oder fährt durch (Vanilla-Verhalten).
 5. **Schutzzone:** `zone` jeder laufenden Jagd (auch Phase `ohne`, auch `searching`) mit Radius 5. So stirbt vor 0 nichts, was der Biss (Radius 4) treffen
@@ -583,12 +598,19 @@ Ersatzbisse seit Spielbeginn.
 | W9 | `set_ai_state(investigating)` alle 30 Ticks stört die Fahrt nicht und beendet einen Gereizt-Zustand (nach Schaden) | T21 Schritte 2 und 10 (Zustände, Schaden) | Nur bei anderem Typ oder Ziel setzen; Gereizt per `on_segmented_unit_damaged` (A23 events.d.ts:4517) nur für eigene Würmer sofort zurücksetzen |
 | W10 | Ohne Kontaktschaden fährt der Wurm durch Entities, die er nicht zerdrückt (`destructible == false`, Schutzzone, Fahrzeuge, Figuren), oder bleibt davor stehen, ohne die Steuerung zu verlieren | T21 Schritt 8 (unzerstörbare Kiste, Auto mit Fahrer, Figur und Ernter im Weg, Nachbar des Ziels) | Bleibt er stehen: Stillstand → abtauchen (geplant). Hängt er in der Schutzzone: Reichweite R + 2. Ist beides zu oft (ein geparktes Auto auf der Linie nähme jeder Jagd den Wurm): Maske leeren (`collision_mask = {layers = {}}`) |
 | W11 | Ein `LuaSegmentedUnit` in storage ist nach dem Laden gültig und dieselbe Einheit | T22 Schritt 9 (Laden in der Anfahrt) | `un` merken und nach dem Laden einmal über `get_segmented_units()` suchen, sonst verloren |
-| W12 | Der echte Ornithopter verliert über dem echten Wurm kein Tempo und keine Gesundheit | T21 Schritt 6 (Mitflug über dem Kopf: Tempo ≥ 98 % und Abstand zum Zielpunkt höchstens 0,5 Kacheln mehr als beim Vergleichsflieger; danach Flugzeit ≤ 1,02 ×), T22 Schritt 5 | Den bremsenden Effekt finden (checks.lua listet alle Effekte des Prototyps) und entfernen; bis dahin ist DOC 2.4 verletzt: Abnahme verweigern |
+| W12 | Der echte Ornithopter verliert über dem echten Wurm kein Tempo und keine Gesundheit | T21 Schritt 6 (0.8.1: Mitflug über dem Kopf mit Abstand zum Zielpunkt höchstens 0,5 Kacheln mehr als beim Vergleichsflieger, Tempo nur MESSUNG; dann Ruhe; dann 80 Kacheln nach Westen über den Körper: Flugzeit ≤ 1,02 × und mindestens 60 Ticks höchstens 3 Kacheln von einem Körperknoten), T22 Schritt 5 | Den bremsenden Effekt finden (checks.lua listet alle Effekte des Prototyps) und entfernen; bis dahin ist DOC 2.4 verletzt: Abnahme verweigern |
 | W13 | In `investigating` bleibt der Wurm auch ohne Spieler in der Nähe im Modus full, wie in T5 a (35 von 35); `minimal` tritt im Wurmleben nicht auf, also gelten Steuerung und Kosten von full. Ob er im Modus `minimal` ebenso folgen würde, prüft 3d2 nicht | T21 alle Schritte (MESSUNG `activity_mode` je Takt; `minimal` irgendwo: INFO) | Tritt `minimal` auf: Schritt 2 zeigt, ob Zeiten und Tempo trotzdem stimmen; sonst `minimum_activity_mode = full` für das ganze Wurmleben (höchstens 6) |
 | W14 | `create_segmented_unit` auf geprüftem Sand in generierten Chunks gibt nie nil und wirft keinen Fehler | T21 (Zahl der Erzeugungen je Jagd = 1, `spawns` im Protokoll) | Geplant: `pcall`, nächster Kandidat, höchstens 3 |
 | W15 | Ein Ersatzbiss oder Biss mit `die()` im 10-Tick-Takt verträgt, dass dabei Einheiten und Ziele anderer Jagden ungültig werden | T21 Schritt 8 (Zerdrücken und Biss im selben Takt), Trockenlauf (7) | Je Opfer `valid` prüfen (wie 0.7.0) |
 | W16 | Ein schreibender Zugriff auf `minimum_activity_mode` mit `minimal` gilt bis zum Abtauchen und kostet bei 6 Würmern (im Modus full, W13) spürbar nichts | T8 (später), Abnahme mit 3 Jagden | Nur im Angriff setzen |
 | W17 | Der Wurm folgt einem Weg mit Box ±3,5 durch einen 16 Kacheln breiten Gang mit Knick, ohne dass die Kopfmitte Fels berührt und ohne Abtauchen; Sichtlinien-Ausdünnen, Wegpunktwechsel und kurze Umwege genügen | T21 Schritt 4 (Tasche mit Knick; OK: kein `dive` vor dem Biss, Wurm in der Tasche), MESSUNG Umwege, `rock_box` | Box auf ±5,5 und kein Rückgriff auf ±1,5: Für schmale Gänge findet der Pfadfinder dann keinen Weg, die Jagd wird `ohne` (`"kein-weg"`, Biss wie 0.7.0) |
+| W18 | Körperknoten im Kachelraster: `get_body_nodes()` meldet die Spurpunkte im Abstand 1 (Kachelmitten auf gerader Fahrt); Knoten 1 bleibt bis 1 Kachel hinter dem wahren Kopf und kommt je 10 Ticks 0, 1 oder 2 Kacheln weit | Geklärt (hält) im Prüfstand 2026-10-27 (0.8.0, T21): Kopf immer auf Kachelmitten (x,5); je 60 Ticks bei 3,5 Kacheln/s abwechselnd 3 und 4 Kacheln, im Sprint 5 oder 6 (Schritt 9); „Tempo“ aus einem Takt nur 0,0 oder 6,0; Bissverzug 10 Ticks in den Schritten 2, 3 und 5. T21 Schritt 2 misst es weiter (MESSUNG Raster) | Ist umgesetzt (0.8.1): Tempo nur über Fenster (4.9 „Sprint-Ersatz“), Stillstand mit dem geschriebenen Weg, Zerdrücken auch an der Front (4.8 Schritt 6, 4.10); Biss und Reichweite rechnen mit Knoten 1 (bis 1 Kachel und etwa einen Takt später, nie weiter weg) |
+| W19 | `segments[1].position` ist der wahre Kopf (stetig, bis 1 Kachel vor Knoten 1) | T21 Schritt 2 (MESSUNG: Lage gegen Knoten 1 längs der Kopfrichtung, ob der Weg je 10 Ticks ganzzahlig ist) | Wird nicht benutzt; hält sie, kann ein späterer Stand Kopf und Tempo daraus lesen (mit Knoten 1 als Rückfall) |
+
+Stand nach dem Prüfstand 2026-10-27 (0.8.0, 80e1c6d, T21 14/15 OK): Geklärt (hält) sind W1 (Tempo 1 s nach dem Spawn 3,50), W3 (Schritt 9: im
+Sprint 5,94 Kacheln/s im Mittel über 102 Sprint-Takte, der Kopf je 60 Ticks 5 oder 6 Kacheln weiter; Schritt 12 Biss bei eta + 70 ohne Ersatzbiss), W4 und W17 (Schritt 4: 1 Anfrage, 3 Wegpunkte, Box ±3,5,
+Biss eta + 0) und W18 (neu). Offen bleiben W12, bis der neue Schritt 6 (0.8.1) gelaufen ist (0.8.0 scheiterte am Tempo im Mitflug, das dem Raster folgt;
+Flugzeit 102 %), und W2: In den Schritten 2 und 5 hielt der Wurm nicht, Weg beim Halten wurde nicht gemessen.
 
 ### 4.18 Prüfstand-Haken
 - worms: `set_worm_off(force, on)` (`storage.hunts.worm_off[force.index]`; gilt für Jagden, die danach starten); `set_spawn_dir(force, k|nil)`
@@ -629,7 +651,8 @@ Wie in 3d1: ohne Spieler über tools/pc/pruefstand.py (RCON) mit game.speed 10, 
 x = 38 000, T22 bei 40 000, keine alte Fläche verschiebt sich. Sektoren rechnen die Tests mit `vibration.key_of`. Zeitlimits: T21 `timeout = 300 * 60`,
 T22 `timeout = 20 * 60 * 60`, `interactive = true`. Bauten mit `raise_built = true`, Fahrer sind `tb.dummy_driver`, Ernter auf Spice-Teppich wie T19.
 Modulliste (:57–59) um `scripts.testbench.t_sandwurm`; Weiterleitungen (:819–827) neu `segmented_unit_died` und `segmented_unit_destroyed`; Vertrag (:10–33)
-nennt das neue Modul und beide Namen. T21 und T22 messen den Kopf je 10 Ticks über `sandworm.head_of`.
+nennt das neue Modul und beide Namen. T21 und T22 messen den Kopf je 10 Ticks über `sandworm.head_of`. Knoten 1 springt im Kachelraster [W18]: Tempo und
+Weg zählen nur über Fenster (Tempo über 1 s, Fehler unter 1 Kachel/s; Wege mit höchstens 1 Kachel Fehler je Lauf), und die Texte nennen das Fenster (0.8.1).
 
 **T21 „Sandwurm: echter Code“** (automatisch, etwa 3,3 min Spielzeit, bei Tempo 10 etwa 20 s plus Aufbau). Force `arrakis-t21` (wach, `first_hunt_done = true`),
 eingeschaltet, `set_spawn_dir(force, 2)` (Nordost) für alle Jagden ohne eigenen Haken. Sandfläche 1200 × 1600 Kacheln aus 12 Feldern zu 400 × 400 (Spalten
@@ -647,7 +670,8 @@ Allgemein in jedem Schritt mit Wurm: Kopfmitte nie auf Fels (FEHLER beim ersten 
 das Sicherheitsnetz den Wurm dann schon abgetaucht hat, zählt auch `hunt.dive == "fels"` als FEHLER, ebenso `"stillstand"` und `"kein-weg"`, wo der Schritt
 sie nicht erwartet, und `no_worm == "abgetaucht"` vor `eta` (gelesen aus der Jagd vor dem Ende und aus dem Protokolleintrag). `rock_box / samples` als
 MESSUNG (über 5 %: INFO), Erzeugungen je Jagd (`spawns`) 1 (mehr: INFO [W14]), `activity_mode` je Takt als MESSUNG (`minimal` irgendwo: INFO [W13]),
-Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Haltezeit: INFO [W2]), nach dem Ende kein `arrakis-sandworm-*` mehr im Feld.
+Weg beim Halten als MESSUNG (Weg von Knoten 1 vom ersten bis zum letzten Takt jedes Haltens; liegt er auch nach Abzug von 1 Kachel je Halten über
+0,5 Kacheln plus 0,1 Kacheln je Sekunde Haltezeit: INFO [W2]), nach dem Ende kein `arrakis-sandworm-*` mehr im Feld.
 1. Prototypen und storage: `prototypes.entity["arrakis-sandworm-small"]` mit Typ `segmented-unit`, vier Rauchkopien und `arrakis-worm-dive` da; ein Probewurm im
    Feld 12 hat `max_body_nodes == 22` (dann sofort weg); `storage.schema == 4`, `path_requests`, `hunts.log`, `hunts.worm_off`, `hunts.spawn_dir` da,
    `stats_of(force).killed == 0` (die Force ist neu, `stats_for` legt `killed` an).
@@ -659,13 +683,16 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
    Tempo 1 s nach dem Spawn ≥ 3,3 Kacheln/s; `angriff` bei Abstand ≤ 40; vor `eta` kein `entity_died` im Feld
    (die Kisten liegen in der Schutzzone); Bissverzug 0 bis 180 (MESSUNG, über 0: INFO), kein Ersatzbiss, Abstand Kopf–H1 beim Biss ≤ 4,58; im Biss-Takt H1 und
    alle vier Kisten tot; Wurm im selben Takt weg, kein `segmented_unit_died`, ein `segmented_unit_destroyed`; im Feld keine Entity vom Typ `simple-entity` und
-   kein Bodenstapel mit Wolframerz; Protokolleintrag mit `phase == "angriff"`, `outcome == "bitten"`. MESSUNG: Ankunft in Reichweite (Ticks vor `eta`), Weg beim Halten,
-   kleinstes Tempo im Angriff, `activity_mode` je Phase, Zustände (`get_ai_state`) jede Sekunde.
+   kein Bodenstapel mit Wolframerz; Protokolleintrag mit `phase == "angriff"`, `outcome == "bitten"`. MESSUNG: Ankunft von Knoten 1 in Reichweite (gegen `eta`),
+   Weg beim Halten, kleinstes Tempo im Angriff (Weg je 1 s), `activity_mode` je Phase, Zustände (`get_ai_state`) jede Sekunde; Raster [W18]: Weg von Knoten 1
+   je 10 Ticks nach ganzen Kacheln gezählt; `segments[1]` [W19]: Lage gegen Knoten 1 längs der Kopfrichtung, ob ihr Weg je 10 Ticks ganzzahlig ist.
 3. Felsinsel [W3] (Feld 3): Kiste K3 als Ziel, Felsinsel 40 × 40 mit Mitte 80 Kacheln westlich von K3, Befehlsjagd 60 s mit `spawn = {160 Kacheln westlich, Richtung Ost}`.
    OK: „biegt vor der Felsinsel ab“: erster Umweg, solange der Kopf noch mindestens 2 Kacheln vom Inselrand entfernt ist, und binnen 180 Ticks danach eine
    Richtungsänderung ≥ 20°; Kopfmitte nie auf Fels; Bissverzug 0 bis 180; kein Ersatzbiss (FEHLER nur, wenn W1 in Schritt 2 und W3 im Sprint dieses
    Schritts gehalten haben, sonst INFO: Ein Umweg wie T6 C kostet 5,2 s, ein Start ohne Schwung 3,2 s, zusammen mehr als die 7,4 s Luft bis zum Ersatzbiss).
-   MESSUNG: Umwege, Winkel, Zeitverlust gegen die gerade Linie, Sprint-Takte und mittleres Sprinttempo.
+   W3 gilt hier als gehalten, wenn der Weg von Knoten 1 in den Sprint-Proben auch nach Abzug von 1 Kachel je Lauf mindestens 5,5 / 6 des geschriebenen
+   Wegs ist (0.8.1; im Raster nicht zu entscheiden: INFO). MESSUNG: Umwege, Winkel, Zeitverlust gegen die gerade Linie, Sprint-Takte, mittleres Sprinttempo
+   und Anteil des geschriebenen Wegs samt Rastergrenzen.
 4. Sandtasche mit Knick [W4, W17] (Feld 4): Fels 140 × 140 um das Ziel, darin eine Sandtasche 30 × 30 mit Ernter H4, Gang 16 Kacheln breit von der Tasche 30 nach
    Osten, dann nach Norden bis zum Rand; keine gerade Linie von außen reicht in die Tasche. Befehlsjagd 60 s mit `spawn_dir = 0`. OK: Planung prüft alle Kandidaten
    ohne gültigen, dann 1 oder 2 Anfragen, ein Weg gilt (`chosen.route` nicht leer, Box ±3,5); keine Sehne der Route schneidet Fels (Mittellinie und ±1,5);
@@ -675,14 +702,19 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
 5. Ernter 10 Kacheln vor Fels [W2] (Feld 5): Ernter H5 aufgebaut, Fels ab 10 Kacheln östlich seiner Mitte über die ganze Feldhöhe; Befehlsjagd 60 s mit
    `spawn = {160 westlich, Richtung Ost}`, also frontal auf den Fels. OK: Fahrziel im Angriff ist P + 6 · u (hinter P liegt nach 10 Kacheln Fels); nie `patrolling`
    vor dem Biss; kein Umweg in den letzten 40 Kacheln;
-   Kopfmitte nie auf Fels; H5 gebissen, Bissverzug 0 bis 180; Wurm danach weg. MESSUNG: kleinster Abstand Kopf–Fels, Weg beim Halten.
+   Kopfmitte nie auf Fels; H5 gebissen, Bissverzug 0 bis 180; Wurm danach weg. MESSUNG: kleinster Abstand Kopf–Fels, Weg beim Halten (mit Rasterfehler).
 6. Ornithopter über dem Kopf [W12] (Feld 6): Kiste K6, Befehlsjagd 60 s, `spawn = {160 westlich, Richtung Ost}`. 600 Ticks nach dem Spawn steht Ornithopter O6
    (Kohle, Puppe als Pilot) über dem Kopf; 300 Ticks lang alle 10 Ticks `autopilot_destination` = Kopf + 6 · h; der Vergleichsflieger O6b fliegt dasselbe Muster
-   60 Kacheln nördlich mit einem Punkt, der sich mit dem Kopf mitbewegt. Danach fliegen beide 80 Kacheln geradeaus nach Norden. OK: O6 und Pilot mit gleicher
-   Gesundheit, keine Sticker außer den Tempo-Stickern des Ornithopters (prototypes/ornithopter-speed.lua); im Mitflug (die 300 Ticks über dem Kopf) mittlerer
-   Abstand O6 zu seinem Zielpunkt höchstens 0,5 Kacheln mehr als bei O6b und mittleres Tempo O6 ≥ 98 % von O6b; danach Flugzeit der 80 Kacheln O6 ≤ 1,02 × O6b;
-   der Wurm fährt unbeirrt weiter (Bissverzug 0 bis 180). MESSUNG: Abstand O6–Kopf, beide Abstände zum Zielpunkt und beide Tempi während des Mitflugs, beide
-   Flugzeiten.
+   60 Kacheln nördlich mit einem Punkt, der sich mit dem Kopf mitbewegt. Danach Ruhe: Beide behalten ihren letzten Zielpunkt, bis beide 10 Ticks lang unter
+   0,05 Kacheln/s sind, höchstens 240 Ticks (sonst INFO, Flug trotzdem); der Wurm fährt dabei unter O6 hindurch. Dann fliegen beide aus der Ruhe 80 Kacheln
+   nach Westen: O6 gegen die Fahrtrichtung über den Körper, O6b auf der Parallele 60 nördlich. OK: O6 und Pilot mit gleicher Gesundheit, keine Sticker außer
+   den Tempo-Stickern des Ornithopters (prototypes/ornithopter-speed.lua); im Mitflug (die 300 Ticks über dem Kopf) mittlerer Abstand O6 zu seinem Zielpunkt
+   höchstens 0,5 Kacheln mehr als bei O6b; Flugzeit der 80 Kacheln O6 ≤ 1,02 × O6b; O6 mindestens 60 Ticks des Flugs höchstens 3 Kacheln von einem
+   Körperknoten (sonst hat der Flug den Wurm nicht geprüft); der Wurm fährt unbeirrt weiter (Bissverzug 0 bis 180). MESSUNG: Abstand O6–Kopf, beide Abstände
+   zum Zielpunkt und beide Tempi während des Mitflugs (unter 98 %: INFO), Dauer der Ruhe, beide Flugzeiten, Ticks über dem Körper, kleinster Abstand zu
+   einem Knoten, beide Tempi in diesen Ticks. Abänderung 0.8.1 (Prüfstand 2026-10-27: Tempo im Mitflug 92 %, Flugzeit 102 %): Die Zielpunkte springen mit
+   Knoten 1 im Raster [W18], dem folgen beide Flieger verschieden; der Flug nach Norden begann mit ungleichem Schwung und blieb kaum über dem Körper (im
+   Trockenlauf 0 Ticks höchstens 3 Kacheln von einem Knoten, nach Westen 142).
 7. Rettung (Feld 7): Ernter H7 aufgebaut mit Puppe, Ornithopter O7 mit Pilot darüber, Befehlsjagd 60 s (Planung frei), bei `eta − 720` `flyer_lib.toggle_carry`
    wie T19 Schritt 4. OK: bei `eta − 590` getragen; der Wurm wartet bis 0 höchstens R + 8 von `last_pos`; bei `eta` `escaped`, Eruption am Kopf, nichts gestorben,
    O7 und Pilot unverändert; Wurm spätestens 30 Ticks nach `eta` abgetaucht (er steht schon dort); Ende bei `eta + 600`.
@@ -700,7 +732,7 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
 9. Ersatzbiss [W3] (Feld 9): Kiste K9, Befehlsjagd 60 s, `spawn = {160 westlich, Richtung Ost, tick = eta − 840}`: Für 155,4 Kacheln braucht er selbst mit
    8,4 Kacheln/s (Sprint und `move_forward`) 18,5 s, das Fenster endet 17 s nach dem Spawn; der Körper bleibt im Feld (160 + 21 < 200).
    OK: K9 stirbt genau bei `eta + 180`, `ersatz == true`, `storage.hunts.ersatz` + 1, der Wurm taucht dort ab, wo er ist (Abstand > R). MESSUNG: mittleres Tempo
-   im Sprint (W3 hält ab 5,5), Abstand beim Ersatzbiss.
+   im Sprint (W3 hält ab 5,5) und Anteil des geschriebenen Wegs samt Rastergrenzen, Abstand beim Ersatzbiss.
 10. Wurm getötet [W8, W9] (Feld 10): Ernter H10 aufgebaut, `set_heat` 999 (reguläre Jagd). 300 Ticks nach dem Spawn `unit.damage(1000, force)` (A23
     classes.d.ts:18991): MESSUNG Zustand nach 10, 20, 30, 40 Ticks (OK: spätestens nach 40 Ticks wieder `investigating`). 600 Ticks nach dem Spawn
     `unit.die(force)` (:19007). OK: im selben Tick `segmented_unit_died` und Jagd weg, Protokoll `outcome == "killed"`, Statistik `killed` + 1, `first_escape_tick`
@@ -712,7 +744,8 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
 12. Flucht per Fahrt [W3] (Feld 2): Ernter H12 aufgebaut mit Puppe als Fahrer, `set_heat` 999 (reguläre Jagd, k0 = 2: Spawn 160 Kacheln nordöstlich).
     Im Tick des Wurmzeichens packt der Test H12 ein (`harvester.pack`, scripts/harvester.lua:520) und gibt nach dem Einpacken Gas genau nach Südwesten
     (`riding_state` an Fahrzeug und Puppe jeden Tick, wie T13), also direkt vom Wurm weg. OK: echter Biss, Bissverzug 0 bis 180, kein Ersatzbiss, Abstand
-    Kopf–H12 beim Biss ≤ R. MESSUNG: Sprint-Takte, mittleres Tempo im Sprint, Ersatz 1 oder 2 aktiv, Weg von H12 seit dem Wurmzeichen.
+    Kopf–H12 beim Biss ≤ R. MESSUNG: Sprint-Takte, mittleres Tempo im Sprint und Anteil des geschriebenen Wegs, Ersatz 1 oder 2 aktiv, Weg von H12 seit dem
+   Wurmzeichen.
 13. Grenzen (Feld 12, nach den Wellen): Vorbedingung: keine Jagd einer anderen Force (sonst INFO und nur MESSUNG). Vier Befehlsjagden mit 60 s auf vier Kisten
     im selben Tick: drei `warten`, die vierte `ohne`/`"grenze"`; danach ein Ernter mit `set_heat` 999: seine reguläre Jagd bekommt trotzdem `warten`
     (Befehlsjagden sperren nichts); eine Befehlsjagd mit 20 s → `ohne`/`"kurz"`; `set_worm_off(force, true)`, dann 60 s → `ohne`/`"aus"`, danach
@@ -740,7 +773,8 @@ Weg beim Halten als MESSUNG (mehr als 0,5 Kacheln plus 0,1 Kacheln je Sekunde Ha
 4. Zerdrücken: Band, Kisten und ein Auto auf der Linie, eine Kiste auf einem Felsfleck dicht daneben (im Zerdrückradius, 16 Kacheln vor dem Ziel;
    Gegenprüfung 0.8.0). FRAGE: „Verschwinden Band und Kisten am Kopf (Wracks), bleiben das
    Auto und die Kiste auf dem Fels heil, und fährt der Wurm am Auto vorbei oder hindurch, ohne hängen zu bleiben?“
-5. Ornithopter [W12]: Max steigt in einen Ornithopter und schwebt über dem fahrenden Kopf, dann fliegt er voll weg. MESSUNG je Sekunde Tempo und Gesundheit.
+5. Ornithopter [W12]: Max steigt in einen Ornithopter und schwebt über dem fahrenden Kopf, hält an, dann fliegt er voll nach Westen über den Körper weg (der
+   Wurm fährt nach Osten; 0.8.1). MESSUNG je Sekunde Tempo, Gesundheit, Abstand zum Kopf und zum nächsten Körperknoten.
    FRAGE: „Merkst du ein Bremsen, Ruckeln oder Schaden?“
 6. Rettung: Ernter neben Max, Befehlsjagd 60 s; Max hebt ihn vor 0 an und schwebt über der Stelle. FRAGE: „Hält der Wurm neben dir, beißt ins Leere und taucht ab?“
 7. Wurm getötet: Befehlsjagd 60 s; in der Anfahrt ruft der Test `die(player.force)`. FRAGE: „Stirbt der Wurm mit Sandstaub, ohne Leiche und ohne Wolfram, steht im
