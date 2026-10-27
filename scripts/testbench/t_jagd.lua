@@ -32,6 +32,7 @@ local flyer_lib = require("scripts.flyer")
 local terrain = require("scripts.terrain")
 local vibration_lib = require("scripts.vibration")
 local worms_lib = require("scripts.worms")
+local migrate = require("scripts.migrate")
 
 local HARVESTER = "spice-harvester"
 local FLYER = "arrakis-ornithopter"
@@ -725,7 +726,7 @@ function t18_steps.s1_check(run, tb, d, s)
   local hunts = storage.hunts or {}
   local parts =
   {
-    {"schema 3", storage.schema == 3}, {"rng", storage.rng ~= nil}, {"grace", type(storage.grace) == "table"},
+    {"schema", storage.schema == migrate.SCHEMA}, {"rng", storage.rng ~= nil}, {"grace", type(storage.grace) == "table"},
     {"vib.sources", type(vib.sources) == "table"}, {"vib.heat", type(vib.heat) == "table"},
     {"vib.rumble", type(vib.rumble) == "table"}, {"vib.overlay", type(vib.overlay) == "table"},
     {"vib.testbench", type(vib.testbench) == "table"}, {"hunts.list", type(hunts.list) == "table"},
@@ -2176,6 +2177,7 @@ end
 -- e) Force des Ziels wechselt bei T0 + 60 auf arrakis-t19b: force_index neu, gebissen.
 function t5_build.e(run, tb, d, s, p)
   p.other = force_named(T19_OTHER_FORCE)
+  worms_lib.set_worm_off(p.other, true)
   worms_lib.ensure_force()
   p.car = t5_car(run, tb, d, s, t19_place(d, 0, -1, 1, 1))
   if not p.car then return false end
@@ -2957,7 +2959,9 @@ local function t19_start(run, tb)
   -- Statistik der Test-Force von vorn, damit first_escape_tick in Schritt 4 aus diesem Lauf stammt.
   local stats = worms_lib.stats_of(d.force)
   for key in pairs(stats) do stats[key] = nil end
-  stats.bitten, stats.escaped, stats.gone = 0, 0, 0
+  stats.bitten, stats.escaped, stats.gone, stats.killed = 0, 0, 0, 0
+  -- Ohne Wurm wie 0.7.0 (docs/plan-3d2.md 6): Biss genau bei 0; den Wurm prüft T21.
+  worms_lib.set_worm_off(d.force, true)
   worms_lib.set_grace(d.force, {awake = true, first_hunt_done = false}, {"first_hunt"})
   lanes_init(d, #T19_STEPS, game.tick + 2)
   d.step = 1
@@ -3006,6 +3010,8 @@ local function t19_cleanup(run, tb)
   local d = run.data
   local other = game.forces[T19_OTHER_FORCE]
   isolate_cleanup(run, tb, d, {d.force, other})
+  if valid(d.force) then worms_lib.set_worm_off(d.force, false) end
+  if other and other.valid then worms_lib.set_worm_off(other, false) end
   if other and valid(d.force) then pcall(game.merge_forces, other, d.force) end
 end
 
@@ -3224,6 +3230,9 @@ local function t20_start(run, tb)
   tb.prepare(d.origin, T20_HALF)
   worms_lib.ensure_force()
   worms_lib.set_paused(nil)
+  -- Ohne Wurm wie 0.7.0 (docs/plan-3d2.md 6).
+  worms_lib.set_worm_off(force, true)
+  tb.log(run, "INFO", "T20 prüft die Warnungen ohne Wurm; den Wurm zeigt T22.")
   vibration_lib.testbench_enable(force)
   tb.protect(run, player)
   tb.watch(run, player, d.origin)
@@ -3337,6 +3346,7 @@ local function t20_cleanup(run, tb)
   if not valid(force) then return end
   pcall(abort_hunts, {[force.index] = true})
   if d.box then pcall(clear_area, tb.surface(), d.box) end
+  worms_lib.set_worm_off(force, false)
   vibration_lib.testbench_disable(force)
   if d.saved then
     worms_lib.grace_restore(force, d.saved.grace)
