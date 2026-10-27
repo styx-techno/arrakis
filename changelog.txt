@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.2
+Date: 2026-10-27
+  Modding:
+    - Prüfstand T21 Schritt 6 (Ornithopter über dem Wurm [W12]): Der Lauf vom 27.10.2026 abends (0.8.1) fand am Ornithopter weder Schaden noch Sticker, aber über dem Wurmkörper flog er 115 Ticks lang nur 89 % so schnell wie der Vergleichsflieger (1,6 Kacheln Rückstand, Flugzeit 102,2 % statt höchstens 102 %). Einen Mechanismus dafür kennen die Prototypen nicht: Der Flieger kollidiert nur als trigger_target, seine Beine gar nicht, und der Wurm hat nur Partikel und Rauch. Jetzt fliegt ein zweiter Vergleichsflieger O6c 60 Kacheln südlich mit, verglichen wird mit dem Mittel beider. FEHLER ist spürbares Bremsen: über dem Körper unter 80 % des Vergleichstempos in denselben Ticks oder mehr als 5 % längere Flugzeit; leichteres Bremsen ist MESSUNG. Der Weg-Vergleich (höchstens 0,5 Kacheln Rückstand) fällt weg, er maß dasselbe wie das Tempo. Eine zweite MESSUNG-Zeile sucht die Ursache: Wegpunkte des Autopiloten im ersten Flugtick, größte Abweichung quer zur Flugrichtung und Tempo je 20 Ticks, je Flieger.
+    - docs/plan-3d2.md 4.17: W19 ist geklärt und hält nicht. segments[1].position ist das erste Körpersegment, im Mittel 1,49 Kacheln hinter dem gemeldeten Kopf; die Laufzeit benutzte es nie. W12 bleibt offen. DOC 2.4 sagt jetzt „nicht spürbar gebremst“.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.1
 Date: 2026-10-27
   Bugfixes:

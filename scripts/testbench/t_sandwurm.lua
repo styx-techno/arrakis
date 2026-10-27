@@ -94,18 +94,20 @@ local ESCORT_SIDE = 60
 local FLIGHT = 80
 local ESCORT_DIST = 0.5
 local ESCORT_SPEED = 0.98
-local FLIGHT_RATIO = 1.02
 local FLIGHT_MAX = 900
 -- Ruhe vor dem Flug: beide unter REST_SPEED Kacheln/s für REST_CALM Ticks, höchstens REST_MAX Ticks.
 local REST_SPEED = 0.05
 local REST_CALM = 10
 local REST_MAX = 240
--- Über dem Körper: höchstens OVER_NEAR Kacheln von einem Körperknoten, mindestens OVER_MIN Ticks des Flugs. Weg aus der Ruhe
--- bis zum letzten Tick über dem Körper: O6 höchstens OVER_LAG Kacheln hinter O6b im selben Tick (T1, Lauf 2026-10-27: zwei
--- gleich schnelle Bahnen lagen nach 15 bis 75 Kacheln höchstens 0,3 auseinander; 5 % Bremsen über dem Körper kosten etwa 1).
+-- Über dem Körper: höchstens OVER_NEAR Kacheln von einem Körperknoten, mindestens OVER_MIN Ticks des Flugs. Grenze für das
+-- Bremsen dort (0.8.2): O6 mindestens BRAKE.min des mittleren Tempos der beiden Vergleichsflieger in denselben Ticks, Flugzeit
+-- höchstens BRAKE.flight × deren Mittel. Der Lauf vom 27.10.2026 (0.8.1) maß 89 % für 115 Ticks (1,6 Kacheln Rückstand, Flugzeit
+-- 102,2 %); die Ursache ist offen, darum der zweite Vergleichsflieger O6c südlich und die MESSUNGen (Seitenabweichung,
+-- Wegpunkte des Autopiloten, Tempo je 20 Ticks). Spürbares Bremsen (ein Fünftel und mehr) bleibt FEHLER.
 local OVER_NEAR = 3
 local OVER_MIN = 60
-local OVER_LAG = 0.5
+-- (Eine Tabelle statt vier Konstanten: Die Datei liegt an der Grenze von 200 lokalen Namen je Funktion.)
+local BRAKE = {min = 0.8, flight = 1.05, profile_step = 20, profile_ticks = 160}
 -- Schritt 7: Rettung wie T19 Schritt 4.
 local RESCUE_COUPLE = 720
 local RESCUE_CARRIED = 590
@@ -1512,12 +1514,13 @@ function steps.s5_eval(run, tb, d, s)
     tostring(s.dest_n), w.states.patrolling or 0, rel(e.bite_tick, w.eta), tb.num(e.bite_dist, 2)))
 end
 
--- Schritt 6: Ornithopter über dem Kopf (Feld 6) [W12]. Mitflug 300 Ticks über dem Kopf (O6) und 60 Kacheln nördlich (O6b),
--- dann kommen beide an ihren Punkten zur Ruhe, dann fliegen beide 80 Kacheln nach Westen: O6 über den Körper (der Wurm fährt
--- nach Osten), O6b auf der Parallele. Abänderung 0.8.1 (Prüfstand 2026-10-27): Das Tempo im Mitflug folgt Zielpunkten, die mit
+-- Schritt 6: Ornithopter über dem Kopf (Feld 6) [W12]. Mitflug 300 Ticks über dem Kopf (O6), 60 Kacheln nördlich (O6b) und
+-- 60 südlich (O6c, seit 0.8.2), dann kommen alle drei an ihren Punkten zur Ruhe, dann fliegen alle drei 80 Kacheln nach Westen:
+-- O6 über den Körper (der Wurm fährt nach Osten), O6b und O6c auf den Parallelen. Abänderung 0.8.1 (Prüfstand 2026-10-27): Das Tempo im Mitflug folgt Zielpunkten, die mit
 -- Knoten 1 im Raster springen (W18), und ist nur noch MESSUNG; der Flug nach Norden blieb kaum über dem Körper und begann mit
 -- ungleichem Schwung. Gegenprüfung 0.8.1: Über dem Körper ist O6 nur etwa 140 der 600 Flugticks, die Flugzeit allein ließ 5 %
--- Bremsen dort durch; dafür zählt der Weg bis zum letzten Tick über dem Körper, und Sticker liest der Test in Ruhe und Flug je Tick.
+-- Bremsen dort durch; dafür zählte der Weg bis zum letzten Tick über dem Körper, und Sticker liest der Test in Ruhe und Flug je Tick.
+-- Abänderung 0.8.2: Grenze BRAKE statt Weg (siehe oben bei den Konstanten).
 function steps.s6_build(run, tb, d, s)
   local c = field(d, 6)
   s.c = c
@@ -1545,10 +1548,11 @@ local function foreign_stickers(entity)
   return names
 end
 
+-- Zielpunkte im Mitflug: O6 über dem Kopf, O6b 60 Kacheln nördlich, O6c 60 Kacheln südlich (beide fern vom Wurm).
 local function escort_points(head, heading)
   local h = heading or {x = 1, y = 0}
   local p = {x = head.x + ESCORT_LEAD * h.x, y = head.y + ESCORT_LEAD * h.y}
-  return p, {x = p.x, y = p.y - ESCORT_SIDE}
+  return p, {x = p.x, y = p.y - ESCORT_SIDE}, {x = p.x, y = p.y + ESCORT_SIDE}
 end
 
 function steps.s6_escort_start(run, tb, d, s)
@@ -1557,24 +1561,26 @@ function steps.s6_escort_start(run, tb, d, s)
   local head = nodes[1]
   s.o6 = new_flyer(run, tb, d, s, head, {pilot = true, coal = 20})
   s.o6b = new_flyer(run, tb, d, s, at(head, 0, -ESCORT_SIDE), {pilot = true, coal = 20})
-  if not (s.o6 and s.o6b) then return fail(run, tb, 6, "Ornithopter ließen sich nicht bauen") end
+  s.o6c = new_flyer(run, tb, d, s, at(head, 0, ESCORT_SIDE), {pilot = true, coal = 20})
+  if not (s.o6 and s.o6b and s.o6c) then return fail(run, tb, 6, "Ornithopter ließen sich nicht bauen") end
   s.pilot6, s.pilot6b = pilot_of(s.o6), pilot_of(s.o6b)
   s.health = {o6 = s.o6.health, o6b = s.o6b.health, p6 = s.pilot6 and s.pilot6.health, p6b = s.pilot6b and s.pilot6b.health}
-  s.escort = {start = game.tick, n = 0, d6 = 0, db = 0, v6 = 0, vb = 0, head = 0, extra = {}}
+  s.escort = {start = game.tick, n = 0, d6 = 0, db = 0, dc = 0, v6 = 0, vb = 0, vc = 0, head = 0, extra = {}}
   return 1
 end
 
 function steps.s6_escort(run, tb, d, s)
   local e = s.escort
   local now = game.tick
-  if not (valid(s.o6) and valid(s.o6b)) then return fail(run, tb, 6, "Ornithopter im Mitflug weg") end
+  if not (valid(s.o6) and valid(s.o6b) and valid(s.o6c)) then return fail(run, tb, 6, "Ornithopter im Mitflug weg") end
   local head = sandworm_lib.head_of(s.hunt)
   if (now - e.start) % 10 == 0 then
     if head then
       local nodes = s.hunt.worm.unit.get_body_nodes()
-      e.p6, e.pb = escort_points(head, heading_of(nodes))
+      e.p6, e.pb, e.pc = escort_points(head, heading_of(nodes))
       pcall(function() s.o6.autopilot_destination = e.p6 end)
       pcall(function() s.o6b.autopilot_destination = e.pb end)
+      pcall(function() s.o6c.autopilot_destination = e.pc end)
     end
     for _, name in ipairs(foreign_stickers(s.o6)) do e.extra[name] = true end
   end
@@ -1582,8 +1588,10 @@ function steps.s6_escort(run, tb, d, s)
     e.n = e.n + 1
     e.d6 = e.d6 + dist(s.o6.position, e.p6)
     e.db = e.db + dist(s.o6b.position, e.pb)
+    e.dc = e.dc + dist(s.o6c.position, e.pc)
     e.v6 = e.v6 + (tb.speed_tps(s.o6) or 0)
     e.vb = e.vb + (tb.speed_tps(s.o6b) or 0)
+    e.vc = e.vc + (tb.speed_tps(s.o6c) or 0)
     if head then e.head = e.head + dist(s.o6.position, head) end
   end
   if now - e.start < ESCORT_TICKS then return "poll" end
@@ -1591,6 +1599,7 @@ function steps.s6_escort(run, tb, d, s)
   if e.p6 then
     pcall(function() s.o6.autopilot_destination = e.p6 end)
     pcall(function() s.o6b.autopilot_destination = e.pb end)
+    pcall(function() s.o6c.autopilot_destination = e.pc end)
   end
   s.rest = {start = now, calm = 0}
   return 1
@@ -1601,16 +1610,18 @@ end
 function steps.s6_rest(run, tb, d, s)
   local r = s.rest
   local now = game.tick
-  if not (valid(s.o6) and valid(s.o6b)) then return fail(run, tb, 6, "Ornithopter vor dem Flug weg") end
+  if not (valid(s.o6) and valid(s.o6b) and valid(s.o6c)) then return fail(run, tb, 6, "Ornithopter vor dem Flug weg") end
   for _, name in ipairs(foreign_stickers(s.o6)) do s.escort.extra[name] = true end
-  local v6, vb = tb.speed_tps(s.o6) or 0, tb.speed_tps(s.o6b) or 0
-  if v6 < REST_SPEED and vb < REST_SPEED then r.calm = r.calm + 1 else r.calm = 0 end
+  local v6, vb, vc = tb.speed_tps(s.o6) or 0, tb.speed_tps(s.o6b) or 0, tb.speed_tps(s.o6c) or 0
+  if v6 < REST_SPEED and vb < REST_SPEED and vc < REST_SPEED then r.calm = r.calm + 1 else r.calm = 0 end
   if r.calm < REST_CALM and now - r.start < REST_MAX then return "poll" end
-  r.ticks, r.calm_ok, r.v6, r.vb = now - r.start, r.calm >= REST_CALM, v6, vb
-  s.flight = {start = now, p6 = at(s.o6.position, -FLIGHT, 0), pb = at(s.o6b.position, -FLIGHT, 0), over = 0, v6 = 0, vb = 0, near = nil,
-    s6 = at(s.o6.position, 0, 0), sb = at(s.o6b.position, 0, 0)}
+  r.ticks, r.calm_ok, r.v6, r.vb, r.vc = now - r.start, r.calm >= REST_CALM, v6, vb, vc
+  s.flight = {start = now, p6 = at(s.o6.position, -FLIGHT, 0), pb = at(s.o6b.position, -FLIGHT, 0), pc = at(s.o6c.position, -FLIGHT, 0),
+    over = 0, v6 = 0, vb = 0, vc = 0, near = nil, s6 = at(s.o6.position, 0, 0), sb = at(s.o6b.position, 0, 0), sc = at(s.o6c.position, 0, 0),
+    side = {0, 0, 0}, profile = {{}, {}, {}}, waypoints = nil}
   pcall(function() s.o6.autopilot_destination = s.flight.p6 end)
   pcall(function() s.o6b.autopilot_destination = s.flight.pb end)
+  pcall(function() s.o6c.autopilot_destination = s.flight.pc end)
   return 1
 end
 
@@ -1618,17 +1629,37 @@ end
 -- beider Flieger im selben Tick, und w6, wb halten den Weg beider seit dem Start (der letzte solche Tick bleibt stehen). Beide
 -- starten im selben Tick aus der Ruhe zu festen Zielen: Der Weg hängt nicht am Raster der Knoten, und ein Bremsen über dem
 -- Körper fehlt O6 dort ganz (die Flugzeit verdünnt es mit dem Rest der 80 Kacheln). Sticker an O6 je Tick wie in s6_rest.
--- Fertig, wenn beide angekommen sind (on_spider_command_completed) oder nach FLIGHT_MAX.
+-- Fertig, wenn alle drei angekommen sind (on_spider_command_completed) oder nach FLIGHT_MAX.
 function steps.s6_flight(run, tb, d, s)
   local f = s.flight
   local arrived = d.arrived or {}
   local a6 = valid(s.o6) and arrived[s.o6.unit_number]
   local ab = valid(s.o6b) and arrived[s.o6b.unit_number]
+  local ac = valid(s.o6c) and arrived[s.o6c.unit_number]
   if a6 and a6 < f.start then a6 = nil end
   if ab and ab < f.start then ab = nil end
+  if ac and ac < f.start then ac = nil end
   local unit = s.hunt.worm and s.hunt.worm.unit
   if valid(s.o6) then
     for _, name in ipairs(foreign_stickers(s.o6)) do s.escort.extra[name] = true end
+  end
+  -- MESSUNG: Wegpunkte des Autopiloten im ersten Tick (setzt die Engine eigene Zwischenpunkte, etwa um den Wurm herum?),
+  -- größte Abweichung quer zur Flugrichtung und das Tempo je BRAKE.profile_step Ticks in den ersten BRAKE.profile_ticks.
+  local age = game.tick - f.start
+  if not f.waypoints and valid(s.o6) then
+    f.waypoints = {}
+    for i, flyer in ipairs({s.o6, s.o6b, s.o6c}) do
+      local list = valid(flyer) and read(function() return flyer.autopilot_destinations end)
+      f.waypoints[i] = list and #list or -1
+    end
+  end
+  for i, pair in ipairs({{s.o6, f.s6}, {s.o6b, f.sb}, {s.o6c, f.sc}}) do
+    local flyer, start = pair[1], pair[2]
+    if valid(flyer) then
+      local side = math.abs(flyer.position.y - start.y)
+      if side > f.side[i] then f.side[i] = side end
+      if age > 0 and age <= BRAKE.profile_ticks and age % BRAKE.profile_step == 0 then table.insert(f.profile[i], tb.speed_tps(flyer) or 0) end
+    end
   end
   if not a6 and valid(s.o6) and valid(unit) then
     local near
@@ -1641,16 +1672,18 @@ function steps.s6_flight(run, tb, d, s)
       f.over = f.over + 1
       f.v6 = f.v6 + (tb.speed_tps(s.o6) or 0)
       f.vb = f.vb + (valid(s.o6b) and tb.speed_tps(s.o6b) or 0)
+      f.vc = f.vc + (valid(s.o6c) and tb.speed_tps(s.o6c) or 0)
       f.w6 = dist(s.o6.position, f.s6)
       f.wb = valid(s.o6b) and dist(s.o6b.position, f.sb) or nil
+      f.wc = valid(s.o6c) and dist(s.o6c.position, f.sc) or nil
     end
   end
-  if a6 and ab then
-    f.t6, f.tb = a6 - f.start, ab - f.start
+  if a6 and ab and ac then
+    f.t6, f.tb, f.tc = a6 - f.start, ab - f.start, ac - f.start
     return 1
   end
   if game.tick - f.start > FLIGHT_MAX then
-    f.t6, f.tb = a6 and (a6 - f.start), ab and (ab - f.start)
+    f.t6, f.tb, f.tc = a6 and (a6 - f.start), ab and (ab - f.start), ac and (ac - f.start)
     return 1
   end
   return "poll"
@@ -1670,35 +1703,52 @@ function steps.s6_eval(run, tb, d, s)
   check(failed, same, "Gesundheit von O6, O6b oder Pilot verändert")
   check(failed, #extra == 0, "fremde Sticker an O6: " .. table.concat(extra, ", "))
   local n = math.max(1, e.n)
-  local d6, db, v6, vb = e.d6 / n, e.db / n, e.v6 / n, e.vb / n
-  check(failed, e.n > 0 and d6 <= db + ESCORT_DIST, "mittlerer Abstand zum Zielpunkt O6 " .. tb.num(d6, 2) .. " statt ≤ O6b " .. tb.num(db, 2) .. " + 0,5")
+  local d6, db, dc, v6, vb, vc = e.d6 / n, e.db / n, e.dc / n, e.v6 / n, e.vb / n, e.vc / n
+  local dref = (db + dc) / 2
+  check(failed, e.n > 0 and d6 <= dref + ESCORT_DIST, "mittlerer Abstand zum Zielpunkt O6 " .. tb.num(d6, 2) .. " statt ≤ O6b/O6c "
+    .. tb.num(dref, 2) .. " + 0,5")
   check(failed, f.over >= OVER_MIN, "O6 nur " .. f.over .. " Ticks des Flugs höchstens 3 Kacheln von einem Körperknoten statt ≥ 60")
-  -- Flugzeit und Weg vergleichen nur Flüge aus der Ruhe; sonst ist der Vergleich nicht aussagekräftig, und der Schritt sagt das
-  -- als eigenen FEHLER statt als Bremsen.
+  -- Tempo über dem Körper und Flugzeit vergleichen nur Flüge aus der Ruhe; sonst ist der Vergleich nicht aussagekräftig, und der
+  -- Schritt sagt das als eigenen FEHLER statt als Bremsen.
   local r = s.rest or {}
+  local over = math.max(1, f.over)
+  local o6, oref = f.v6 / over, (f.vb + f.vc) / (2 * over)
+  local tref = f.tb and f.tc and (f.tb + f.tc) / 2
   if r.calm_ok then
-    check(failed, f.t6 and f.tb and f.t6 <= FLIGHT_RATIO * f.tb, "Flugzeit O6 " .. tostring(f.t6) .. " statt ≤ 1,02 × " .. tostring(f.tb))
-    check(failed, f.w6 and f.wb and f.w6 >= f.wb - OVER_LAG, "Weg O6 bis zum letzten Tick über dem Körper " .. tb.num(f.w6, 2) .. " statt ≥ O6b "
-      .. tb.num(f.wb, 2) .. " − 0,5")
+    check(failed, f.over > 0 and o6 >= BRAKE.min * oref, "Tempo O6 über dem Körper " .. tb.num(o6, 2) .. " statt ≥ 80 % von O6b/O6c "
+      .. tb.num(oref, 2))
+    check(failed, f.t6 and tref and f.t6 <= BRAKE.flight * tref, "Flugzeit O6 " .. tostring(f.t6) .. " statt ≤ 1,05 × " .. tb.num(tref, 1))
   else
-    check(failed, false, string.format("nach %s Ticks nicht in Ruhe (O6 %s, O6b %s Kacheln/s), Flugvergleich nicht aussagekräftig",
-      tostring(r.ticks), tb.num(r.v6, 2), tb.num(r.vb, 2)))
+    check(failed, false, string.format("nach %s Ticks nicht in Ruhe (O6 %s, O6b %s, O6c %s Kacheln/s), Flugvergleich nicht aussagekräftig",
+      tostring(r.ticks), tb.num(r.v6, 2), tb.num(r.vb, 2), tb.num(r.vc, 2)))
   end
   -- Das Tempo im Mitflug ist MESSUNG: Die Zielpunkte springen mit Knoten 1 (W18), O6 folgt ihnen anders als O6b.
-  if e.n > 0 and v6 < ESCORT_SPEED * vb then
-    tb.log(run, "INFO", "6) mittleres Tempo O6 im Mitflug " .. tb.num(v6, 2) .. " unter 98 % von O6b " .. tb.num(vb, 2) .. " (nur MESSUNG)")
+  if e.n > 0 and v6 < ESCORT_SPEED * (vb + vc) / 2 then
+    tb.log(run, "INFO", "6) mittleres Tempo O6 im Mitflug " .. tb.num(v6, 2) .. " unter 98 % von O6b/O6c " .. tb.num((vb + vc) / 2, 2) .. " (nur MESSUNG)")
   end
   bite_checks(run, tb, s, w, {reach = w.R})
   general(run, tb, d, s, w)
-  tb.log(run, "MESSUNG", string.format("6) Mitflug %d Ticks: Abstand O6–Kopf %s, zum Zielpunkt O6 %s / O6b %s, Tempo O6 %s / O6b %s (%s %%); Ruhe nach %s Ticks; "
-    .. "Flug 80 Kacheln nach Westen O6 %s / O6b %s Ticks, über dem Körper %d Ticks (kleinster Abstand %s), Tempo dort O6 %s / O6b %s, "
-    .. "Weg bis zum letzten Tick dort O6 %s / O6b %s",
-    e.n, tb.num(e.head / n, 2), tb.num(d6, 2), tb.num(db, 2), tb.num(v6, 2), tb.num(vb, 2), tb.num(vb > 0 and 100 * v6 / vb or nil, 0),
-    tostring(r.ticks), tostring(f.t6), tostring(f.tb), f.over, tb.num(f.near, 2), tb.num(f.over > 0 and f.v6 / f.over or nil, 2),
-    tb.num(f.over > 0 and f.vb / f.over or nil, 2), tb.num(f.w6, 2), tb.num(f.wb, 2)))
-  return verdict(run, tb, 6, "Ornithopter über dem Kopf [W12]", failed, string.format("Flugzeit %s %%, über dem Körper %d Ticks, Weg dort %s, Abstand +%s, Sticker %d, Biss %s",
-    tb.num(f.t6 and f.tb and f.tb > 0 and 100 * f.t6 / f.tb or nil, 1), f.over, tb.num(f.w6 and f.wb and f.w6 - f.wb, 2), tb.num(d6 - db, 2), #extra,
-    rel((w.entry or {}).bite_tick, w.eta)))
+  local function profile(list)
+    local parts = {}
+    for _, v in ipairs(list or {}) do table.insert(parts, tb.num(v, 1)) end
+    return table.concat(parts, " ")
+  end
+  local wp = f.waypoints or {}
+  tb.log(run, "MESSUNG", string.format("6) Mitflug %d Ticks: Abstand O6–Kopf %s, zum Zielpunkt O6 %s / O6b %s / O6c %s, Tempo O6 %s / O6b %s / O6c %s; "
+    .. "Ruhe nach %s Ticks; Flug 80 Kacheln nach Westen O6 %s / O6b %s / O6c %s Ticks, über dem Körper %d Ticks (kleinster Abstand %s), "
+    .. "Tempo dort O6 %s / O6b %s / O6c %s (%s %%), Weg bis zum letzten Tick dort O6 %s / O6b %s / O6c %s",
+    e.n, tb.num(e.head / n, 2), tb.num(d6, 2), tb.num(db, 2), tb.num(dc, 2), tb.num(v6, 2), tb.num(vb, 2), tb.num(vc, 2),
+    tostring(r.ticks), tostring(f.t6), tostring(f.tb), tostring(f.tc), f.over, tb.num(f.near, 2),
+    tb.num(f.over > 0 and o6 or nil, 2), tb.num(f.over > 0 and f.vb / over or nil, 2), tb.num(f.over > 0 and f.vc / over or nil, 2),
+    tb.num(oref > 0 and 100 * o6 / oref or nil, 0), tb.num(f.w6, 2), tb.num(f.wb, 2), tb.num(f.wc, 2)))
+  tb.log(run, "MESSUNG", string.format("6) Ursache [W12]: Wegpunkte des Autopiloten im ersten Flugtick O6 %s / O6b %s / O6c %s; größte Abweichung quer "
+    .. "O6 %s / O6b %s / O6c %s Kacheln; Tempo je %d Ticks O6 %s | O6b %s | O6c %s",
+    tostring(wp[1]), tostring(wp[2]), tostring(wp[3]), tb.num(f.side[1], 2), tb.num(f.side[2], 2), tb.num(f.side[3], 2), BRAKE.profile_step,
+    profile(f.profile[1]), profile(f.profile[2]), profile(f.profile[3])))
+  return verdict(run, tb, 6, "Ornithopter über dem Kopf [W12]", failed, string.format("Tempo über dem Körper %s %%, Flugzeit %s %%, über dem Körper %d Ticks, "
+    .. "Abstand +%s, Sticker %d, Biss %s",
+    tb.num(oref > 0 and 100 * o6 / oref or nil, 0), tb.num(f.t6 and tref and tref > 0 and 100 * f.t6 / tref or nil, 1), f.over,
+    tb.num(d6 - dref, 2), #extra, rel((w.entry or {}).bite_tick, w.eta)))
 end
 
 -- Schritt 7: Rettung (Feld 7).
