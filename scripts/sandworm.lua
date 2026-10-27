@@ -24,9 +24,9 @@ lib.PREFIX = "arrakis-sandworm-"
 -- Tempo (Kacheln/s): Fahrt in allen Zuständen, Sprint.
 lib.V = 3.5
 lib.V_SPRINT = 6
--- Standardwahl (Plan 1 „Sprint“, Frage an Max): Ist der Wurm zu spät, schreibt das Skript ein Tempo über V bis V_SPRINT,
--- mit zwei Ersatzstufen (move_forward, Knotenschub). false: nie mehr als V; ein fliehendes Ziel bekommt dann meist den
--- Ersatzbiss bei 0 + 3 s (Plan 4.9).
+-- Plan 1 „Sprint“, Max 27.10.: ja. Ist der Wurm zu spät, schreibt das Skript ein Tempo über V bis V_SPRINT, mit zwei
+-- Ersatzstufen (move_forward, Knotenschub). false: nie mehr als V; ein fliehendes Ziel bekommt dann meist den Ersatzbiss
+-- bei 0 + 3 s (Plan 4.9).
 lib.SPRINT = true
 -- Reichweite des Bisses über die Zielbox hinaus (Kacheln): R = BITE_REACH + r (worms.lua übernimmt den Wert).
 lib.BITE_REACH = 3

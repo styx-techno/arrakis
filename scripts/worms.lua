@@ -71,15 +71,17 @@ lib.ZONE_RADIUS = 5
 lib.MAX_DEBUG_WORMS = 3
 -- Protokoll: die letzten so vielen beendeten Jagden (Plan 4.16).
 lib.LOG_SIZE = 20
--- Standardwahl (Plan 1 „Zerdrücken“, Frage an Max): Das Zerdrücken schont Fahrzeuge (VEHICLE_TYPES, auch Spice-Ernter)
--- und Figuren. false: Sie sterben im Weg mit, ein Spice-Ernter nach der Einstellung arrakis-worm-bite wie beim Biss.
-lib.CRUSH_SPARES_VEHICLES = true
--- Standardwahl (Plan 1 „Wurm getötet“, Frage an Max): Ein Wurm, der vor 0 stirbt, beendet die Jagd als killed, das Ziel
--- ist gerettet. false: Die Jagd läuft ohne Wurm weiter (Phase ohne, "verloren") und beißt bei 0 wie 0.7.0; killed
--- zählt trotzdem.
+-- Plan 1 „Zerdrücken“, Max 27.10.: Auch Fahrzeuge (VEHICLE_TYPES, auch Spice-Ernter) und Figuren sterben im Weg, ohne
+-- eigenen Alarm; ein Spice-Ernter nach der Einstellung arrakis-worm-bite wie beim Biss (devour), Insassen wie beim
+-- Totalverlust. true: Das Zerdrücken schont Fahrzeuge und Figuren (die alte Standardwahl des Plans bis 27.10.).
+-- Diesen Wert nennen auch die Texte arrakis-sandworm-small und arrakis-wormsign-tip (locale/*/arrakis.cfg), T21
+-- Schritt 8 liest ihn hier.
+lib.CRUSH_SPARES_VEHICLES = false
+-- Plan 1 „Wurm getötet“, Max 27.10.: ja. Ein Wurm, der vor 0 stirbt, beendet die Jagd als killed, das Ziel ist gerettet.
+-- false: Die Jagd läuft ohne Wurm weiter (Phase ohne, "verloren") und beißt bei 0 wie 0.7.0; killed zählt trotzdem.
 lib.KILL_RESCUES = true
--- Standardwahl (Plan 1 „ROUTING“, Frage an Max): Ohne Sandlinie und ohne Weg (Phase ohne, "kein-weg") beißt es bei 0 wie
--- 0.7.0. false: Die Jagd entfällt still (Ende "quiet": Rücksetzen und Ruhe, keine Statistik, kein Biss).
+-- Plan 1 „ROUTING“, Max 27.10.: ja. Ohne Sandlinie und ohne Weg (Phase ohne, "kein-weg") beißt es bei 0 wie 0.7.0.
+-- false: Die Jagd entfällt still (Ende "quiet": Rücksetzen und Ruhe, keine Statistik, kein Biss).
 lib.NO_ROUTE_BITE = true
 
 local FORCE = lib.FORCE
@@ -118,8 +120,8 @@ local NO_VICTIM =
   ["spider-leg"] = true
 }
 
--- Nie zerdrückt (Plan 4.10 Schritt 2), dazu alles, was victim_ok ausnimmt; Fahrzeuge und Figuren nach
--- CRUSH_SPARES_VEHICLES.
+-- Nie zerdrückt (Plan 4.10 Schritt 2), dazu alles, was victim_ok ausnimmt; Fahrzeuge und Figuren nur mit
+-- CRUSH_SPARES_VEHICLES = true.
 local NO_CRUSH =
 {
   ["elevated-straight-rail"] = true,
@@ -941,7 +943,7 @@ local function crushable(entity, hx, hy, surface_index, ctx)
 end
 
 -- Zerdrücken (docs/plan-3d2.md 4.10): am Kopf dieses Takts, im Spawn-Takt an jedem vierten Knoten. Keine Eruption, kein
--- Chat; worm.crushed zählt mit.
+-- Chat, kein Alarm; worm.crushed zählt mit (Getötete; ein schwer beschädigter Ernter zählt nicht).
 local function crush(hunt, tick, ctx, worm_force)
   local worm = hunt.worm
   local unit = worm.unit
@@ -962,7 +964,8 @@ local function crush(hunt, tick, ctx, worm_force)
     end
   end
   if #victims.characters + #victims.vehicles + #victims.others == 0 then return end
-  local mode = settings.global[BITE_SETTING].value
+  -- Ein Spice-Ernter im Weg wie beim Biss dieser Jagd: Einstellung arrakis-worm-bite (Prüfstand: hunt.bite).
+  local mode = hunt.bite or settings.global[BITE_SETTING].value
   local _, n = devour(victims, nil, mode, worm_force)
   -- devour kann über Ereignisse anderer Mods den Wurm schon beendet haben.
   if hunt.worm == worm then worm.crushed = worm.crushed + n end
