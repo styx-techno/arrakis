@@ -12,6 +12,9 @@
 -- Die Tests zählen Ticks. Der Kopf wird je 10 Ticks in der Mitte zwischen zwei Takten gelesen (tick % 10 == 5) über
 -- sandworm.head_of; Phasenwechsel erkennt der Test jeden Tick und rundet den Tick auf den Takt ab (Vielfaches von 10):
 -- Die Reihenfolge zwischen dem 10-Tick-Takt von worms.lua und dem Prüfstand-Tick ist nicht zugesichert.
+-- Knoten 1 springt im Kachelraster (W18, Prüfstand 2026-10-27): Er bleibt bis zu 1 Kachel hinter dem wahren Kopf, je 10 Ticks
+-- kommt er 0, 1 oder 2 Kacheln weit. Ein Takt allein misst also kein Tempo; Tempo und Weg zählen nur über Fenster, deren Fehler
+-- unter 1 Kachel bleibt (je Lauf ohne Unterbrechung), und die Texte nennen das Fenster.
 -- Sollwerte stehen hier als Zahlen aus dem Plan (1, 4.4 bis 4.11, 6), bewusst nicht aus den Modulen gelesen. Ausnahme sind
 -- die Standardwahlen aus Plan 1, die Max am 27.10. entschieden hat und die eine Konstante im Modul bleiben (Zerdrücken auch
 -- von Fahrzeugen und Figuren: worms.CRUSH_SPARES_VEHICLES; Wurm getötet rettet: worms.KILL_RESCUES; Sprint:
@@ -77,9 +80,13 @@ local HOLD_BASE, HOLD_PER_S = 0.5, 0.1
 local DETOUR_EDGE = 2
 local TURN_MIN = 20
 local TURN_WINDOW = 180
--- W3 hält ab diesem mittleren Sprinttempo (Kacheln/s).
+-- W3 hält ab diesem mittleren Sprinttempo (Kacheln/s), bei 6 geschriebenen also ab diesem Anteil des geschriebenen Wegs.
 local SPRINT_W3 = 5.5
--- Schritt 6: Mitflug.
+local SPRINT_SHARE = SPRINT_W3 / 6
+-- Raster der Körperknoten (W18): Fehler eines Wegs je Lauf; Tempo im Text über 6 Proben (1 s).
+local NODE_STEP = 1
+local SPEED_SAMPLES = 6
+-- Schritt 6: Mitflug, Ruhe, Flug nach Westen über den Körper.
 local ESCORT_START = 600
 local ESCORT_TICKS = 300
 local ESCORT_LEAD = 6
@@ -89,6 +96,13 @@ local ESCORT_DIST = 0.5
 local ESCORT_SPEED = 0.98
 local FLIGHT_RATIO = 1.02
 local FLIGHT_MAX = 900
+-- Ruhe vor dem Flug: beide unter REST_SPEED Kacheln/s für REST_CALM Ticks, höchstens REST_MAX Ticks.
+local REST_SPEED = 0.05
+local REST_CALM = 10
+local REST_MAX = 240
+-- Über dem Körper: höchstens OVER_NEAR Kacheln von einem Körperknoten, mindestens OVER_MIN Ticks des Flugs.
+local OVER_NEAR = 3
+local OVER_MIN = 60
 -- Schritt 7: Rettung wie T19 Schritt 4.
 local RESCUE_COUPLE = 720
 local RESCUE_CARRIED = 590
@@ -259,13 +273,6 @@ local function unit_vector(dx, dy)
   local len = math.sqrt(dx * dx + dy * dy)
   if len < 1e-9 then return nil end
   return {x = dx / len, y = dy / len}
-end
-
-local function mean(list)
-  if not list or #list == 0 then return nil end
-  local sum = 0
-  for _, v in ipairs(list) do sum = sum + v end
-  return sum / #list
 end
 
 -- Natürlicher Sand an (x, y): erzeugter Chunk und natürliche Kachel kein Fels (wie scripts/sandworm.lua).
@@ -758,16 +765,27 @@ local function watch_new(d, number, hunt)
   {
     hunt = hunt, id = hunt.id, number = number, eta = hunt.eta_tick, warn = hunt.warn_tick, box = field and field.box,
     R = BITE_REACH + (hunt.r or 1.58), first_phase = hunt.phase, phase = hunt.phase, phase_at = {[hunt.phase] = takt(game.tick)},
-    phases = {}, requests = {}, dives = {}, detours = {}, rock = 0, samples = 0, modes = {}, states = {}, sprint_v = {},
-    hold = {ticks = 0, path = 0}, detour_n = 0, sprint_n = 0
+    phases = {}, requests = {}, dives = {}, detours = {}, rock = 0, samples = 0, modes = {}, states = {}, steps = {},
+    sprint = {n = 0, walked = 0, want = 0, runs = 0}, hold = {ticks = 0, path = 0, runs = 0}, detour_n = 0, sprint_n = 0
   }
 end
 
--- Zielmitte (gültig) oder last_pos.
+-- P der Jagd (hunt.zone: Zielmitte, solange sie zählt, sonst last_pos, Plan 4.12), ersatzweise Zielmitte oder last_pos. Ein
+-- getragener Ernter steht anderswo (Schritt 7, Prüfstand 2026-10-27: Abstand 37680); P bleibt, wo der Wurm hinfährt.
 local function target_point(hunt)
+  if hunt.zone then return copy_pos(hunt.zone) end
   local target = hunt.target
   if valid(target) then return copy_pos(target.position) end
   return copy_pos(hunt.last_pos)
+end
+
+-- Weg von Knoten 1 über die letzten n Proben (Kacheln) und deren Zahl.
+local function recent_path(w, n)
+  local list = w.steps
+  local k = math.min(n, #list)
+  local sum = 0
+  for i = #list - k + 1, #list do sum = sum + list[i] end
+  return sum, k
 end
 
 local function heading_of(nodes)
@@ -798,31 +816,56 @@ local function sample(run, tb, d, w, hunt, worm)
   w.states[state] = (w.states[state] or 0) + 1
   local P = target_point(hunt)
   rec.d = dist(head, P)
+  -- Tempo nur über SPEED_SAMPLES Proben (1 s, Fehler unter 1 Kachel/s); kleinstes im Angriff über volle Fenster.
   local v
+  local holding = worm.hold_since ~= nil
   if w.last_head then
     local step = dist(head, w.last_head)
-    v = step * 6
+    rec.step = step
+    table.insert(w.steps, step)
+    if #w.steps > SPEED_SAMPLES then table.remove(w.steps, 1) end
+    local sum, k = recent_path(w, SPEED_SAMPLES)
+    v = sum * 6 / k
     rec.v = v
-    if phase == "angriff" and (not w.v_attack_min or v < w.v_attack_min) then w.v_attack_min = v end
-    if w.sprint_pending then table.insert(w.sprint_v, v) end
-    local holding = worm.hold_since ~= nil
+    if phase == "angriff" and k == SPEED_SAMPLES and (not w.v_attack_min or v < w.v_attack_min) then w.v_attack_min = v end
+    -- Sprint [W3]: Weg von Knoten 1 gegen den geschriebenen Weg; je Lauf ohne Unterbrechung höchstens 1 Kachel Rasterfehler.
+    local sp = w.sprint
+    if w.sprint_pending then
+      if not sp.open then sp.runs = sp.runs + 1 end
+      sp.open = true
+      sp.n = sp.n + 1
+      sp.walked = sp.walked + step
+      sp.want = sp.want + w.sprint_pending / 6
+    else
+      sp.open = false
+    end
+    -- Halten [W2]: Weg von Knoten 1 vom ersten bis zum letzten Takt jedes Haltens (Fehler je Halten unter 1 Kachel).
     if holding and w.was_holding then
-      w.hold.path = w.hold.path + step
       w.hold.ticks = w.hold.ticks + 10
+      w.hold.last = rec.head
     end
   end
-  w.was_holding = worm.hold_since ~= nil
-  w.sprint_pending = worm.sprint > w.sprint_n
+  if holding and not w.was_holding then
+    w.hold.runs = w.hold.runs + 1
+    w.hold.start, w.hold.last = rec.head, rec.head
+  elseif not holding and w.was_holding and w.hold.start then
+    w.hold.path = w.hold.path + dist(w.hold.start, w.hold.last)
+    w.hold.start = nil
+  end
+  w.was_holding = holding
+  -- Tempo, das der Sprint-Takt seit der letzten Probe geschrieben hat (Kacheln/s), sonst false.
+  w.sprint_pending = worm.sprint > w.sprint_n and (worm.last_v or 0)
   w.sprint_n = worm.sprint
   if not w.v1 and w.spawn_tick and tick >= w.spawn_tick + 60 then w.v1 = read(function() return unit.speed end) end
   if w.v1 and not w.v1_tps then w.v1_tps = w.v1 * 60 end
   -- W1 aus Schritt 2 gleich bei der Messung merken: Schritt 3 (Befehlsjagd, früheres eta) wertet vor Schritt 2 aus und
   -- fände d.w1 sonst nie gesetzt (Nachprüfung 0.8.0).
   if w.number == 2 and w.v1_tps and d.w1 == nil then d.w1 = w.v1_tps >= V_W1 end
+  -- Ankunft von Knoten 1 in Reichweite (bis 1 Kachel nach dem wahren Kopf, W18).
   if not w.arrived and rec.d <= w.R then w.arrived = tick end
   if tick % 60 == 5 then
-    tb.trace(run, string.format("%d) %s: %s, Phase %s, Kopf %s, Abstand %s, Tempo %s, Ziel %s", w.number, rel(tick, w.eta), state,
-      tostring(phase), pos_text(tb, head), tb.num(rec.d), tb.num(v), pos_text(tb, ai and ai.destination)))
+    tb.trace(run, string.format("%d) %s: %s, Phase %s, Kopf %s, Abstand %s, Tempo 1 s %s (Spur %s), Ziel %s", w.number, rel(tick, w.eta), state,
+      tostring(phase), pos_text(tb, head), tb.num(rec.d), tb.num(v), tb.num(worm.v_head), pos_text(tb, ai and ai.destination)))
   end
   w.last_head = rec.head
   w.last_heading = rec.heading
@@ -895,6 +938,14 @@ local function watch_tick(run, tb, d, w)
   if tick % 10 == 5 and worm and valid(worm.unit) then sample(run, tb, d, w, hunt, worm) end
 end
 
+-- Weg beim Halten samt einem offenen Halten (Kacheln).
+local function hold_path(w)
+  local hold = w.hold
+  local path = hold.path
+  if hold.start and hold.last then path = path + dist(hold.start, hold.last) end
+  return path
+end
+
 -- Allgemeine Prüfungen je Schritt mit Wurm (Plan 6): Fels, Abtauchen, Kopfbox, Erzeugungen, Aktivität, Halten, Feld leer.
 -- opts.dives: erlaubte Gründe des Abtauchens vor dem Biss. Schreibt MESSUNG- und INFO-Zeilen, FEHLER in s.failed.
 local function general(run, tb, d, s, w, opts)
@@ -943,10 +994,13 @@ local function general(run, tb, d, s, w, opts)
       .. (#states > 0 and table.concat(states, ", ") or "–"))
     if (w.minimal or 0) > 0 then tb.log(run, "INFO", n .. ") activity_mode minimal in " .. w.minimal .. " Takten [W13]") end
     if w.hold.ticks > 0 then
-      local limit = HOLD_BASE + HOLD_PER_S * w.hold.ticks / 60
-      tb.log(run, "MESSUNG", string.format("%d) Halten %s s, Weg dabei %s Kacheln (Grenze %s)", n, tb.num(w.hold.ticks / 60),
-        tb.num(w.hold.path, 2), tb.num(limit, 2)))
-      if w.hold.path > limit then tb.log(run, "INFO", n .. ") Kopf kriecht beim Halten [W2]") end
+      local hold = w.hold
+      local path = hold_path(w)
+      local limit = HOLD_BASE + HOLD_PER_S * hold.ticks / 60
+      tb.log(run, "MESSUNG", string.format("%d) Halten %s s in %d Läufen, Weg von Knoten 1 dabei %s Kacheln (Raster ±%d, Grenze %s)", n,
+        tb.num(hold.ticks / 60), hold.runs, tb.num(path, 2), hold.runs * NODE_STEP, tb.num(limit, 2)))
+      -- Kriechen nur, wenn es auch mit dem Rasterfehler über der Grenze liegt (ein Sprung beim Anhalten ist keiner).
+      if path - hold.runs * NODE_STEP > limit then tb.log(run, "INFO", n .. ") Kopf kriecht beim Halten [W2]") end
     end
   end
   if w.box then
@@ -974,15 +1028,38 @@ local function bite_checks(run, tb, s, w, opts)
   return delay
 end
 
--- Mittleres Sprinttempo (Kacheln/s) oder nil.
+-- Sprint [W3] über alle Sprint-Proben: Weg von Knoten 1 gegen den geschriebenen Weg. Gibt den Anteil und seine Grenzen
+-- (je Lauf höchstens NODE_STEP Rasterfehler) zurück, ohne Sprint nil.
+local function sprint_share(w)
+  local sp = w.sprint
+  if sp.n == 0 or sp.want <= 0 then return nil end
+  local err = sp.runs * NODE_STEP
+  return sp.walked / sp.want, math.max(0, sp.walked - err) / sp.want, (sp.walked + err) / sp.want
+end
+
+-- Mittleres Sprinttempo (Kacheln/s, Weg von Knoten 1 über alle Sprint-Proben) oder nil.
 local function sprint_mean(w)
-  return mean(w.sprint_v)
+  local sp = w.sprint
+  if sp.n == 0 then return nil end
+  return sp.walked * 6 / sp.n
+end
+
+-- W3 hält (true), hält nicht (false) oder ist im Raster nicht zu entscheiden (nil).
+local function sprint_holds(w)
+  local _, lo, hi = sprint_share(w)
+  if not lo then return nil end
+  if lo >= SPRINT_SHARE then return true end
+  if hi < SPRINT_SHARE then return false end
+  return nil
 end
 
 local function sprint_text(tb, w)
   local e = w.entry or {}
-  return string.format("Sprint-Takte %s, mittleres Sprinttempo %s, Ersatzstufe %s", tostring(e.sprint), tb.num(sprint_mean(w), 2),
-    tostring(e.boost))
+  local share, lo, hi = sprint_share(w)
+  local sp = w.sprint
+  return string.format("Sprint-Takte %s, mittleres Sprinttempo %s über %d Proben in %d Läufen, Weg %s %% des geschriebenen (Raster %s bis %s %%), Ersatzstufe %s",
+    tostring(e.sprint), tb.num(sprint_mean(w), 2), sp.n, sp.runs, tb.num(share and 100 * share, 1), tb.num(lo and 100 * lo, 1),
+    tb.num(hi and 100 * hi, 1), tostring(e.boost))
 end
 
 local function no_corpse(run, tb, s, w)
@@ -1135,6 +1212,67 @@ function steps.s2_build(run, tb, d, s)
   return 1
 end
 
+-- Raster der Körperknoten [W18] und segments[1] [W19], nur MESSUNG: Weg von Knoten 1 je Probe nach ganzen Kacheln gezählt;
+-- Lage von segments[1].position gegen Knoten 1 längs der Kopfrichtung und ob sie sich stetig bewegt (dann wäre sie der wahre
+-- Kopf, den die Laufzeit noch nicht benutzt).
+SAMPLE[2] = function(run, tb, d, s, w, hunt, worm, rec)
+  local r = s.raster or {n = 0, counts = {}, off = 0}
+  s.raster = r
+  if rec.step then
+    r.n = r.n + 1
+    local k = math.floor(rec.step + 0.5)
+    if math.abs(rec.step - k) > 0.1 then
+      r.off = r.off + 1
+    else
+      r.counts[k] = (r.counts[k] or 0) + 1
+    end
+  end
+  local g = s.segment or {n = 0, ahead = 0, side = 0, steps = 0, off = 0, missing = 0}
+  s.segment = g
+  local seg = read(function()
+    local first = worm.unit.segments[1]
+    return first and first.position and copy_pos(first.position)
+  end)
+  if not (seg and rec.heading) then
+    g.missing = g.missing + 1
+    return
+  end
+  local dx, dy = seg.x - rec.head.x, seg.y - rec.head.y
+  local ahead = dx * rec.heading.x + dy * rec.heading.y
+  g.n = g.n + 1
+  g.ahead = g.ahead + ahead
+  g.side = math.max(g.side, math.abs(dy * rec.heading.x - dx * rec.heading.y))
+  g.min = math.min(g.min or ahead, ahead)
+  g.max = math.max(g.max or ahead, ahead)
+  if g.last then
+    local step = dist(seg, g.last)
+    g.steps = g.steps + 1
+    if math.abs(step - math.floor(step + 0.5)) > 0.1 then g.off = g.off + 1 end
+  end
+  g.last = seg
+end
+
+local function raster_text(run, tb, s)
+  local r = s.raster
+  if r and r.n > 0 then
+    local keys, parts = {}, {}
+    for k in pairs(r.counts) do table.insert(keys, k) end
+    table.sort(keys)
+    for _, k in ipairs(keys) do table.insert(parts, k .. " × " .. r.counts[k]) end
+    tb.log(run, "MESSUNG", string.format("2) Raster [W18]: Weg von Knoten 1 je 10 Ticks in ganzen Kacheln %s, nicht ganzzahlig %d von %d Proben",
+      #parts > 0 and table.concat(parts, ", ") or "–", r.off, r.n))
+    if r.off > 0 then tb.log(run, "INFO", "2) Knoten 1 springt nicht nur um ganze Kacheln [W18]") end
+  end
+  local g = s.segment
+  if g and g.n > 0 then
+    tb.log(run, "MESSUNG", string.format("2) segments[1] [W19]: vor Knoten 1 längs der Kopfrichtung im Mittel %s (%s bis %s), seitlich höchstens %s Kacheln; "
+      .. "Weg je 10 Ticks nicht ganzzahlig in %d von %d Proben, ohne Lage %d", tb.num(g.ahead / g.n, 2), tb.num(g.min, 2), tb.num(g.max, 2),
+      tb.num(g.side, 2), g.off, g.steps, g.missing))
+  elseif g then
+    tb.log(run, "MESSUNG", "2) segments[1] [W19]: keine Lage in " .. g.missing .. " Proben")
+  end
+end
+
 function steps.s2_eval(run, tb, d, s)
   local w = s.watch
   local failed = s.failed
@@ -1181,8 +1319,9 @@ function steps.s2_eval(run, tb, d, s)
   no_corpse(run, tb, s, w)
   check(failed, e.phase == "angriff" and e.outcome == "bitten", "Protokoll: Phase " .. tostring(e.phase) .. ", Ergebnis " .. tostring(e.outcome))
   general(run, tb, d, s, w)
-  tb.log(run, "MESSUNG", string.format("2) Ankunft in Reichweite %s, kleinstes Tempo im Angriff %s, Phasen: %s",
-    w.arrived and (w.eta - w.arrived .. " Ticks vor eta") or "–", tb.num(w.v_attack_min, 2), table.concat(w.phases, ", ")))
+  tb.log(run, "MESSUNG", string.format("2) Ankunft von Knoten 1 in Reichweite %s, kleinstes Tempo im Angriff %s (Weg je 1 s, Raster ±1), Phasen: %s",
+    rel(w.arrived, w.eta), tb.num(w.v_attack_min, 2), table.concat(w.phases, ", ")))
+  raster_text(run, tb, s)
   return verdict(run, tb, 2, "Zeitlinie 60 s, regulär", failed, string.format("routing %s, Wurm %s, Tempo nach 1 s %s, Angriff bei %s, Biss %s (%s), Abstand %s",
     rel(w.phase_at.routing, w.eta), rel(w.spawn_tick, w.eta), tb.num(w.v1_tps, 2), tb.num(w.attack and w.attack.d), rel(bite_tick, w.eta),
     tostring(delay), tb.num(e.bite_dist, 2)))
@@ -1223,13 +1362,13 @@ function steps.s3_eval(run, tb, d, s)
   check(failed, edge and edge >= DETOUR_EDGE, "erster Umweg " .. tb.num(edge) .. " Kacheln vor dem Inselrand statt ≥ 2")
   check(failed, w.turn_max and w.turn_max >= TURN_MIN, "Richtungsänderung " .. tb.num(w.turn_max) .. "° binnen 180 Ticks statt ≥ 20°")
   bite_checks(run, tb, s, w, {ersatz_ok = true, reach = w.R})
-  local sprint = sprint_mean(w)
-  local w3 = sprint and sprint >= SPRINT_W3
+  local w3 = sprint_holds(w)
   if e.ersatz then
     if d.w1 and w3 then
       check(failed, false, "Ersatzbiss, obwohl W1 und W3 halten")
     else
-      tb.log(run, "INFO", "3) Ersatzbiss (W1 " .. tostring(d.w1) .. ", W3 " .. tostring(w3) .. "): Umweg und Start ohne Schwung zusammen über 7,4 s Luft")
+      tb.log(run, "INFO", "3) Ersatzbiss (W1 " .. tostring(d.w1) .. ", W3 " .. (w3 == nil and "im Raster offen" or tostring(w3))
+        .. "): Umweg und Start ohne Schwung zusammen über 7,4 s Luft")
     end
   end
   general(run, tb, d, s, w)
@@ -1363,13 +1502,17 @@ function steps.s5_eval(run, tb, d, s)
   bite_checks(run, tb, s, w, {reach = R_HARVESTER})
   check(failed, w.worm_gone and w.entry and w.worm_gone <= (e.bite_tick or 0) + 10, "Wurm nach dem Biss nicht weg")
   general(run, tb, d, s, w)
-  tb.log(run, "MESSUNG", string.format("5) kleinster Abstand Kopf–Fels %s Kacheln, Weg beim Halten %s in %s s", tb.num(s.rock_min, 2),
-    tb.num(w.hold.path, 2), tb.num(w.hold.ticks / 60)))
+  tb.log(run, "MESSUNG", string.format("5) kleinster Abstand Kopf–Fels %s Kacheln, Weg von Knoten 1 beim Halten %s in %s s (Raster ±%d)",
+    tb.num(s.rock_min, 2), tb.num(hold_path(w), 2), tb.num(w.hold.ticks / 60), w.hold.runs * NODE_STEP))
   return verdict(run, tb, 5, "Ernter 10 Kacheln vor Fels [W2]", failed, string.format("Fahrziel P + 6 · u in %s Takten, patrolling %d, Biss %s, Abstand %s",
     tostring(s.dest_n), w.states.patrolling or 0, rel(e.bite_tick, w.eta), tb.num(e.bite_dist, 2)))
 end
 
--- Schritt 6: Ornithopter über dem Kopf (Feld 6) [W12].
+-- Schritt 6: Ornithopter über dem Kopf (Feld 6) [W12]. Mitflug 300 Ticks über dem Kopf (O6) und 60 Kacheln nördlich (O6b),
+-- dann kommen beide an ihren Punkten zur Ruhe, dann fliegen beide 80 Kacheln nach Westen: O6 über den Körper (der Wurm fährt
+-- nach Osten), O6b auf der Parallele. Abänderung 0.8.1 (Prüfstand 2026-10-27): Das Tempo im Mitflug folgt Zielpunkten, die mit
+-- Knoten 1 im Raster springen (W18), und ist nur noch MESSUNG; der Flug nach Norden blieb kaum über dem Körper und begann mit
+-- ungleichem Schwung.
 function steps.s6_build(run, tb, d, s)
   local c = field(d, 6)
   s.c = c
@@ -1439,12 +1582,32 @@ function steps.s6_escort(run, tb, d, s)
     if head then e.head = e.head + dist(s.o6.position, head) end
   end
   if now - e.start < ESCORT_TICKS then return "poll" end
-  s.flight = {start = now, p6 = at(s.o6.position, 0, -FLIGHT), pb = at(s.o6b.position, 0, -FLIGHT)}
+  -- Ruhe: Die Zielpunkte bleiben, wo sie zuletzt waren; der Wurm fährt weiter unter O6 hindurch.
+  if e.p6 then
+    pcall(function() s.o6.autopilot_destination = e.p6 end)
+    pcall(function() s.o6b.autopilot_destination = e.pb end)
+  end
+  s.rest = {start = now, calm = 0}
+  return 1
+end
+
+-- Beide unter REST_SPEED für REST_CALM Ticks oder REST_MAX Ticks vorbei, dann der Flug nach Westen aus der Ruhe.
+function steps.s6_rest(run, tb, d, s)
+  local r = s.rest
+  local now = game.tick
+  if not (valid(s.o6) and valid(s.o6b)) then return fail(run, tb, 6, "Ornithopter vor dem Flug weg") end
+  local v6, vb = tb.speed_tps(s.o6) or 0, tb.speed_tps(s.o6b) or 0
+  if v6 < REST_SPEED and vb < REST_SPEED then r.calm = r.calm + 1 else r.calm = 0 end
+  if r.calm < REST_CALM and now - r.start < REST_MAX then return "poll" end
+  r.ticks, r.calm_ok, r.v6, r.vb = now - r.start, r.calm >= REST_CALM, v6, vb
+  s.flight = {start = now, p6 = at(s.o6.position, -FLIGHT, 0), pb = at(s.o6b.position, -FLIGHT, 0), over = 0, v6 = 0, vb = 0, near = nil}
   pcall(function() s.o6.autopilot_destination = s.flight.p6 end)
   pcall(function() s.o6b.autopilot_destination = s.flight.pb end)
   return 1
 end
 
+-- Flug: je Tick der kleinste Abstand von O6 zu einem Körperknoten; über dem Körper (≤ OVER_NEAR) zählen Ticks und die Tempi
+-- beider Flieger im selben Tick. Fertig, wenn beide angekommen sind (on_spider_command_completed) oder nach FLIGHT_MAX.
 function steps.s6_flight(run, tb, d, s)
   local f = s.flight
   local arrived = d.arrived or {}
@@ -1452,6 +1615,20 @@ function steps.s6_flight(run, tb, d, s)
   local ab = valid(s.o6b) and arrived[s.o6b.unit_number]
   if a6 and a6 < f.start then a6 = nil end
   if ab and ab < f.start then ab = nil end
+  local unit = s.hunt.worm and s.hunt.worm.unit
+  if not a6 and valid(s.o6) and valid(unit) then
+    local near
+    for _, node in ipairs(unit.get_body_nodes()) do
+      local gap = dist(s.o6.position, node)
+      if not near or gap < near then near = gap end
+    end
+    if near and (not f.near or near < f.near) then f.near = near end
+    if near and near <= OVER_NEAR then
+      f.over = f.over + 1
+      f.v6 = f.v6 + (tb.speed_tps(s.o6) or 0)
+      f.vb = f.vb + (valid(s.o6b) and tb.speed_tps(s.o6b) or 0)
+    end
+  end
   if a6 and ab then
     f.t6, f.tb = a6 - f.start, ab - f.start
     return 1
@@ -1479,15 +1656,25 @@ function steps.s6_eval(run, tb, d, s)
   local n = math.max(1, e.n)
   local d6, db, v6, vb = e.d6 / n, e.db / n, e.v6 / n, e.vb / n
   check(failed, e.n > 0 and d6 <= db + ESCORT_DIST, "mittlerer Abstand zum Zielpunkt O6 " .. tb.num(d6, 2) .. " statt ≤ O6b " .. tb.num(db, 2) .. " + 0,5")
-  check(failed, e.n > 0 and v6 >= ESCORT_SPEED * vb, "mittleres Tempo O6 " .. tb.num(v6, 2) .. " statt ≥ 98 % von " .. tb.num(vb, 2))
   check(failed, f.t6 and f.tb and f.t6 <= FLIGHT_RATIO * f.tb, "Flugzeit O6 " .. tostring(f.t6) .. " statt ≤ 1,02 × " .. tostring(f.tb))
+  check(failed, f.over >= OVER_MIN, "O6 nur " .. f.over .. " Ticks des Flugs höchstens 3 Kacheln von einem Körperknoten statt ≥ 60")
+  -- Das Tempo im Mitflug ist MESSUNG: Die Zielpunkte springen mit Knoten 1 (W18), O6 folgt ihnen anders als O6b.
+  if e.n > 0 and v6 < ESCORT_SPEED * vb then
+    tb.log(run, "INFO", "6) mittleres Tempo O6 im Mitflug " .. tb.num(v6, 2) .. " unter 98 % von O6b " .. tb.num(vb, 2) .. " (nur MESSUNG)")
+  end
+  local r = s.rest or {}
+  if not r.calm_ok then
+    tb.log(run, "INFO", string.format("6) nach %s Ticks nicht in Ruhe (O6 %s, O6b %s Kacheln/s), Flug trotzdem", tostring(r.ticks), tb.num(r.v6, 2), tb.num(r.vb, 2)))
+  end
   bite_checks(run, tb, s, w, {reach = w.R})
   general(run, tb, d, s, w)
-  tb.log(run, "MESSUNG", string.format("6) Mitflug %d Ticks: Abstand O6–Kopf %s, zum Zielpunkt O6 %s / O6b %s, Tempo O6 %s / O6b %s; Flugzeit 80 Kacheln O6 %s / O6b %s Ticks",
-    e.n, tb.num(e.head / n, 2), tb.num(d6, 2), tb.num(db, 2), tb.num(v6, 2), tb.num(vb, 2), tostring(f.t6), tostring(f.tb)))
-  return verdict(run, tb, 6, "Ornithopter über dem Kopf [W12]", failed, string.format("Tempo %s %%, Abstand +%s, Flugzeit %s %%, Sticker %d, Biss %s",
-    tb.num(vb > 0 and 100 * v6 / vb or nil, 0), tb.num(d6 - db, 2), tb.num(f.t6 and f.tb and f.tb > 0 and 100 * f.t6 / f.tb or nil, 0), #extra,
-    rel((w.entry or {}).bite_tick, w.eta)))
+  tb.log(run, "MESSUNG", string.format("6) Mitflug %d Ticks: Abstand O6–Kopf %s, zum Zielpunkt O6 %s / O6b %s, Tempo O6 %s / O6b %s (%s %%); Ruhe nach %s Ticks; "
+    .. "Flug 80 Kacheln nach Westen O6 %s / O6b %s Ticks, über dem Körper %d Ticks (kleinster Abstand %s), Tempo dort O6 %s / O6b %s",
+    e.n, tb.num(e.head / n, 2), tb.num(d6, 2), tb.num(db, 2), tb.num(v6, 2), tb.num(vb, 2), tb.num(vb > 0 and 100 * v6 / vb or nil, 0),
+    tostring(r.ticks), tostring(f.t6), tostring(f.tb), f.over, tb.num(f.near, 2), tb.num(f.over > 0 and f.v6 / f.over or nil, 2),
+    tb.num(f.over > 0 and f.vb / f.over or nil, 2)))
+  return verdict(run, tb, 6, "Ornithopter über dem Kopf [W12]", failed, string.format("Flugzeit %s %%, über dem Körper %d Ticks, Abstand +%s, Sticker %d, Biss %s",
+    tb.num(f.t6 and f.tb and f.tb > 0 and 100 * f.t6 / f.tb or nil, 1), f.over, tb.num(d6 - db, 2), #extra, rel((w.entry or {}).bite_tick, w.eta)))
 end
 
 -- Schritt 7: Rettung (Feld 7).
@@ -2195,7 +2382,7 @@ local T21_STEPS =
   {steps.s3_build, wait_end, steps.s3_eval},
   {steps.s4_build, wait_end, steps.s4_eval},
   {steps.s5_build, wait_deployed(5), steps.s5_start, wait_end, steps.s5_eval},
-  {steps.s6_build, steps.s6_wait, steps.s6_escort_start, steps.s6_escort, steps.s6_flight, wait_end, steps.s6_eval},
+  {steps.s6_build, steps.s6_wait, steps.s6_escort_start, steps.s6_escort, steps.s6_rest, steps.s6_flight, wait_end, steps.s6_eval},
   {steps.s7_build, wait_deployed(7), steps.s7_start, steps.s7_couple, steps.s7_carried, steps.s7_before, steps.s7_end, steps.s7_drop},
   {steps.s8_build, wait_end, steps.s8_eval},
   {steps.s9_build, wait_end, steps.s9_eval},
@@ -2502,7 +2689,7 @@ t22_enter[5] = function(run, tb, d)
   d.flyer = valid(d.flyer) and d.flyer or new_flyer(run, tb, d, d.made, at(base, 4, 0), {force = d.force, coal = 50})
   local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, 120), force = d.force})
   if not chest then return tb.log(run, "FEHLER", "5) Kiste ließ sich nicht bauen") end
-  tb.log(run, "INFO", "5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf), schwebe über dem fahrenden Kopf, dann flieg voll weg.")
+  tb.log(run, "INFO", "5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf, fährt nach Osten), schwebe über dem fahrenden Kopf, halt an, dann flieg voll nach Westen über den Körper weg.")
   t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, 120), direction = defines.direction.east}},
     "Ornithopter über dem Kopf [W12]")
 end
@@ -2515,8 +2702,17 @@ t22_watch[5] = function(run, tb, d)
     local vehicle = player and player.vehicle
     local head = sandworm_lib.head_of(hunt)
     if valid(vehicle) and vehicle.name == FLYER then
-      tb.trace(run, string.format("5) Ornithopter Tempo %s Kacheln/s, Gesundheit %s, Abstand zum Kopf %s", tb.num(tb.speed_tps(vehicle), 2),
-        tb.num(vehicle.health, 0), head and tb.num(dist(vehicle.position, head)) or "–"))
+      -- Abstand zum Kopf (Knoten 1, bis 1 Kachel hinter dem wahren Kopf, W18) und zum nächsten Körperknoten
+      local near
+      local unit = hunt.worm and hunt.worm.unit
+      if valid(unit) then
+        for _, node in ipairs(unit.get_body_nodes()) do
+          local gap = dist(vehicle.position, node)
+          if not near or gap < near then near = gap end
+        end
+      end
+      tb.trace(run, string.format("5) Ornithopter Tempo %s Kacheln/s, Gesundheit %s, Abstand zum Kopf %s, zum nächsten Körperknoten %s",
+        tb.num(tb.speed_tps(vehicle), 2), tb.num(vehicle.health, 0), head and tb.num(dist(vehicle.position, head)) or "–", tb.num(near)))
     end
   end
   if storage.hunts.list[hunt.id] ~= hunt and not d.cur.done then
