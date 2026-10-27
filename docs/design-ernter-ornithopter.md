@@ -1,6 +1,6 @@
 # Arrakis – Design v0.3: Spice-Ernter, Ornithopter und Sandwürmer
 
-Stand: 26.10.2026 · Mod-Stand 0.7.0 (Baupläne: Phase 3b docs/plan-3b.md, Phase 3c docs/plan-3c.md, Phase 3d1 docs/plan-3d1.md; wo ein Plan abweicht, gilt der Plan, und dieses Dokument ist ihm angeglichen) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
+Stand: 27.10.2026 · Mod-Stand 0.8.0 (Baupläne: Phase 3b docs/plan-3b.md, Phase 3c docs/plan-3c.md, Phase 3d1 docs/plan-3d1.md, Phase 3d2 docs/plan-3d2.md; wo ein Plan abweicht, gilt der Plan, und dieses Dokument ist ihm angeglichen) · Max spielt Factorio 2.1.23 · Ziel ist seit 23.10.2026 Factorio 2.1 (ab 2.1.23); 2.0.77 nur noch als Zweig `factorio-2.0` (5.2)
 
 **Max' Entscheidungen (06.10.2026: „1a,2a,3a,4c,5b“)**
 1. **Zielversion A:** Release-Ziel bleibt 2.0 (Mod verlangt base >= 2.0.61). Der Code ist ab 0.3.1 versionsfest (5.3); der Umstieg auf 2.1 betrifft nur info.json. **Überholt seit 23.10.2026:** 2.1 ist stabil, Max spielt 2.1.23; Ziel ist jetzt 2.1 (5.2).
@@ -77,10 +77,11 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
    - *Aus der Kartenansicht:* Den Ornithopter mit der Spidertron-Fernbedienung hinschicken und Taste oder Verknüpfung drücken, solange er ausgewählt ist. Die Fernbedienung gibt die eigene Verknüpfung „Fernbedienung für Ornithopter“ (`arrakis-give-remote`, frei mit „Ornithopter“; die Vanilla-Verknüpfung erst mit „Spidertron“) oder der Knopf „Fernbedienung“ im Ornithopter-Fenster, der den Ornithopter gleich auswählt. Alternativ fährt man ihn aus der Karte fern (`allow_remote_driving = true`) und drückt dort die Taste. Ob Taste, Auswahl und Fernfahren in der Kartenansicht so wirken, ist noch ungeprüft (T17, docs/plan-3c.md 4.16 U1 bis U5).
    - *Solo-Rettung:* im Ernter sitzen, den Ornithopter per Fernbedienung herholen und die Taste drücken. Danach sitzt man als Pilot im Ornithopter, der Ernter hängt dran.
    - *Ohne Ornithopter:* einpacken (10 s) und auf Fels kriechen. Das gelingt nur auf dem Lehrfeld; in der Lehrjagd (90 s) auch von regulären Feldern bis etwa 111 Kacheln vom Fels (2.4).
-9. **Der Wurm kommt an.** In 3d1 (0.7.0) gibt es noch keinen sichtbaren Wurm: Entschieden wird erst genau bei 0, mit dem Ort von dann (4.3 „Jagd in 3d1“).
-   - *Ziel weg:* Er sucht 10 s und taucht ab. Weg heißt: getragen, ganz auf Fels oder weiter vom Ort des Wurmzeichens entfernt, als der Wurm in der Zeit käme (3,5 Kacheln je Sekunde Countdown, also 210 Kacheln bei 60 s); eine harmlose Fontäne zeigt, wo er ins Leere beißt. Wurde das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter, mit derselben harmlosen Fontäne an seiner letzten Stelle auf Sand.
+9. **Der Wurm kommt an.** Seit 0.8.0 (3d2) ist er zu sehen: Gut 11 s nach dem Wurmzeichen (Lehrjagd gut 41 s) taucht er etwa 160 Kacheln entfernt auf, fährt nur über Sand und um Fels herum zum Ziel, wartet davor und beißt bei 0, höchstens 3 s später; danach taucht er ab (4.3 „Jagd als Zustandsmaschine“). Wer gebissen wird und wer entkommt, entscheiden weiter die Regeln aus 3d1, mit dem Ort im Moment des Bisses (4.3 „Jagd in 3d1“): Wer im Biss-Fenster noch anhebt, ist gerettet. Ohne Wurm, aber mit Biss genau bei 0 wie in 0.7.0 bleiben Jagden unter 27 s Countdown (nur per Befehl), Befehlsjagden über der Grenze (4.3 „Grenzen“) und Jagden, zu deren Ziel kein Weg über Sand führt (eine Sandtasche im Fels schützt nicht).
+   - *Ziel weg:* Der Wurm fährt zur letzten Stelle (höchstens bis zum Rand seiner Reichweite), beißt dort ins Leere und taucht ab, spätestens 10 s nach 0. Weg heißt: getragen, ganz auf Fels oder weiter vom Ort des Wurmzeichens entfernt, als der Wurm in der Zeit käme (3,5 Kacheln je Sekunde Countdown, also 210 Kacheln bei 60 s); eine harmlose Fontäne zeigt, wo er ins Leere beißt. Wurde das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter, mit derselben harmlosen Fontäne an seiner letzten Stelle auf Sand.
    - *Ziel noch da:* Eine Sandfontäne bricht hervor, und der Ernter wird gefressen (Standard Totalverlust, per Mod-Einstellung abschwächbar, Entscheidung 4). Mit ihm stirbt alles im Umkreis von 4 Kacheln, das auf Sand steht, auch die Insassen. Mit „Schwer beschädigt“ überlebt jeder Spice-Ernter im Umkreis mit 10 % Gesundheit samt Insassen, die Ladung ist weg; andere Fahrzeuge und Gebäude sterben trotzdem. Der Biss folgt dem Ziel, aber nur so weit, wie der Wurm käme.
-   - Auf dem Weg zerdrückt der Wurmkörper Bänder, Schienen und Gebäude auf Sand (ab 3d2).
+   - Auf dem Weg zerdrückt der Kopf (ab 3d2) alles mit Gesundheit auf Sand, dessen Box höchstens 2,5 Kacheln von seiner Mitte liegt: Bänder, Schienen und Gebäude, seit der Entscheidung vom 27.10.2026 auch Fahrzeuge (Autos, Panzer, Spice-Ernter) samt Insassen und Figuren, ohne eigenen Alarm. Ein Spice-Ernter folgt dabei der Einstellung **Biss** wie beim Biss selbst (Totalverlust oder schwer beschädigt). Verschont bleiben alles, was auch der Biss verschont (Ornithopter samt Insassen, Unzerstörbares, die Sandwurm-Force), dazu Hochschienen, alles auf Fels, Bauten von Forces in der Schonfrist, das Ziel jeder laufenden Jagd und alles bis 5 Kacheln um deren Zielpunkt (so kommt nie etwas vor 0 um, das der Biss treffen könnte). Beim Auftauchen gilt das einmal für den ganzen Körper; auf Fahrzeugen und Figuren taucht er aber nie auf.
+   - *Wurm getötet:* Stirbt der Wurm vor 0, endet die Jagd sofort, das Ziel ist gerettet („… ist gerettet“), und der Sektor ruht wie nach jeder Jagd. Beute gibt es erst mit 3d3.
    - Danach ist die Wärme der Gegend null, und der Sektor bleibt 2 bis 4 Minuten ruhig.
 10. **Entladen.** Den Ernter auf den Andockplatz einer Spice-Annahme fahren oder dort absetzen; die Annahme steht auf Fels.
     - Der Ernter dockt an, und die Annahme zeigt seinen Laderaum. Greifarme ziehen den Spice-Sand auf Bänder.
@@ -88,7 +89,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
     - Abgedockt wird mit `Umschalt+H` oder durch Anheben.
 11. **Umsetzen.** Ist das Feld erschöpft, anheben und zum nächsten Feld tragen. Ein Ornithopter kartiert im Vorbeiflug das Gelände und deckt so neue Felder auf.
 12. **Gegenwehr.**
-    - Würmer sind echte Gegner; der kleine hat 30 000 Lebenspunkte. Wer einen tötet, erhält Wurmzähne. Daraus baut man Ernter Mk2 und später Carryall Mk2.
+    - Würmer sind echte Gegner; der kleine hat 30 000 Lebenspunkte. Wer einen tötet, rettet sein Ziel (seit 0.8.0) und erhält ab 3d3 Wurmzähne. Daraus baut man Ernter Mk2 und später Carryall Mk2.
     - Nach der ersten überstandenen Jagd gibt es den **Thumper**. Er lenkt eine laufende Jagd auf sich um (so gewinnt man Zeit) oder lockt einen Wurm gezielt vor die Geschütze. Eine Ruhezeit verschafft er nicht.
 
 ### 2.2 Stufe 2: halbautomatisch (mit Spice-Wissenschaft)
@@ -125,7 +126,7 @@ Alle Zahlen sind Startwerte und werden als Mod-Einstellungen änderbar.
 - Würmer betreten nie Fels.
 - Ornithopter und Carryall in der Luft werden vom Wurm weder getroffen noch gebremst.
 - Anheben, Tragen und Absetzen verlieren nichts. Laderaum, Treibstoff, Gesundheit, Qualität und Farbe bleiben erhalten. (Einen Namen haben Autos nicht; T3 zeigte, dass `entity_label` bei ihnen nicht geht.)
-- Ein Biss kommt nie vor Ablauf des Countdowns.
+- Ein Biss kommt nie vor Ablauf des Countdowns und seit 0.8.0 höchstens 3 s danach (Biss-Fenster, sonst Ersatzbiss).
 
 **Zahlenregeln** (damit der Ornithopter wirklich gebraucht wird)
 
@@ -412,23 +413,25 @@ for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus 
 **Entscheidung:** Jagdwurm auf Abruf (siehe 2.5). Die nötige API (Demolisher und Territorien) gibt es seit 2.0.61 (CL:1565); in 2.1.20 hat `LuaSegmentedUnit` dieselben Member (A21 classes.d.ts).
 
 **Prototypen** [2.0]
-- Kopien von `small-demolisher` (klein) und `medium-demolisher` (groß) samt Segmenten, umbenannt und getönt.
+- Kopien von `small-demolisher` (klein) und `medium-demolisher` (groß) samt Segmenten, umbenannt und getönt. Gebaut ist seit 0.8.0 der kleine, `arrakis-sandworm-small`: sandfarben, in der Factoriopedia unter Gegner (ohne Simulation); der große folgt mit 3d3 (docs/plan-3d2.md 3).
 - **Kürzere Körper:** `segment_engine.segments` wird von 41 Einträgen (enemies.lua:278-321) auf 12 bzw. 24 gekürzt. Das ergibt kürzere Körper und weniger Rechenlast.
 - **Tempo:**
-  - `investigating_speed` 3,5 Kacheln/s; `attacking_speed` 6 Kacheln/s, aber nur, wenn T5 den Sprint bestätigt.
-  - `patrolling_speed` niedrig; `turn_radius` bleibt 12 · scale, also 6 bzw. 9 Kacheln (enemies.lua:485-490, :6629-6630).
+  - `investigating_speed`, `attacking_speed` und `enraged_speed` je 3,5 Kacheln/s in allen Zuständen. `attacking_speed` 6 entfällt: T5 b zeigte, dass `attacking` kein Fahrzeug hält. Schneller wird der Wurm nur per Skript: Sprint über `speed` bis 6 Kacheln/s mit zwei Ersatzstufen (`move_forward`, dann Knotenschub per `set_body_nodes`; 4.3 Schritt 4).
+  - `patrolling_speed` 1 Kachel/s; `turn_radius` bleibt 12 · scale, also 6 bzw. 9 Kacheln (enemies.lua:485-490, :6629-6630).
 - `vision_distance = 0`. Das ist zulässig, der Wert darf nicht negativ und höchstens 100 sein (A20 prototype/generated/prototypes.d.ts:12269-12272). T5 prüft nur das Verhalten.
 - `revenge_attack_parameters = nil`, also keine Erdspalten.
-- **Ascheeffekte entfernen.** In den `update_effects` des Kopfes bleiben nur der Kontaktschaden (Fläche, Maske wie Vanilla) und der Bohrstaub, sand-getönt.
+- **Kein Kontaktschaden** an Kopf und Segmenten: Der Vanilla-Schaden tötete das Ziel in T5 a und T6 D vor 0 und fragt weder nach Fels noch nach der Einstellung **Biss**. An seine Stelle tritt das Zerdrücken per Skript, nur am Kopf und einmal beim Auftauchen am Körper, mit Sandregel, Schutzzone und den Ausnahmen aus 2.1 Schritt 9 (docs/plan-3d2.md 4.10).
+- **Ascheeffekte entfernen.** In den `update_effects` bleibt nur der Bohrstaub, als vier eigene sandfarbene Rauchkopien (`arrakis-sandworm-smoke-*`).
   - Es entfallen: `…-ash-cloud-trail` (smoke-with-trigger mit Sticker), `…-trail-upper` und `…-trail-lower` sowie `destroy-cliffs` (enemies.lua:557-567, :2810-2851).
   - `update_effects_while_enraged = nil` (enemies.lua:1043-1045), `enraged_duration = 60`.
-  - Segmente behalten nur ihren Flächenschaden; die Partikel werden sand-getönt.
+  - Vulcanus-Steine und Lava werden zu Sandsteinen, der Sterbe-Rauch zu `arrakis-sand-dust`; Haut- und Panzerteile bleiben.
 - `territory_radius` ist Pflicht und bekommt 1. Eine Territory weisen wir nicht zu.
-- **Keine Beute im Prototyp**, denn das Loot-Format hat sich in 2.1 geändert (CL:669). Beute verteilt das Skript bei `on_segmented_unit_died` mit `spill_item_stack`.
+- **Keine Beute im Prototyp**, denn das Loot-Format hat sich in 2.1 geändert (CL:669). Keine Leiche (`corpse = nil`, keine Leiche im `dying_trigger_effect`), also auch kein Wolframerz. Beute verteilt ab 3d3 das Skript bei `on_segmented_unit_died` mit `spill_item_stack`.
+- **Auf- und Abtauchen:** Explosion `arrakis-worm-dive` (ohne eigenen Ton) und Rumpeln am Kopf, Staub an jedem vierten Knoten.
 - **Gestaltung:** 2.1 hat die Demolisher-Grafik überarbeitet (CL:600). Durch die deepcopy übernehmen wir einfach die Grafik der jeweils laufenden Version.
 - **Eigene Force** `arrakis-sandworm` (`game.create_force`), mit `set_cease_fire(…, false)` in beide Richtungen ausdrücklich feindlich.
 - **Collision-Layer `arrakis_rock`** an der Kachel `arrakis-rock`. Vanilla belegt 24 Ebenen, die Grenze liegt bei 55, in 2.1 bei 256 (CL:634).
-  - Die Ebene dient für Bauregeln, Wurmrouten per `request_path` und für T6 (bremst sie zusätzlich in der Wurmmaske?).
+  - Die Ebene dient für Bauregeln und Wurmrouten per `request_path`. In der Wurmmaske hält sie den Wurm nicht (T6 B); der Sandwurm hat sie deshalb nicht in seiner Maske, Fels hält nur der Fels-Wächter fern.
   - Der Ernter bekommt sie nicht in seine Maske.
 
 **Vibration** [2.0]
@@ -456,6 +459,7 @@ for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus 
   - Ein Thumper allein strebt gegen 3000 und erreicht 1000 nach etwa 20 s.
 - **Grenzen:**
   - Höchstens eine Jagd pro Sektor (4×4 Chunks), höchstens drei gleichzeitig über alle Forces und Oberflächen, je Takt und Oberfläche höchstens eine neue. Befehlsjagden (`/arrakis-worm`) zählen nicht mit und sperren nichts; ab 3d3 ebenso Thumper-Jagden.
+  - Würmer (3d2): Jede reguläre Jagd bekommt einen. Befehlsjagden bekommen ab 27 s Countdown einen, solange weniger als 3 Befehlsjagden einen haben oder planen (`MAX_DEBUG_WORMS`); darüber beißen sie ohne Wurm wie 0.7.0. Zusammen fahren also höchstens 6 Würmer.
   - Endet eine Jagd (gefressen, entkommen oder Ziel weg; nicht per Befehl), wird die Wärme der 3×3-Nachbarschaft des Ursprungs auf 0 gesetzt.
   - Danach ist der Sektor 2 bis 4 Minuten ruhig, die Dauer würfelt der gespeicherte Zufallsgenerator. Während der Ruhe bleibt die Wärme bei 0. Danach kündigt sich jedes neue Wurmzeichen wieder mit Unruhe an.
 - **Schonfrist** je Force: Würmer werden aktiv 10 Minuten nach Abschluss der Ornithopter-Forschung, spätestens 30 Minuten nach der ersten Landung (`active_from = min(ornithopter_tick + 36000, landed_tick + 108000)`). Erste Landung: ein verbundener Spieler der Force mit `physical_surface` Arrakis, geprüft bei `on_player_changed_surface` und jede Sekunde; die Prüfstand-Fläche zählt nicht. Einmal wach, immer wach. Die Restzeit steht im Fenster oben links. Vibration und Unruhe-Staub gibt es schon vorher.
@@ -465,13 +469,16 @@ for _, f in pairs(game.forces) do f.set_surface_hidden(hold, true) end  -- plus 
 - Der Countdown ist fest (`eta_tick` ein Vielfaches von 10, der Biss fällt im 10-Tick-Takt genau bei 0). Entschieden wird erst am Biss-Tick, mit dem Ort von dann: ungültig oder verloren → weg (`gone`); getragen oder auf einer anderen Oberfläche → entkommen; ganz auf Fels (auch angedockt) → entkommen; weiter als `reach = 3,5 · Countdown in s` Kacheln vom Ort des Wurmzeichens (60 s: 210, Lehrjagd: 315) → entkommen; sonst Biss an der jetzigen Position. Der Biss folgt dem Ziel also, aber nur so weit, wie ein Wurm käme.
 - Ohne Biss bricht eine harmlose Eruption an der letzten Stelle auf Sand hervor (bei „zu weit“ am Ort des Wurmzeichens), danach sucht die Jagd 10 s. Wird das Ziel vor 0 zerstört oder abgebaut, läuft der Countdown als „Ziel verloren“ weiter.
 - Steht das Ziel sicher (`safe = "rock"` oder `"far"`, geprüft im 10-Tick-Takt), werden Ring und Sekunden grün, und Fenster und Status sagen „sicher“; zurück auf Sand wieder rot. Das ist nur Anzeige. Wechselt das Ziel die Force (`entity.force = …`, ohne Ereignis), merkt es der 10-Tick-Takt: Die Jagd läuft weiter, Warnungen gehen an die neue Force.
-- Die Spawnplanung aus WURMZEICHEN und die Schritte ROUTING bis ABTAUCHEN unten kommen mit 3d2; bis dahin gilt dieser Abschnitt.
+- Seit 3d2 (0.8.0) fährt dazu ein Wurm (unten). Diese Regeln bleiben in Inhalt und Reihenfolge, wie sie sind; neu ist nur der Zeitpunkt: Sie gelten in jedem 10-Tick-Takt des Biss-Fensters `[eta_tick, eta_tick + 180]`, also bis 3 s nach 0. Eine Jagd ohne Wurm (Phase `ohne`: unter 27 s, Grenze, kein Weg, Wurm verloren oder vor dem Biss abgetaucht, Migration) beißt genau wie hier bei 0. Fenster, Ring, Alarm, Status und Chat bleiben wie 0.7.0.
 
-**Jagd als Zustandsmaschine** (`storage.hunts`, ab 3d2 mit Wurm-Entity)
+**Jagd als Zustandsmaschine** (`storage.hunts`, ab 3d2 mit Wurm-Entity; gebaut in 0.8.0 nach docs/plan-3d2.md 4.3 bis 4.11)
+
+`state` (warning/biting/searching) bleibt wie 3d1 und steuert Anzeige und Ende; `phase` sagt, was der Wurm tut. Kein neuer Takt: Der 10-Tick-Takt von worms ruft je Jagd in fester Reihenfolge Nachführen, `sandworm.step`, Zerdrücken und Biss-Fenster.
 ```
-WURMZEICHEN -> [ROUTING] -> WARTEN (bis Spawnzeit) -> ANNÄHERUNG -> ANGRIFF -> BISS -> ABTAUCHEN
-Ziel getragen / ganz auf Fels / ungültig -> ENTKOMMEN -> SUCHEN (max. 10 s) -> ABTAUCHEN
-Wurm getötet -> Beute, Ende          Zeitlimit t_warn + 60 s -> ABTAUCHEN
+WURMZEICHEN -> warten -> routing (Planung, [ROUTING], Spawn) -> anfahrt <-> angriff -> BISS (0 bis 0 + 3 s) -> ABTAUCHEN
+kein Biss bei 0 (getragen, ganz auf Fels, außer Reichweite, Ziel weg) -> suche (bis 8 Kacheln an P, höchstens 10 s) -> ABTAUCHEN
+kein Wurm (unter 27 s, Grenze, kein Weg, verloren, vor dem Biss abgetaucht, Migration) -> ohne: Biss genau bei 0 wie 3d1
+Wurm getötet: vor 0 Ende killed, Ziel gerettet; in der Suche bleibt deren Ergebnis
 ```
 
 1. **WURMZEICHEN** [2.0]
@@ -480,44 +487,50 @@ Wurm getötet -> Beute, Ende          Zeitlimit t_warn + 60 s -> ABTAUCHEN
      - `add_custom_alert` für jeden Spieler der Force; in 2.0 gibt es das nur pro Spieler (A20 :22996).
      - Eine Kartenmarkierung mit `force.add_chart_tag` (A20 :15317).
      - Warnton, Gefahrenring und Countdown-GUI (Fenster oben links, `scripts/worms-gui.lua`); grün, sobald das Ziel sicher steht (3d1).
-   - *Spawnplanung mit verzögertem Spawn* (3d2):
-     - Abstand `D = clamp(v · t_warn, 80, 160)` Kacheln.
-     - Geprüft werden 16 Richtungen. Ein Kandidat muss in einem generierten Chunk auf Sand liegen, und die gerade Linie zum Ziel muss Sand sein (`get_tile` alle 4 Kacheln, synchron).
-     - Spawnzeit `spawn_tick = warn_tick + (t_warn − D/v) · 60`. Der Wurm existiert also nur für die letzten 23 bis 46 s. Das spart Rechenzeit und vermeidet ungenerierte Chunks. Auch eine längere Frühwarnung vergrößert den Abstand nicht.
-2. **ROUTING** [2.0], nur falls keine Richtung eine freie Sandlinie hat:
-   - `surface.request_path{…, collision_mask = {layers = {arrakis_rock = true}}, path_resolution_modifier = -2}` liefert nur eine Kennung. Den Weg bringt später `on_script_path_request_finished` (A20 :31833ff; events.d.ts:4157-4169).
-   - Die Zuordnung steht in `storage.path_requests[id] = hunt_id`.
-   - Bei `try_again_later` wird nach 60 Ticks erneut angefragt, bei einem Fehlschlag der nächste Kandidat genommen.
-   - Ist bis zur Spawnzeit kein Weg da, entfällt die Jagd still: Das Ziel ist dann von Fels umschlossen und damit sicher.
+   - *Spawnplanung mit verzögertem Spawn* (3d2, docs/plan-3d2.md 4.4):
+     - Abstand `D = min(160, 3,5 · (T − 4))` Kacheln bei T s Countdown (60 s: 160; 27 s: 80,5). Die 4 sind 3 s Reserve und 1 s Planung; unter 27 s gibt es keinen Wurm.
+     - Zielpunkt P ist die Mitte des Ziels, wenn es gültig, nicht getragen und auf Sand ist, sonst `last_pos`; liegt P weiter als die Reichweite vom Ort des Wurmzeichens, rückt es auf den Rand des Reichweitenkreises. Jeden Takt neu.
+     - Geprüft werden 16 Richtungen um P mit Abstand D, dann 120 und 80 (soweit mindestens 10 Kacheln kürzer), höchstens 8 je Takt. Startrichtung: Fährt das Ziel, kommt der Wurm von vorn, sonst würfelt der gespeicherte Zufallsgenerator. Gültig ist ein Kandidat, wenn Spawnpunkt und Körperlinie (20 Kacheln dahinter, alle 4) auf Sand in generierten Chunks liegen, dort bis 4 Kacheln kein Fahrzeug und keine Figur steht und die gerade Linie zu P alle 4 Kacheln bis 6 Kacheln vor P Sand ist. Ungenerierte Chunks zählen als Fels.
+     - Spawnzeit `spawn_tick = eta_tick − ceil((L / 3,5 + 3) · 6) · 10` mit der Weglänge L, also 3 s Reserve; die Planung beginnt 300 Ticks vorher. Bei 60 s kommt der Wurm 670 Ticks nach dem Wurmzeichen (gut 11 s), in der Lehrjagd nach 2470 Ticks (gut 41 s). Gegen ein stehendes Ziel bleiben 4,4 s Luft, mit dem Biss-Fenster 7,4 s. Auch eine längere Frühwarnung vergrößert den Abstand nicht.
+2. **ROUTING** [2.0], nur falls keine Richtung eine freie Sandlinie hat (docs/plan-3d2.md 4.5):
+   - Für höchstens 2 Kandidaten, deren Spawn und Körper passen, kürzester Abstand zuerst: `surface.request_path{bounding_box = ±3,5, collision_mask = {layers = {arrakis_rock = true}}, radius = 8, path_resolution_modifier = -2, …}` in `pcall`. Box ±3,5 für Körper (±2,3) und Wenderadius; nur bei Fels am Start oder ohne Weg einmal ±1,5. Die Kennung kommt sofort, den Weg bringt `on_script_path_request_finished` (A20 :31833ff; events.d.ts:4157-4169).
+   - Die Zuordnung steht in `storage.path_requests[id] = {hunt, kind, sent}`.
+   - Bei `try_again_later` wird nach 60 Ticks erneut angefragt, bei einem Fehlschlag der nächste Kandidat genommen. Kommt 300 Ticks keine Antwort, wird neu gefragt (Zeitablauf, auch nach Speichern und Laden); nach 5 Versuchen gilt der Kandidat als gescheitert.
+   - Den Weg prüft das Skript auf natürlichen Sand (gepflasterter Fels ist Fels, der Pfadfinder hielte ihn für frei) und dünnt ihn nur so weit aus, wie die Sichtlinie (Mitte und ±1,5) Sand bleibt; er muss in die Restzeit passen.
+   - Ist bis `eta_tick − 1440` (24 s vor 0) kein Wurm da, bekommt die Jagd keinen und beißt wie 3d1 genau bei 0, statt still zu entfallen: Nur ganz auf Fels ist sicher, eine Sandtasche im Fels ist kein sicherer Bauplatz (Max 27.10.2026: ja, `NO_ROUTE_BITE = true`).
 3. **Spawn** zur Spawnzeit:
-   - `create_segmented_unit{name, position, direction, extended = true, force = "arrakis-sandworm"}`. Mit `extended = false` würde nur der Kopf entstehen (A20 :30676-30679). In 2.1.18 wurde ein Absturz bei kleiner Knotenzahl behoben (CL:77); ob 2.0.77 betroffen ist, klärt T7.
-   - **Körperprüfung:** Direkt danach wird jeder vierte Knoten aus `get_body_nodes()` geprüft. Liegt einer auf Fels, wird der Wurm im selben Tick zerstört und die nächste Richtung probiert. So liegt nie ein Körper sichtbar auf Fels.
-   - Danach `minimum_activity_mode = minimal` und `set_ai_state{type = investigating, destination = …}` (A20 :28137-28143, :28229). Ohne Territory patrouilliert ein Wurm sonst um seinen Spawnpunkt (A20 :30660); deshalb setzt das Skript den Zustand alle 30 Ticks neu.
-4. **ANNÄHERUNG**
-   - Alle 30 Ticks wird das Ziel nachgeführt, bei einem Umweg der nächste Wegpunkt.
-   - `eta_tick` wird nachgerechnet: Restzeit = max(alte Restzeit − Δ, Restweg / v). Der Countdown kann sich also nur verlängern, nie springen.
+   - `create_segmented_unit{name, position, direction, extended = true, force = <Sandwurm-Force>}` in `pcall`. Mit `extended = false` würde nur der Kopf entstehen (A20 :30676-30679); T7 maß 22 Knoten und 21 Kacheln Körper.
+   - **Körperprüfung:** Direkt danach wird jeder vierte Knoten aus `get_body_nodes()` geprüft. Liegt einer auf Fels oder in einem ungenerierten Chunk, wird der Wurm im selben Tick zerstört und der nächste Kandidat probiert, höchstens 3 Erzeugungen je Jagd. So liegt nie ein Körper sichtbar auf Fels.
+   - **Auftauchen** mit Effekt: Staub an jedem vierten Knoten, `arrakis-worm-dive` und Rumpeln am Kopf; einmal Zerdrücken am ganzen Körper.
+   - Danach `unit.speed = 3,5 / 60` (sofort volles Tempo [W1]), `minimum_activity_mode = minimal` und `set_ai_state{type = investigating, destination = …}` (A20 :28137-28143, :28229). Ohne Territory patrouilliert ein Wurm sonst um seinen Spawnpunkt (A20 :30660); deshalb setzt das Skript den Zustand bei jedem Zielwechsel um mehr als 2 Kacheln und sonst alle 30 Ticks neu. Das beendet auch einen Gereizt-Zustand nach Beschuss [W9].
+4. **ANNÄHERUNG** (Phase `anfahrt`)
+   - Fahrziel ist der nächste Wegpunkt (Wechsel, sobald die Sichtlinie zum übernächsten Sand ist), ein Umweg oder P.
+   - `eta_tick` wird nicht nachgerechnet: Der Countdown bleibt fest (2.1 Schritt 7).
+   - **Sprint** bei Verspätung (Restweg / 3,5 > Restzeit − 1 s) und nach 0 außer Reichweite: `speed` je Takt bis 6 Kacheln/s, also über `target_speed` [W3]. Hält die Engine das nicht (2 Takte unter 90 %), Ersatz 1 `move_forward`, danach Ersatz 2 Knotenschub per `set_body_nodes` (Max 27.10.2026: ja, `SPRINT = true`). Die Reichweite bleibt 3,5 Kacheln je Sekunde Countdown.
 5. **ANGRIFF** ab 40 Kacheln Abstand
-   - Zieladresse ist ein Punkt 20 Kacheln **hinter** dem Ziel, falls dort Sand liegt, sonst das Ziel selbst. So fährt der Kopf durch und bremst nicht vorher ab.
+   - Erst, wenn kein Wegpunkt und kein Umweg mehr offen ist und die Linie Kopf → Reichweitenpunkt Sand ist; zurück in die Anfahrt über 50 Kacheln, bei einem Umweg oder einer neuen Route.
+   - Fahrziel ist ein Punkt 20 Kacheln **hinter** P, wenn die Linie dorthin Sand ist, sonst 6 Kacheln hinter P (auch über Fels). Nie näher, weil die Engine 4 Kacheln vor dem Fahrziel auf `patrolling` wechselt (T5 a) und ein kleines Ziel sonst nie erreicht würde.
    - `minimum_activity_mode = full`.
-   - Sprint mit `set_ai_state{type = attacking, target = ziel}` nur, wenn T5 zeigt, dass der Wurm ein Auto als Ziel hält. Demolisher ignorieren Fahrzeuge als Störung (CL:3677).
-6. **BISS**, wenn der Kopf näher als 3 Kacheln plus Zielradius ist **und** `game.tick ≥ eta_tick`.
+   - Tempo je Takt `clamp(Restweg / Restzeit, 0, 6)`: Er drosselt mit dem Restweg und hält in Reichweite vor 0 an (Tempo 0, `speed` ist schreibbar, A20 :28198). `attacking` entfällt (T5 b, CL:3677).
+6. **BISS** im Biss-Fenster `[eta_tick, eta_tick + 180]`, in jedem 10-Tick-Takt, sobald der Kopf höchstens `R = 3 + r` von der Zielmitte ist (r = halbe Diagonale der Zielbox beim Start; Ernter: R = 4,58) und die Regeln aus 3d1 beißen lassen. Ist bis `eta_tick + 180` kein Biss gefallen, kommt der **Ersatzbiss** genau so, mit Logzeile und Zähler; der Wurm taucht dann dort ab, wo er ist. Ein Biss kommt also nie vor 0 und spätestens 3 s danach.
    - Eruption und Ton, dann `ziel.die("arrakis-sandworm")`: Täter ist die Force, ohne `cause`. Dazu sterben alle Entities mit Gesundheit, deren Box höchstens 4 Kacheln von der Zielmitte liegt und Sand berührt. Ausgenommen sind Ornithopter samt Insassen, Spinnenbeine, Ressourcen, Leichen, Geister, Klippen, `destructible == false` und die Sandwurm-Force. Insassen teilen das Los ihres Fahrzeugs: Beim Totalverlust sterben die des Ernters mit. „Schwer beschädigt“ gilt nur für Spice-Ernter (10 % Gesundheit, Kofferraum leer, Treibstoff bleibt, mobil, Insassen bleiben sitzen); alles andere stirbt trotzdem. Erst sammeln, dann töten, weil `die()` `on_entity_died` sofort auslöst (docs/plan-3d1.md 4.9).
-   - Kommt der Kopf zu früh in Reichweite, drosselt das Skript `speed` (schreibbar, A20 :28198) bis zum Ende des Countdowns.
-   - Der Biss ist geskriptet, weil im Modus „minimal“ weniger Trigger-Effekte laufen (A20 runtime/generated/defines.d.ts:3218-3222).
-7. **ABTAUCHEN** direkt nach dem Biss
-   - Staub entlang jedes vierten Knotens, dann `destroy{raise_destroy = true}`.
+   - Der Biss ist geskriptet, weil im Modus „minimal“ weniger Trigger-Effekte laufen (A20 runtime/generated/defines.d.ts:3218-3222) und der Kontaktschaden fehlt.
+7. **ABTAUCHEN** direkt nach dem Biss, im selben Takt
+   - Staub an jedem vierten Knoten, `arrakis-worm-dive` und Rumpeln am Kopf, dann `destroy{raise_destroy = true}`.
    - Der Wurm muss nicht mehr wenden. Damit ist der Fehler aus v0.2 behoben, bei dem Ernter in Felsnähe praktisch unangreifbar waren.
-8. **ENTKOMMEN / SUCHEN**
-   - Der Wurm fährt zur letzten Position des Ziels. Nach höchstens 10 s oder sobald er dort ist, taucht er ab.
-   - Ein Carryall, der über der Stelle schwebt, bleibt unberührt.
+8. **SUCHEN** (Phase `suche`). Einen eigenen Zustand ENTKOMMEN gibt es nicht: Der Wurm fährt schon vorher zu P (bei einem Ziel, das getragen wird oder auf Fels steht, `last_pos`, am Reichweitenkreis geklemmt) und wartet dort; entschieden wird bei 0. Ohne Biss sucht er, bis der Kopf höchstens 8 Kacheln an P ist, spätestens bis 10 s nach 0, und taucht dann ab.
+   - Ein Ornithopter oder Carryall, der über der Stelle schwebt, bleibt unberührt.
+   - Das alte „Zeitlimit t_warn + 60 s“ entfällt: Ein Wurm lebt höchstens bis `eta + 180` (Biss, Ersatzbiss) bzw. `eta + 600` (Suche); Waisen ohne Jagd räumt jeder `on_configuration_changed`.
+9. **Wurm getötet** (`on_segmented_unit_died`): Vor 0 endet die Jagd sofort mit `killed`: Wärme zurück, Ruhe, Statistik `killed` + 1, `first_escape_tick`, das Ziel ist gerettet, Chat „… ist gerettet“ (Max 27.10.2026: ja, `KILL_RESCUES = true`). In der Suche bleibt das schon gesetzte Ergebnis, `killed` zählt dazu. Beute und Wurmzahn kommen mit 3d3. **Wurm verloren** (fremd zerstört oder ungültig) und **Abtauchen vor 0** (Fels, Stillstand, kein Weg): Die Jagd läuft ohne Wurm weiter und beißt wie 3d1 genau bei 0.
 
-**Fels-Wächter** (`on_nth_tick(10)`, nur bei laufenden Jagden) [2.0]
-- Der Kopf ist `get_body_nodes()[1]`, die Richtung ergibt sich aus den Knoten 1 und 3.
-- **Sicherheitsnetz:** Steht der Kopf auf Fels, taucht der Wurm sofort ab.
-- **ANNÄHERUNG und ENTKOMMEN:** Vorausschau 2 × Wenderadius + 6 Kacheln, also 18 beim kleinen und 24 beim großen Wurm.
-  - Liegt dort Fels, wird ein neuer Wegpunkt gesucht: um ±30°, ±60° und ±90° gedreht, 30 Kacheln weit, mit Sandlinie.
-  - Gibt es keinen, folgt ROUTING oder Abtauchen.
-- **ANGRIFF:** geprüft wird nur die Strecke Kopf → Ziel, nie darüber hinaus. Liegt Fels dazwischen, geht die Jagd mit Umweg zurück in ANNÄHERUNG.
+**Fels-Wächter** (im 10-Tick-Takt von worms, nur bei Jagden mit Wurm) [2.0]
+- Der Kopf ist `get_body_nodes()[1]`, die Richtung ergibt sich aus den ersten Knoten.
+- **Sicherheitsnetz:** Steht die Kopfmitte auf Fels oder in einem ungenerierten Chunk, taucht der Wurm sofort ab.
+- **Vorausschau** längs der Kopfrichtung und zum Fahrziel, je höchstens 18 Kacheln (2 × Wenderadius + 6) und nie über den Haltepunkt hinaus, für jedes Ziel (Wegpunkt, Umweg, P, Suchort): Mittellinie und zwei Seitenlinien (±1,5) alle 2 Kacheln.
+  - Liegt dort Fels, wird ein Umweg gesucht: um ±30°, ±60° und ±90° gedreht, erst 30, dann 15, dann 8 Kacheln weit, mit Sandlinie. Die kurzen Umwege passen auch in Gänge [W17].
+  - Gibt es keinen, einmal Neuplanung vom Kopf (`request_path`), sonst Abtauchen.
+- **Stillstand:** 300 Ticks ohne 0,5 Kacheln Bewegung → Abtauchen.
+- **ANGRIFF:** geprüft wird nur bis zum Reichweitenpunkt, nie darüber hinaus. Liegt Fels dazwischen, geht die Jagd mit Umweg zurück in die Anfahrt.
 - **Auf Fels heißt:** `not terrain.has_sand_under(ziel)`: Unter der Box (umschließendes Rechteck) liegt keine natürliche Kachel außer Fels. Gepflasterter Fels ist Fels, gepflasterter Sand bleibt Sand (docs/plan-3d1.md 1, „Sand“).
 - Der Körper folgt der Spur des Kopfes. Deshalb reicht es, den Kopf zu überwachen, solange der Spawn sauber war.
 
@@ -591,13 +604,13 @@ Verworfen:
 
 **Leistung** (Richtwert, nicht gemessen)
 - 50 bis 100 Ernter und 20 bis 40 Carryalls sollten gehen.
-- Flüge laufen in der Engine, der Abbau alle 30 Ticks mit Budget. Würmer existieren nur 25 bis 50 s pro Jagd.
+- Flüge laufen in der Engine, der Abbau alle 30 Ticks mit Budget. Würmer existieren nur 26 bis 59 s pro Jagd (0.8.0: 48,8 s bei 60 s Countdown, mit Suche höchstens 58,8 s), höchstens 6 zugleich.
 - Würmer nicht massenhaft wachhalten; die Doku warnt vor den Kosten (A20 :28222-28229).
 - Max misst im Spiel (T8).
 
 ### 4.5 storage-Struktur
 
-Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2, der für Phase 3c (Ornithopter, Ablage) in docs/plan-3c.md, Abschnitt 4.2; dort gelten sie. Die Schema-Nummer zählt je Phase hoch: 3b = 1, 3c = 2 (0.6.0), 3d1 = 3 (0.7.0, genauer in docs/plan-3d1.md, Abschnitt 4.2). Der Block unten zeigt das Gesamtbild nach Phase 3f; seine Schema-Nummer steht deshalb nicht fest.
+Der Teil für Phase 3b (Ernter, Annahme, Stutzen) steht genauer in docs/plan-3b.md, Abschnitt 4.2, der für Phase 3c (Ornithopter, Ablage) in docs/plan-3c.md, Abschnitt 4.2; dort gelten sie. Die Schema-Nummer zählt je Phase hoch: 3b = 1, 3c = 2 (0.6.0), 3d1 = 3 (0.7.0, genauer in docs/plan-3d1.md, Abschnitt 4.2), 3d2 = 4 (0.8.0, genauer in docs/plan-3d2.md, Abschnitt 4.2). Der Block unten zeigt das Gesamtbild nach Phase 3f; seine Schema-Nummer steht deshalb nicht fest.
 
 ```lua
 storage = {
@@ -634,16 +647,21 @@ storage = {
                  rumble = { [surface_index] = {[sector_key] = tick} },
                  overlay = { [player_index] = {surface, cells = {[chunk_key] = {rect, text, stage}}} },
                  testbench = { [force_index] = true } },                                         -- nur Prüfstand
-  hunts      = { next_id = 1, paused_until = tick|nil, list = { [id] = {id, kind = "harvest"|"vehicle"|"building"|"thumper",
+  hunts      = { next_id = 1, paused_until = tick|nil, worm_off = {[force_index] = true}, spawn_dir = {[force_index] = k},  -- beide nur Prüfstand (0.8.0)
+                 log = {[i] = eintrag}, log_next = 1, ersatz = 0,                                                       -- letzte 20 Jagden (0.8.0)
+                 list = { [id] = {id, kind = "harvest"|"vehicle"|"building"|"thumper",
                  debug, teaching, bite, target = LuaEntity, target_un, force_index, surface_index, target_name,
                  origin_key, sector_key, state = "warning"|"biting"|"searching", warn_tick, eta_tick, end_tick,
                  warn_pos, last_pos, reach, safe = false|"rock"|"far", lost, outcome, hidden, second, alerted, redraw,
-                 spawn_tick, candidates = {...}, spawn = MapPosition|nil,             -- spawn_tick bis worm ab 3d2
-                 path_request = uint|nil, route = {...}, worm = LuaSegmentedUnit|nil,
+                 r, phase = "warten"|"routing"|"anfahrt"|"angriff"|"suche"|"ohne", no_worm, dive, zone,   -- r bis worm ab 0.8.0
+                 plan_tick, spawn_tick, d, plan = {k0, list, chosen = {position, direction, route, length, box}, spawns, paths},
+                 path = {id, cand, tries, sent, kind, box}|nil,
+                 worm = {unit = LuaSegmentedUnit, un, spawned, route, wp, dest, detour, head, sprint, boost, …}|nil,
+                 bite_tick, bite_dist, ersatz,
                  tag = LuaCustomChartTag|nil, tag_logged, renders = {ring, text}} } },
-  path_requests   = { [request_id] = hunt_id },
+  path_requests   = { [request_id] = {hunt = hunt_id, kind = "plan"|"reroute", sent = tick} },  -- 0.8.0
   sector_cooldown = { [surface_index] = {[sector_key] = until_tick} },                 -- je Oberfläche (0.7.0)
-  worm_stats      = { [force_index] = {bitten = 0, escaped = 0, gone = 0, first_escape_tick = nil} },
+  worm_stats      = { [force_index] = {bitten = 0, escaped = 0, gone = 0, killed = 0, first_escape_tick = nil} },  -- killed ab 0.8.0
   spice_chunks    = { [chunk_key] = {count, reserved_by = un|nil} },
   thumpers        = { [un] = {entity, until_tick} },
   reg             = { [registration_number] = {kind = "harvester"|"intake"|"nozzle"|"flyer"|…, un} },
@@ -678,7 +696,11 @@ Alle gespeicherten Laufzeitobjekte (LuaEntity, LuaSegmentedUnit, LuaRenderObject
   - `worms.migrate_schema3()` (nach migrate): je Force nur, was fehlt: „Ornithopter“ erforscht → `ornithopter_tick` = jetzt; gibt es Arrakis und hat die Force Spieler → `landed_tick` = jetzt. Ein Spielstand mit Ornithopter ist also 10 min später wach, einer ohne nach 30 min. Dann `vibration.scan` auf Arrakis und einmal je Force mit Spielern die Chatzeile `msg-worms-migrated` mit der Restzeit (ohne Termin `msg-worms-migrated-later`), Merker `storage.migration.worm_notice`.
   - Offene Ernterfenster schließt harvester-gui in jedem `on_configuration_changed`; ein in 0.6.x gespeichertes Fenster hat die neuen Elemente nicht.
   - **Herunterstufen** auf 0.6.x: vorher `/arrakis-uninstall ja`, sonst bleiben Kartenmarkierungen laufender Jagden und die Sandwurm-Force; die übrigen neuen Felder ignoriert 0.6.x.
-- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bliebe die leere Oberfläche `arrakis-hold`. Dafür gibt es seit 0.6.0 den Admin-Befehl `/arrakis-uninstall` (zweistufig: ohne Argument eine Warnung mit der Zahl der getragenen Ernter, dann mit `ja`, englisch auch `yes`): Er setzt jeden Ernter auf der Ablage ab, mit Träger an diesem, sonst über die Landesuche, und löscht die Ablage dann mit `game.delete_surface`. Findet ein Ernter keinen Platz, bleibt die Ablage, der Ernter wartet in `storage.stranded`, und der Befehl kann wiederholt werden. Hebt vorher jemand wieder an, legt die Mod die Ablage neu an. Seit 0.7.0 nennt der Befehl ohne Argument auch die Zahl laufender Jagden und räumt mit `ja` danach die Würmer (`worms.uninstall`): alle Jagden enden ohne Biss, ohne Rücksetzen und ohne Statistik; Kartenmarkierungen, Ringe, Sekunden, Alarme, Fenster und Vibrationsanzeigen sind weg, die Verknüpfung ist aus, 10 min lang kommt kein Wurmzeichen (`storage.hunts.paused_until`, bis dahin zeigt auch das Fenster nichts), und die Sandwurm-Force wird mit `enemy` verschmolzen (`game.merge_forces`); bleibt die Mod, legt sie die Force bei Bedarf neu an. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
+- **0.7.0 → 0.8.0** (Sandwurm, gebaut nach docs/plan-3d2.md 4.14):
+  - Schema 4: `migrate.init()` legt `path_requests`, `hunts.worm_off`, `hunts.spawn_dir`, `hunts.log`, `hunts.log_next` und `hunts.ersatz` an; `stats_for` ergänzt `killed`.
+  - Laufende Jagden ohne `phase` oder `r` (aus 0.7.0, auch nach einem Umweg 0.8.0 → 0.7.0 → 0.8.0, bei dem `schema` schon 4 ist) bekommen in jedem `on_configuration_changed` Phase `ohne` (`"migration"`): Sie beißen ohne Wurm wie gewohnt bei 0, die nächste Jagd hat einen Wurm. Dieselbe Stelle räumt Würmer unseres Prototyps ohne Jagd (Waisen).
+  - **Herunterstufen** auf 0.7.0: vorher `/arrakis-uninstall ja`. Sonst löscht die Engine die Würmer (der Prototyp fehlt), und laufende Jagden beißen in 0.7.0 ohne Wurm.
+- **Entfernen der Mod:** Factorio löscht dabei alle Entities unserer Prototypen auf allen Oberflächen, und unser `on_configuration_changed` läuft nicht mehr. Ein Rettungsbefehl kann also keinen Ernter retten. Übrig bliebe die leere Oberfläche `arrakis-hold`. Dafür gibt es seit 0.6.0 den Admin-Befehl `/arrakis-uninstall` (zweistufig: ohne Argument eine Warnung mit der Zahl der getragenen Ernter, dann mit `ja`, englisch auch `yes`): Er setzt jeden Ernter auf der Ablage ab, mit Träger an diesem, sonst über die Landesuche, und löscht die Ablage dann mit `game.delete_surface`. Findet ein Ernter keinen Platz, bleibt die Ablage, der Ernter wartet in `storage.stranded`, und der Befehl kann wiederholt werden. Hebt vorher jemand wieder an, legt die Mod die Ablage neu an. Seit 0.7.0 nennt der Befehl ohne Argument auch die Zahl laufender Jagden und räumt mit `ja` danach die Würmer (`worms.uninstall`): alle Jagden enden ohne Biss, ohne Rücksetzen und ohne Statistik; Kartenmarkierungen, Ringe, Sekunden, Alarme, Fenster und Vibrationsanzeigen sind weg, die Verknüpfung ist aus, 10 min lang kommt kein Wurmzeichen (`storage.hunts.paused_until`, bis dahin zeigt auch das Fenster nichts), und die Sandwurm-Force wird mit `enemy` verschmolzen (`game.merge_forces`); bleibt die Mod, legt sie die Force bei Bedarf neu an. Seit 0.8.0 lässt `ja` vorher alle Würmer abtauchen und räumt Waisen auf allen Oberflächen; die Meldung zählt beendete Jagden und entfernte Würmer. Das neue `migrates_from` (CL:90, 2.1.18) hilft nur bei Umbenennungen.
 
 ## 5. Versionsstrategie 2.0 und 2.1
 
@@ -820,7 +842,7 @@ Die [2.1]-Punkte stehen in 4.1 bis 4.4. Seit 0.5.1 ist 2.1 das Ziel, sie können
 ## 7. Roadmap ab Phase 3
 
 Ersetzt die alte Phase 3 und holt den Ornithopter aus Phase 5 nach vorn. Jede Phase endet mit einem Test, den Max im Spiel machen kann.
-Gebaut sind 3.0 bis 3d1 (Stand 0.7.0); 3c nach dem Bauplan docs/plan-3c.md, 3d1 nach docs/plan-3d1.md, die Abnahme durch Max steht jeweils in Abschnitt 8.
+Gebaut sind 3.0 bis 3d2 (Stand 0.8.0); 3c nach dem Bauplan docs/plan-3c.md, 3d1 nach docs/plan-3d1.md, 3d2 nach docs/plan-3d2.md, die Abnahme durch Max steht jeweils in Abschnitt 8.
 
 | Phase | Version | Inhalt | Testbares Ergebnis |
 |---|---|---|---|
@@ -829,7 +851,7 @@ Gebaut sind 3.0 bis 3d1 (Stand 0.7.0); 3c nach dem Bauplan docs/plan-3c.md, 3d1 
 | 3b | 0.5.0, Karte 0.5.4 | Ernter (Abbau, Aufbauen/Einpacken, Tempo-Deckel, Vorsichtsmodus), Ressourcenkategorie samt Migration, Annahme und Tankstutzen, Forschung „Spice-Ernte“, Spice-Brikett, Mod-Einstellung Wurmbiss; Kartengenerator (Startinsel, Graben, Lehrfeld, Mindestabstand, steile Felskante) erst in 0.5.4, nur für neue Spiele (2.4) | Ernter fährt höchstens 1,5 Kacheln/s, erntet 2000 Spice-Sand, die Annahme leert ihn per Greifarm, der Tankstutzen tankt; die Statistik zeigt Spice. Ein 0.3.0-Spielstand meldet Bohrer auf Spice. Karte: T11 bestätigt Regel B (sonst Regel A), T14 findet auf allen Seeds kein reguläres Spice näher als 100 Kacheln am Fels und alle Lehrfeld-Kacheln 40–60 Kacheln vom Fels, ab 0.5.5 auch genug nutzbare reguläre Felder („Felder“, „Feldgröße“) |
 | 3c | 0.6.0, **gebaut** | Ornithopter mit Trigger-Forschung, Ablage, Anheben/Absetzen per Taste, Verknüpfung und Fensterknopf, eigene Fernbedienungs-Verknüpfung und Fernfahren aus der Karte, Insassen fliegen mit (Pilot zuerst), Absturzregeln mit Landesuche und Warteliste, `/arrakis-uninstall`; Prüfstand T15–T17 | Vollen Ernter von Feld A nach B tragen, Inhalt identisch; der Fahrer fliegt mit. Ornithopter mit Last zerstören: Der Ernter fällt mit 30 % Schaden |
 | 3d1 | 0.7.0, **gebaut** | Vibration, Wärme, Unruhe, Wurmzeichen, Countdown, Schonfrist je Force, Briefings, Vorsichtsmodus, Vibrationsanzeige, `/arrakis-worm`; **geskripteter Biss mit Eruption, noch ohne Wurm-Entity**; Prüfstand T18–T20 | Ein einzelner Ernter: Unruhe nach etwa 25 s, Wurmzeichen nach etwa 55 s; Lehrjagd 90 s. Mit Rettung bleibt er heil, ohne Rettung kommt der Biss genau bei 0. Auf einem Nicht-Lehrfeld scheitert die Flucht per Fahrt |
-| 3d2 | 0.8.0 | Wurm-Entity mit verzögertem Spawn, Körperprüfung, Route/ROUTING, Fels-Wächter, Abtauchen, ohne Ascheeffekte (T5–T7) | Biss höchstens 3 s nach Countdown-Ende. Vor einer Felsinsel biegt der Wurm ab. Ein Ernter 10 Kacheln vor Fels wird trotzdem gebissen. Ein Ornithopter über dem Kopf verliert kein Tempo |
+| 3d2 | 0.8.0, **gebaut** | Wurm-Entity mit verzögertem Spawn, Körperprüfung, Route/ROUTING, Fels-Wächter, Abtauchen, ohne Ascheeffekte und ohne Kontaktschaden (T5–T7), Zerdrücken auf dem Weg, Sprint, Biss-Fenster mit Ersatzbiss; Prüfstand T21 und T22 | Biss höchstens 3 s nach Countdown-Ende. Vor einer Felsinsel biegt der Wurm ab. Ein Ernter 10 Kacheln vor Fels wird trotzdem gebissen. Ein Ornithopter über dem Kopf verliert kein Tempo |
 | 3d3 | 0.9.0 | Thumper (Ablenkung/Köder), Beute und Wurmzahn, großer Wurm, Mod-Einstellungen, Balancing-Runde | Ein Thumper lenkt eine laufende Jagd um. Ein getöteter Wurm wirft Zähne. 1 Ernter liefert im Wurm-Rhythmus etwa 15 Pakete/min |
 | 3e | 0.10.0 | Leitstelle, Carryall, RETTUNG (Schweben), TANKEN, ENTLADEN, RÜCKKEHR, Alarm „Rettung nicht möglich“ | 3 Ernter, eine Leitstelle, 2 Carryalls, Kohle in der Leitstelle: 60 min ohne Eingriff, kein Ernter verloren, kein Ernter ohne Treibstoff |
 | 3f | 0.11.0 | Flottenleitung: EINSATZ, UMSETZEN, RÜCKRUF, Feldsuche, Schaltung, Bereitschaftsflug, Frühwarnung, Ernte-Dämpfung | Mit 5 Ernter im Inventar und Signal H = 3 laufen drei Ernter. R holt alle zurück. Die Statussignale stimmen |
@@ -860,10 +882,11 @@ Im Container läuft kein Factorio. Deshalb baut Phase 3a einen **Prüfstand**:
 | T14 | Die erzeugte Karte hält die Regeln nicht ein (Fels zwischen den Rasterpunkten, Lehrfeld, Startinsel); der Schlüssel `tile:arrakis-rock:probability` wirkt in den `map_gen_settings` des Planeten nicht (in Vanilla nicht benutzt) | `/arrakis-test T14` (ab 0.5.4) erzeugt die Karte auf Testoberflächen (9 Seeds, `lang` 30, je 800 × 800 Kacheln) und prüft auf Kacheln: reguläres Spice ≥ 100 Kacheln vom Fels (auf keinem Seed reguläres Spice: FEHLER „nicht prüfbar“), Lehrfeld 40–60 Kacheln vom Fels mit 100 000 Spice-Sand ± 5 % (auch bei Spice-Größe 0), bei Spice-Größe 0 kein reguläres Spice, kein Spice auf Fels, kein Erz auf Sand, Tiefenwasser mit allen 3 × 3 Kacheln auf Fels, Graben bis 220 Kacheln, Startinsel mit allen Erzen und einem Tiefenbrunnen. Seit 0.5.5 über alle Seeds: im Mittel mindestens 2 nutzbare reguläre Felder (ab 300 Kacheln) je Seed und höchstens ein Neuntel der Seeds ohne („Felder“), Median der nutzbaren Felder mindestens 500 Kacheln („Feldgröße“). Lauf mit 0.5.4 im Spiel: alles bestanden, aber nur 0,9 Felder je Seed, Median 134 Kacheln (Anlass für 0.5.5). Misst die Dauer der Chunk-Erzeugung gegen die alte Karte | Ausdruck anpassen (unter neuen Namen); kein Laufzeit-Skript, das die Karte nachträglich repariert |
 | T12 | Rettung aus der Kartenansicht: Ist `player.vehicle` beim Fernsteuern des Ornithopters gesetzt, und kommt die Taste an? | Ornithopter aus der Karte fahren bzw. per Fernbedienung schicken, Taste drücken. Ergebnis 0.4.0: `ALT+O` kam nie an | Seit 0.6.0 ist die Taste nie der einzige Weg: Verknüpfung `arrakis-carry` (auch in der Karte) und Fensterknopf rufen dieselbe Funktion, die eigene Verknüpfung `arrakis-give-remote` gibt die Fernbedienung schon mit „Ornithopter“. Die Suche nach dem Flieger hat vier Stufen (4.2). T17 prüft das am echten Ornithopter |
 | T18–T20 | Die erste Wurm-Stufe (0.7.0) hängt an 22 ungeprüften Engine-Annahmen V1 bis V22 (docs/plan-3d1.md 4.17): etwa dass `die(force)` `on_entity_died` sofort auslöst, dass ein eigener Alarm mit virtuellem Signal erscheint und sich gezielt entfernen lässt, dass Render-Objekte und Alarme Speichern/Laden überleben, dass das Einsteigen ein ohne Bau-Ereignis entstandenes Fahrzeug meldet und dass `status == working` auch auf Laborkacheln gilt | T18 Wärme (automatisch), T19 Jagd (automatisch), T20 Bedienung (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3d1.md 4.17, z. B. Alarm-Symbol `item`, Alarme per `get_alerts` neu setzen, `scan` im Takt, `mining_progress` statt `status` |
+| T21–T22 | Der Sandwurm (0.8.0) hängt an 17 ungeprüften Engine-Annahmen W1 bis W17 (docs/plan-3d2.md 4.17): etwa dass `unit.speed = 3,5 / 60` direkt nach dem Erzeugen ohne Anlauf hält (W1), dass `speed` über `target_speed` den Sprint trägt (W3), dass `request_path` mit Box ±3,5 und nur der Fels-Ebene einen Weg durch einen Gang findet (W4, W17), dass eine offene Anfrage Speichern und Laden übersteht (W5), dass der Wurm durch Entities, die er nicht zerdrückt (Unzerstörbares, Hochschienen, die Schutzzone), hindurchfährt oder davor stehen bleibt, ohne die Steuerung zu verlieren (W10) und dass ein Ornithopter über dem Kopf weder gebremst noch beschädigt wird (W12) | T21 echter Code (automatisch), T22 Optik und Laden (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3d2.md 4.17, z. B. größere Reserve vor dem Spawn, Ersatzstufen des Sprints, Box ±5,5, Zeitablauf der Anfrage |
 | T15–T17 | Der echte Ornithopter (0.6.0) hängt an 28 ungeprüften Engine-Annahmen U1 bis U28 (docs/plan-3c.md 4.16): etwa Taste und Fernbedienung in der Kartenansicht, Sitzwechsel aus einigen Kacheln Abstand, lineare Wirkung des Tempo-Stickers, Probe gleich Ernter-Maske, Teleport nach dem Notstart verlustfrei | T15 echter Code (automatisch), T16 Flugphysik (automatisch), T17 Bedienung (interaktiv), Abnahme durch Max (Plan 8) | Je Annahme ein Ausweichweg in docs/plan-3c.md 4.16, z. B. Modifier aus der T16-INFO, Teleport der Figur an den Flieger, Absetzen per `clone` |
 
 Weitere Risiken:
-- **Spielgefühl und Balancing.** Alle Zeiten und Schwellen werden Mod-Einstellungen (3d3); in 0.7.0 sind sie Konstanten im Code (docs/plan-3d1.md 1). 3d1 testet das Timing früh, noch ohne Wurm-Technik, und 3d3 enthält eine eigene Balancing-Runde.
+- **Spielgefühl und Balancing.** Alle Zeiten und Schwellen werden Mod-Einstellungen (3d3); in 0.7.0 und 0.8.0 sind sie Konstanten im Code (docs/plan-3d1.md 1, docs/plan-3d2.md 1). 3d1 testet das Timing früh, noch ohne Wurm-Technik, und 3d3 enthält eine eigene Balancing-Runde.
 - **Mehrspieler.** Render-Sortierung (CL:1004, kosmetisch) und ein Desync, wenn Spinnen getötet und neu gebaut werden (CL:81; offen, ob 2.0.77 betroffen ist). Einmal mit zwei Spielern testen, dabei einen Ornithopter zerstören und neu bauen.
 - **Platzhalter-Optik.** Getönte Panzer und Spidertrons erkennt man nicht sofort als Ernter und Ornithopter. Bis Phase 6 erklären Factoriopedia-Texte und Briefings die Rollen.
 
@@ -882,5 +905,6 @@ Das hier ist geplant, aber erst ein Test im Spiel kann es klären. Alles andere 
 - ~~**2.1 und alte Mods (T10).**~~ Beantwortet: 2.1 lädt keine Mods mit `factorio_version "2.0"` (MS).
 - **Ornithopter (T15–T17).** Die 28 Engine-Annahmen aus docs/plan-3c.md 4.16, auf denen 0.6.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob `Umschalt+C` im Ornithopter, in der Kartenansicht und beim Fernfahren ankommt (U1 bis U4), ob die eigene Fernbedienung ohne „Spidertron“ steuert (U5), ob die Sticker linear wirken (U6) und ob das Lastbild aus den Panzer-Sheets richtig erscheint (U27).
 - **Würmer 3d1 (T18–T20).** Die 22 Engine-Annahmen aus docs/plan-3d1.md 4.17, auf denen 0.7.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob `die(force)` `on_entity_died` noch im Aufruf auslöst (V1), ob ein eigener Alarm mit dem Wurmzeichen-Symbol erscheint und sich über `icon` gezielt entfernen lässt (V5), ob Render-Objekte und eigene Alarme Speichern und Laden überleben (V10) und ob `on_player_driving_changed_state` reicht, um Fahrzeuge ohne Bau-Ereignis zu finden (V12). Dazu die Zeiten aus dem Trockenlauf (T18 etwa 2 min, T19 etwa 7 min Spielzeit), die im Spiel noch nicht gemessen sind.
+- **Sandwurm 3d2 (T21, T22).** Die 17 Engine-Annahmen aus docs/plan-3d2.md 4.17, auf denen 0.8.0 beruht, sind noch nicht im Spiel geprüft. Am wichtigsten: ob der Sprint über `speed` wirkt oder erst die Ersatzstufen greifen (W3), ob `request_path` mit der Box ±3,5 und nur der Fels-Ebene einen Weg in eine Sandtasche findet und wann die Antwort kommt (W4), ob der Wurm an Entities, die er nicht zerdrückt (Unzerstörbares, Hochschienen, die Schutzzone um ein Ziel), vorbei- oder hindurchkommt, ohne hängen zu bleiben (W10), und ob ein Ornithopter über dem Kopf ungebremst und unbeschädigt bleibt (W12). Dazu die Zeit aus dem Trockenlauf (T21 etwa 3,4 min Spielzeit), die im Spiel noch nicht gemessen ist.
 - **Leistung (T8).** Die Kosten bei großen Flotten.
 - **Spielspaß.** Ob 55 s bis zum Wurmzeichen, 60 s Vorwarnung, 2 bis 4 Minuten Ruhe und etwa 15 Pakete/min pro Ernter sich gut anfühlen, zeigt nur Spielen.
