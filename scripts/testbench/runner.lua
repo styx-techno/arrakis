@@ -7,7 +7,7 @@
 -- (TEMPO …). Die Tests zählen Ticks; ihre Ergebnisse hängen nicht vom Tempo ab (docs/pruefstand.md, „Zeitraffer“).
 -- Gespeichert wird dafür nichts außer game.speed selbst; zurück auf echte Zeit mit /arrakis-test tempo 1.
 --
--- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd):
+-- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd, t_sandwurm):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
 --   Optional: hint (Text für die Testliste), answer_time (Pause bei „alle“ nach diesem Test, damit Max eine
@@ -19,7 +19,9 @@
 --   tb = diese Bibliothek (Funktionen unten), liegt nie in storage.
 --   Weitergeleitete Ereignisse (name): spider_command_completed, test_key, entity_died, driving_changed, script_path,
 --   carry_key (Taste arrakis-carry-toggle) und shortcut (on_lua_shortcut), beide zusätzlich zu scripts/flyer.lua, und
---   research_finished (on_research_finished, ab 0.6.1 für T15 Schritt 2: Engine oder Skript; ab 0.7.0 auch T19 Schritt 7).
+--   research_finished (on_research_finished, ab 0.6.1 für T15 Schritt 2: Engine oder Skript; ab 0.7.0 auch T19 Schritt 7),
+--   ab 0.8.0 für T21 segmented_unit_died (on_segmented_unit_died) und segmented_unit_destroyed
+--   (script_raised_destroy_segmented_unit), beide zusätzlich zu scripts/worms.lua.
 --
 -- storage.testbench = {
 --   run = run | nil,                         -- laufender Test (höchstens einer)
@@ -38,7 +40,7 @@ local SURFACE_NAME = "arrakis-testbench"
 local HOLD_NAME = "arrakis-test-hold"
 local LOG_FILE = "arrakis-test.txt"
 local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T13", "T2b", "T14", "T15", "T16", "T17", "T18", "T19",
-               "T20"}
+               "T20", "T21", "T22"}
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60
@@ -58,7 +60,7 @@ local tests = {}
 for _, module_name in ipairs({"scripts.testbench.t_flyer", "scripts.testbench.t_harvester",
                               "scripts.testbench.t_worm", "scripts.testbench.t_map",
                               "scripts.testbench.t_ernter", "scripts.testbench.t_karte", "scripts.testbench.t_ornithopter",
-                              "scripts.testbench.t_jagd"}) do
+                              "scripts.testbench.t_jagd", "scripts.testbench.t_sandwurm"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end
@@ -824,7 +826,9 @@ runner.events =
   ["arrakis-test-key"] = forward("test_key"),
   ["arrakis-carry-toggle"] = forward("carry_key"),
   [defines.events.on_lua_shortcut] = forward("shortcut"),
-  [defines.events.on_research_finished] = forward("research_finished")
+  [defines.events.on_research_finished] = forward("research_finished"),
+  [defines.events.on_segmented_unit_died] = forward("segmented_unit_died"),
+  [defines.events.script_raised_destroy_segmented_unit] = forward("segmented_unit_destroyed")
 }
 
 runner.on_init = function()

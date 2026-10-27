@@ -150,6 +150,9 @@ WRITE_WHITELIST = {
   # sandworm.lua: Wurm-Felder der Jagd (docs/plan-3d2.md 4.2): hunt.path = offene Pfad-Anfrage, path = hunt.path
   # (Kennung der Anfrage), plan = hunt.plan (nächster Kandidat), worm = hunt.worm (zuletzt geschriebener activity_mode)
   "hunt.path", "path.id", "plan.next", "worm.mode",
+  # t_sandwurm: w = Beobachtung einer Jagd (w.hold = Haltezeit und Weg beim Halten, w.unit = beobachteter Wurm),
+  # s = Datensatz eines Schritts (s.unit = Wurm des Schritts), d = run.data (d.units = vom Test erzeugte Würmer)
+  "w.hold.path", "w.unit", "s.unit", "d.units",
 }
 
 # Wurzel-Bezeichner, die immer eigene Daten (keine API-Objekte) sind: für sie entfallen die

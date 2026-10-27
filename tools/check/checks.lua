@@ -575,6 +575,89 @@ end end
 if tech_count ~= 7 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 7") end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
+-- Phase 3d2 (docs/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
+-- prototypes/sandworm.lua gelesen).
+local expected_3d2 = {
+  ["segmented-unit"] = {"arrakis-sandworm-small"},
+  ["trivial-smoke"] = {"arrakis-sandworm-smoke-front", "arrakis-sandworm-smoke-small-top", "arrakis-sandworm-smoke-small-bottom",
+                       "arrakis-sandworm-smoke-big"},
+  explosion = {"arrakis-worm-dive"},
+}
+local count_3d2 = 0
+for t, names in pairs(expected_3d2) do for _, n in ipairs(names) do
+  if not (raw[t] and raw[t][n]) then add("FEHLER 3d2: " .. t .. " " .. n .. " fehlt") else count_3d2 = count_3d2 + 1 end
+end end
+-- Knoten im ganzen Prototyp suchen: fn(node) gibt einen Befund (Text) oder nil.
+local function find_nodes(node, fn, seen, found)
+  if type(node) ~= "table" or seen[node] then return found end
+  seen[node] = true
+  local hit = fn(node)
+  if hit then found[#found+1] = hit end
+  for _, v in pairs(node) do find_nodes(v, fn, seen, found) end
+  return found
+end
+local function foreign_effect(node)
+  if node.type == "damage" then return "damage" end
+  if node.type == "create-sticker" then return "create-sticker" end
+  if type(node.particle_name) == "string" and node.particle_name:find("^vulcanus%-") then return node.particle_name end
+  if type(node.smoke_name) == "string" and node.smoke_name:find("^demolisher%-") then return node.smoke_name end
+  return nil
+end
+local function corpse_entity(node)
+  if node.type == "create-entity" and type(node.entity_name) == "string" and node.entity_name:find("corpse") then return node.entity_name end
+  return nil
+end
+local function cliff_effect(node) if node.type == "destroy-cliffs" then return "destroy-cliffs" end return nil end
+local sandworm_parts = 0
+for _, t in ipairs({"segmented-unit", "segment"}) do for n, p in pairs(raw[t] or {}) do if n:find("^arrakis%-sandworm%-") then
+  sandworm_parts = sandworm_parts + 1
+  local where = "FEHLER 3d2: " .. t .. " " .. n
+  if has_ash(p.update_effects, {}) then add(where .. " hat Ascheeffekte") end
+  local foreign = find_nodes(p, foreign_effect, {}, {})
+  if #foreign > 0 then add(where .. " hat " .. table.concat(foreign, ", ")) end
+  if #find_nodes(p.update_effects, cliff_effect, {}, {}) > 0 then add(where .. " hat destroy-cliffs in update_effects") end
+  if p.update_effects_while_enraged ~= nil then add(where .. " update_effects_while_enraged gesetzt") end
+  if p.revenge_attack_parameters ~= nil then add(where .. " revenge_attack_parameters gesetzt") end
+  if p.loot ~= nil or p.corpse ~= nil then add(where .. " hat Beute/Leiche") end
+  local corpses = find_nodes(p.dying_trigger_effect, corpse_entity, {}, {})
+  if #corpses > 0 then add(where .. " dying_trigger_effect erzeugt " .. table.concat(corpses, ", ")) end
+  if t == "segment" and p.hidden ~= true then add(where .. " nicht hidden") end
+end end end
+local head = raw["segmented-unit"]["arrakis-sandworm-small"]
+if head then
+  local where = "FEHLER 3d2: segmented-unit arrakis-sandworm-small"
+  local segs = head.segment_engine and head.segment_engine.segments or {}
+  if #segs ~= 12 then add(where .. " " .. #segs .. " Segmente statt 12") end
+  for i, sg in ipairs(segs) do
+    if type(sg.segment) ~= "string" or not sg.segment:find("^arrakis%-sandworm%-small%-") then add(where .. " Segment " .. i .. " " .. tostring(sg.segment)) end
+  end
+  for _, key in ipairs({"investigating_speed", "attacking_speed", "enraged_speed"}) do
+    if type(head[key]) ~= "number" or math.abs(head[key] - 3.5 / 60) > 1e-9 then add(where .. " " .. key .. " " .. tostring(head[key]) .. " statt 3,5/60") end
+  end
+  if type(head.patrolling_speed) ~= "number" or math.abs(head.patrolling_speed - 1 / 60) > 1e-9 then add(where .. " patrolling_speed " .. tostring(head.patrolling_speed) .. " statt 1/60") end
+  if type(head.enraged_duration) ~= "number" or head.enraged_duration > 60 then add(where .. " enraged_duration " .. tostring(head.enraged_duration)) end
+  if head.vision_distance ~= 0 then add(where .. " vision_distance " .. tostring(head.vision_distance)) end
+  if head.territory_radius ~= 1 then add(where .. " territory_radius " .. tostring(head.territory_radius)) end
+  if head.autoplace ~= nil then add(where .. " hat autoplace") end
+  if head.collision_mask and head.collision_mask.layers and head.collision_mask.layers.arrakis_rock then add(where .. " Maske mit arrakis_rock") end
+  local icon = head.icons and head.icons[1]
+  if not (icon and type(icon.tint) == "table" and sand_tinted(icon)) then add(where .. " Symbol nicht getönt") end
+  if not head.localised_name then add(where .. " ohne localised_name") end
+end
+for _, n in ipairs(expected_3d2["trivial-smoke"]) do
+  local smoke = raw["trivial-smoke"][n]
+  if smoke then
+    local c = smoke.color or {}
+    local r, g, b, a = c.r or c[1], c.g or c[2], c.b or c[3], c.a or c[4] or 1
+    if not (type(r) == "number" and type(g) == "number" and type(b) == "number" and r > g and g > b and r >= 0.5 * a) then
+      add("FEHLER 3d2: trivial-smoke " .. n .. " nicht sandfarben")
+    end
+  end
+end
+local dive = raw.explosion["arrakis-worm-dive"]
+if dive and dive.sound ~= nil then add("FEHLER 3d2: explosion arrakis-worm-dive mit sound") end
+add("3d2: " .. count_3d2 .. "/6 Prototypen, " .. sandworm_parts .. " Teile des Sandwurms (Kopf und Segmente)")
+
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]
 local tb_on = tb_setting and tb_setting.value
@@ -607,7 +690,7 @@ if tb_on then
   local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua", "scripts/testbench/t_flyer.lua",
     "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua",
     "scripts/testbench/t_ornithopter.lua", "scripts/vibration.lua", "scripts/worms.lua", "scripts/worms-gui.lua",
-    "scripts/testbench/t_jagd.lua"}
+    "scripts/testbench/t_jagd.lua", "scripts/sandworm.lua", "scripts/testbench/t_sandwurm.lua"}
   local read = 0
   for _, file in ipairs(files) do
     local f = io.open(file, "r")
@@ -625,6 +708,81 @@ if tb_on then
   if read == 0 then add("WARN Laufzeitdateien nicht gefunden (aus dem Repo-Root starten)") end
 end
 add("Prüfstand " .. (tb_on and "an" or "aus") .. ": " .. tb_count .. " Test-Prototypen")
+
+-- Statische Regeln (docs/plan-3d1.md 7, docs/plan-3d2.md 7) über den Laufzeitcode, ohne Kommentare: Ereignisse nur über
+-- event_handler, kein math.random, keine Modultabelle sandworm als globale Variable; sandworm.lua tötet nie (kein die(), kein
+-- devour) und nennt die Sandwurm-Force nicht; jeder wörtliche Schlüssel arrakis-message.* steht in beiden Sprachen.
+do
+  local code_files = {"control.lua"}
+  for _, n in ipairs({"arrakis-surface", "flyer-gui", "flyer", "harvester-gui", "harvester", "hold", "intake", "migrate", "sandworm",
+                      "terrain", "vibration", "worms-gui", "worms"}) do code_files[#code_files+1] = "scripts/" .. n .. ".lua" end
+  for _, n in ipairs({"runner", "t_ernter", "t_flyer", "t_harvester", "t_jagd", "t_karte", "t_map", "t_ornithopter", "t_sandwurm", "t_worm"}) do
+    code_files[#code_files+1] = "scripts/testbench/" .. n .. ".lua"
+  end
+  local function read_file(name)
+    local f = io.open(name, "r")
+    if not f then return nil end
+    local text = f:read("*a")
+    f:close()
+    return text
+  end
+  local function strip_comments(text)
+    text = text:gsub("%-%-%[(=*)%[.-%]%1%]", "")
+    local lines = {}
+    for l in (text .. "\n"):gmatch("([^\n]*)\n") do lines[#lines+1] = (l:gsub("%-%-.*$", "")) end
+    return table.concat(lines, "\n")
+  end
+  local function locale_keys(lang)
+    local keys = {}
+    local text = read_file("locale/" .. lang .. "/messages.cfg")
+    if not text then return nil end
+    local section
+    for l in (text .. "\n"):gmatch("([^\n]*)\n") do
+      local sec = l:match("^%[([%w%-_]+)%]")
+      if sec then section = sec
+      elseif section == "arrakis-message" then
+        local key = l:match("^([%w%-_]+)=")
+        if key then keys[key] = true end
+      end
+    end
+    return keys
+  end
+  local de, en = locale_keys("de"), locale_keys("en")
+  local n_files, n_keys = 0, 0
+  for _, file in ipairs(code_files) do
+    local text = read_file(file)
+    if text then
+      n_files = n_files + 1
+      local code = strip_comments(text)
+      if code:find("script%.on_event") or code:find("script%.on_nth_tick") then add("FEHLER statisch: " .. file .. " registriert Ereignisse an event_handler vorbei") end
+      if code:find("math%.random") then add("FEHLER statisch: " .. file .. " benutzt math.random") end
+      if file ~= "scripts/sandworm.lua" and code:find("\n%s*sandworm%s*=") then add("FEHLER statisch: " .. file .. " setzt eine globale Modultabelle sandworm") end
+      if file == "scripts/sandworm.lua" then
+        if code:find("[%.:]die%s*%(") or code:find("devour") then add("FEHLER statisch: scripts/sandworm.lua ruft die() oder devour") end
+        if code:find("force%s*=%s*[\"']arrakis%-sandworm[\"']") then add("FEHLER statisch: scripts/sandworm.lua nennt die Sandwurm-Force") end
+      end
+      if de and en then
+        -- Ein Schlüssel mit "-" am Ende ist ein Präfix (z. B. "arrakis-message.state-" .. Zustand): dann reicht einer mit diesem Anfang.
+        local function known(keys, key)
+          if key:sub(-1) ~= "-" then return keys[key] == true end
+          for k in pairs(keys) do if k:sub(1, #key) == key then return true end end
+          return false
+        end
+        for key in code:gmatch("[\"']arrakis%-message%.([%w%-_]+)[\"']") do
+          n_keys = n_keys + 1
+          if not known(de, key) then add("FEHLER statisch: " .. file .. ": arrakis-message." .. key .. " fehlt in locale/de") end
+          if not known(en, key) then add("FEHLER statisch: " .. file .. ": arrakis-message." .. key .. " fehlt in locale/en") end
+        end
+      end
+    end
+  end
+  if de and en then
+    for key in pairs(de) do if not en[key] then add("FEHLER statisch: arrakis-message." .. key .. " nur in locale/de") end end
+    for key in pairs(en) do if not de[key] then add("FEHLER statisch: arrakis-message." .. key .. " nur in locale/en") end end
+  end
+  if n_files == 0 then add("WARN statisch: Laufzeitdateien nicht gefunden (aus dem Repo-Root starten)")
+  else add("Statische Regeln: " .. n_files .. "/" .. #code_files .. " Dateien, " .. n_keys .. " wörtliche Meldungsschlüssel") end
+end
 
 -- labs
 local labs = {}

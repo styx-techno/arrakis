@@ -31,7 +31,7 @@ Ablauf:
 
 Rückgabewert: 0 = kein FEHLER, 1 = mindestens ein FEHLER oder Zeitlimit, 2 = Einrichtung oder
 Infrastruktur (Factorio startet nicht, RCON, Prüfstand-Einstellung nicht aktiv, Zeitraffer nicht
-einstellbar, Test nicht gestartet, Ordner schon in Benutzung, Server tickt nicht mehr). Interaktive Tests (T9, T12, T17, T20) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
+einstellbar, Test nicht gestartet, Ordner schon in Benutzung, Server tickt nicht mehr). Interaktive Tests (T9, T12, T17, T20, T22) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
 """
 import argparse
 import errno
@@ -764,7 +764,7 @@ def parse_args(argv):
   ap = argparse.ArgumentParser(
     description="Arrakis-Prüfstand auf einem eigenen Factorio-Server ohne Spieler laufen lassen (RCON).",
     epilog="Rückgabewert: 0 kein FEHLER, 1 FEHLER oder Zeitlimit, 2 Einrichtung/Infrastruktur. "
-           "Interaktive Tests (T9, T12, T17, T20) gehen nur von Hand im Spiel.", add_help=False)
+           "Interaktive Tests (T9, T12, T17, T20, T22) gehen nur von Hand im Spiel.", add_help=False)
   ap.add_argument("-h", "--help", action="help", help="diese Hilfe zeigen")
   ap.add_argument("--factorio", required=True, metavar="PFAD", help="Pfad zu bin/x64/factorio(.exe) einer entpackten Factorio-Kopie")
   ap.add_argument("--ordner", metavar="ORDNER", help="Arbeitsordner (Standard: <System-Temp>/arrakis-pruefstand)")
