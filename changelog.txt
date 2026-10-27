@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.3
+Date: 2026-10-27
+  Modding:
+    - Prüfstand: neuer Befehl /arrakis-test weiter. Er schaltet die Tests mit Schritten (T20 und T22) zum nächsten Schritt wie die Prüfstand-Taste ALT+O, für den Fall, dass die Taste nicht ankommt (in T12 kam am 07.10.2026 kein einziger Druck an, unter Factorio 2.1 ist sie noch nicht bestätigt). Weiterschalten kann nur, wer den Test gestartet hat; ohne laufenden Test oder bei einem Test ohne Schritte sagt der Prüfstand das. Die Texte von T20 und T22, die Testliste und die Befehlshilfe nennen ihn. Für Testmodule: neues Feld steps und weitergeleitetes Ereignis test_next.
+    - docs/plan-3d2.md 4.17: W12 ist geklärt und hält. Der Prüfstand-Lauf vom 27.10.2026 spät abends (0.8.2) maß über dem Wurmkörper 105 % des Vergleichstempos und 99,5 % Flugzeit, der Lauf davor 89 % und 102,2 %. Die Abweichung entsteht beim Anfahren aus der Ruhe und betrifft nur den Flieger über dem Wurm, die beiden Vergleichsflieger flogen gleich. Ihr Vorzeichen wechselte, ein gleichbleibendes Bremsen ist es also nicht; die Ursache ist offen. Die Grenze 80 % in T21 Schritt 6 bleibt als Wächter.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.2
 Date: 2026-10-27
   Modding:

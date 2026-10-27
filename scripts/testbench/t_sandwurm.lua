@@ -5,8 +5,8 @@
 --        Waisen, Entfernen. Fünfzehn Schritte in zwölf Feldern zu 400 × 400 Kacheln; die Schritte 2 bis 12 laufen in drei
 --        Wellen (nie mehr als 3 Befehlsjagden mit Wurm, nie mehr als 6 Würmer), danach 13 bis 15 nacheinander in Feld 12.
 --   T22: Optik und Laden (interaktiv, nur mit Spieler und seiner Force): Auftauchen, Halten, Biss und Abtauchen, Fels,
---        Zerdrücken, Ornithopter, Rettung, Tod des Wurms, Factoriopedia, Speichern und Laden. ALT+O schaltet weiter; jede
---        FRAGE wartet auf Max.
+--        Zerdrücken, Ornithopter, Rettung, Tod des Wurms, Factoriopedia, Speichern und Laden. ALT+O (ab 0.8.3 auch
+--        /arrakis-test weiter) schaltet weiter; jede FRAGE wartet auf Max.
 -- Gebaut wird mit raise_built = true (die Laufzeitmodule tragen ein); Fahrer sind Puppen ohne Spieler (tb.dummy_driver),
 -- gefahren wird über riding_state an Fahrzeug und Puppe jeden Tick (wie T13 und T19).
 -- Die Tests zählen Ticks. Der Kopf wird je 10 Ticks in der Mitte zwischen zwei Takten gelesen (tick % 10 == 5) über
@@ -2634,9 +2634,10 @@ end
 
 -- T22 Sandwurm: Optik und Laden (interaktiv) ----------------------------------------------------------
 -- Mit Max im Spiel und seiner Force auf der Fläche ±250 mit einer Felsinsel (40 × 40, Mitte 60 östlich des Ursprungs).
--- ALT+O schaltet zum nächsten Schritt; ein Schritt beendet beim Weiterschalten seine laufenden Jagden ("abort"), damit kein
--- Wurm überlebt. Die FRAGEn kommen, sobald es etwas zu sehen gab (Auftauchen, Ende der Jagd). Entities bleiben am Ende
--- zum Ansehen stehen (wie T20); Jagden, Wärme, Ruhe, Schonfrist, Pause und Statistik räumt cleanup.
+-- ALT+O (ab 0.8.3 auch /arrakis-test weiter) schaltet zum nächsten Schritt; ein Schritt beendet beim Weiterschalten seine
+-- laufenden Jagden ("abort"), damit kein Wurm überlebt. Die FRAGEn kommen, sobald es etwas zu sehen gab (Auftauchen,
+-- Ende der Jagd). Entities bleiben am Ende zum Ansehen stehen (wie T20); Jagden, Wärme, Ruhe, Schonfrist, Pause und
+-- Statistik räumt cleanup.
 
 local T22_HALF = 250
 local T22_LAST = 9
@@ -2936,7 +2937,7 @@ local function t22_start(run, tb)
   tb.protect(run, player)
   d.max_pos = at(d.origin, -60, 60)
   tb.watch(run, player, d.max_pos)
-  tb.log(run, "INFO", "Neun Schritte mit dem echten Sandwurm und deiner Force (" .. force.name .. ", wach); ALT+O schaltet zum nächsten,"
+  tb.log(run, "INFO", "Neun Schritte mit dem echten Sandwurm und deiner Force (" .. force.name .. ", wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten,"
     .. " nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach 20 min Spielzeit oder mit /arrakis-test stop."
     .. " Bitte vorher /arrakis-test tempo 1.")
   if game.speed ~= 1 then
@@ -2964,7 +2965,7 @@ end
 local function t22_on_event(run, tb, name, event)
   local d = run.data
   if not d.made or d.done_all then return end
-  if name == "test_key" and event.player_index == run.player_index then t22_next(run, tb, d) end
+  if (name == "test_key" or name == "test_next") and event.player_index == run.player_index then t22_next(run, tb, d) end
 end
 
 local function t22_cleanup(run, tb)
@@ -3008,6 +3009,7 @@ return
     title = "Sandwurm: Optik und Laden",
     timeout = 20 * 60 * 60,
     interactive = true,
+    steps = true,
     confirm = nil,
     start = t22_start,
     tick = t22_tick,

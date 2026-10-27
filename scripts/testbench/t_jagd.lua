@@ -3016,9 +3016,10 @@ local function t19_cleanup(run, tb)
 end
 
 -- T20 Würmer: Bedienung (interaktiv) ----------------------------------------------------------------
--- Mit Max im Spiel und seiner Force. ALT+O (Prüfstand-Taste) schaltet zum nächsten Schritt; Schritt 2 erst nach dem
--- Erwachen, nach Schritt 9 endet der Test. Gebaut wird neben Max (auf der Prüfstand-Fläche), der Ernter für den
--- Vorsichtsmodus 120 Kacheln östlich des Ursprungs, damit die Ruhe nach der Jagd aus Schritt 4 und 5 ihn nicht trifft.
+-- Mit Max im Spiel und seiner Force. ALT+O (Prüfstand-Taste, ab 0.8.3 auch /arrakis-test weiter) schaltet zum nächsten
+-- Schritt; Schritt 2 erst nach dem Erwachen, nach Schritt 9 endet der Test. Gebaut wird neben Max (auf der
+-- Prüfstand-Fläche), der Ernter für den Vorsichtsmodus 120 Kacheln östlich des Ursprungs, damit die Ruhe nach der Jagd
+-- aus Schritt 4 und 5 ihn nicht trifft.
 -- Entities bleiben am Ende zum Ansehen stehen (wie T17); Wärme, Ruhe und Jagden der Force räumt cleanup.
 
 local T20_HALF = 200
@@ -3107,7 +3108,7 @@ t20_enter[4] = function(run, tb, d, player)
   d.flyer = new_flyer(run, tb, d.made, t20_spot(run, tb, d, -6, 4, FLYER), {force = d.force, coal = 20})
   tb.log(run, "FRAGE", "4) Je Zeichen ja/nein: Alarm unten rechts mit Wurmzeichen-Symbol, Kartenmarkierung, Warnton, roter Ring mit Sekunden,"
     .. " Zeile oben links, Status „Wurmzeichen! Biss in … s“? [V5, V8]")
-  tb.log(run, "INFO", "4) Der Ornithopter für Schritt 5 steht neben dir. ALT+O für Schritt 5, solange der Countdown läuft.")
+  tb.log(run, "INFO", "4) Der Ornithopter für Schritt 5 steht neben dir. ALT+O oder /arrakis-test weiter für Schritt 5, solange der Countdown läuft.")
 end
 
 -- 5) Rettung [V16]; läuft keine Jagd mehr, startet der Test eine Befehlsjagd mit 60 s.
@@ -3178,13 +3179,13 @@ t20_enter[9] = function(run, tb, d, player)
   end
   tb.fuel(d.raw_car, "coal", 10)
   tb.log(run, "MESSUNG", "9) Auto ohne raise_built: source_of " .. (vibration_lib.source_of(d.raw_car) and "eingetragen" or "nil"))
-  tb.log(run, "INFO", "9) In das Auto neben dir steigen. Danach ALT+O beendet den Test.")
+  tb.log(run, "INFO", "9) In das Auto neben dir steigen. Danach beendet ALT+O oder /arrakis-test weiter den Test.")
 end
 
 local function t20_next(run, tb, d)
   local player = tb.player(run)
   if d.step == 1 and not d.awake_tick then
-    tb.log(run, "INFO", "1) Noch nicht erwacht (in " .. tb.num(math.max(0, (d.wake_tick or 0) - game.tick) / 60, 0) .. " s); ALT+O danach.")
+    tb.log(run, "INFO", "1) Noch nicht erwacht (in " .. tb.num(math.max(0, (d.wake_tick or 0) - game.tick) / 60, 0) .. " s); ALT+O oder /arrakis-test weiter danach.")
     return
   end
   if d.step >= T20_LAST then
@@ -3237,7 +3238,7 @@ local function t20_start(run, tb)
   tb.protect(run, player)
   tb.watch(run, player, d.origin)
   tb.log(run, "INFO", "Während T20 vibrieren auch deine übrigen Bauten auf der Prüfstand-Fläche (Force " .. force.name .. ").")
-  tb.log(run, "INFO", "Neun Schritte; ALT+O schaltet zum nächsten (Schritt 2 erst nach dem Erwachen, nach Schritt 9 endet der Test)."
+  tb.log(run, "INFO", "Neun Schritte; ALT+O oder /arrakis-test weiter schaltet zum nächsten (Schritt 2 erst nach dem Erwachen, nach Schritt 9 endet der Test)."
     .. " Jeder Klick auf eine Verknüpfung und jedes Kontrollkästchen schreibt eine MESSUNG-Zeile, jeder Zustandswechsel eine INFO-Zeile."
     .. " Ende nach 15 min Spielzeit oder mit /arrakis-test stop. Bitte mit /arrakis-test tempo 1.")
   if game.speed ~= 1 then
@@ -3303,7 +3304,7 @@ local function t20_tick(run, tb)
     end
     if g.awake then
       d.awake_tick = now
-      tb.log(run, "INFO", "1) Erwacht bei Tick " .. now .. " (Termin " .. tostring(d.wake_tick) .. "). Weiter mit ALT+O.")
+      tb.log(run, "INFO", "1) Erwacht bei Tick " .. now .. " (Termin " .. tostring(d.wake_tick) .. "). Weiter mit ALT+O oder /arrakis-test weiter.")
     end
   end
   if d.hold620 and valid(d.main) and now % 60 == 30 then heat_chunk(d.main.surface, d.main.position, 620) end
@@ -3323,7 +3324,7 @@ end
 local function t20_on_event(run, tb, name, event)
   local d = run.data
   if not d.cars or d.done_all then return end
-  if name == "test_key" then
+  if name == "test_key" or name == "test_next" then
     if event.player_index == run.player_index then t20_next(run, tb, d) end
   elseif name == "shortcut" then
     local player = event.player_index and game.get_player(event.player_index)
@@ -3386,6 +3387,7 @@ return
     title = "Würmer: Bedienung",
     timeout = 920 * 60,
     interactive = true,
+    steps = true,
     confirm = nil,
     start = t20_start,
     tick = t20_tick,

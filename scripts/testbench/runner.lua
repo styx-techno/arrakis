@@ -10,7 +10,8 @@
 -- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd, t_sandwurm):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
---   Optional: hint (Text für die Testliste), answer_time (Pause bei „alle“ nach diesem Test, damit Max eine
+--   Optional: hint (Text für die Testliste), steps (true: der Test schaltet mit /arrakis-test weiter wie mit ALT+O,
+--   ab 0.8.3; T20 und T22), answer_time (Pause bei „alle“ nach diesem Test, damit Max eine
 --   FRAGE vom Testende vor Ort beantworten kann; Ticks bei game.speed 1, gilt also in echter Zeit: mit
 --   Zeitraffer entsprechend mehr Ticks, auch wenn sich das Tempo während der Pause ändert).
 --   run = storage.testbench.run = {id, player_index, started, data = {}, args = {…}, counts = {…}}, nur Daten.
@@ -21,7 +22,8 @@
 --   carry_key (Taste arrakis-carry-toggle) und shortcut (on_lua_shortcut), beide zusätzlich zu scripts/flyer.lua, und
 --   research_finished (on_research_finished, ab 0.6.1 für T15 Schritt 2: Engine oder Skript; ab 0.7.0 auch T19 Schritt 7),
 --   ab 0.8.0 für T21 segmented_unit_died (on_segmented_unit_died) und segmented_unit_destroyed
---   (script_raised_destroy_segmented_unit), beide zusätzlich zu scripts/worms.lua.
+--   (script_raised_destroy_segmented_unit), beide zusätzlich zu scripts/worms.lua, ab 0.8.3 test_next
+--   (/arrakis-test weiter, nur an Tests mit steps und nur vom Spieler des Tests; Ereignis {player_index, tick}).
 --
 -- storage.testbench = {
 --   run = run | nil,                         -- laufender Test (höchstens einer)
@@ -156,6 +158,18 @@ local function call(run, what, fn, ...)
     tb.log(run, "FEHLER", "Skriptfehler in " .. what .. ": " .. tostring(err))
   end
   return ok
+end
+
+-- Ein Ereignis an den laufenden Test weitergeben (on_event); ein Skriptfehler dort beendet den Test.
+local function dispatch(name, event)
+  local s = storage.testbench
+  local run = s and s.run
+  if not run then return end
+  local test = tests[run.id]
+  if not (test and test.on_event) then return end
+  if not call(run, "on_event " .. name, test.on_event, run, tb, name, event) then
+    tb.finish(run, "abgebrochen (Skriptfehler)")
+  end
 end
 
 local function format_counts(counts)
@@ -579,7 +593,8 @@ end
 
 local function list_tests(player)
   local s = state()
-  reply(player, "Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück | status | tempo [" .. TEMPO_MIN .. "–" .. TEMPO_MAX .. "]")
+  reply(player, "Prüfstand: /arrakis-test Tn [Argument] | alle | stop | zurück | status | tempo [" .. TEMPO_MIN .. "–" .. TEMPO_MAX
+    .. "] | weiter (wie ALT+O)")
   for _, id in ipairs(ordered_ids()) do
     local test = tests[id]
     local notes = {seconds(test.timeout or DEFAULT_TIMEOUT)}
@@ -709,6 +724,22 @@ local function start_all(player)
   if not player then reply(nil, "„alle“ gestartet: " .. list .. ". Stand: /arrakis-test status") end
 end
 
+-- /arrakis-test weiter (ab 0.8.3): schaltet einen Test mit Schritten (steps) weiter wie die Prüfstand-Taste ALT+O.
+-- Ersatz, falls die Taste nicht ankommt (T12 am 07.10.2026: kein einziger Druck kam an, unter 2.1 noch unbestätigt).
+local function next_step(player)
+  local run = state().run
+  local test = run and tests[run.id]
+  if not test then
+    reply(player, "Es läuft kein Test.")
+  elseif not test.steps then
+    reply(player, run.id .. " hat keine Schritte zum Weiterschalten.")
+  elseif not (player and player.index == run.player_index) then
+    reply(player, "Weiterschalten kann nur, wer " .. run.id .. " gestartet hat.")
+  else
+    dispatch("test_next", {player_index = player.index, tick = game.tick})
+  end
+end
+
 local function on_command(command)
   -- Ohne player_index kommt der Befehl von der Serverkonsole oder über RCON: gilt als Admin.
   local player = command.player_index and game.get_player(command.player_index)
@@ -742,6 +773,8 @@ local function on_command(command)
     show_status(player)
   elseif key == "tempo" then
     set_tempo(player, words[2], words[3])
+  elseif key == "weiter" then
+    next_step(player)
   else
     local id = find_id(words[1])
     local test = id and tests[id]
@@ -804,16 +837,7 @@ local function on_tick(event)
 end
 
 local function forward(name)
-  return function(event)
-    local s = storage.testbench
-    local run = s and s.run
-    if not run then return end
-    local test = tests[run.id]
-    if not (test and test.on_event) then return end
-    if not call(run, "on_event " .. name, test.on_event, run, tb, name, event) then
-      tb.finish(run, "abgebrochen (Skriptfehler)")
-    end
-  end
+  return function(event) dispatch(name, event) end
 end
 
 runner.events =
@@ -847,7 +871,7 @@ end
 
 runner.add_commands = function()
   commands.add_command("arrakis-test", "Prüfstand (nur Admins): /arrakis-test [Tn [Argument] | alle | stop | zurück | status | tempo ["
-    .. TEMPO_MIN .. "–" .. TEMPO_MAX .. "]]", on_command)
+    .. TEMPO_MIN .. "–" .. TEMPO_MAX .. "] | weiter]", on_command)
 end
 
 runner.tb = tb
