@@ -16,3 +16,5 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Korrektur: T22 lief doch weiter (Schritt 6 bei +747,6 s, Schritt 7 bei +980,6 s).
 - Frage 6 (Rettung: hält der Wurm neben dir, beißt ins Leere, taucht ab?): keine Antwort von Max.
 - Frage 7 (Wurmtod: Sandstaub, keine Leiche, kein Wolfram, Chat „… ist gerettet“, Jagd verschwindet oben links): "ja, funktioniert alles"
+- Frage 8 (Factoriopedia: Sandwurm unter Gegner mit sandfarbenem Symbol, Name, Beschreibung?): NEIN. Max: "es gibt in factoriopedia keine einträge für gegner und ich habe auch keinen für die würmer gefunden".
+  Code-Stand 0.8.3 (prototypes/sandworm.lua): Kopf ist deepcopy eines Demolishers, hidden = nil, order "s-z[arrakis]-a[sandworm-small]", icons mit Sand-Tönung, subgroup geerbt; Segmente hidden = true. Dass Max gar keine Gegner-Gruppe sieht (auch keine Vanilla-Gegner), deutet eher auf Factoriopedia-Verhalten in 2.1.23 (z. B. nur bekannte/angetroffene Gegner) als auf den Mod hin – ungeprüft.
