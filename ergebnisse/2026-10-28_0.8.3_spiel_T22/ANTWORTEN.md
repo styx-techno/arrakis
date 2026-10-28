@@ -19,3 +19,4 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Frage 8 (Factoriopedia: Sandwurm unter Gegner mit sandfarbenem Symbol, Name, Beschreibung?): NEIN. Max: "es gibt in factoriopedia keine einträge für gegner und ich habe auch keinen für die würmer gefunden".
   Code-Stand 0.8.3 (prototypes/sandworm.lua): Kopf ist deepcopy eines Demolishers, hidden = nil, order "s-z[arrakis]-a[sandworm-small]", icons mit Sand-Tönung, subgroup geerbt; Segmente hidden = true. Dass Max gar keine Gegner-Gruppe sieht (auch keine Vanilla-Gegner), deutet eher auf Factoriopedia-Verhalten in 2.1.23 (z. B. nur bekannte/angetroffene Gegner) als auf den Mod hin – ungeprüft.
 - Korrektur zu Frage 8: Max hatte versehentlich unter "Tipps und Tricks" statt in der Factoriopedia gesucht. Die Antwort "nein" ist damit ungültig; neue Antwort folgt.
+- Frage 8 (neu, gültig): JA. Max: "er ist ordentlich in der factoriopedia drin".
