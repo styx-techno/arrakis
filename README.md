@@ -92,7 +92,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `settings.lua` | Startup-Einstellung „Prüfstand“, Mod-Einstellung „Wurmbiss“ |
 | `locale/*/messages.cfg` | Laufzeittexte (Status, Alarme, Hinweise, Fenster) |
 | `prototypes/testbench/` | Test-Prototypen (nur mit Prüfstand) |
-| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T22 und T2b (`t_ernter.lua`: echter Ernter-Code, `t_karte.lua`: T14 Karte echt, `t_ornithopter.lua`: T15–T17 Ornithopter, `t_jagd.lua`: T18–T20 Wärme, Jagd und Bedienung der Würmer, `t_sandwurm.lua`: T21 und T22 echter Sandwurm, Optik und Laden) |
+| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T25 und T2b (`t_ernter.lua`: echter Ernter-Code, `t_karte.lua`: T14 Karte echt, `t_ornithopter.lua`: T15–T17 Ornithopter, `t_jagd.lua`: T18–T20 Wärme, Jagd und Bedienung der Würmer, `t_sandwurm.lua`: T21 und T22 echter Sandwurm, Optik und Laden, `t_fleet.lua`: T23–T25 Leitstelle und Carryalls) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
 | `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
 | `tools/pc/` | Prüfstand ohne Spieler: `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |
@@ -101,4 +101,4 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 
 Siehe Konzept: Phase 1 Gelände und Wasser, Phase 2 Spice-Kette und Spice-Wissenschaft, Phase 3 Sandwürmer, Phase 4 Stürme und Plast-Stahl, Phase 5 Endgame, Phase 6 Balancing und Release.
 
-Phase 3 im Einzelnen steht in [`docs/design-ernter-ornithopter.md`](docs/design-ernter-ornithopter.md), Abschnitt 7: gebaut sind der Spice-Ernter (3b, 0.5.x), der Ornithopter (3c, 0.6.x), Vibration, Wurmzeichen und Biss (3d1, 0.7.0) und der Sandwurm selbst (3d2, 0.8.0); als Nächstes kommen Thumper, Beute, großer Wurm und Balancing (3d3, 0.9.0), dann die Automatik mit Leitstelle und Carryalls (3e, 3f).
+Phase 3 im Einzelnen steht in [`docs/design-ernter-ornithopter.md`](docs/design-ernter-ornithopter.md), Abschnitt 7: gebaut sind der Spice-Ernter (3b, 0.5.x), der Ornithopter (3c, 0.6.x), Vibration, Wurmzeichen und Biss (3d1, 0.7.0) der Sandwurm selbst (3d2, 0.8.0) und die Automatik mit Leitstelle und Carryalls (3e, 0.10.0); offen sind Thumper, Beute, großer Wurm und Balancing (3d3).

@@ -7,7 +7,8 @@
 -- (TEMPO …). Die Tests zählen Ticks; ihre Ergebnisse hängen nicht vom Tempo ab (docs/pruefstand.md, „Zeitraffer“).
 -- Gespeichert wird dafür nichts außer game.speed selbst; zurück auf echte Zeit mit /arrakis-test tempo 1.
 --
--- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd, t_sandwurm):
+-- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd, t_sandwurm,
+-- t_fleet):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
 --   Optional: hint (Text für die Testliste), steps (true: der Test schaltet mit /arrakis-test weiter wie mit ALT+O,
@@ -42,7 +43,7 @@ local SURFACE_NAME = "arrakis-testbench"
 local HOLD_NAME = "arrakis-test-hold"
 local LOG_FILE = "arrakis-test.txt"
 local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T13", "T2b", "T14", "T15", "T16", "T17", "T18", "T19",
-               "T20", "T21", "T22"}
+               "T20", "T21", "T22", "T23", "T24", "T25"}
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60
@@ -62,7 +63,7 @@ local tests = {}
 for _, module_name in ipairs({"scripts.testbench.t_flyer", "scripts.testbench.t_harvester",
                               "scripts.testbench.t_worm", "scripts.testbench.t_map",
                               "scripts.testbench.t_ernter", "scripts.testbench.t_karte", "scripts.testbench.t_ornithopter",
-                              "scripts.testbench.t_jagd", "scripts.testbench.t_sandwurm"}) do
+                              "scripts.testbench.t_jagd", "scripts.testbench.t_sandwurm", "scripts.testbench.t_fleet"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end

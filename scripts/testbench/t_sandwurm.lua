@@ -1202,7 +1202,8 @@ function steps.s1_check(run, tb, d, s)
     probe.destroy{}
   end
   check(failed, max_nodes == NODES, "Probewurm: max_body_nodes " .. tostring(max_nodes) .. " statt 22")
-  check(failed, storage.schema == 4, "storage.schema " .. tostring(storage.schema) .. " statt 4")
+  -- Ab 0.10.0 Schema 5 (Leitstelle); T21 braucht mindestens 4.
+  check(failed, (storage.schema or 0) >= 4, "storage.schema " .. tostring(storage.schema) .. " statt mindestens 4")
   check(failed, type(storage.path_requests) == "table", "storage.path_requests fehlt")
   check(failed, type(storage.hunts.log) == "table", "storage.hunts.log fehlt")
   check(failed, type(storage.hunts.worm_off) == "table", "storage.hunts.worm_off fehlt")

@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.10.0
+Date: 2026-10-28
+  Features:
+    - Ornithopter-Leitstelle: neues Gebäude (4×4, nur auf Fels) mit eigener Forschung „Ornithopter-Leitstelle“ nach Spice-Wissenschaft. Sie betreut alle eigenen Spice-Ernter im Umkreis von 300 Kacheln (Einstellung „Reichweite der Leitstelle“, 150 bis 600); beim Bauen zeigt ein Kreis die Reichweite.
+    - Carryall: unbemannter Lastenflieger der Leitstelle, aus einem Ornithopter und 10 Stahl. Er fliegt wie der Ornithopter nur mit Raketen- oder Atomtreibstoff, ist aber ein Achtel schneller (9 Kacheln/s leer mit Raketentreibstoff).
+    - Die Carryalls arbeiten von selbst: Bei einem Wurmzeichen holt der nächste freie Carryall den Ernter aus dem Sand, schwebt bis zum Ende des Countdowns und setzt ihn wieder aufs Feld. Einen vollen Ernter bringen sie zur nächsten freien Spice-Annahme und nach dem Entladen zurück, einem fast leeren bringen sie Brennstoff. Was sie brauchen, holen sie sich aus dem Lager der Leitstelle: Flugtreibstoff für sich, Kohle oder Spice-Briketts für die Ernter.
+    - Schafft kein Carryall die Rettung rechtzeitig, sagt die Leitstelle das sofort (Chat und Alarm am Ernter), damit du selbst eingreifen kannst.
+    - Handbetrieb: Mit der Fernbedienung oder als Fahrer fliegst du einen Carryall wie einen Ornithopter. Die Automatik übernimmt erst wieder, wenn er leer an der Leitstelle parkt.
+  Graphics:
+    - Eigene Modelle für Carryall (64 Richtungen mit Schatten, Spielerfarbe an den Flügelspitzen) und Leitstelle.
+  Modding:
+    - scripts/fleet.lua (Leitstelle und Aufträge), storage-Schema 5. /arrakis-uninstall hält auch die Carryall-Automatik 10 Minuten an.
+    - Prüfstand: T23 (Automatik mit echtem Code, neun Schritte), T24 (Dauerlauf 60 min), T25 (Ansicht, interaktiv).
+---------------------------------------------------------------------------------------------------
 Version: 0.9.0
 Date: 2026-10-28
   Changes:

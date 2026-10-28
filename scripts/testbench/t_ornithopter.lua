@@ -712,7 +712,7 @@ function t15_steps.s1_check(run, tb, d)
   -- Tempo-Sticker (0.6.1): je Zustand eine Familie von speed.COUNT Stufen; Stichproben t = 1 und Raketentreibstoff,
   -- die beiden Sticker aus 0.6.0 gibt es nicht mehr.
   local families = {}
-  for _, state in ipairs(speed.STATES) do
+  for _, state in ipairs(speed.KIND_STATES.ornithopter) do
     local n = 0
     for j = speed.MIN_J, speed.MAX_J do
       local sticker = prototypes.entity[speed.name(state, j)]
