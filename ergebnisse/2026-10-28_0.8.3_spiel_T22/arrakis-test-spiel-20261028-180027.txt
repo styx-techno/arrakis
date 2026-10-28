@@ -474,3 +474,4 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +143.8s: Schritt 6 von 9
 [T22] INFO +143.8s: 6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.
 [T22] INFO +143.8s: 6) Rettung: Jagd 13, Biss bei 0 in 60 s
+[T22] FRAGE +203.9s: 6) Hält der Wurm neben dir, beißt ins Leere und taucht ab?
