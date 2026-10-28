@@ -27,3 +27,13 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Frage 6 (Rettung, zweiter Lauf): JA, von Max bestätigt ("Frage 6 ja") – der Wurm hält neben ihm, beißt ins Leere und taucht ab.
 - Frage 9 (Speichern und Laden, W5/W11): JA ("Frage 9 ja") – der Wurm taucht auf, fährt nach dem Laden weiter und beißt bei 0.
 - Damit sind alle Fragen 1–9 von T22 beantwortet (5 und 9 im zweiten Lauf). Alle ja; Anmerkungen siehe oben (Ton früher/lauter, eher Verschwinden als Abtauchen, Felsfläche zu klein, Zeitlimit 20 min zu knapp, Schritt-5-Anweisung unklar).
+
+## Feedback von Max zu den Fahrzeugen (2026-10-28 17:34, wörtlich)
+
+"wir brauchen eigene assets für ornikopter und spice harvester, wenn ein ornikopter den spice harvester anhebt sollte er unterhalb vom ornikopter hängen und nicht oberhalb schweben. desweiteren würde ich sagen das die ornikopter mit verschiedenen treibstoffarten auch etwas schneller fliegen sollten und nicht mi kohle oder anderen "primitiven" treibstoffen funktionieren sollten sondern mit raketentreibstoff, urann-treibstoff, etc."
+
+Zusammengefasst:
+1. Eigene Grafiken für Ornithopter und Spice-Ernter.
+2. Getragener Ernter hängt sichtbar UNTER dem Ornithopter (derzeit wirkt er darüber schwebend).
+3. Ornithopter-Tempo soll je Treibstoff etwas steigen (widerspricht dem bisherigen Kriterium U7 "Brennstoff ändert das Tempo nicht", T16).
+4. Ornithopter nur mit höherwertigem Treibstoff (Raketentreibstoff, Atomtreibstoff usw.), nicht mit Kohle oder anderen einfachen Brennstoffen.
