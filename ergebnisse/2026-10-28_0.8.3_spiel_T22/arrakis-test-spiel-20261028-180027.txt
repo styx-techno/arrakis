@@ -1,0 +1,388 @@
+
+=== alle: T1, T2, T3, T4, T5, T6, T7, T11 | Tick 1597 ===
+
+=== T1 Flieger: Beine, Tempo, Gelände | Tick 1597 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T1] INFO +0.0s: Start: Flieger: Beine, Tempo, Gelände
+[T1] INFO +0.0s: Aufbau: 7 Bahnen im Abstand 20, Länge 220; Sand 0–40, Fels 40–70, Wasser 70–110 (Mitte tief), Gebäude 110–140 (112 Öfen, 112 Mauern), Sand 140–220
+[T1] INFO +0.0s: Die Beine drehen nicht mit (Rumpfbild hat nur eine Richtung): Beinanordnungen liegen fest zur Karte. Alle Bahnen fliegen nach Osten; Werte für -1 und -2 gelten nur für Ost-West-Flug.
+[T1] MESSUNG +0.0s: Bahn -4 Last Fahrzeug: Last-Sticker arrakis-test-load-sticker, create_entity lieferte Entity, Sticker am Flieger: 1
+[T1] MESSUNG +0.0s: Bahn -4 Last Bewegung: Last-Sticker arrakis-test-load-sticker-move, create_entity lieferte Entity, Sticker am Flieger: 1
+[T1] INFO +0.0s: Alle Flieger fliegen zum Bahnende (x = 220). Auswertung, wenn alle angekommen sind oder 15 s stillstehen, spätestens nach 110 s.
+[T1] FRAGE +0.0s: Sieht der Flug glatt aus, sind Beine unsichtbar? Bitte Screenshot während des Flugs.
+[T1] MESSUNG +1.0s: Messpunkt: -1 x 12.3 v 15.6 | -2 x 12.5 v 15.4 | -4 x 13.7 v 16.0 | -4-fast x 15.9 v 18.9 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 9.8 v 11.5 | -4 Last Bewegung x 13.7 v 15.9
+[T1] MESSUNG +2.0s: Messpunkt: -1 x 29.0 v 17.3 | -2 x 28.2 v 16.0 | -4 x 29.3 v 15.3 | -4-fast x 35.2 v 19.5 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 21.0 v 11.3 | -4 Last Bewegung x 29.1 v 15.1
+[T1] MESSUNG +3.0s: Messpunkt: -1 x 46.5 v 17.9 | -2 x 43.8 v 15.6 | -4 x 44.5 v 15.2 | -4-fast x 54.6 v 19.8 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 31.9 v 11.0 | -4 Last Bewegung x 44.4 v 15.4
+[T1] MESSUNG +4.0s: Messpunkt: -1 x 64.2 v 18.0 | -2 x 59.4 v 15.7 | -4 x 59.8 v 15.3 | -4-fast x 74.2 v 19.6 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 42.7 v 11.0 | -4 Last Bewegung x 59.7 v 15.6
+[T1] MESSUNG +5.0s: Messpunkt: -1 x 82.0 v 17.6 | -2 x 74.9 v 15.5 | -4 x 75.1 v 15.3 | -4-fast x 93.8 v 19.7 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 53.6 v 10.9 | -4 Last Bewegung x 75.2 v 15.4
+[T1] MESSUNG +5.5s: Bahn -4 leer: Stillstand (über 5 s ohne 0.5 Kacheln Fortschritt) bei x = 2.0 (Sand)
+[T1] MESSUNG +6.0s: Messpunkt: -1 x 99.6 v 17.7 | -2 x 90.1 v 15.5 | -4 x 90.5 v 15.9 | -4-fast x 113.3 v 19.6 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 64.5 v 11.1 | -4 Last Bewegung x 90.5 v 15.5
+[T1] MESSUNG +7.0s: Messpunkt: -1 x 117.4 v 17.8 | -2 x 105.4 v 15.4 | -4 x 105.8 v 15.5 | -4-fast x 133.0 v 19.8 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 75.2 v 10.8 | -4 Last Bewegung x 105.9 v 15.6
+[T1] MESSUNG +8.0s: Messpunkt: -1 x 135.1 v 17.6 | -2 x 121.0 v 15.8 | -4 x 121.4 v 16.0 | -4-fast x 152.6 v 19.8 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 85.9 v 11.0 | -4 Last Bewegung x 121.3 v 15.5
+[T1] MESSUNG +9.0s: Messpunkt: -1 x 152.8 v 17.9 | -2 x 136.6 v 15.7 | -4 x 137.3 v 16.0 | -4-fast x 172.3 v 19.6 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 96.8 v 11.0 | -4 Last Bewegung x 136.7 v 15.4
+[T1] MESSUNG +10.0s: Messpunkt: -1 x 170.5 v 18.0 | -2 x 152.2 v 15.8 | -4 x 152.8 v 15.4 | -4-fast x 191.9 v 19.8 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 107.5 v 11.0 | -4 Last Bewegung x 151.9 v 15.8
+[T1] MESSUNG +10.0s: Stand 10 s: -1 x 170.5 | -2 x 152.2 | -4 x 152.8 | -4-fast x 191.9 | -4 leer x 2.0 | -4 Last Fahrzeug x 107.5 | -4 Last Bewegung x 151.9
+[T1] MESSUNG +11.0s: Messpunkt: -1 x 188.2 v 18.0 | -2 x 167.8 v 15.6 | -4 x 168.2 v 15.6 | -4-fast x 211.5 v 19.7 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 118.4 v 10.9 | -4 Last Bewegung x 167.4 v 15.3
+[T1] MESSUNG +11.3s: Bahn -4-fast: angekommen nach 11.3 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +12.0s: Messpunkt: -1 x 205.9 v 17.6 | -2 x 183.4 v 15.9 | -4 x 183.5 v 15.4 | -4-fast x 218.0 v 1.5 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 129.3 v 11.1 | -4 Last Bewegung x 182.8 v 15.3
+[T1] MESSUNG +12.7s: Bahn -1: angekommen nach 12.7 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +13.0s: Messpunkt: -1 x 218.2 v 8.7 | -2 x 199.0 v 15.6 | -4 x 198.9 v 15.5 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 140.0 v 10.7 | -4 Last Bewegung x 198.1 v 15.3
+[T1] MESSUNG +14.0s: Messpunkt: -1 x 218.2 v 1.3 | -2 x 214.5 v 15.8 | -4 x 214.2 v 15.8 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 150.8 v 10.9 | -4 Last Bewegung x 213.6 v 15.6
+[T1] MESSUNG +14.2s: Bahn -2: angekommen nach 14.2 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +14.3s: Bahn -4: angekommen nach 14.3 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +14.3s: Bahn -4 Last Bewegung: angekommen nach 14.3 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +15.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 2.8 | -4 x 218.2 v 1.8 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 161.8 v 11.0 | -4 Last Bewegung x 218.2 v 2.4
+[T1] MESSUNG +16.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.3 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 172.5 v 10.7 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +17.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 183.2 v 10.8 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +18.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 193.9 v 10.8 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +19.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 204.6 v 11.0 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +20.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 215.5 v 11.0 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +20.0s: Stand 20 s: -1 am Ziel | -2 am Ziel | -4 am Ziel | -4-fast am Ziel | -4 leer x 2.0 | -4 Last Fahrzeug x 215.5 | -4 Last Bewegung am Ziel
+[T1] MESSUNG +20.2s: Bahn -4 Last Fahrzeug: angekommen nach 20.2 s (Abstand ≤ 2 Kacheln)
+[T1] MESSUNG +21.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 218.0 v 1.0 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +22.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 218.0 v 0.0 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +23.0s: Messpunkt: -1 x 218.2 v 0.0 | -2 x 218.1 v 0.0 | -4 x 218.2 v 0.0 | -4-fast x 218.0 v 0.0 | -4 leer x 2.0 v 0.0 | -4 Last Fahrzeug x 218.0 v 0.0 | -4 Last Bewegung x 218.2 v 0.0
+[T1] MESSUNG +23.3s: Bahn -1 (arrakis-test-flyer-1): angekommen nach 12.7 s (Abstand ≤ 2 Kacheln, x = 218.2), Ø 17.0 Kacheln/s, Reisetempo (x 40–140) 17.7 Kacheln/s, Höchsttempo 18.0 Kacheln/s, 300 Kacheln hochgerechnet 17.4 s, on_spider_command_completed: ja (nach 12.7 s, Abstand zum Ziel 1.8), seitliche Abweichung max. 0.0, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -1 Abschnitte: Sand 14.4 | Fels 17.7 | Wasser 17.7 | Gebäude 17.7 | Sand (Ende) 17.7 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -1 Treibstoff: vorher 500.0 MJ, nachher 489.8 MJ, verbraucht 10.2 MJ (47.0 kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -2 (arrakis-test-flyer-2): angekommen nach 14.2 s (Abstand ≤ 2 Kacheln, x = 218.1), Ø 15.2 Kacheln/s, Reisetempo (x 40–140) 15.5 Kacheln/s, Höchsttempo 16.0 Kacheln/s, 300 Kacheln hochgerechnet 19.7 s, on_spider_command_completed: ja (nach 14.2 s, Abstand zum Ziel 1.9), seitliche Abweichung max. 0.0, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -2 Abschnitte: Sand 13.8 | Fels 15.5 | Wasser 15.3 | Gebäude 15.6 | Sand (Ende) 15.6 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -2 Treibstoff: vorher 500.0 MJ, nachher 488.6 MJ, verbraucht 11.4 MJ (52.7 kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -4 (arrakis-test-flyer-4): angekommen nach 14.3 s (Abstand ≤ 2 Kacheln, x = 218.2), Ø 15.2 Kacheln/s, Reisetempo (x 40–140) 15.5 Kacheln/s, Höchsttempo 16.3 Kacheln/s, 300 Kacheln hochgerechnet 19.7 s, on_spider_command_completed: ja (nach 14.3 s, Abstand zum Ziel 1.8), seitliche Abweichung max. 0.1, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -4 Abschnitte: Sand 14.1 | Fels 15.3 | Wasser 15.3 | Gebäude 15.8 | Sand (Ende) 15.4 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -4 Treibstoff: vorher 500.0 MJ, nachher 488.6 MJ, verbraucht 11.4 MJ (52.7 kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -4-fast (arrakis-test-flyer-4-fast): angekommen nach 11.3 s (Abstand ≤ 2 Kacheln, x = 218.0), Ø 19.1 Kacheln/s, Reisetempo (x 40–140) 19.6 Kacheln/s, Höchsttempo 20.0 Kacheln/s, 300 Kacheln hochgerechnet 15.6 s, on_spider_command_completed: ja (nach 11.3 s, Abstand zum Ziel 2.0), seitliche Abweichung max. 0.1, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -4-fast Abschnitte: Sand 16.9 | Fels 19.5 | Wasser 19.6 | Gebäude 19.6 | Sand (Ende) 19.6 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -4-fast Treibstoff: vorher 500.0 MJ, nachher 490.9 MJ, verbraucht 9.1 MJ (42.0 kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -4 leer (arrakis-test-flyer-4): nicht angekommen, x = 2.0 von 220 (15 s ohne Fortschritt), Ø 0.0 Kacheln/s, Reisetempo (x 40–140) – Kacheln/s, Höchsttempo 0.0 Kacheln/s, 300 Kacheln hochgerechnet – s, on_spider_command_completed: nein, seitliche Abweichung max. 0.0, Stillstände 1 (erster bei x = 2.0)
+[T1] MESSUNG +23.3s: Bahn -4 leer Abschnitte: Sand 0.0 | Fels – | Wasser – | Gebäude – | Sand (Ende) – Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -4 leer Treibstoff: vorher 0.0 MJ, nachher 0.0 MJ, verbraucht 0.0 MJ (– kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -4 Last Fahrzeug (arrakis-test-flyer-4): angekommen nach 20.2 s (Abstand ≤ 2 Kacheln, x = 218.0), Ø 10.7 Kacheln/s, Reisetempo (x 40–140) 10.8 Kacheln/s, Höchsttempo 11.5 Kacheln/s, 300 Kacheln hochgerechnet 28.0 s, on_spider_command_completed: ja (nach 20.2 s, Abstand zum Ziel 2.0), seitliche Abweichung max. 0.0, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -4 Last Fahrzeug Abschnitte: Sand 10.1 | Fels 10.9 | Wasser 10.8 | Gebäude 10.8 | Sand (Ende) 10.8 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -4 Last Fahrzeug Treibstoff: vorher 500.0 MJ, nachher 483.8 MJ, verbraucht 16.2 MJ (74.9 kJ/Kachel)
+[T1] MESSUNG +23.3s: Bahn -4 Last Bewegung (arrakis-test-flyer-4): angekommen nach 14.3 s (Abstand ≤ 2 Kacheln, x = 218.2), Ø 15.1 Kacheln/s, Reisetempo (x 40–140) 15.4 Kacheln/s, Höchsttempo 15.9 Kacheln/s, 300 Kacheln hochgerechnet 19.7 s, on_spider_command_completed: ja (nach 14.3 s, Abstand zum Ziel 1.8), seitliche Abweichung max. 0.1, Stillstände 0
+[T1] MESSUNG +23.3s: Bahn -4 Last Bewegung Abschnitte: Sand 14.0 | Fels 15.4 | Wasser 15.4 | Gebäude 15.4 | Sand (Ende) 15.4 Kacheln/s
+[T1] MESSUNG +23.3s: Bahn -4 Last Bewegung Treibstoff: vorher 500.0 MJ, nachher 488.6 MJ, verbraucht 11.4 MJ (52.9 kJ/Kachel)
+[T1] MESSUNG +23.3s: on_spider_command_completed bei Skriptziel: kam bei -1, -2, -4, -4-fast, -4 Last Fahrzeug, -4 Last Bewegung; nicht bei -4 leer
+[T1] MESSUNG +23.3s: Ohne Treibstoff: fliegt nicht (Strecke 0.0 Kacheln)
+[T1] MESSUNG +23.3s: Last-Sticker arrakis-test-load-sticker (nur vehicle_speed_modifier 0.7): Tempo im Verhältnis zur -4-Bahn 69.9 % (Reisetempo 10.8 / 15.5 Kacheln/s); Sticker am Flieger: Start 1, Ende 1
+[T1] MESSUNG +23.3s: Last-Sticker arrakis-test-load-sticker-move (nur target_movement_modifier 0.7): Tempo im Verhältnis zur -4-Bahn 99.4 % (Reisetempo 15.4 / 15.5 Kacheln/s); Sticker am Flieger: Start 1, Ende 1
+[T1] INFO +23.3s: Last-Sticker: etwa 70 % heißt, dieses Feld bremst Spider-Vehicles; etwa 100 %: es wirkt nicht.
+[T1] MESSUNG +23.3s: Carryall-Kriterium (Reisetempo ≥ 6 Kacheln/s, 300 Kacheln in ≤ 50 s, alle Abschnitte): Reisetempo erfüllt von -1 17.7 Kacheln/s, 300 Kacheln in 17.4 s; -2 15.5 Kacheln/s, 300 Kacheln in 19.7 s; -4 15.5 Kacheln/s, 300 Kacheln in 19.7 s; -4-fast 19.6 Kacheln/s, 300 Kacheln in 15.6 s
+[T1] OK +23.3s: Beste Variante -4-fast: Reisetempo (x 40–140) 19.6 Kacheln/s (≥ 5), alle Abschnitte gequert (Ø 19.1 Kacheln/s)
+[T1] OK +23.3s: Hochrechnung -4-fast: 300 Kacheln in 15.6 s (≤ 60 s, Ø 19.2 Kacheln/s; Carryall-Ziel ≤ 50 s: ja)
+[T1] ENDE +23.3s: OK: beste Variante -4-fast mit Reisetempo 19.6 Kacheln/s; 300 Kacheln in 15.6 s (OK) (OK 2, FEHLER 0, FRAGE 1, 23.3 s)
+
+=== T2 Ernter: Skriptfahrt, Tempo, Sperre, Status | Tick 3052 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T2] INFO +0.0s: Start: Ernter: Skriptfahrt, Tempo, Sperre, Status
+[T2] INFO +0.0s: Ernter bei (1850.0, 0.0), fährt nach Osten auf Sand (Bahn 300 Kacheln). 5 Durchgänge, Dauer etwa 70 s.
+[T2] INFO +0.5s: Durchgang 1/5: Kohle, 10 coal eingelegt, 15 s Gas. Brenner nach Reset: brennt –, Rest 0.0 kJ, Puffer 0.0 kJ
+[T2] INFO +0.5s: riding_state gesetzt: am Fahrzeug ja, am Dummy-Fahrer ja
+[T2] OK +1.5s: Skriptfahrt geht: nach 1 s 1.14 Kacheln, Tempo 1.39 Kacheln/s
+[T2] MESSUNG +15.5s: Kohle: Höchsttempo 1.4 Kacheln/s; bei 5/10/15 s: 1.4 / 1.4 / 1.4 Kacheln/s; Strecke 17.5 Kacheln
+[T2] INFO +16.0s: Durchgang 2/5: Festbrennstoff, 10 solid-fuel eingelegt, 15 s Gas. Brenner nach Reset: brennt –, Rest 0.0 kJ, Puffer 0.0 kJ
+[T2] MESSUNG +31.0s: Festbrennstoff: Höchsttempo 1.5 Kacheln/s; bei 5/10/15 s: 1.5 / 1.5 / 1.5 Kacheln/s; Strecke 21.0 Kacheln
+[T2] INFO +31.5s: Durchgang 3/5: Raketentreibstoff, 5 rocket-fuel eingelegt, 15 s Gas. Brenner nach Reset: brennt –, Rest 0.0 kJ, Puffer 0.0 kJ
+[T2] MESSUNG +46.5s: Raketentreibstoff: Höchsttempo 1.9 Kacheln/s; bei 5/10/15 s: 1.9 / 1.9 / 1.9 Kacheln/s; Strecke 24.6 Kacheln
+[T2] INFO +47.0s: Durchgang 4/5: Raketentreibstoff mit Tempo-Deckel, 5 rocket-fuel eingelegt, 15 s Gas, Deckel 1.5 Kacheln/s (Höchsttempo ohne Deckel 1.86 > 1.6). Brenner nach Reset: brennt –, Rest 0.0 kJ, Puffer 0.0 kJ
+[T2] MESSUNG +62.0s: Raketentreibstoff mit Tempo-Deckel: Höchsttempo 1.8 Kacheln/s; bei 5/10/15 s: 1.8 / 1.8 / 1.8 Kacheln/s; Strecke 23.9 Kacheln
+[T2] MESSUNG +62.0s: Tempo-Deckel 1.5: effektiv (Strecke 5–15 s) 1.59 Kacheln/s, Höchsttempo zwischen zwei Rücksetzungen 1.82 Kacheln/s
+[T2] FEHLER +62.0s: Tempo-Deckel 1.5: Höchsttempo 1.82 Kacheln/s > 1.6 (speed 90-mal zurückgesetzt)
+[T2] INFO +62.5s: Durchgang 5/5: disabled_by_script, 10 coal eingelegt, 5 s Gas. Brenner nach Reset: brennt –, Rest 0.0 kJ, Puffer 0.0 kJ
+[T2] MESSUNG +62.5s: disabled_by_script = true gesetzt, Lesewert true
+[T2] MESSUNG +67.5s: disabled_by_script, 5 s Gas: Verschiebung 0.00 Kacheln, Höchsttempo 0.00 Kacheln/s
+[T2] OK +67.5s: Sperre hält: Verschiebung 0.00 < 0.1 Kacheln
+[T2] INFO +67.5s: disabled_by_script wieder false (Lesewert false)
+[T2] MESSUNG +67.5s: Höchsttempo je Brennstoff: Kohle 1.4, Festbrennstoff 1.5, Raketentreibstoff 1.9 Kacheln/s (Ziel mit Kohle etwa 1.5, Design höchstens 1.5)
+[T2] MESSUNG +67.5s: minable_flag = false gesetzt; Lesewerte: minable_flag false, minable false
+[T2] OK +67.5s: custom_status gesetzt: Diode yellow, Text „Prüfstand: aufgebaut“
+[T2] FRAGE +67.5s: Öffne den Ernter: Steht ‚Prüfstand: aufgebaut‘ im Fenster? Lässt er sich abbauen (sollte nicht)? Der Ernter steht bei (1850.0, 0.0).
+[T2] ENDE +67.5s: Skriptfahrt ja, max Kohle 1.4 / Festbrennstoff 1.5 / Raketentreibstoff 1.9 Kacheln/s, Deckel 1.5 FEHLER, Sperre OK, Status OK (OK 3, FEHLER 1, FRAGE 1, 67.5 s)
+[Prüfstand] INFO: Nächster Test (T3) in 30 s: Zeit für die FRAGE von T2. /arrakis-test stop hält „alle“ an.
+
+=== T3 Ernter: Teleport zur Ablage | Tick 8902 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T3] INFO +0.0s: Start: Ernter: Teleport zur Ablage
+[T3] INFO +0.0s: Ablage-Oberfläche arrakis-test-hold bereit (5×5 Chunks, versteckt)
+[T3] INFO +0.0s: entity_label am Auto: Lesewert nil (API: nur für Spinnenfahrzeuge dokumentiert); das Feld Label wird nicht verglichen
+[T3] INFO +0.0s: Aufbau: Qualität uncommon, Kofferraum 500 Spice-Sand, 100 Eisenplatten, 10 Eisenplatten rare; 20 Kohle
+[T3] MESSUNG +0.0s: Vorher: Kofferraum iron-plate@normal 100, iron-plate@rare 10, spice-sand@normal 500; Treibstoff coal@normal 20; Restbrennwert 2500.0 kJ; brennendes Item coal@normal; Gesundheit 1560.0; Qualität uncommon; Label –; Farbe 0.20/0.70/1.00/1.00; unit_number 282; Ausrichtung 0.375; minable_flag true
+[T3] MESSUNG +0.5s: a) Teleport mit Dummy-Fahrer (sitzt) zur Ablage (-5, -5): Rückgabe true, Fehlermeldung –
+[T3] MESSUNG +0.5s: a) Danach: Ernter auf arrakis-test-hold (-5.0, -5.0); Fahrer sitzt im Ernter, auf arrakis-test-hold (4000.0, 0.0)
+[T3] MESSUNG +1.0s: a) Nach 0.5 s: Ernter auf arrakis-test-hold (-5.0, -5.0); Fahrer sitzt im Ernter, auf arrakis-test-hold (-5.0, -5.0)
+[T3] INFO +1.0s: a) Ernter ohne Fahrer zurück auf die Testoberfläche: Rückgabe true, Fehlermeldung –
+[T3] INFO +1.5s: b) Schon vor dem Teleport anders als vorher (Folge von a): Farbe
+[T3] MESSUNG +1.5s: b) Teleport ohne Fahrer auf Stellplatz (5, 5) der Ablage: Rückgabe true, Fehlermeldung –
+[T3] OK +2.0s: b) Ernter steht auf der Ablage: arrakis-test-hold (5.0, 5.0)
+[T3] OK +2.0s: b) Ablage: Kofferraum gleich: iron-plate@normal 100, iron-plate@rare 10, spice-sand@normal 500
+[T3] OK +2.0s: b) Ablage: Treibstoff gleich: coal@normal 20
+[T3] OK +2.0s: b) Ablage: Restbrennwert gleich: 2500.0 kJ
+[T3] OK +2.0s: b) Ablage: brennendes Item gleich: coal@normal
+[T3] OK +2.0s: b) Ablage: Gesundheit gleich: 1560.0
+[T3] OK +2.0s: b) Ablage: Qualität gleich: uncommon
+[T3] FEHLER +2.0s: b) Ablage: Farbe vorher 0.20/0.70/1.00/1.00, jetzt 0.87/0.50/0.13/0.50
+[T3] OK +2.0s: b) Ablage: unit_number gleich: 282
+[T3] OK +2.0s: b) Ablage: Ausrichtung gleich: 0.375
+[T3] OK +2.0s: b) Ablage: minable_flag gleich: true
+[T3] INFO +2.0s: b) Ablage: nicht verglichen (am Auto nicht unterstützt): Label
+[T3] MESSUNG +2.0s: b) Teleport zurück auf die Testoberfläche: Rückgabe true, Fehlermeldung –
+[T3] OK +2.5s: b) Ernter wieder auf der Testoberfläche: arrakis-testbench (4000.0, 0.0)
+[T3] OK +2.5s: b) zurück: Kofferraum gleich: iron-plate@normal 100, iron-plate@rare 10, spice-sand@normal 500
+[T3] OK +2.5s: b) zurück: Treibstoff gleich: coal@normal 20
+[T3] OK +2.5s: b) zurück: Restbrennwert gleich: 2500.0 kJ
+[T3] OK +2.5s: b) zurück: brennendes Item gleich: coal@normal
+[T3] OK +2.5s: b) zurück: Gesundheit gleich: 1560.0
+[T3] OK +2.5s: b) zurück: Qualität gleich: uncommon
+[T3] FEHLER +2.5s: b) zurück: Farbe vorher 0.20/0.70/1.00/1.00, jetzt 0.87/0.50/0.13/0.50
+[T3] OK +2.5s: b) zurück: unit_number gleich: 282
+[T3] OK +2.5s: b) zurück: Ausrichtung gleich: 0.375
+[T3] OK +2.5s: b) zurück: minable_flag gleich: true
+[T3] INFO +2.5s: b) zurück: nicht verglichen (am Auto nicht unterstützt): Label
+[T3] INFO +3.0s: c) Klon auf arrakis-test-hold (10.0, 10.0) (Original bleibt auf arrakis-testbench)
+[T3] INFO +3.0s: c) Klon: Farbe vorher 0.20/0.70/1.00/1.00, jetzt 0.87/0.50/0.13/0.50
+[T3] INFO +3.0s: c) Klon: unit_number vorher 282, jetzt 284
+[T3] INFO +3.0s: c) Klon: gleich: Kofferraum, Treibstoff, Restbrennwert, brennendes Item, Gesundheit, Qualität, Ausrichtung, minable_flag
+[T3] INFO +3.0s: c) Klon: nicht verglichen (am Auto nicht unterstützt): Label
+[T3] ENDE +3.5s: a) mit Fahrer: true; b) Ablage 9/10 gleich, zurück 9/10 gleich; c) Klon 8/10 gleich (OK 20, FEHLER 2, FRAGE 0, 3.5 s)
+
+=== T4 Annahme und Tankstutzen | Tick 9172 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T4] INFO +0.0s: Start: Annahme und Tankstutzen
+[T4] INFO +0.0s: Felsquadrat 24×24 (576 Kacheln arrakis-rock) in Sand bei (6000.0, 0.0); Bauregel-Prüfung und Aufbau in 0.5 s, dann 60 s Betrieb
+[T4] OK +0.5s: Bauregel Felsmitte (6000.0, 0.0): can_place_entity = true (erwartet true)
+[T4] OK +0.5s: Bauregel 3 Kacheln vom Felsrand (Ring enthält Sand) (6009.0, 0.0): can_place_entity = false (erwartet false)
+[T4] OK +0.5s: Bauregel auf Sand (6030.0, 0.0): can_place_entity = false (erwartet false)
+[T4] INFO +0.5s: Zum Vergleich mit build_check_type script: Felsmitte true; 3 Kacheln vom Felsrand (Ring enthält Sand) true; auf Sand true
+[T4] MESSUNG +0.5s: Gegenprobe Tankstutzen (ohne Bauregel) auf Sand: can_place_entity = true
+[T4] MESSUNG +0.5s: Greifarm 1 (Annahme → Kiste) nimmt bei (6000.5, -0.5) (–), legt bei (6002.7, -0.5) (–)
+[T4] MESSUNG +0.5s: Greifarm 2 (Kohlekiste → Tankstutzen) nimmt bei (5998.5, 3.5) (–), legt bei (6000.7, 3.5) (–)
+[T4] INFO +0.5s: Kohlekiste 100 Kohle, Ernter-Kofferraum 400 Spice-Sand, Ernter-Treibstoff leer
+[T4] MESSUNG +0.5s: Annahme → Ernter (car_trunk): Ziel arrakis-test-harvester Nr. 292, Inventar 2 (passt)
+[T4] MESSUNG +0.5s: Tankstutzen → Ernter (fuel): Ziel arrakis-test-harvester Nr. 292, Inventar 1 (passt)
+[T4] INFO +0.5s: Annahme Schaltung: read_contents true
+[T4] MESSUNG +0.5s: Roter Draht Annahme → Kombinator-Eingang (Ursprung script): verbunden true
+[T4] INFO +0.5s: Aufbau fertig, läuft 60 s
+[T4] MESSUNG +60.5s: Nach 60 s: Spice-Sand in der Kiste 51, Kohle im Ernter-Brennstoff 51, Signal spice-sand am Kombinator-Eingang 348 (Kofferraum noch 348, Kohlekiste noch 48, Greifarme mit Strom true/true)
+[T4] OK +60.5s: Greifarm holt über die Annahme aus dem Kofferraum: Kiste 51
+[T4] OK +60.5s: Greifarm füllt über den Tankstutzen den Ernter-Treibstoff: 51 Kohle
+[T4] OK +60.5s: Schaltungssignal spice-sand vorhanden: 348
+[T4] INFO +60.5s: Signal = Kofferraum (348 / 348)
+[T4] MESSUNG +60.5s: proxy_target_entity = nil gesetzt: Annahme Lesewert nil, Tankstutzen Lesewert nil
+[T4] MESSUNG +70.5s: 10 s nach dem Lösen: Kiste 52 (beim Lösen 51, dazu 1 in der Greifarm-Hand), Ernter-Brennstoff 51 (beim Lösen 51), Signal 0
+[T4] OK +70.5s: Kistenstand unverändert bis auf 1 Stück aus der Greifarm-Hand (52)
+[T4] FRAGE +70.5s: Siehst du den roten Draht zwischen Annahme und Kombinator? Kannst du ihn entfernen? (Annahme = orange 2×2-Kiste in der Felsmitte, Kombinator links daneben; Draht per Skript, Ursprung script)
+[T4] ENDE +70.5s: Bauregel 3/3 wie erwartet; Kiste 51 OK, Brennstoff 51 OK, Signal 348 OK; nach dem Lösen OK (OK 7, FEHLER 0, FRAGE 1, 70.5 s)
+[Prüfstand] INFO: Nächster Test (T5) in 30 s: Zeit für die FRAGE von T4. /arrakis-test stop hält „alle“ an.
+
+=== T5 Wurm-KI: Zustände, Tempo, Flieger über dem Kopf | Tick 15202 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T5] INFO +0.0s: Start: Wurm-KI: Zustände, Tempo, Flieger über dem Kopf
+[T5] INFO +0.0s: Vier Teile nacheinander auf Bahnen von Nord nach Süd (du stehst südlich davon): a) investigating, b) attacking, c) Drosselung, d) Flieger über dem Kopf. Dauer etwa 110 s.
+[T5] FRAGE +0.0s: Bitte zuschauen (herauszoomen): Ziehen die Würmer Ascheschwaden oder dunkle Spuren hinter sich her (sollten fehlen)? Sind sie sandfarben? Melde es, gern mit Screenshot.
+[T5] MESSUNG +0.0s: a) investigating: Kopf (7850.0, -75.0), Ziel (7970.0, -75.0) (120.0 Kacheln, 20 hinter dem Ernter), Zustand investigating, activity_mode full
+[T5] MESSUNG +1.0s: a) 1.0 s: Kopf (7852.0, -75.0), Abstand 118.0, Zustand investigating, Tempo 0.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +2.0s: a) 2.0 s: Kopf (7853.0, -75.0), Abstand 117.0, Zustand investigating, Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +3.0s: a) 3.0 s: Kopf (7854.0, -75.0), Abstand 116.0, Zustand investigating, Tempo 1.7 Kacheln/s, activity_mode full
+[T5] MESSUNG +4.0s: a) 4.0 s: Kopf (7856.0, -75.0), Abstand 114.0, Zustand investigating, Tempo 2.2 Kacheln/s, activity_mode full
+[T5] MESSUNG +5.0s: a) 5.0 s: Kopf (7858.0, -75.0), Abstand 112.0, Zustand investigating, Tempo 2.8 Kacheln/s, activity_mode full
+[T5] MESSUNG +6.0s: a) 6.0 s: Kopf (7861.0, -75.0), Abstand 109.0, Zustand investigating, Tempo 3.3 Kacheln/s, activity_mode full
+[T5] MESSUNG +7.0s: a) 7.0 s: Kopf (7865.0, -75.0), Abstand 105.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +8.0s: a) 8.0 s: Kopf (7868.0, -75.0), Abstand 102.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +9.0s: a) 9.0 s: Kopf (7872.0, -75.0), Abstand 98.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +10.0s: a) 10.0 s: Kopf (7875.0, -75.0), Abstand 95.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +11.0s: a) 11.0 s: Kopf (7879.0, -75.0), Abstand 91.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +12.0s: a) 12.0 s: Kopf (7882.0, -75.0), Abstand 88.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +13.0s: a) 13.0 s: Kopf (7886.0, -75.0), Abstand 84.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +14.0s: a) 14.0 s: Kopf (7889.0, -75.0), Abstand 81.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +15.0s: a) 15.0 s: Kopf (7893.0, -75.0), Abstand 77.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +16.0s: a) 16.0 s: Kopf (7896.0, -75.0), Abstand 74.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +17.0s: a) 17.0 s: Kopf (7900.0, -75.0), Abstand 70.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +18.0s: a) 18.0 s: Kopf (7903.0, -75.0), Abstand 67.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +19.0s: a) 19.0 s: Kopf (7907.0, -75.0), Abstand 63.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +20.0s: a) 20.0 s: Kopf (7910.0, -75.0), Abstand 60.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +21.0s: a) 21.0 s: Kopf (7914.0, -75.0), Abstand 56.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +22.0s: a) 22.0 s: Kopf (7917.0, -75.0), Abstand 53.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +23.0s: a) 23.0 s: Kopf (7921.0, -75.0), Abstand 49.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +24.0s: a) 24.0 s: Kopf (7924.0, -75.0), Abstand 46.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +25.0s: a) 25.0 s: Kopf (7928.0, -75.0), Abstand 42.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +26.0s: a) 26.0 s: Kopf (7931.0, -75.0), Abstand 39.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +27.0s: a) 27.0 s: Kopf (7935.0, -75.0), Abstand 35.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +28.0s: a) 28.0 s: Kopf (7938.0, -75.0), Abstand 32.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +29.0s: a) 29.0 s: Kopf (7942.0, -75.0), Abstand 28.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +30.0s: a) 30.0 s: Kopf (7945.0, -75.0), Abstand 25.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +31.0s: a) 31.0 s: Kopf (7949.0, -75.0), Abstand 21.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +31.1s: a) Ernter zerstört nach 31.1 s Testzeit (Ursache: arrakis-test-worm)
+[T5] MESSUNG +32.0s: a) 32.0 s: Kopf (7952.0, -75.0), Abstand 18.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +33.0s: a) 33.0 s: Kopf (7956.0, -75.0), Abstand 14.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +34.0s: a) 34.0 s: Kopf (7959.0, -75.0), Abstand 11.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +35.0s: a) 35.0 s: Kopf (7963.0, -75.0), Abstand 7.0, Zustand investigating, Tempo 3.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +36.0s: a) 36.0 s: Kopf (7966.0, -74.8), Abstand 4.0, Zustand patrolling, Tempo 3.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +36.2s: a) angekommen nach 36.2 s (Abstand 3.1 Kacheln); beobachte noch 5 s
+[T5] MESSUNG +37.0s: a) 37.0 s: Kopf (7968.8, -73.8), Abstand 1.7, Zustand patrolling, Tempo 2.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +38.0s: a) 38.0 s: Kopf (7970.5, -72.7), Abstand 2.3, Zustand patrolling, Tempo 2.0 Kacheln/s, activity_mode full
+[T5] MESSUNG +39.0s: a) 39.0 s: Kopf (7971.9, -71.3), Abstand 4.1, Zustand patrolling, Tempo 1.4 Kacheln/s, activity_mode full
+[T5] MESSUNG +40.0s: a) 40.0 s: Kopf (7972.4, -70.5), Abstand 5.1, Zustand patrolling, Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +41.0s: a) 41.0 s: Kopf (7973.0, -69.6), Abstand 6.1, Zustand patrolling, Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +41.2s: a) Ankunft (≤ 4 Kacheln) nach 36.2 s; Durchschnittstempo 3.2 Kacheln/s (Weg 117.0 Kacheln), Höchsttempo 3.5 Kacheln/s
+[T5] MESSUNG +41.2s: a) Zustand nach der Ankunft (5 s beobachtet): patrolling 5×; am Ende patrolling, Tempo 1.1 Kacheln/s
+[T5] MESSUNG +41.2s: a) Zustände bis zur Ankunft (vision_distance 0, Ernter im Weg): investigating 35×, patrolling 1×
+[T5] MESSUNG +41.2s: a) activity_mode (Minimum minimal gesetzt): full 41×
+[T5] MESSUNG +41.2s: a) Ernter im Weg: zerstört nach 31.1 s (Ursache: arrakis-test-worm)
+[T5] MESSUNG +41.2s: b) attacking: Kopf (7850.0, -45.0), Ernter (7910.0, -45.0) (60.0 Kacheln), set_ai_state ok, Zustand jetzt attacking (Ziel Ernter: ja), activity_mode full
+[T5] MESSUNG +42.2s: b) 1.0 s: Abstand Kopf→Ernter 58.0, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 0.5 Kacheln/s, activity_mode full
+[T5] MESSUNG +43.2s: b) 2.0 s: Abstand Kopf→Ernter 57.0, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +44.2s: b) 3.0 s: Abstand Kopf→Ernter 56.1, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +45.2s: b) 4.0 s: Abstand Kopf→Ernter 55.2, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +46.2s: b) 5.0 s: Abstand Kopf→Ernter 54.4, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +47.2s: b) 6.0 s: Abstand Kopf→Ernter 53.6, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +48.2s: b) 7.0 s: Abstand Kopf→Ernter 52.9, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +49.2s: b) 8.0 s: Abstand Kopf→Ernter 52.3, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +50.2s: b) 9.0 s: Abstand Kopf→Ernter 51.7, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +51.2s: b) 10.0 s: Abstand Kopf→Ernter 51.3, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +52.2s: b) 11.0 s: Abstand Kopf→Ernter 50.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +53.2s: b) 12.0 s: Abstand Kopf→Ernter 50.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +54.2s: b) 13.0 s: Abstand Kopf→Ernter 50.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +55.2s: b) 14.0 s: Abstand Kopf→Ernter 51.0, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +56.2s: b) 15.0 s: Abstand Kopf→Ernter 51.3, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +57.2s: b) 16.0 s: Abstand Kopf→Ernter 51.7, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +58.2s: b) 17.0 s: Abstand Kopf→Ernter 52.2, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +59.2s: b) 18.0 s: Abstand Kopf→Ernter 52.7, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +60.2s: b) 19.0 s: Abstand Kopf→Ernter 53.4, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +61.2s: b) 20.0 s: Abstand Kopf→Ernter 54.2, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +62.2s: b) 21.0 s: Abstand Kopf→Ernter 55.9, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +63.2s: b) 22.0 s: Abstand Kopf→Ernter 56.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +64.2s: b) 23.0 s: Abstand Kopf→Ernter 57.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +65.2s: b) 24.0 s: Abstand Kopf→Ernter 58.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +66.2s: b) 25.0 s: Abstand Kopf→Ernter 59.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +67.2s: b) 26.0 s: Abstand Kopf→Ernter 60.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +68.2s: b) 27.0 s: Abstand Kopf→Ernter 61.8, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +69.2s: b) 28.0 s: Abstand Kopf→Ernter 62.7, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +70.2s: b) 29.0 s: Abstand Kopf→Ernter 63.7, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +71.2s: b) 30.0 s: Abstand Kopf→Ernter 64.6, Ernter-Gesundheit 2000.0, Zustand patrolling (Ziel Ernter: nein), Tempo 1.1 Kacheln/s, activity_mode full
+[T5] MESSUNG +71.2s: b) Ernter als Ziel gehalten: 0 von 30 Sekunden, solange er stand (set_ai_state ok); Zustände über 30 s: patrolling 30×
+[T5] MESSUNG +71.2s: b) Ernter erreicht: nein, kleinster Abstand 50.8 Kacheln (Reichweite 4.3)
+[T5] MESSUNG +71.2s: b) Schaden: Ernter-Gesundheit 2000.0 → 2000.0 (−0.0)
+[T5] MESSUNG +71.2s: b) activity_mode (Minimum full gesetzt): full 30×
+[T5] MESSUNG +71.2s: c) Drosselung: Wurm fährt 8 s frei an, dann 5 s lang alle 10 Ticks speed = 1 Kachel/s, dann 5 s frei
+[T5] MESSUNG +89.2s: c) vorher frei (8 s): Tempo am Ende 3.5 Kacheln/s, Weg 18.0 Kacheln
+[T5] MESSUNG +89.2s: c) gedrosselt (5 s, alle 10 Ticks speed = 1 Kachel/s): tatsächlich 1.2 Kacheln/s (Weg 6.0 Kacheln), speed vor dem Zurücksetzen im Mittel 1.1 Kacheln/s
+[T5] MESSUNG +89.2s: c) danach frei (5 s): 2.4 Kacheln/s (Weg 12.0 Kacheln), speed im Mittel 2.5, am Ende 3.5 Kacheln/s; activity_mode full (Minimum minimal)
+[T5] MESSUNG +89.2s: d) Flieger über dem Kopf: Wurm fährt 5 s an, dann 3 s lang Flieger -4 jeden Tick per teleport auf den Kopf; danach fliegen Flieger und Vergleichsflieger 5 s nach Norden
+[T5] MESSUNG +102.2s: d) Flieger 3 s über dem Kopf (Wurm 2.8 Kacheln/s, activity_mode full): teleport 181×, davon 0 fehlgeschlagen; Gesundheit vorher 3000.0, nachher 3000.0
+[T5] MESSUNG +102.2s: d) Sticker am Flieger: vorher 0, höchstens 0 während, danach 0 (erwartet 0, Asche ist entfernt)
+[T5] MESSUNG +102.2s: d) Tempo danach (5 s Richtung Norden): Flieger höchstens 16.3 Kacheln/s (Weg 53.9), Vergleichsflieger 16.1 Kacheln/s (Weg 53.8), Verhältnis 102 %
+[T5] ENDE +102.2s: a Ankunft 36.2 s; b Ziel 0/30 s, erreicht nein; c gedrosselt 1.2, frei 2.4 Kacheln/s; d Sticker 0, Tempo 102 % (OK 0, FEHLER 0, FRAGE 1, 102.2 s)
+
+=== T6 Wurm: Fels-Ebene und Wächter | Tick 21392 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T6] INFO +0.0s: Start: Wurm: Fels-Ebene und Wächter
+[T6] INFO +0.0s: Vier Bahnen von Nord nach Süd, jede mit Felsinsel: A ohne Wächter, B mit Felsmaske, C mit Wächter, D Angriff auf einen Ernter vor dem Fels. Du stehst zwischen B und C.
+[T6] FRAGE +0.0s: Schau auf Bahn B (nördlich von dir): Was macht der Wurm mit Felsmaske an der Felsinsel – hält er an, weicht er aus, flackert er oder fährt er durch? Und wirkt das Ausweichen auf Bahn C (südlich) glatt? Bitte melden, gern mit Screenshot.
+[T6] MESSUNG +20.3s: Bahn C: Umweg +60° nach (10077.0, 66.0) (Kopf (10062.0, 40.0), 20.3 s)
+[T6] MESSUNG +25.5s: Bahn A: Kopf erstmals auf Fels bei (10080.0, -120.0) nach 25.5 s
+[T6] MESSUNG +25.5s: Bahn B: Kopf erstmals auf Fels bei (10080.0, -40.0) nach 25.5 s
+[T6] MESSUNG +29.3s: Bahn C: Umweg +30° nach (10108.5, 72.3) (Kopf (10080.8, 60.8), 29.3 s)
+[T6] MESSUNG +59.0s: Bahn A: angekommen nach 59.0 s
+[T6] MESSUNG +59.0s: Bahn B: angekommen nach 59.0 s
+[T6] MESSUNG +64.2s: Bahn C: angekommen nach 64.2 s
+[T6] MESSUNG +110.0s: Bahn A (ohne Wächter): Kopf auf Fels 69 von 354 Messpunkten (Kopfbox berührt Fels 73), zuerst bei (10080.0, -120.0) nach 25.5 s; seitliche Abweichung höchstens 0.4 Kacheln
+[T6] MESSUNG +110.0s: Bahn A (ohne Wächter): Ankunft ja nach 59.0 s; Stillstand nein; Zustand nachgeführt 1×; activity_mode full 58×
+[T6] MESSUNG +110.0s: Bahn B (Felsmaske, ohne Wächter): Kopf auf Fels 69 von 354 Messpunkten (Kopfbox berührt Fels 73), zuerst bei (10080.0, -40.0) nach 25.5 s; seitliche Abweichung höchstens 0.4 Kacheln
+[T6] MESSUNG +110.0s: Bahn B (Felsmaske, ohne Wächter): Ankunft ja nach 59.0 s; Stillstand nein; Zustand nachgeführt 1×; activity_mode full 58×
+[T6] MESSUNG +110.0s: Bahn C (mit Wächter): Kopf auf Fels 0 von 385 Messpunkten (Kopfbox berührt Fels 14); seitliche Abweichung höchstens 28.8 Kacheln
+[T6] MESSUNG +110.0s: Bahn C (mit Wächter): Ankunft ja nach 64.2 s; Stillstand nein; Umwege 2, kein Umweg gefunden 0×; Zustand nachgeführt 2×; activity_mode full 64×
+[T6] MESSUNG +110.0s: Bahn D (Angriff auf Ernter vor dem Fels, mit Wächter): bis zum Biss Kopf auf Fels 0 von 660 Messpunkten (Kopfbox berührt Fels 0); seitliche Abweichung höchstens 19.3 Kacheln
+[T6] MESSUNG +110.0s: Bahn D (Angriff auf Ernter vor dem Fels, mit Wächter): kleinster Abstand Kopf→Ernter 54.9 Kacheln (Reichweite 4.3), erreicht nein; Ernter-Gesundheit 2000.0 → 2000.0; set_ai_state attacking ok; Stillstand nein; Umwege 0, kein Umweg gefunden 0×; Zustand nachgeführt 220×; activity_mode full 110×
+[T6] FEHLER +110.0s: Kopf war auf Bahn C und D nie auf Fels, aber Bahn D erreichte den Ernter nicht: Wächter nicht bestätigt (siehe MESSUNG der Bahnen)
+[T6] ENDE +110.0s: A Fels 69× angekommen, B Fels 69× angekommen, C Fels 0× angekommen, D Fels 0×; Wächter nicht bestätigt (OK 0, FEHLER 1, FRAGE 1, 110.0 s)
+
+=== T7 Wurm: Körperprüfung und extended = false | Tick 28052 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T7] INFO +0.0s: Start: Wurm: Körperprüfung und extended = false
+[T7] MESSUNG +0.0s: a) Felsprobe: 22 Knoten (max_body_nodes 22), Körperlänge 21.0 Kacheln, Kopf auf sand-1; jeder 4. Knoten: 6 geprüft, 4 auf Fels (erster Treffer Knoten 9, 8.0 Kacheln hinter dem Kopf); alle Knoten auf Fels: 16 von 22
+[T7] OK +0.0s: a) Körperprüfung erkennt den Fels hinter dem Kopf
+[T7] MESSUNG +0.0s: a) Gegenprobe Sand: 22 Knoten (max_body_nodes 22), Körperlänge 21.0 Kacheln, Kopf auf sand-1; jeder 4. Knoten: 6 geprüft, 0 auf Fels; alle Knoten auf Fels: 0 von 22
+[T7] OK +0.0s: a) Gegenprobe auf Sand: kein Fels erkannt
+[T7] MESSUNG +0.0s: a) Felsprobe nach 1 Tick: jeder 4. Knoten: 6 geprüft, 4 auf Fels (erster Treffer Knoten 9, 8.0 Kacheln hinter dem Kopf); alle Knoten auf Fels: 14 von 22
+[T7] MESSUNG +0.0s: a) Gegenprobe Sand nach 1 Tick: jeder 4. Knoten: 6 geprüft, 0 auf Fels; alle Knoten auf Fels: 0 von 22
+[T7] INFO +0.0s: Teil b (extended = false) startet nur mit /arrakis-test T7 ja – nur in einem Wegwerf-Spielstand.
+[T7] ENDE +0.0s: Felsprobe ok, Gegenprobe Sand ok, b nicht gestartet (OK 2, FEHLER 0, FRAGE 0, 0.0 s)
+
+=== T11 Kartengenerator: Spicefelder und Fels | Tick 28113 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T11] INFO +0.0s: Start: Kartengenerator: Spicefelder und Fels
+[T11] INFO +0.0s: T11 erzeugt Karte, das Spiel hängt kurz (Arrakis, Chunks im Radius 12 um (0, 0)). Du bleibst, wo du bist.
+[T11] INFO +0.5s: Oberfläche arrakis (neu angelegt)
+[T11] MESSUNG +0.5s: Chunks erzeugt: 625 von 625; Gebiet x -384…415, y -384…415 (800×800 Kacheln)
+[T11] MESSUNG +0.6s: Spice-Sand im Gebiet: 0 Entities in 0 Gruppen; Felder (≥ 20): 0; ignoriert: 0 Gruppen mit 0 Entities
+[T11] MESSUNG +0.6s: Keine Spicefelder (≥ 20 Entities) im Gebiet, also auch kein Lehrfeld-Kandidat.
+[T11] MESSUNG +0.7s: Raster alle 4 Kacheln: 40000 Punkte; Kacheln: arrakis-rock 40000 (100.0 %)
+[T11] MESSUNG +1.1s: arrakis_rock an Felspunkten: kleinster 0.29, Mittel 1.14; an Sandpunkten: größter –, Mittel –
+[T11] MESSUNG +1.1s: Schwellen (Sandpunkte mit arrakis_rock < t; Felsabstand im Raster 4 Kacheln, ≈ euklidisch, ±4; 40000 Punkte, davon 0 Sand, 40000 Fels):
+[T11] MESSUNG +1.1s: t = 0: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.1: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.2: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.25: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.3: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.35: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.4: keine Sandpunkte
+[T11] MESSUNG +1.1s: t = -0.5: keine Sandpunkte
+[T11] FEHLER +1.1s: keine Schwelle erreicht 100
+[T11] ENDE +1.1s: 0 Spicefelder; keine Schwelle erreicht 100 (OK 0, FEHLER 1, FRAGE 0, 1.1 s)
+
+=== Zusammenfassung „alle“ | Tick 28178 | 443.0 s ===
+T1 Flieger: Beine, Tempo, Gelände: OK: beste Variante -4-fast mit Reisetempo 19.6 Kacheln/s; 300 Kacheln in 15.6 s (OK) (OK 2, FEHLER 0, FRAGE 1)
+T2 Ernter: Skriptfahrt, Tempo, Sperre, Status: Skriptfahrt ja, max Kohle 1.4 / Festbrennstoff 1.5 / Raketentreibstoff 1.9 Kacheln/s, Deckel 1.5 FEHLER, Sperre OK, Status OK (OK 3, FEHLER 1, FRAGE 1)
+T3 Ernter: Teleport zur Ablage: a) mit Fahrer: true; b) Ablage 9/10 gleich, zurück 9/10 gleich; c) Klon 8/10 gleich (OK 20, FEHLER 2, FRAGE 0)
+T4 Annahme und Tankstutzen: Bauregel 3/3 wie erwartet; Kiste 51 OK, Brennstoff 51 OK, Signal 348 OK; nach dem Lösen OK (OK 7, FEHLER 0, FRAGE 1)
+T5 Wurm-KI: Zustände, Tempo, Flieger über dem Kopf: a Ankunft 36.2 s; b Ziel 0/30 s, erreicht nein; c gedrosselt 1.2, frei 2.4 Kacheln/s; d Sticker 0, Tempo 102 % (OK 0, FEHLER 0, FRAGE 1)
+T6 Wurm: Fels-Ebene und Wächter: A Fels 69× angekommen, B Fels 69× angekommen, C Fels 0× angekommen, D Fels 0×; Wächter nicht bestätigt (OK 0, FEHLER 1, FRAGE 1)
+T7 Wurm: Körperprüfung und extended = false: Felsprobe ok, Gegenprobe Sand ok, b nicht gestartet (OK 2, FEHLER 0, FRAGE 0)
+T11 Kartengenerator: Spicefelder und Fels: 0 Spicefelder; keine Schwelle erreicht 100 (OK 0, FEHLER 1, FRAGE 0)
+Übersprungen (interaktiv oder mit Bestätigung): T9, T12
+Offene FRAGEn bei T1, T2, T4, T5, T6: stehen oben und in der Datei. Was du nicht mehr ansehen konntest, mit /arrakis-test T1 (usw.) einzeln wiederholen.
+Zurück zu deiner Position vor dem Test: /arrakis-test zurück
+
+=== T9 Flieger: Schatten der Last | Tick 30391 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T9] INFO +0.0s: Start: Flieger: Schatten der Last
+[T9] INFO +0.0s: A, B und C stehen neben dir, D verschwindet nach 1 s auf die Ablage. Die Flieger bleiben nach Testende stehen.
+[T9] FRAGE +0.0s: Welcher Schatten sieht richtig aus: A (Schatten-Sprite mit draw_as_shadow) oder B (schwarz getöntes, halbtransparentes Bild)? Liegt das Panzerbild unter dem Rumpf, und folgt es bei C dem Flug ohne Ruckeln? Bitte Screenshot von A, B und C und Antwort melden.
+[T9] MESSUNG +1.0s: Teleport-Test: teleport() = true, D danach auf arrakis-test-hold (-25.0, -25.0); Render-Objekte gültig vorher 3 von 3, direkt danach 0
+[T9] OK +1.0s: Render-Objekte am Flieger verschwinden beim Oberflächenwechsel (render_object.valid = false bei 3 von 3)
+[T9] INFO +46.8s: Abgebrochen: neuer Test T12
+[T9] ENDE +46.8s: abgebrochen (neuer Test T12) (OK 1, FEHLER 0, FRAGE 1, 46.8 s)
+
+=== T12 Flieger: Rettung aus der Kartenansicht | Tick 33196 | Arrakis 0.4.0 | base 2.0.77 | Spieler styx.techno ===
+[T12] INFO +0.0s: Start: Flieger: Rettung aus der Kartenansicht
+[T12] INFO +0.0s: Fernbedienung im Cursor: true
+[T12] INFO +0.0s: Flieger arrakis-test-flyer-4 #470 bei (18005.0, 0.0), Treibstoff rocket-fuel; Auswahl gesetzt: ja (gelesen: 1 Einträge)
+[T12] FRAGE +0.0s: 1) Steig in den Flieger ein (Enter), öffne die Karte (M), steuere den Flieger aus der Karte heraus (WASD) und drück ALT+O.
+[T12] FRAGE +0.0s: 2) Steig aus, nimm die Spidertron-Fernbedienung in die Hand (ist sie weg: noch einmal ein- und mit leerer Hand aussteigen, dann legt der Test sie dir hinein), klick damit auf den Flieger (er muss ausgewählt sein), öffne die Karte (M) und drück ALT+O.
+[T12] FRAGE +0.0s: 3) Schließ die Karte und drück in der normalen Ansicht ALT+O.
+[T12] INFO +0.0s: Jeder Druck auf ALT+O schreibt eine MESSUNG-Zeile. Bitte melden, ob bei jedem Schritt eine kam (Datei schicken reicht). Ende nach 3 min oder mit /arrakis-test stop.
+[T12] MESSUNG +6.4s: Ein-/Ausstieg: vehicle = arrakis-test-flyer-4 #470, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] MESSUNG +39.1s: Ein-/Ausstieg: vehicle = nil, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] INFO +39.1s: Flieger nach dem Aussteigen wieder ausgewählt: ja, Auswahl jetzt 1 Einträge
+[T12] MESSUNG +55.4s: Ein-/Ausstieg: vehicle = arrakis-test-flyer-4 #470, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] MESSUNG +56.6s: Ein-/Ausstieg: vehicle = nil, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] INFO +56.6s: Fernbedienung in die leere Hand gelegt
+[T12] INFO +56.6s: Flieger nach dem Aussteigen wieder ausgewählt: ja, Auswahl jetzt 1 Einträge
+[T12] MESSUNG +75.2s: Ein-/Ausstieg: vehicle = arrakis-test-flyer-4 #470, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] MESSUNG +82.8s: Ein-/Ausstieg: vehicle = nil, controller_type = character, Ereignis-Entity = arrakis-test-flyer-4 #470
+[T12] INFO +82.8s: Fernbedienung in die leere Hand gelegt
+[T12] INFO +82.8s: Flieger nach dem Aussteigen wieder ausgewählt: ja, Auswahl jetzt 1 Einträge
+
+=== T22 Sandwurm: Optik und Laden | Tick 3411 | Arrakis 0.8.3 | base 2.1.23 | Spieler styx.techno ===
+[T22] INFO +0.0s: Start: Sandwurm: Optik und Laden
+[T22] INFO +0.0s: Zeitraffer: game.speed 1 (aus)
+[T22] INFO +0.0s: Neun Schritte mit dem echten Sandwurm und deiner Force (player, wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten, nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach 20 min Spielzeit oder mit /arrakis-test stop. Bitte vorher /arrakis-test tempo 1.
+[T22] INFO +0.0s: Schritt 1 von 9
+[T22] INFO +0.0s: 1) Auftauchen 60 Kacheln östlich von dir in 2 s: Jagd 1, Biss bei 0 in 60 s
+[T22] FRAGE +2.2s: 1) Siehst du den Wurm auftauchen (Staub, Rumpeln)? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?
+[T22] INFO +60.2s: Schritt 2 von 9
+[T22] FRAGE +60.2s: 2) Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach mit Staub und Rumpeln ab?
+[T22] INFO +70.5s: Abgebrochen: neuer Test T22
+[T22] ENDE +70.5s: abgebrochen (neuer Test T22) (OK 0, FEHLER 0, FRAGE 2, 70.5 s)
+
+=== T22 Sandwurm: Optik und Laden | Tick 7641 | Arrakis 0.8.3 | base 2.1.23 | Spieler styx.techno ===
+[T22] INFO +0.0s: Start: Sandwurm: Optik und Laden
+[T22] INFO +0.0s: Zeitraffer: game.speed 1 (aus)
+[T22] INFO +0.0s: Neun Schritte mit dem echten Sandwurm und deiner Force (player, wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten, nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach 20 min Spielzeit oder mit /arrakis-test stop. Bitte vorher /arrakis-test tempo 1.
+[T22] INFO +0.0s: Schritt 1 von 9
+[T22] INFO +0.0s: 1) Auftauchen 60 Kacheln östlich von dir in 2 s: Jagd 2, Biss bei 0 in 60 s
+[T22] FRAGE +2.2s: 1) Siehst du den Wurm auftauchen (Staub, Rumpeln)? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?
+[T22] INFO +60.2s: Schritt 2 von 9
+[T22] FRAGE +60.2s: 2) Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach mit Staub und Rumpeln ab?

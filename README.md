@@ -17,3 +17,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-27 20:37 | 0.8.1 | aa0ccf3 | 1 (FEHLER in T21 Schritt 6: Flugzeit 102,2 % statt ≤ 102 %, Weg 12,82 statt ≥ 13,92) |
 | 2026-10-27 23:2x | 0.8.2 | d642bdb | 0 (kein FEHLER, T21 15/15) |
 | 2026-10-28 04:19 | 0.8.3 | 4db08ed | 0 (kein FEHLER) |
+| 2026-10-28 18:00 | 0.8.3 | 4db08ed | T22 im Spiel, mit Max' Antworten (ergebnisse/2026-10-28_0.8.3_spiel_T22) |
