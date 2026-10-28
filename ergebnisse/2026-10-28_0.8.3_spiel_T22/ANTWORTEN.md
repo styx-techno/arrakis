@@ -20,3 +20,5 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
   Code-Stand 0.8.3 (prototypes/sandworm.lua): Kopf ist deepcopy eines Demolishers, hidden = nil, order "s-z[arrakis]-a[sandworm-small]", icons mit Sand-Tönung, subgroup geerbt; Segmente hidden = true. Dass Max gar keine Gegner-Gruppe sieht (auch keine Vanilla-Gegner), deutet eher auf Factoriopedia-Verhalten in 2.1.23 (z. B. nur bekannte/angetroffene Gegner) als auf den Mod hin – ungeprüft.
 - Korrektur zu Frage 8: Max hatte versehentlich unter "Tipps und Tricks" statt in der Factoriopedia gesucht. Die Antwort "nein" ist damit ungültig; neue Antwort folgt.
 - Frage 8 (neu, gültig): JA. Max: "er ist ordentlich in der factoriopedia drin".
+- T22 endete durch das Zeitlimit: "ENDE +1199.0s: 20 min um: Schritt 8, 7 Jagden". Schritt 9 (Speichern/Laden, W5/W11) lief deshalb nicht; Max: "test 9 startet nicht". Rückmeldung: 20 min reichen für den interaktiven Test mit Erklärungen nicht.
+- Frage 6 (Rettung): keine Antwort von Max; laut Factorio-Log (factorio-log-jagden.txt) Jagd 7 kind=harvest outcome=escaped, bite_tick=nil, also kein Biss.
