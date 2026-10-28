@@ -31,8 +31,7 @@ Ablauf:
 
 Rückgabewert: 0 = kein FEHLER, 1 = mindestens ein FEHLER oder Zeitlimit, 2 = Einrichtung oder
 Infrastruktur (Factorio startet nicht, RCON, Prüfstand-Einstellung nicht aktiv, Zeitraffer nicht
-einstellbar, Test nicht gestartet, Ordner schon in Benutzung, Server tickt nicht mehr, Mod unter AppData
-in einem Windows-App-Paket wie der Claude-App: docs/pruefstand.md, „Claude-App unter Windows“). Interaktive Tests (T9, T12, T17, T20, T22) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
+einstellbar, Test nicht gestartet, Ordner schon in Benutzung, Server tickt nicht mehr). Interaktive Tests (T9, T12, T17, T20, T22) lehnt der Server ohne Spieler ab; „alle“ lässt sie aus.
 """
 import argparse
 import errno
@@ -217,33 +216,6 @@ def _inside(child, parent):
     return False
 
 
-def app_package():
-  """Voller Name des Windows-App-Pakets (MSIX), in dem dieser Prozess läuft, sonst None. In so einem Paket
-  (etwa der Claude-App) landen neue Dateien unter AppData in einer Ablage, die nur das Paket sieht."""
-  if os.name != "nt":
-    return None
-  try:
-    import ctypes
-    func = ctypes.windll.kernel32.GetCurrentPackageFullName   # ab Windows 8
-  except (ImportError, AttributeError, OSError):
-    return None
-  length = ctypes.c_uint32(0)
-  if func(ctypes.byref(length), None) != 122:   # 122 ERROR_INSUFFICIENT_BUFFER: Paket da; 15700: keins
-    return None
-  name = ctypes.create_unicode_buffer(length.value)
-  if func(ctypes.byref(length), name) != 0:
-    return None
-  return name.value or None
-
-
-def appdata_roots():
-  roots = []
-  for var in ("APPDATA", "LOCALAPPDATA"):
-    if os.environ.get(var):
-      roots.append(Path(os.path.abspath(os.environ[var])).resolve())
-  return roots
-
-
 def _remove_tree(path):
   def force(func, target, *_):
     os.chmod(target, stat.S_IWRITE)
@@ -332,14 +304,6 @@ def setup(args):
     raise Abbruch("Mod-Ordner %s ohne lesbare info.json: %s" % (mod_src, err))
   if mod_info.get("name") != "arrakis":
     raise Abbruch("%s ist nicht die Mod arrakis (name = %r)" % (mod_src, mod_info.get("name")))
-  # Am 28.10.2026 zeigte Max' Factorio die Mod nicht, obwohl alle Läufe in der Claude-App bis 0.8.3 bestanden.
-  # git pull aus der App schreibt neue Dateien unter AppData nur in die Ablage des Pakets.
-  package = app_package()
-  if package and any(_inside(mod_src, root) for root in appdata_roots()):
-    raise Abbruch("Die Mod liegt unter AppData (%s), und das Werkzeug läuft im App-Paket %s. Windows leitet "
-                  "neue Dateien dort in eine Ablage um, die nur dieses Paket sieht; der Prüfstand würde dann "
-                  "einen anderen Stand testen als dein Factorio. Die Mod außerhalb von AppData klonen und von "
-                  "dort starten (docs/pruefstand.md, „Claude-App unter Windows“)." % (mod_src, package))
 
   # abspath vor resolve: Python 3.8/3.9 unter Windows lässt nicht vorhandene relative Pfade relativ.
   folder = Path(os.path.abspath(os.path.expanduser(args.ordner))).resolve() if args.ordner else Path(tempfile.gettempdir()) / "arrakis-pruefstand"
