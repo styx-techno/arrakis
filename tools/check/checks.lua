@@ -369,25 +369,62 @@ end
 for _, n in ipairs({"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}) do
   if raw.sticker[n] then add("FEHLER 3c: sticker " .. n .. " aus 0.6.0 gibt es noch") end
 end
--- Lastbild: 16 Richtungen, je Bild und Schatten zwei Ebenen mit scale 0.5 (HR-Bilder wie Vanilla; ohne gälte 1).
+-- Lastbild (ab 0.8.5): 16 Richtungen aus den Blättern des Ernters, je ein Bild ohne Ebenen; Rumpf 384 px mit scale 0.5,
+-- Schatten 256 px mit scale 1 (Festlegungen in tools/grafik/README.md).
 local sprite_count = 0
+local harvester_gfx = "__arrakis__/graphics/entity/spice-harvester/"
 for i = 0, 15 do
   for _, kind in ipairs({"image", "shadow"}) do
     local n = kind == "image" and ("arrakis-harvester-carried-" .. i) or ("arrakis-harvester-carried-shadow-" .. i)
     local sp = raw.sprite[n]
     if not sp then add("FEHLER 3c: sprite " .. n .. " fehlt") else
       sprite_count = sprite_count + 1
-      local layers = sp.layers or {}
-      if #layers ~= 2 then add("FEHLER 3c: sprite " .. n .. " hat " .. #layers .. " Ebenen statt 2") end
-      for j, layer in ipairs(layers) do
-        if layer.scale ~= 0.5 then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " scale " .. tostring(layer.scale)) end
-        if (layer.draw_as_shadow == true) ~= (kind == "shadow") then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " draw_as_shadow " .. tostring(layer.draw_as_shadow)) end
-        if layer.apply_runtime_tint then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " mit Farbmaske") end
-        if kind == "shadow" and layer.tint then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " Schatten getönt") end
-        if not (layer.filename and layer.width and layer.height and layer.x and layer.y) then add("FEHLER 3c: sprite " .. n .. " Ebene " .. j .. " ohne Ausschnitt") end
+      local want = kind == "image" and {"harvester-base.png", 384, 0.5} or {"harvester-shadow.png", 256, 1}
+      if sp.layers then add("FEHLER 3c: sprite " .. n .. " hat Ebenen") end
+      if sp.filename ~= harvester_gfx .. want[1] then add("FEHLER 3c: sprite " .. n .. " Datei " .. tostring(sp.filename)) end
+      if sp.width ~= want[2] or sp.height ~= want[2] then add("FEHLER 3c: sprite " .. n .. " Größe " .. tostring(sp.width)) end
+      if sp.scale ~= want[3] then add("FEHLER 3c: sprite " .. n .. " scale " .. tostring(sp.scale)) end
+      local d = 4 * i
+      if sp.x ~= (d % 8) * want[2] or sp.y ~= math.floor(d / 8) * want[2] then add("FEHLER 3c: sprite " .. n .. " Ausschnitt " .. tostring(sp.x) .. "," .. tostring(sp.y)) end
+      if (sp.draw_as_shadow == true) ~= (kind == "shadow") then add("FEHLER 3c: sprite " .. n .. " draw_as_shadow " .. tostring(sp.draw_as_shadow)) end
+      if sp.apply_runtime_tint or sp.tint then add("FEHLER 3c: sprite " .. n .. " getönt oder mit Farbmaske") end
+    end
+  end
+end
+-- Ernter-Grafik (ab 0.8.5): drei Ebenen zu 64 Richtungen, kein Turm, kein Panzer-Leuchtbild.
+do
+  local car = raw.car["spice-harvester"]
+  local layers = car and car.animation and car.animation.layers or {}
+  local want = {{"harvester-base.png", 384, 0.5}, {"harvester-mask.png", 384, 0.5, "apply_runtime_tint"},
+                {"harvester-shadow.png", 256, 1, "draw_as_shadow"}}
+  if #layers ~= 3 then add("FEHLER 0.8.5: Ernter hat " .. #layers .. " Bildebenen statt 3") end
+  for j, w in ipairs(want) do
+    local l = layers[j] or {}
+    if l.filename ~= harvester_gfx .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3]
+        or l.direction_count ~= 64 or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) or l.tint then
+      add("FEHLER 0.8.5: Ernter Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
+    end
+  end
+  if car and (car.turret_animation or car.light_animation) then add("FEHLER 0.8.5: Ernter hat noch Turm oder Panzer-Leuchtbild") end
+end
+-- Jede Datei __arrakis__/… in den Prototypen muss im Repo liegen (aus dem Repo-Root starten).
+do
+  local seen, missing, checked = {}, {}, 0
+  local function walk(t)
+    if seen[t] then return end
+    seen[t] = true
+    for _, v in pairs(t) do
+      if type(v) == "table" then walk(v)
+      elseif type(v) == "string" and v:find("^__arrakis__/") and v:find("%.%a+$") and missing[v] == nil then
+        local f = io.open(v:sub(13), "rb")
+        checked = checked + 1
+        missing[v] = not f
+        if f then f:close() else add("FEHLER Datei fehlt im Repo: " .. v) end
       end
     end
   end
+  walk(raw)
+  add("Eigene Dateien geprüft: " .. checked)
 end
 -- Probe: Kasten ±1,6, Maske gleich der des Ernters (der hat keine eigene, dann gilt die Vorgabe für car).
 local probe = raw["simple-entity-with-owner"]["arrakis-harvester-probe"]

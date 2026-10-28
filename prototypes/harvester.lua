@@ -1,28 +1,18 @@
 -- Phase 3b: Spice-Ernter, Spice-Annahme, Tankstutzen, Spice-Brikett, Forschung „Spice-Ernte“ und Taste.
 -- Spice-Sand baut nur noch der Ernter ab (und die Hand, data-final-fixes.lua).
 -- Abbau, Andocken und Tempo steuert das Skript (scripts/harvester.lua, scripts/intake.lua).
--- Grafiken sind getönte Vanilla-Platzhalter, wie im Prüfstand (prototypes/testbench/harvester.lua, proxies.lua).
+-- Der Ernter hat ab 0.8.5 eigene Grafik (tools/grafik/ernter-modell.py, Blender); Annahme, Tankstutzen und Brikett sind
+-- noch getönte Vanilla-Platzhalter, wie im Prüfstand (prototypes/testbench/harvester.lua, proxies.lua).
 local compat = require("prototypes.compat")
 local item_sounds = require("__base__.prototypes.item_sounds")
 
-local harvester_tint = {r = 1, g = 0.8, b = 0.5}
+local harvester_gfx = "__arrakis__/graphics/entity/spice-harvester/"
 local intake_tint = {r = 1, g = 0.6, b = 0.3}
 local nozzle_tint = {r = 1, g = 0.35, b = 0.3}
 local spice_tint = {r = 1, g = 0.45, b = 0.15}
 
 local function tinted(icon, tint)
   return {{icon = icon, tint = tint}}
-end
-
--- Tönt alle normalen Bildebenen; Schatten, Farbmasken und Leuchten bleiben.
-local function tint_layers(animation, tint)
-  if type(animation) ~= "table" then return end
-  if animation.layers then
-    for _, layer in pairs(animation.layers) do tint_layers(layer, tint) end
-    return
-  end
-  if animation.draw_as_shadow or animation.apply_runtime_tint or animation.draw_as_glow or animation.draw_as_light then return end
-  animation.tint = tint
 end
 
 -- Bild der Eisenkiste, skaliert und getönt (Schatten nur skaliert).
@@ -52,11 +42,12 @@ local function make_proxy(name, tint)
   return proxy
 end
 
--- Spice-Ernter: Kopie des Panzers ohne Waffen und Ausrüstungsgitter.
+-- Spice-Ernter: Kopie des Panzers ohne Waffen, Turm und Ausrüstungsgitter, mit eigener Grafik.
 local harvester = table.deepcopy(data.raw.car.tank)
 harvester.name = "spice-harvester"
-harvester.icon = nil
-harvester.icons = tinted("__base__/graphics/icons/tank.png", harvester_tint)
+harvester.icon = "__arrakis__/graphics/icons/spice-harvester.png"
+harvester.icon_size = 64
+harvester.icons = nil
 harvester.minable = {mining_time = 0.5, result = "spice-harvester"}
 harvester.guns = nil
 harvester.inventory_size = 40
@@ -68,8 +59,38 @@ harvester.trash_inventory_size = 0
 harvester.equipment_grid = nil
 harvester.has_belt_immunity = true
 harvester.factoriopedia_simulation = nil
-tint_layers(harvester.animation, harvester_tint)
-tint_layers(harvester.turret_animation, harvester_tint)
+-- 64 Richtungen je Blatt (8 × 8, 0 = Norden, im Uhrzeigersinn), ein Bild je Richtung: Die Ketten laufen nicht sichtbar.
+-- Rumpf und Farbmaske als HR-Bild (384 px = 6 Kacheln, scale 0,5), Schatten mit 32 px je Kachel (256 px = 8 Kacheln,
+-- scale 1). Der Bodenpunkt unter der Fahrzeugmitte liegt in jeder Bildmitte, deshalb ohne shift.
+local function harvester_layer(file, size, scale, extra)
+  local layer =
+  {
+    filename = harvester_gfx .. file,
+    width = size,
+    height = size,
+    line_length = 8,
+    direction_count = 64,
+    frame_count = 1,
+    max_advance = 1,
+    scale = scale
+  }
+  for key, value in pairs(extra or {}) do layer[key] = value end
+  return layer
+end
+harvester.animation =
+{
+  layers =
+  {
+    harvester_layer("harvester-base.png", 384, 0.5),
+    harvester_layer("harvester-mask.png", 384, 0.5, {apply_runtime_tint = true}),
+    harvester_layer("harvester-shadow.png", 256, 1, {draw_as_shadow = true})
+  }
+}
+harvester.turret_animation = nil
+harvester.light_animation = nil
+harvester.water_reflection = nil
+-- Wrack: allgemeiner Schutt statt Panzerwrack.
+harvester.corpse = "big-remnants"
 
 -- Physik aus dem Prüfstand (T2), Leistung 330 kW: mit Kohle etwa 1,45 Kacheln/s (Modell, T2b misst).
 -- Schnellere Brennstoffe gleicht das Skript aus (effectivity_modifier), dazu kommt der Tempo-Deckel.
@@ -223,7 +244,8 @@ data:extend({
   {
     type = "technology",
     name = "arrakis-spice-harvesting",
-    icons = {{icon = "__base__/graphics/technology/tank.png", icon_size = 256, tint = harvester_tint}},
+    icon = "__arrakis__/graphics/technology/spice-harvester.png",
+    icon_size = 256,
     effects =
     {
       {type = "unlock-recipe", recipe = "spice-harvester"},

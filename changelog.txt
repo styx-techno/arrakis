@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.5
+Date: 2026-10-28
+  Graphics:
+    - Spice-Ernter mit eigener Grafik statt getöntem Panzer: ein flacher, breiter Raupenrumpf aus dunklem Metall mit Flugsand, Ansaugmaul vorne, Kanzel, zwei Auswurfschloten hinten und Klammerschienen auf dem Rücken, in 64 Richtungen mit Schatten. Seitenschürzen und Rückenplatten zeigen die Spielerfarbe. Kein Turm mehr. Eigenes Symbol für Gegenstand, Forschung und die Verknüpfung „Ernter tragen“; das Lastbild am Ornithopter zeigt den neuen Ernter. Zerstört hinterlässt er Schutt statt eines Panzerwracks.
+  Modding:
+    - tools/grafik/: Blender-Skript für das Modell (ernter-modell.py, braucht nur Python mit dem Modul bpy) und pack.py für die Spritesheets; README.md nennt Kamera, Licht, Richtungen und Größen.
+    - tools/check/checks.lua prüft die Bildebenen des Ernters und das neue Lastbild, dazu, dass jede Datei __arrakis__/… im Repo liegt.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.4
 Date: 2026-10-28
   Changes:

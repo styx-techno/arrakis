@@ -11,8 +11,6 @@ local collision_mask_util = require("collision-mask-util")
 local speed = require("prototypes.ornithopter-speed")
 
 local sand_tint = {r = 1, g = 0.85, b = 0.55}
--- Ernter-Tönung wie prototypes/harvester.lua:8, damit das Lastbild aussieht wie der Ernter am Boden.
-local harvester_tint = {r = 1, g = 0.8, b = 0.5}
 
 local function tinted(icon, tint)
   return {{icon = icon, tint = tint}}
@@ -162,79 +160,37 @@ for _, state in ipairs(speed.STATES) do
   end
 end
 
--- Lastbild: 16 Richtungen aus den Panzer-Sheets (V23 base/prototypes/entity/entities.lua:8079–8222), Rumpf und Turm
--- in derselben Richtung. i = 0 … 15 nimmt d = 4 · i der 64 Panzerrichtungen (0 = Nord, im Uhrzeigersinn).
--- Rumpf: je Datei 16 Richtungen untereinander, je Zeile 2 Bilder (stripes width_in_frames = 2, height_in_frames = 16),
---   also tank-base-<floor(d/16)+1>.png, erstes Bild x = 0, y = (d mod 16) · 212; shift = by_pixel(0, -16 + tank_shift_y)
---   mit tank_shift_y = 6 (entities.lua:43).
--- Turm: line_length = 8, also x = (d mod 8) · 179, y = floor(d/8) · 132; shift = by_pixel(2,25 - 2, -40,5 + 6).
--- Beide getönt wie der Ernter. Die Farbmaske (apply_runtime_tint) fehlt bewusst: Ein Sprite kennt die Farbe des
--- Ernters nicht.
--- Schatten: tank-base-shadow-<n>.png mit 1 Bild je Zeile (util.multiplystripes(2, …) wiederholt nur die Datei),
---   y = (d mod 16) · 194, shift = by_pixel(22,5, 1 + 6); tank-turret-shadow.png, x = (d mod 8) · 193,
---   y = floor(d/8) · 134, shift = by_pixel(58,25 - 2, 0,5 + 6); beide draw_as_shadow, ungetönt.
--- Alle Ebenen sind HR-Bilder mit scale = 0.5 wie Vanilla (entities.lua:8179, :8218). Ohne Angabe gälte 1, und der
--- Schatten würde doppelt so groß wie das Lastbild. Die Richtung wählt das Skript beim Anheben (Plan 4.12).
-local tank = "__base__/graphics/entity/tank/"
+-- Lastbild: 16 Richtungen aus den Blättern des Ernters (prototypes/harvester.lua, ab 0.8.5). i = 0 … 15 nimmt d = 4 · i
+-- der 64 Richtungen (0 = Nord, im Uhrzeigersinn); die Blätter haben 8 Bilder je Zeile, also x = (d mod 8) · Größe,
+-- y = floor(d/8) · Größe. Rumpf 384 px mit scale 0,5, Schatten 256 px mit scale 1, beide ohne shift (Bodenpunkt in der
+-- Bildmitte). Die Farbmaske (apply_runtime_tint) fehlt bewusst: Ein Sprite kennt die Farbe des Ernters nicht. Die
+-- Richtung wählt das Skript beim Anheben (Plan 4.12).
+local harvester_gfx = "__arrakis__/graphics/entity/spice-harvester/"
 
 local function carried_sprites(i)
   local d = 4 * i
-  local sheet = math.floor(d / 16) + 1
   local image =
   {
     type = "sprite",
     name = "arrakis-harvester-carried-" .. i,
-    layers =
-    {
-      {
-        filename = tank .. "tank-base-" .. sheet .. ".png",
-        x = 0,
-        y = (d % 16) * 212,
-        width = 270,
-        height = 212,
-        scale = 0.5,
-        shift = util.by_pixel(0, -10),
-        tint = harvester_tint
-      },
-      {
-        filename = tank .. "tank-turret.png",
-        x = (d % 8) * 179,
-        y = math.floor(d / 8) * 132,
-        width = 179,
-        height = 132,
-        scale = 0.5,
-        shift = util.by_pixel(0.25, -34.5),
-        tint = harvester_tint
-      }
-    }
+    filename = harvester_gfx .. "harvester-base.png",
+    x = (d % 8) * 384,
+    y = math.floor(d / 8) * 384,
+    width = 384,
+    height = 384,
+    scale = 0.5
   }
   local shadow =
   {
     type = "sprite",
     name = "arrakis-harvester-carried-shadow-" .. i,
-    layers =
-    {
-      {
-        filename = tank .. "tank-base-shadow-" .. sheet .. ".png",
-        x = 0,
-        y = (d % 16) * 194,
-        width = 302,
-        height = 194,
-        scale = 0.5,
-        shift = util.by_pixel(22.5, 7),
-        draw_as_shadow = true
-      },
-      {
-        filename = tank .. "tank-turret-shadow.png",
-        x = (d % 8) * 193,
-        y = math.floor(d / 8) * 134,
-        width = 193,
-        height = 134,
-        scale = 0.5,
-        shift = util.by_pixel(56.25, 6.5),
-        draw_as_shadow = true
-      }
-    }
+    filename = harvester_gfx .. "harvester-shadow.png",
+    x = (d % 8) * 256,
+    y = math.floor(d / 8) * 256,
+    width = 256,
+    height = 256,
+    scale = 1,
+    draw_as_shadow = true
   }
   return image, shadow
 end
@@ -339,8 +295,10 @@ data:extend({
     associated_control_input = "arrakis-carry-toggle",
     technology_to_unlock = "arrakis-ornithopter",
     unavailable_until_unlocked = true,
-    icons = {{icon = "__base__/graphics/icons/tank.png", icon_size = 64, tint = harvester_tint}},
-    small_icons = {{icon = "__base__/graphics/icons/tank.png", icon_size = 64, tint = harvester_tint}}
+    icon = "__arrakis__/graphics/icons/spice-harvester.png",
+    icon_size = 64,
+    small_icon = "__arrakis__/graphics/icons/spice-harvester.png",
+    small_icon_size = 64
   },
   remote
 })
