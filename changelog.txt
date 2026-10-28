@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.6
+Date: 2026-10-28
+  Bugfixes:
+    - 0.8.5 lud nicht: Der Gegenstand Spice-Ernter übernahm icons vom Fahrzeug, das seit dem eigenen Symbol nur noch icon hat, und stand ohne Symbol da („Key "icon" not found“). Er nimmt jetzt icon und icon_size des Fahrzeugs.
+  Modding:
+    - tools/check/checks.lua: Jeder eigene Gegenstand, jede Forschung, Verknüpfung und jedes Signal muss icon oder icons haben. Die Datenstufe im Container prüft Felder sonst nicht und hatte den Fehler durchgelassen.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.5
 Date: 2026-10-28
   Graphics:

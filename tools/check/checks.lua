@@ -426,6 +426,26 @@ do
   walk(raw)
   add("Eigene Dateien geprüft: " .. checked)
 end
+-- Symbole: Gegenstände, Forschungen, Verknüpfungen und Signale brauchen icon oder icons, Factorio bricht sonst beim
+-- Laden ab (0.8.5: Gegenstand spice-harvester ohne Symbol). icon_size gehört zu icon.
+do
+  local need = {technology = true, shortcut = true, ["virtual-signal"] = true}
+  for _, t in ipairs(item_types) do need[t] = true end
+  local n_icons = 0
+  for t in pairs(need) do
+    for n, p in pairs(raw[t] or {}) do
+      if is_own(n) then
+        n_icons = n_icons + 1
+        local icons = p.icons
+        if not p.icon and not (type(icons) == "table" and #icons > 0) then add("FEHLER " .. t .. " " .. n .. " ohne icon/icons") end
+        if type(icons) == "table" then
+          for j, ic in ipairs(icons) do if not ic.icon then add("FEHLER " .. t .. " " .. n .. " icons[" .. j .. "] ohne icon") end end
+        end
+      end
+    end
+  end
+  add("Symbole geprüft: " .. n_icons)
+end
 -- Probe: Kasten ±1,6, Maske gleich der des Ernters (der hat keine eigene, dann gilt die Vorgabe für car).
 local probe = raw["simple-entity-with-owner"]["arrakis-harvester-probe"]
 if probe then

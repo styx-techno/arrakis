@@ -129,7 +129,8 @@ data:extend({
   {
     type = "item-with-entity-data",
     name = "spice-harvester",
-    icons = harvester.icons,
+    icon = harvester.icon,
+    icon_size = harvester.icon_size,
     subgroup = "transport",
     order = "b[personal-transport]-z[spice-harvester]",
     inventory_move_sound = item_sounds.vehicle_inventory_move,
