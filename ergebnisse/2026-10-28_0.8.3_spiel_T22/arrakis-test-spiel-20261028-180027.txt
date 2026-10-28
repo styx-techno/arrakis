@@ -386,3 +386,8 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] FRAGE +2.2s: 1) Siehst du den Wurm auftauchen (Staub, Rumpeln)? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?
 [T22] INFO +60.2s: Schritt 2 von 9
 [T22] FRAGE +60.2s: 2) Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach mit Staub und Rumpeln ab?
+[T22] INFO +119.5s: Schritt 3 von 9
+[T22] INFO +119.5s: 3) Felsinsel zwischen Wurm und Kiste (Insel östlich des Ursprungs): Jagd 3, Biss bei 0 in 60 s
+[T22] FRAGE +179.7s: 3) Biegt er glatt vor der Insel ab, ohne den Fels zu berühren?
+[T22] INFO +179.7s: 3) Ernter 10 Kacheln vor dem Inselrand, Wurm frontal auf den Fels dahinter: Jagd 4, Biss bei 0 in 60 s
+[T22] FRAGE +240.0s: 3) Wird der Ernter trotzdem gebissen, und bleibt der Wurm dabei auf dem Sand?
