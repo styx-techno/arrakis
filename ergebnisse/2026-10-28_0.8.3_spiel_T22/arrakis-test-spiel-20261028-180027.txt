@@ -398,3 +398,7 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +537.9s: 5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf, fährt nach Osten), schwebe über dem fahrenden Kopf, halt an, dann flieg voll nach Westen über den Körper weg.
 [T22] INFO +537.9s: 5) Ornithopter über dem Kopf [W12]: Jagd 6, Biss bei 0 in 60 s
 [T22] FRAGE +598.0s: 5) Merkst du ein Bremsen, Ruckeln oder Schaden?
+[T22] INFO +747.6s: Schritt 6 von 9
+[T22] INFO +747.6s: 6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.
+[T22] INFO +747.6s: 6) Rettung: Jagd 7, Biss bei 0 in 60 s
+[T22] FRAGE +807.7s: 6) Hält der Wurm neben dir, beißt ins Leere und taucht ab?

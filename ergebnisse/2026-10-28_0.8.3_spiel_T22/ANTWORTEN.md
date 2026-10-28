@@ -11,3 +11,5 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Frage 4: "ja er zerstört alles auf seinem weg, die kiste auf dem felsen bleibt heile, da die felsfläche sehr klein war kann ich nicht garantierent dass das pathfinding dem felsen wirklich ausgewichen ist"
 - Nachtrag Frage 4: "ja und ja" – Auto neben der Spur bleibt heil; Wurm fährt durch, ohne hängen zu bleiben.
 - Frage 5 (Ornithopter über dem Kopf, W12): nicht getestet. Max: "nicht geschafft" – er hat den Ablauf nicht verstanden (dachte, es gehe um die Holzkiste), der Wurm hatte schon gebissen, bevor er losflog. Muss in einem neuen T22-Lauf wiederholt werden. Hinweis für die Anleitung: die INFO zu Schritt 5 im Chat war offenbar nicht klar genug.
+- Beobachtung von Max (17:14): "sollte das spice feld auf dem felsen spawnen? der spawn beim testen war etwas unglücklich" – nicht geklärt, ob Testfläche oder echte Karte und was genau auf dem Fels lag.
+- Max hat T22 an dieser Stelle unterbrochen ("lass uns das später noch mal testen"). Offen: Schritte 5 (Ornithopter über dem Kopf) bis 9 sowie die Spice-auf-Fels-Beobachtung.
