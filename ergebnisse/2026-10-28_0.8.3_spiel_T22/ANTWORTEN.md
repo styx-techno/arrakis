@@ -25,3 +25,5 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Zweiter T22-Lauf (dritter Block "=== T22" in der Datei, ab etwa 18:24): Max ist direkt zu Schritt 5 gesprungen.
 - Frage 5 (Ornithopter über dem Kopf, W12): NEIN, "nein nichts davon" – kein Bremsen, kein Ruckeln, kein Schaden gespürt. Datei: Gesundheit durchgehend 3000; Tempo-Schwankungen (z. B. 2,5–8,05 Kacheln/s) stammen aus Max' eigener Steuerung (Schweben, Anhalten, Wegfliegen), Abstand zum Kopf bis 1,5 Kacheln.
 - Frage 6 (Rettung, zweiter Lauf): JA, von Max bestätigt ("Frage 6 ja") – der Wurm hält neben ihm, beißt ins Leere und taucht ab.
+- Frage 9 (Speichern und Laden, W5/W11): JA ("Frage 9 ja") – der Wurm taucht auf, fährt nach dem Laden weiter und beißt bei 0.
+- Damit sind alle Fragen 1–9 von T22 beantwortet (5 und 9 im zweiten Lauf). Alle ja; Anmerkungen siehe oben (Ton früher/lauter, eher Verschwinden als Abtauchen, Felsfläche zu klein, Zeitlimit 20 min zu knapp, Schritt-5-Anweisung unklar).

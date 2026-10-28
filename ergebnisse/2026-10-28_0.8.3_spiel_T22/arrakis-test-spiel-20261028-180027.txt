@@ -475,3 +475,73 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +143.8s: 6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.
 [T22] INFO +143.8s: 6) Rettung: Jagd 13, Biss bei 0 in 60 s
 [T22] FRAGE +203.9s: 6) Hält der Wurm neben dir, beißt ins Leere und taucht ab?
+[T22] INFO +235.4s: Schritt 7 von 9
+[T22] INFO +235.4s: 7) Wurm getötet (10 s nach dem Auftauchen): Jagd 14, Biss bei 0 in 60 s
+[T22] INFO +237.0s: Schritt 8 von 9
+[T22] FRAGE +237.0s: 8) Steht der Sandwurm in der Factoriopedia unter Gegner mit sandfarbenem Symbol, Name und Beschreibung?
+[T22] INFO +239.4s: Schritt 9 von 9
+[T22] INFO +239.4s: 9) Speichern und Laden (Lehrjagd 90 s): Jagd 15, Biss bei 0 in 90 s
+[T22] INFO +239.4s: 9) Planung (routing) nur von 36,2 s bis 41,2 s nach dem Wurmzeichen, davor warten. Speichere zwischen 37 und 40 s und lade; nach dem Auftauchen (41,2 s) noch einmal speichern und laden.
+[T22] MESSUNG +269.4s: 9) 30 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +270.4s: 9) 31 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +271.4s: 9) 32 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +272.4s: 9) 33 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +273.4s: 9) 34 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +274.4s: 9) 35 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +275.4s: 9) 36 s: Phase warten, Kandidat –, spawn_tick nil, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +276.4s: 9) 37 s: Phase routing, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +277.4s: 9) 38 s: Phase routing, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +278.4s: 9) 39 s: Phase routing, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +279.4s: 9) 40 s: Phase routing, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +280.4s: 9) 41 s: Phase routing, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig –
+[T22] MESSUNG +281.4s: 9) 42 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +282.4s: 9) 43 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +283.4s: 9) 44 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +284.4s: 9) 45 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +285.4s: 9) 46 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +286.4s: 9) 47 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +287.4s: 9) 48 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +288.4s: 9) 49 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +289.4s: 9) 50 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +290.4s: 9) 51 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +291.4s: 9) 52 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +292.4s: 9) 53 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +293.4s: 9) 54 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +294.4s: 9) 55 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +295.4s: 9) 56 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +296.4s: 9) 57 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +297.4s: 9) 58 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +298.4s: 9) 59 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +299.4s: 9) 60 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +300.4s: 9) 61 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +301.4s: 9) 62 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +302.4s: 9) 63 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +303.4s: 9) 64 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +304.4s: 9) 65 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +305.4s: 9) 66 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +306.4s: 9) 67 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +307.4s: 9) 68 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +308.4s: 9) 69 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +309.4s: 9) 70 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +310.4s: 9) 71 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +311.4s: 9) 72 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +312.4s: 9) 73 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +313.4s: 9) 74 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +314.4s: 9) 75 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +315.4s: 9) 76 s: Phase anfahrt, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +316.4s: 9) 77 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +317.4s: 9) 78 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +318.4s: 9) 79 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +319.4s: 9) 80 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +320.4s: 9) 81 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +321.4s: 9) 82 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +322.4s: 9) 83 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +323.4s: 9) 84 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +324.4s: 9) 85 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +325.4s: 9) 86 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +326.4s: 9) 87 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +327.4s: 9) 88 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +328.4s: 9) 89 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] MESSUNG +329.4s: 9) 90 s: Phase angriff, Kandidat gewählt, spawn_tick 110020, Anfrage offen nein, Wurm gültig true
+[T22] INFO +329.7s: 9) W5 offen: beim Speichern war keine Anfrage offen (Zeitablauf deckt beide Fälle, Plan 4.5)
+[T22] FRAGE +329.7s: 9) Taucht der Wurm auf, fährt er nach dem Laden weiter und beißt bei 0?
