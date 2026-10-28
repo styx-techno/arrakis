@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.8
+Date: 2026-10-28
+  Changes:
+    - Ornithopter: Der getragene Ernter hängt jetzt sichtbar unter dem Rumpf statt darüber (Spieltest vom 28.10.2026). Sein Schatten liegt rechts unter ihm. Ein schon vor dem Update getragener Ernter behält bis zum nächsten Absetzen die alte Lage.
+    - Sandwurm, Abtauchen: Die Welle vom Kopf zum Schwanz ist nur noch dichter Sandstaub. Bisher kam an jedem zweiten Körperteil die kleine Eruption dazu, und das sah aus wie die Sterbe-Explosion eines Gegners. Auch am Kopf gibt es beim Abtauchen keine Eruption mehr, nur beim Auftauchen.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.7
 Date: 2026-10-28
   Modding:

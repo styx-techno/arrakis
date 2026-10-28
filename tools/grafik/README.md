@@ -4,6 +4,9 @@ Die Fahrzeuggrafiken entstehen aus Skripten: Blender baut das Modell aus einfach
 setzt die Bilder zu Spritesheets zusammen. Es braucht kein Blender-Programm, nur Python 3.11 mit den Modulen `bpy`
 (Blender als Python-Modul, `pip install bpy`) und `pillow`.
 
+`szene.py` enthält, was alle Modelle teilen: Materialien, Grundformen (`box`, `cyl`, `slab`), Licht, Kamera und das
+Rendern je Modus. Ein Modellskript ruft `szene.start(...)`, baut seine Teile und ruft `szene.render(...)`.
+
 ## Spice-Ernter (ab 0.8.5)
 
 ```
@@ -28,3 +31,8 @@ Festlegungen, an denen `prototypes/harvester.lua` und das Lastbild in `prototype
 - Rumpf und Farbmaske: 6 Kacheln zu 64 px (384 px, im Spiel `scale = 0.5`). Schatten: 8 Kacheln zu 32 px (256 px,
   `scale = 1`). Die Farbmaske zeigt Seitenschürzen und Rückenplatten in Spielerfarbe.
 - Farben in Standard-sRGB (`view_transform = "Standard"`); Blenders Vorgabe AgX wäscht sie aus.
+
+## Ornithopter (Entwurf, noch nicht im Spiel)
+
+`ornithopter-modell.py` baut einen schlanken Rumpf mit Kanzel, zwei Flügelpaaren, Triebwerken und Greifklauen. Der
+Rumpf sitzt mit seiner Mitte im Ursprung (Rumpfpunkt des Fahrzeugs); Aufrufe wie beim Ernter.

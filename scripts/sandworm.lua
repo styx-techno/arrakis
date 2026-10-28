@@ -233,7 +233,8 @@ end
 
 -- Staub an jedem vierten Knoten (feste Versätze aus Tick und Knotennummer, Muster scripts/vibration.lua), Effekt und
 -- Rumpeln am Kopf (Plan 4.6 Schritt 4).
-local function surface_effects(surface, nodes, tick)
+-- burst: die Eruption am Kopf (nur beim Auftauchen; beim Abtauchen sah sie im Spiel aus wie eine Explosion, 28.10.2026).
+local function surface_effects(surface, nodes, tick, burst)
   for i = 1, #nodes, lib.BODY_STEP do
     local node = nodes[i]
     for j = 1, lib.DUST_PER_NODE do
@@ -243,7 +244,7 @@ local function surface_effects(surface, nodes, tick)
     end
   end
   local head = nodes[1]
-  surface.create_entity{name = DIVE, position = head}
+  if burst then surface.create_entity{name = DIVE, position = head} end
   surface.play_sound{path = RUMBLE, position = head}
 end
 
@@ -279,12 +280,14 @@ end
 
 -- Staub und Effekt an jedem zweiten Knoten von first bis last (Welle beim Abtauchen, 0.8.4).
 local function dive_wave(surface, nodes, first, last, tick)
-  for i = first, math.min(last, #nodes), 2 do
+  -- Nur Sandstaub, dicht an jedem Knoten. Bis 0.8.7 kam hier an jedem zweiten Knoten die Eruption dazu; im Spiel sah
+  -- das aus wie die Sterbe-Explosion eines Gegners (Max, 28.10.2026).
+  for i = first, math.min(last, #nodes) do
     local node = nodes[i]
-    surface.create_entity{name = DIVE, position = node}
-    for j = 1, lib.DUST_PER_NODE do
+    for j = 1, lib.DUST_PER_NODE + 1 do
       local angle = math.rad((tick * 11 + i * 37 + j * 97) % 360)
-      surface.create_trivial_smoke{name = DUST, position = {x = node.x + math.cos(angle), y = node.y + math.sin(angle)}}
+      local d = 0.4 + ((tick * 7 + i * 13 + j * 29) % 4) * 0.3
+      surface.create_trivial_smoke{name = DUST, position = {x = node.x + d * math.cos(angle), y = node.y + d * math.sin(angle)}}
     end
   end
 end
@@ -303,7 +306,7 @@ function lib.dive(hunt, why, quiet)
   local unit = worm.unit
   if not (unit and unit.valid) then return false end
   if not quiet then
-    surface_effects(unit.surface, unit.get_body_nodes(), game.tick)
+    surface_effects(unit.surface, unit.get_body_nodes(), game.tick, false)
     if lib.DIVE_TICKS > 0 and storage.worm_dives then
       unit.speed = 0
       table.insert(storage.worm_dives, {unit = unit, start = game.tick, wave = 0})
@@ -755,7 +758,7 @@ local function spawn(hunt, tick, force)
   unit.speed = lib.V / 60
   unit.set_ai_state{type = defines.segmented_unit_ai_state.investigating, destination = {x = dest.x, y = dest.y}}
   hunt.phase = "anfahrt"
-  surface_effects(surface, nodes, tick)
+  surface_effects(surface, nodes, tick, true)
   surface.play_sound{path = ROAR, position = head}
 end
 
