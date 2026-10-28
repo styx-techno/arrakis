@@ -20,3 +20,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-28 18:00 | 0.8.3 | 4db08ed | T22 im Spiel, mit Max' Antworten (ergebnisse/2026-10-28_0.8.3_spiel_T22) |
 | 2026-10-28 18:5x | 0.8.5 | 037b27d | 2 (lädt nicht: Item "spice-harvester" ohne icon) |
 | 2026-10-28 20:22 | 0.8.6 | 7bde40a | 1 (FEHLER in T19 Schritt 2: tank-remnants 0 → 0) |
+| 2026-10-28 20:35 | 0.8.7 | 151a2c1 | 0 (kein FEHLER) |
