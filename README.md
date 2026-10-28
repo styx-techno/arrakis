@@ -22,3 +22,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-28 20:22 | 0.8.6 | 7bde40a | 1 (FEHLER in T19 Schritt 2: tank-remnants 0 → 0) |
 | 2026-10-28 20:35 | 0.8.7 | 151a2c1 | 0 (kein FEHLER) |
 | 2026-10-28 19:39 | 0.8.7 | 151a2c1 | Spiel-Feedback: Ernter-Lastbild noch über dem Ornithopter, Wurm-Ton gut (ergebnisse/2026-10-28_0.8.7_spiel) |
+| 2026-10-28 20:56 | 0.8.8 | 5a954d8 | 0 (kein FEHLER) |
