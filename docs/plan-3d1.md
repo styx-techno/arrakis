@@ -623,7 +623,7 @@ Der Wurmbiss ist ein Sterben ohne Schadensart: Resistenzen spielen keine Rolle, 
 | V17 | Der eigene `trivial-smoke` erscheint mit `create_trivial_smoke` | T20 Schritt 2 | `create_entity` einer Explosion ohne Schaden |
 | V18 | `mod_gui.get_frame_flow` gibt es unverändert in 2.1.23 | T20 Schritt 1; datastage lädt `control.lua` nicht | `player.gui.left` direkt |
 | V19 | Ein Ernter, dem `health` geschrieben wird, behält danach `disabled_by_script = false` und fährt | T19 Schritt 3 | `harvester.to_mobile` nach dem Schreiben noch einmal |
-| V20 | `die()` am Ernter hinterlässt `tank-remnants` | T19 Schritt 2 (Zahl der Leichen) | Wrack per `create_entity{name = "tank-remnants"}` |
+| V20 | `die()` am Ernter hinterlässt `tank-remnants` (ab 0.8.5 `big-remnants`, eigene Grafik) | T19 Schritt 2 (Zahl der Leichen) | Wrack per `create_entity{name = "tank-remnants"}` |
 | V21 | `merge_forces` mit der Sandwurm-Force läuft fehlerfrei | T19 Schritt 10 | Force bleiben lassen, nur Feindschaft lassen |
 | V22 | Ein Spidertron als Ziel: `has_sand_under` an seiner Körperbox sagt, ob er im Sand steht | T19 Schritt 5 (MESSUNG), Abnahme | Prüfen an der Position statt an der Box |
 

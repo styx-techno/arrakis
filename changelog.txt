@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.7
+Date: 2026-10-28
+  Modding:
+    - Prüfstand T19 Schritt 2 (Lehrjagd mit Biss): Der Test zählte das Wrack des Ernters fest als tank-remnants und fiel im Lauf vom 28.10.2026 (0.8.6) deshalb durch, obwohl die Jagd richtig lief. Seit 0.8.5 hinterlässt der Ernter big-remnants; der Test liest den Namen jetzt aus dem Prototyp.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.6
 Date: 2026-10-28
   Bugfixes:

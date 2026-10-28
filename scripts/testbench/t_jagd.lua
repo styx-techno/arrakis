@@ -1673,7 +1673,10 @@ function t19_steps.s2_build(run, tb, d, s)
   for _, list in ipairs({s.dead, s.alive}) do
     for _, entry in ipairs(list) do s.health[entry.un] = entry.entity.health end
   end
-  s.remnants0 = surface.count_entities_filtered{name = "tank-remnants", area = s.box}
+  -- Wrack des Ernters aus seinem Prototyp (ab 0.8.5 big-remnants statt tank-remnants).
+  local proto = prototypes.entity[s.car.name]
+  s.wreck = proto and proto.corpses and next(proto.corpses) or "big-remnants"
+  s.remnants0 = surface.count_entities_filtered{name = s.wreck, area = s.box}
   local ok, reason = deploy(s.car)
   if not ok then return fail(run, tb, 2, "Aufbauen ging nicht: " .. tostring(reason)) end
   return 1
@@ -1764,8 +1767,8 @@ function t19_steps.s2_after(run, tb, d, s)
     check(failed, ok, entry.label .. " gestorben")
     if ok then table.insert(living, entry.label) end
   end
-  local remnants = surface.count_entities_filtered{name = "tank-remnants", area = s.box}
-  check(failed, remnants == s.remnants0 + 1, "tank-remnants " .. s.remnants0 .. " → " .. remnants .. " statt eine mehr")
+  local remnants = surface.count_entities_filtered{name = s.wreck, area = s.box}
+  check(failed, remnants == s.remnants0 + 1, s.wreck .. " " .. s.remnants0 .. " → " .. remnants .. " statt eine mehr")
   local items = surface.count_entities_filtered{type = "item-entity", position = s.c, radius = 6}
   check(failed, items == 0, items .. " Items am Boden im Radius 6")
   check(failed, nine_zero(surface, hunt.origin_key), "9 Chunks um den Ursprung nicht 0")
