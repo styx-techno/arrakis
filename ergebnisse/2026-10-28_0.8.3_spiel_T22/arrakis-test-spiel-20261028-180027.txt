@@ -408,3 +408,69 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +1149.4s: Schritt 8 von 9
 [T22] FRAGE +1149.4s: 8) Steht der Sandwurm in der Factoriopedia unter Gegner mit sandfarbenem Symbol, Name und Beschreibung?
 [T22] ENDE +1199.0s: 20 min um: Schritt 8, 7 Jagden (OK 0, FEHLER 0, FRAGE 9, 1199.0 s)
+
+=== T22 Sandwurm: Optik und Laden | Tick 93179 | Arrakis 0.8.3 | base 2.1.23 | Spieler styx.techno ===
+[T22] INFO +0.0s: Start: Sandwurm: Optik und Laden
+[T22] INFO +0.0s: Zeitraffer: game.speed 1 (aus)
+[T22] INFO +0.0s: Neun Schritte mit dem echten Sandwurm und deiner Force (player, wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten, nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach 20 min Spielzeit oder mit /arrakis-test stop. Bitte vorher /arrakis-test tempo 1.
+[T22] INFO +0.0s: Schritt 1 von 9
+[T22] INFO +0.0s: 1) Auftauchen 60 Kacheln östlich von dir in 2 s: Jagd 9, Biss bei 0 in 60 s
+[T22] FRAGE +2.0s: 1) Siehst du den Wurm auftauchen (Staub, Rumpeln)? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?
+[T22] INFO +10.1s: Schritt 2 von 9
+[T22] INFO +10.1s: 2) Warte auf den Biss der Jagd aus Schritt 1; die FRAGE kommt danach.
+[T22] INFO +23.8s: Schritt 3 von 9
+[T22] INFO +23.8s: 3) Felsinsel zwischen Wurm und Kiste (Insel östlich des Ursprungs): Jagd 10, Biss bei 0 in 60 s
+[T22] INFO +46.1s: Schritt 4 von 9
+[T22] INFO +46.1s: 4) Zerdrücken: Band, Kisten und ein Auto auf der Linie, ein Auto 6 Kacheln daneben, eine Kiste auf Fels: Jagd 11, Biss bei 0 in 60 s
+[T22] INFO +64.9s: Schritt 5 von 9
+[T22] INFO +64.9s: 5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf, fährt nach Osten), schwebe über dem fahrenden Kopf, halt an, dann flieg voll nach Westen über den Körper weg.
+[T22] INFO +64.9s: 5) Ornithopter über dem Kopf [W12]: Jagd 12, Biss bei 0 in 60 s
+[T22] MESSUNG +81.0s: 5) Ornithopter Tempo 4.95 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 61.4, zum nächsten Körperknoten 59.8
+[T22] MESSUNG +82.0s: 5) Ornithopter Tempo 8.12 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 56.7, zum nächsten Körperknoten 55.4
+[T22] MESSUNG +83.0s: 5) Ornithopter Tempo 7.53 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 52.7, zum nächsten Körperknoten 51.9
+[T22] MESSUNG +84.0s: 5) Ornithopter Tempo 7.78 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 48.2, zum nächsten Körperknoten 47.7
+[T22] MESSUNG +85.0s: 5) Ornithopter Tempo 7.56 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 44.2, zum nächsten Körperknoten 44.0
+[T22] MESSUNG +86.0s: 5) Ornithopter Tempo 7.46 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 38.4, zum nächsten Körperknoten 38.3
+[T22] MESSUNG +87.0s: 5) Ornithopter Tempo 7.48 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 32.1, zum nächsten Körperknoten 31.9
+[T22] MESSUNG +88.0s: 5) Ornithopter Tempo 7.54 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 26.5, zum nächsten Körperknoten 26.4
+[T22] MESSUNG +89.0s: 5) Ornithopter Tempo 7.83 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 20.3, zum nächsten Körperknoten 20.3
+[T22] MESSUNG +90.0s: 5) Ornithopter Tempo 7.63 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 14.0, zum nächsten Körperknoten 14.0
+[T22] MESSUNG +91.0s: 5) Ornithopter Tempo 7.63 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 7.3, zum nächsten Körperknoten 6.6
+[T22] MESSUNG +92.0s: 5) Ornithopter Tempo 7.17 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 4.1, zum nächsten Körperknoten 0.2
+[T22] MESSUNG +93.0s: 5) Ornithopter Tempo 7.93 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 7.0, zum nächsten Körperknoten 6.0
+[T22] MESSUNG +94.0s: 5) Ornithopter Tempo 7.70 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 9.8, zum nächsten Körperknoten 9.8
+[T22] MESSUNG +95.0s: 5) Ornithopter Tempo 8.19 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 10.6, zum nächsten Körperknoten 10.6
+[T22] MESSUNG +96.0s: 5) Ornithopter Tempo 7.74 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 12.4, zum nächsten Körperknoten 12.4
+[T22] MESSUNG +97.0s: 5) Ornithopter Tempo 7.75 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 14.5, zum nächsten Körperknoten 14.5
+[T22] MESSUNG +98.0s: 5) Ornithopter Tempo 7.43 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 17.4, zum nächsten Körperknoten 17.4
+[T22] MESSUNG +99.0s: 5) Ornithopter Tempo 8.01 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 21.4, zum nächsten Körperknoten 21.4
+[T22] MESSUNG +100.0s: 5) Ornithopter Tempo 7.53 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 24.5, zum nächsten Körperknoten 24.5
+[T22] MESSUNG +101.0s: 5) Ornithopter Tempo 7.78 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 28.5, zum nächsten Körperknoten 28.5
+[T22] MESSUNG +102.0s: 5) Ornithopter Tempo 7.37 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 31.1, zum nächsten Körperknoten 31.1
+[T22] MESSUNG +103.0s: 5) Ornithopter Tempo 7.75 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 35.1, zum nächsten Körperknoten 35.1
+[T22] MESSUNG +104.0s: 5) Ornithopter Tempo 7.58 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 38.8, zum nächsten Körperknoten 38.8
+[T22] MESSUNG +105.0s: 5) Ornithopter Tempo 7.43 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 43.1, zum nächsten Körperknoten 43.1
+[T22] MESSUNG +106.0s: 5) Ornithopter Tempo 8.06 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 46.7, zum nächsten Körperknoten 46.7
+[T22] MESSUNG +107.0s: 5) Ornithopter Tempo 3.61 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 48.6, zum nächsten Körperknoten 48.6
+[T22] MESSUNG +108.0s: 5) Ornithopter Tempo 0.00 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 46.3, zum nächsten Körperknoten 46.3
+[T22] MESSUNG +109.0s: 5) Ornithopter Tempo 0.00 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 43.4, zum nächsten Körperknoten 43.4
+[T22] MESSUNG +110.0s: 5) Ornithopter Tempo 0.00 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 39.4, zum nächsten Körperknoten 39.4
+[T22] MESSUNG +111.0s: 5) Ornithopter Tempo 0.00 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 38.0, zum nächsten Körperknoten 38.0
+[T22] MESSUNG +112.0s: 5) Ornithopter Tempo 0.00 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 35.0, zum nächsten Körperknoten 35.0
+[T22] MESSUNG +113.0s: 5) Ornithopter Tempo 4.55 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 33.6, zum nächsten Körperknoten 33.6
+[T22] MESSUNG +114.0s: 5) Ornithopter Tempo 6.34 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 36.6, zum nächsten Körperknoten 36.6
+[T22] MESSUNG +115.0s: 5) Ornithopter Tempo 3.59 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 33.7, zum nächsten Körperknoten 33.7
+[T22] MESSUNG +116.0s: 5) Ornithopter Tempo 8.38 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 24.9, zum nächsten Körperknoten 24.9
+[T22] MESSUNG +117.0s: 5) Ornithopter Tempo 8.05 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 15.5, zum nächsten Körperknoten 15.5
+[T22] MESSUNG +118.0s: 5) Ornithopter Tempo 7.49 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 5.2, zum nächsten Körperknoten 5.2
+[T22] MESSUNG +119.0s: 5) Ornithopter Tempo 2.50 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 2.2, zum nächsten Körperknoten 0.5
+[T22] MESSUNG +120.0s: 5) Ornithopter Tempo 3.23 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 1.5, zum nächsten Körperknoten 0.9
+[T22] MESSUNG +121.0s: 5) Ornithopter Tempo 7.15 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 4.2, zum nächsten Körperknoten 2.3
+[T22] MESSUNG +122.0s: 5) Ornithopter Tempo 7.68 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 9.4, zum nächsten Körperknoten 9.0
+[T22] MESSUNG +123.0s: 5) Ornithopter Tempo 3.69 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 14.7, zum nächsten Körperknoten 14.5
+[T22] MESSUNG +124.0s: 5) Ornithopter Tempo 4.24 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 15.7, zum nächsten Körperknoten 14.5
+[T22] MESSUNG +125.0s: 5) Ornithopter Tempo 1.37 Kacheln/s, Gesundheit 3000, Abstand zum Kopf 17.7, zum nächsten Körperknoten 14.6
+[T22] FRAGE +125.0s: 5) Merkst du ein Bremsen, Ruckeln oder Schaden?
+[T22] INFO +143.8s: Schritt 6 von 9
+[T22] INFO +143.8s: 6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.
+[T22] INFO +143.8s: 6) Rettung: Jagd 13, Biss bei 0 in 60 s
