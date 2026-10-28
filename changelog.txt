@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.4
+Date: 2026-10-28
+  Changes:
+    - Sandwurm, Ton: Er ist früher und lauter zu hören. Gut 3 s vor dem Auftauchen rumpelt es an der Stelle, beim Auftauchen brüllt er (Klänge des Demolishers), und sein Fahrgeräusch ist doppelt so laut und doppelt so weit hörbar. Rückmeldung aus T22 am 28.10.2026: „er dürfte früher oder mehr zu hören sein“.
+    - Sandwurm, Abtauchen: Er verschwindet nicht mehr auf einmal. Nach dem Biss (und bei jedem anderen Abtauchen) bleibt er stehen, und in 1 s läuft eine Welle aus Staub und Sandfontänen vom Kopf bis zum Schwanz, erst dann ist er weg. Rückmeldung aus T22: „er ist mehr despawnt als abgetaucht“. Ein abtauchender Wurm zerdrückt nichts mehr und gehört zu keiner Jagd.
+  Modding:
+    - Prüfstand T22: Zeitlimit 45 statt 20 min Spielzeit (der Lauf am 28.10.2026 lief in Schritt 8 ab). Schritt 4 sagt per INFO, dass der Felsfleck neben der Spur liegt und der Wurm ihm nicht ausweichen muss. Schritt 5 sagt klarer, dass die Kiste nur der Köder ist und der Ornithopter getestet wird, und gibt 90 statt 60 s. Schritt 6 stellt Ernter und Spicefeld ganz auf Sand (bis 30 Kacheln von dir), am 28.10. lagen sie an der Felsinsel. Die Fragen in Schritt 1 und 2 nennen Rumpeln, Brüllen und die Abtauch-Welle.
+    - Prüfstand T21: Der Biss-Takt prüft das Ende des Abtauchens (bis DIVE_TICKS + 10 Ticks danach) statt Zerstören im selben Takt; Wurm-Zählungen lassen abtauchende Würmer aus.
+    - scripts/sandworm.lua: lib.PRE_RUMBLE = 180, lib.DIVE_TICKS = 60, Warteschlange storage.worm_dives mit dive_takt, flush_dives und diving; sweep leert sie zuerst. Neue Klänge arrakis-worm-rumble und arrakis-worm-roar. Die Migration legt storage.worm_dives an, das Schema bleibt 4.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.3
 Date: 2026-10-27
   Modding:

@@ -464,11 +464,25 @@ local function log_entry(id)
   return nil
 end
 
--- Würmer unseres Prototyps (arrakis-sandworm-*) mit einem Knoten in box.
+-- Abtauchen ab tick (seit 0.8.4 als Welle über sandworm.DIVE_TICKS): ein segmented_unit_destroyed von tick bis
+-- tick + DIVE_TICKS + 10, oder die Einheit taucht noch ab.
+local function dived_after(ev, un, tick)
+  if #ev.destroyed == 1 then
+    return tick ~= nil and ev.destroyed[1] >= tick and ev.destroyed[1] <= tick + sandworm_lib.DIVE_TICKS + 10
+  end
+  if #ev.destroyed > 1 then return false end
+  for _, entry in ipairs(storage.worm_dives or {}) do
+    if entry.unit and entry.unit.valid and entry.unit.unit_number == un then return true end
+  end
+  return false
+end
+
+-- Würmer unseres Prototyps (arrakis-sandworm-*) mit einem Knoten in box; abtauchende (ab 0.8.4, noch höchstens
+-- sandworm.DIVE_TICKS sichtbar) zählen nicht.
 local function sandworms_in(surface, box)
   local n = 0
   for _, unit in pairs(surface.get_segmented_units()) do
-    if unit.valid and unit.prototype.name:sub(1, #PREFIX) == PREFIX then
+    if unit.valid and unit.prototype.name:sub(1, #PREFIX) == PREFIX and not sandworm_lib.diving(unit) then
       for _, node in pairs(unit.get_body_nodes()) do
         if inside(box, node) then
           n = n + 1
@@ -480,11 +494,11 @@ local function sandworms_in(surface, box)
   return n
 end
 
--- Würmer unseres Prototyps auf der Oberfläche.
+-- Würmer unseres Prototyps auf der Oberfläche, ohne abtauchende.
 local function sandworms_on(surface)
   local n = 0
   for _, unit in pairs(surface.get_segmented_units()) do
-    if unit.valid and unit.prototype.name:sub(1, #PREFIX) == PREFIX then n = n + 1 end
+    if unit.valid and unit.prototype.name:sub(1, #PREFIX) == PREFIX and not sandworm_lib.diving(unit) then n = n + 1 end
   end
   return n
 end
@@ -1318,8 +1332,8 @@ function steps.s2_eval(run, tb, d, s)
   check(failed, dead == 5, "im Biss-Takt " .. dead .. " von 5 tot (H1 und vier Kisten)")
   local ev = unit_events(d, w.un)
   check(failed, #ev.died == 0, #ev.died .. " segmented_unit_died")
-  check(failed, #ev.destroyed == 1 and ev.destroyed[1] == bite_tick, #ev.destroyed .. " segmented_unit_destroyed (" ..
-    tostring(ev.destroyed[1] and rel(ev.destroyed[1], w.eta)) .. ") statt eines im Biss-Takt")
+  check(failed, dived_after(ev, w.un, bite_tick), #ev.destroyed .. " segmented_unit_destroyed (" ..
+    tostring(ev.destroyed[1] and rel(ev.destroyed[1], w.eta)) .. ") statt eines vom Biss-Takt bis zum Ende des Abtauchens")
   check(failed, w.worm_gone and takt(w.worm_gone) == bite_tick, "Wurm nicht im Biss-Takt weg (" .. rel(w.worm_gone, w.eta) .. ")")
   no_corpse(run, tb, s, w)
   check(failed, e.phase == "angriff" and e.outcome == "bitten", "Protokoll: Phase " .. tostring(e.phase) .. ", Ergebnis " .. tostring(e.outcome))
@@ -2009,7 +2023,7 @@ function steps.s9_eval(run, tb, d, s)
   check(failed, (storage.hunts.ersatz or 0) == s.ersatz0 + 1, "storage.hunts.ersatz " .. s.ersatz0 .. " → " .. tostring(storage.hunts.ersatz))
   check(failed, e.bite_dist and e.bite_dist > w.R, "Abstand beim Ersatzbiss " .. tb.num(e.bite_dist, 2) .. " nicht > R")
   local ev = unit_events(d, w.un)
-  check(failed, #ev.destroyed == 1 and ev.destroyed[1] == e.bite_tick, "Wurm nicht im Biss-Takt abgetaucht")
+  check(failed, dived_after(ev, w.un, e.bite_tick), "Wurm nicht ab dem Biss-Takt abgetaucht")
   check(failed, w.spawn_tick == w.eta - ERSATZ_SPAWN, "Spawn " .. rel(w.spawn_tick, w.eta) .. " statt eta − 840")
   general(run, tb, d, s, w)
   tb.log(run, "MESSUNG", string.format("9) %s, Abstand beim Ersatzbiss %s Kacheln", sprint_text(tb, w), tb.num(e.bite_dist, 2)))
@@ -2401,7 +2415,10 @@ function steps.s15_uninstall(run, tb, d, s)
   for _, hunt in pairs(storage.hunts.list) do if hunt.worm then owned[hunt.worm.un] = true end end
   for _, surface in pairs(game.surfaces) do
     for _, unit in pairs(surface.get_segmented_units()) do
-      if unit.valid and not owned[unit.unit_number] and unit.prototype.name:sub(1, #PREFIX) == PREFIX then m_exp = m_exp + 1 end
+      if unit.valid and not owned[unit.unit_number] and unit.prototype.name:sub(1, #PREFIX) == PREFIX
+          and not sandworm_lib.diving(unit) then
+        m_exp = m_exp + 1
+      end
     end
   end
   local n, m = worms_lib.uninstall()
@@ -2641,7 +2658,8 @@ end
 
 local T22_HALF = 250
 local T22_LAST = 9
-local T22_END_TICKS = 20 * 60 * 60 - 60
+-- 0.8.4: 45 statt 20 min Spielzeit (am 28.10.2026 lief T22 mit Erklärungen in Schritt 8 ab).
+local T22_END_TICKS = 45 * 60 * 60 - 60
 local T22_ISLAND = {dx1 = 40, dx2 = 79, dy1 = -20, dy2 = 19}
 
 local t22_enter = {}
@@ -2685,13 +2703,13 @@ t22_watch[1] = function(run, tb, d)
   if not hunt then return end
   if hunt.worm and not d.cur.asked then
     d.cur.asked = true
-    t22_ask(run, tb, d, "Siehst du den Wurm auftauchen (Staub, Rumpeln)? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?")
+    t22_ask(run, tb, d, "Hörst du gut 3 s vorher ein Rumpeln, und siehst du den Wurm mit Brüllen und Staub auftauchen? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?")
   end
   if storage.hunts.list[hunt.id] ~= hunt and not d.cur.done then
     d.cur.done = true
     d.step = 2
     tb.log(run, "INFO", "Schritt 2 von " .. T22_LAST)
-    t22_ask(run, tb, d, "Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach mit Staub und Rumpeln ab?")
+    t22_ask(run, tb, d, "Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach in 1 s vom Kopf bis zum Schwanz im Staub ab, statt auf einmal zu verschwinden?")
   end
 end
 
@@ -2746,6 +2764,9 @@ t22_enter[4] = function(run, tb, d)
   if not chest then return tb.log(run, "FEHLER", "4) Kiste ließ sich nicht bauen") end
   t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, y), direction = defines.direction.east}},
     "Zerdrücken: Band, Kisten und ein Auto auf der Linie, ein Auto 6 Kacheln daneben, eine Kiste auf Fels")
+  -- 0.8.4: Max fragte am 28.10.2026, ob der Wurm dem Felsfleck auswich; das muss er hier nicht.
+  tb.log(run, "INFO", "4) Der kleine Felsfleck liegt 2 Kacheln neben der Spur: Ausweichen muss der Wurm nicht. Die Kiste darauf liegt im"
+    .. " Zerdrückradius und bleibt nur heil, weil der Wurm auf Fels nichts zerstört. Das Ausweichen zeigt Schritt 3.")
 end
 
 t22_watch[4] = function(run, tb, d)
@@ -2765,8 +2786,11 @@ t22_enter[5] = function(run, tb, d)
   d.flyer = valid(d.flyer) and d.flyer or new_flyer(run, tb, d, d.made, at(base, 4, 0), {force = d.force, coal = 50})
   local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, 120), force = d.force})
   if not chest then return tb.log(run, "FEHLER", "5) Kiste ließ sich nicht bauen") end
-  tb.log(run, "INFO", "5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf, fährt nach Osten), schwebe über dem fahrenden Kopf, halt an, dann flieg voll nach Westen über den Körper weg.")
-  t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, 120), direction = defines.direction.east}},
+  -- 0.8.4 (T22 am 28.10.2026): Aufgabe klarer, 90 statt 60 s; die Kiste ist nur Köder.
+  tb.log(run, "INFO", "5) Die Kiste ist nur der Köder, sie wird gebissen. Getestet wird der Ornithopter neben dir: Steig sofort ein"
+    .. " und flieg zum Wurm (er taucht 160 Kacheln westlich der Kiste auf und fährt nach Osten), schwebe über dem fahrenden"
+    .. " Kopf, halt an, dann flieg voll nach Westen über den Körper weg. Du hast 90 s bis zum Biss.")
+  t22_hunt(run, tb, d, chest, {seconds = 90, debug = true, spawn = {position = at(o, -60, 120), direction = defines.direction.east}},
     "Ornithopter über dem Kopf [W12]")
 end
 
@@ -2801,7 +2825,25 @@ t22_enter[6] = function(run, tb, d)
   local base = t22_base(d)
   local player = tb.player(run)
   if player and player.physical_surface.index == tb.surface().index then base = player.physical_position end
-  local car = new_harvester(run, tb, d, d.made, at(base, 10, 0), {force = d.force, coal = 20, field = 1000})
+  -- Platz für Ernter und Spice-Teppich (13 × 13) ganz auf Sand nahe base (0.8.4: am 28.10.2026 lag er neben der
+  -- Felsinsel auf Fels).
+  local surface = tb.surface()
+  local spot
+  for _, offset in ipairs({{10, 0}, {-10, 0}, {0, 10}, {0, -10}, {20, 0}, {-20, 0}, {0, 20}, {0, -20}, {30, 0}, {-30, 0}}) do
+    local c = at(base, offset[1], offset[2])
+    local ok = true
+    for dx = -8, 8, 2 do
+      for dy = -8, 8, 2 do
+        if ok and not sand_at(surface, c.x + dx, c.y + dy) then ok = false end
+      end
+    end
+    if ok then
+      spot = c
+      break
+    end
+  end
+  if not spot then return tb.log(run, "FEHLER", "6) Kein freier Sand neben dir für den Ernter; geh ein Stück weg von der Felsinsel") end
+  local car = new_harvester(run, tb, d, d.made, spot, {force = d.force, coal = 20, field = 1000})
   if not car then return tb.log(run, "FEHLER", "6) Ernter ließ sich nicht bauen") end
   deploy(car)
   tb.log(run, "INFO", "6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.")
@@ -2938,7 +2980,7 @@ local function t22_start(run, tb)
   d.max_pos = at(d.origin, -60, 60)
   tb.watch(run, player, d.max_pos)
   tb.log(run, "INFO", "Neun Schritte mit dem echten Sandwurm und deiner Force (" .. force.name .. ", wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten,"
-    .. " nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach 20 min Spielzeit oder mit /arrakis-test stop."
+    .. " nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach " .. (T22_END_TICKS + 60) / 3600 .. " min Spielzeit oder mit /arrakis-test stop."
     .. " Bitte vorher /arrakis-test tempo 1.")
   if game.speed ~= 1 then
     tb.log(run, "INFO", "Zeitraffer an (game.speed " .. string.format("%g", game.speed) .. "): zurück mit /arrakis-test tempo 1")
@@ -2958,7 +3000,7 @@ local function t22_tick(run, tb)
   end
   if game.tick - run.started >= T22_END_TICKS then
     d.done_all = true
-    tb.finish(run, string.format("20 min um: Schritt %d, %d Jagden", d.step, #d.hunts))
+    tb.finish(run, string.format("%d min um: Schritt %d, %d Jagden", (T22_END_TICKS + 60) / 3600, d.step, #d.hunts))
   end
 end
 
@@ -3007,7 +3049,7 @@ return
   T22 =
   {
     title = "Sandwurm: Optik und Laden",
-    timeout = 20 * 60 * 60,
+    timeout = T22_END_TICKS + 60,
     interactive = true,
     steps = true,
     confirm = nil,

@@ -89,6 +89,12 @@ for i = 1, 6 do
   roar[i] = {filename = "__space-age__/sound/enemies/demolisher/demolisher-roar-big-" .. i .. ".ogg", volume = 0.9}
 end
 
+-- Brüllen beim Auftauchen (0.8.4; V23 space-age/prototypes/entity/sounds.lua:468: demolisher-roar, 10 Stück).
+local surface_roar = {}
+for i = 1, 10 do
+  surface_roar[i] = {filename = "__space-age__/sound/enemies/demolisher/demolisher-roar-" .. i .. ".ogg", volume = 1.0}
+end
+
 data:extend({
   eruption,
   dust,
@@ -119,6 +125,26 @@ data:extend({
     filename = "__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg",
     volume = 0.6,
     audible_distance_modifier = 2
+  },
+
+  -- Rumpeln des Sandwurms (0.8.4): vor dem Auftauchen an der Stelle, beim Auf- und Abtauchen am Kopf. Lauter und weiter
+  -- hörbar als arrakis-rumble (T22 am 28.10.2026).
+  {
+    type = "sound",
+    name = "arrakis-worm-rumble",
+    category = "enemy",
+    filename = "__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg",
+    volume = 1.0,
+    audible_distance_modifier = 4
+  },
+
+  -- Brüllen beim Auftauchen (0.8.4).
+  {
+    type = "sound",
+    name = "arrakis-worm-roar",
+    category = "enemy",
+    variations = surface_roar,
+    audible_distance_modifier = 4
   },
 
   -- Vibrationsanzeige (A23 prototypes.d.ts:8900–8966): löst on_lua_shortcut aus, toggleable für

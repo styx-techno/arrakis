@@ -997,6 +997,8 @@ end
 -- id a. nachführen, b. sandworm.step, c. Zerdrücken, d. Biss-Fenster, e. Suche beenden. Die Sandwurm-Force holt der
 -- Takt einmal vor dem ersten step (docs/plan-3d2.md 1 „Force“).
 local function on_nth_tick_10(event)
+  -- Abtauchen läuft auch nach dem Ende der Jagd weiter (0.8.4).
+  sandworm_lib.dive_takt(event.tick)
   local list = storage.hunts.list
   if next(list) == nil then return end
   local tick = event.tick

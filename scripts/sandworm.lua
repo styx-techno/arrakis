@@ -106,11 +106,16 @@ lib.MEAN_TAKTS = 12
 lib.STAND_TAKTS = 2
 -- tidy löscht Anfragen, die mindestens so alt sind (Ticks).
 lib.TIDY_AGE = 600
+-- 0.8.4 (T22 am 28.10.2026): Rumpeln an der Spawnstelle so viele Ticks vor dem Auftauchen; Abtauchen als Welle vom Kopf
+-- zum Schwanz über DIVE_TICKS (10er-Takt), der Wurm steht dabei still und verschwindet erst am Ende unter dem Staub.
+lib.PRE_RUMBLE = 180
+lib.DIVE_TICKS = 60
 
 local ROCK = "arrakis-rock"
 local DUST = "arrakis-sand-dust"
 local DIVE = "arrakis-worm-dive"
-local RUMBLE = "arrakis-rumble"
+local RUMBLE = "arrakis-worm-rumble"
+local ROAR = "arrakis-worm-roar"
 local CHUNK = 32
 -- Halbe Diagonale, wenn das Ziel fehlt (Spice-Ernter, Plan 4.14).
 local DEFAULT_R = 1.58
@@ -272,9 +277,22 @@ function lib.forget(hunt)
   lib.drop_requests(hunt)
 end
 
--- Abtauchen (Plan 4.11): hunt.worm weg, Anfragen weg; eine gültige Einheit zeigt ohne quiet Staub, Effekt und Rumpeln und
--- verschwindet mit raise_destroy (keine Leiche, keine Beute, kein on_segmented_unit_died [W7]). hunt.dive bleibt stehen.
--- Gibt true zurück, wenn eine gültige Einheit zerstört wurde.
+-- Staub und Effekt an jedem zweiten Knoten von first bis last (Welle beim Abtauchen, 0.8.4).
+local function dive_wave(surface, nodes, first, last, tick)
+  for i = first, math.min(last, #nodes), 2 do
+    local node = nodes[i]
+    surface.create_entity{name = DIVE, position = node}
+    for j = 1, lib.DUST_PER_NODE do
+      local angle = math.rad((tick * 11 + i * 37 + j * 97) % 360)
+      surface.create_trivial_smoke{name = DUST, position = {x = node.x + math.cos(angle), y = node.y + math.sin(angle)}}
+    end
+  end
+end
+
+-- Abtauchen (Plan 4.11): hunt.worm weg, Anfragen weg; eine gültige Einheit zeigt ohne quiet Staub, Effekt und Rumpeln,
+-- bleibt stehen und verschwindet nach der Welle aus dive_takt (seit 0.8.4, storage.worm_dives) mit raise_destroy (keine
+-- Leiche, keine Beute, kein on_segmented_unit_died [W7]); mit quiet sofort. hunt.dive bleibt stehen.
+-- Gibt true zurück, wenn eine gültige Einheit abtaucht.
 function lib.dive(hunt, why, quiet)
   local worm = hunt.worm
   lib.drop_requests(hunt)
@@ -284,9 +302,64 @@ function lib.dive(hunt, why, quiet)
   hunt.dive = why
   local unit = worm.unit
   if not (unit and unit.valid) then return false end
-  if not quiet then surface_effects(unit.surface, unit.get_body_nodes(), game.tick) end
+  if not quiet then
+    surface_effects(unit.surface, unit.get_body_nodes(), game.tick)
+    if lib.DIVE_TICKS > 0 and storage.worm_dives then
+      unit.speed = 0
+      table.insert(storage.worm_dives, {unit = unit, start = game.tick, wave = 0})
+      return true
+    end
+  end
   unit.destroy{raise_destroy = true}
   return true
+end
+
+-- Welle der abtauchenden Würmer, aus dem 10-Tick-Takt von worms.lua (auch ohne Jagd): je Takt ein Abschnitt vom Kopf
+-- zum Schwanz, nach DIVE_TICKS Staub über den ganzen Körper und raise_destroy.
+function lib.dive_takt(tick)
+  local dives = storage.worm_dives
+  if not dives or #dives == 0 then return end
+  local waves = math.max(1, math.floor(lib.DIVE_TICKS / 10))
+  local keep = {}
+  for _, entry in ipairs(dives) do
+    local unit = entry.unit
+    if unit and unit.valid then
+      local nodes = unit.get_body_nodes()
+      entry.wave = entry.wave + 1
+      if entry.wave >= waves or tick - entry.start >= lib.DIVE_TICKS then
+        dive_wave(unit.surface, nodes, 1, #nodes, tick)
+        unit.destroy{raise_destroy = true}
+      else
+        local n = #nodes
+        dive_wave(unit.surface, nodes, math.floor(n * (entry.wave - 1) / waves) + 1, math.floor(n * entry.wave / waves), tick)
+        keep[#keep + 1] = entry
+      end
+    end
+  end
+  storage.worm_dives = keep
+end
+
+-- Abtauchende Würmer sofort entfernen (Waisen, Prüfstand, /arrakis-uninstall). Gibt die Zahl zurück.
+function lib.flush_dives()
+  local dives = storage.worm_dives
+  if not dives then return 0 end
+  local n = 0
+  for _, entry in ipairs(dives) do
+    if entry.unit and entry.unit.valid then
+      entry.unit.destroy{raise_destroy = true}
+      n = n + 1
+    end
+  end
+  storage.worm_dives = {}
+  return n
+end
+
+-- true, wenn die Einheit gerade abtaucht.
+function lib.diving(unit)
+  for _, entry in ipairs(storage.worm_dives or {}) do
+    if entry.unit == unit then return true end
+  end
+  return false
 end
 
 -- Jeder Wechsel auf ohne (Plan 4.3): ein vorhandener Wurm taucht ab (Grund dive_why oder why), Anfragen weg, Phase ohne,
@@ -683,12 +756,22 @@ local function spawn(hunt, tick, force)
   unit.set_ai_state{type = defines.segmented_unit_ai_state.investigating, destination = {x = dest.x, y = dest.y}}
   hunt.phase = "anfahrt"
   surface_effects(surface, nodes, tick)
+  surface.play_sound{path = ROAR, position = head}
 end
 
 local function routing(hunt, tick, force)
   local plan = hunt.plan
   if not plan.list then build(hunt, tick) end
   if plan.chosen then
+    -- Vorwarnung (0.8.4): Rumpeln und Staub an der Spawnstelle, einmal je gewähltem Kandidaten.
+    if plan.rumbled ~= plan.chosen and tick >= hunt.spawn_tick - lib.PRE_RUMBLE and tick < hunt.spawn_tick then
+      plan.rumbled = plan.chosen
+      local surface = game.get_surface(hunt.surface_index)
+      if surface then
+        surface.play_sound{path = RUMBLE, position = plan.chosen.position}
+        surface.create_trivial_smoke{name = DUST, position = plan.chosen.position}
+      end
+    end
     if tick >= hunt.spawn_tick then spawn(hunt, tick, force) end
     return
   end
@@ -1179,6 +1262,8 @@ end
 -- Waisen (Plan 4.14): Würmer unseres Prototyps ohne Jagd auf den Oberflächen (nil: alle) → raise_destroy. Testwürmer
 -- bleiben. Gibt die Zahl zurück.
 function lib.sweep(surfaces)
+  -- Abtauchende zuerst (0.8.4); sie zählen nicht als Waisen.
+  lib.flush_dives()
   local owned = {}
   for _, hunt in pairs(storage.hunts.list) do
     if hunt.worm and hunt.worm.un then owned[hunt.worm.un] = true end

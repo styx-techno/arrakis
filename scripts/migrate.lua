@@ -46,6 +46,7 @@
 --
 -- Schema 4 (0.8.0, Phase 3d2, docs/plan-3d2.md 4.2), dazu:
 --   storage.path_requests[request_id] = {hunt, kind = "plan"|"reroute", sent}: offene Pfad-Anfragen (scripts/sandworm.lua)
+--   storage.worm_dives[i] = {unit, start, wave}: abtauchende Würmer (ab 0.8.4, scripts/sandworm.lua dive_takt)
 --   storage.hunts           zusätzlich worm_off, spawn_dir (Prüfstand), log, log_next, ersatz (Protokoll)
 --   storage.hunts.list[id]  zusätzlich r, phase, no_worm, dive, zone, plan_tick, spawn_tick, d, plan, path, worm,
 --                           bite_tick, bite_dist, ersatz, last_worm, spawn_hook, spawn_dir
@@ -108,6 +109,8 @@ function migrate.init()
   storage.worm_stats = storage.worm_stats or {}
   -- Schema 4 (Phase 3d2)
   storage.path_requests = storage.path_requests or {}
+  -- 0.8.4: abtauchende Würmer (scripts/sandworm.lua dive_takt)
+  storage.worm_dives = storage.worm_dives or {}
   local hunts = storage.hunts
   hunts.worm_off = hunts.worm_off or {}
   hunts.spawn_dir = hunts.spawn_dir or {}

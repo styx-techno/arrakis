@@ -18,6 +18,12 @@ local SPEED = 3.5 / 60
 local PATROL_SPEED = 1 / 60
 local ENRAGED_TICKS = 60
 
+-- Lauter und weiter hörbar (0.8.4, T22 am 28.10.2026: „dürfte früher oder mehr zu hören sein“). Den kleinen Demolisher
+-- hört man am Kopf nur auf halbe Normalweite (V23 space-age/prototypes/entity/enemies.lua:549–557,
+-- audible_distance_modifier 0.5), Segmente und Schwanz mit Lautstärke 0.25 und 0.3 (V23 sounds.lua:494, :508).
+local VOLUME_FACTOR = 2
+local AUDIBLE_MIN = 2
+
 -- Bohrstaub: eigene Kopien in Sandfarbe (Plan 3 „Bohrstaub“), Vanilla teilt bei small-bottom die Farbe durch 1,6 bzw. 1,3.
 local SMOKES =
 {
@@ -123,6 +129,16 @@ local function rename(old_name)
   return NAME .. "-" .. old_name
 end
 
+-- Eine Sound-Tabelle (filename oder variations) lauter und weiter hörbar machen.
+local function louder(sound)
+  if type(sound) ~= "table" then return end
+  local parts = sound.variations or {sound}
+  for _, part in pairs(parts) do
+    if type(part) == "table" then part.volume = math.min(1, (part.volume or 1) * VOLUME_FACTOR) end
+  end
+  sound.audible_distance_modifier = math.max(sound.audible_distance_modifier or 1, AUDIBLE_MIN)
+end
+
 -- Gemeinsam für Kopf und Segmente: Effekte, Leiche, Tönung (Plan 3 „Segmente“: wie beim Kopf).
 local function prepare(prototype)
   prototype.update_effects = keep_wanted(prototype.update_effects)
@@ -131,6 +147,7 @@ local function prepare(prototype)
   prototype.factoriopedia_simulation = nil
   remove_loot(prototype)
   tint_layers(prototype.animation)
+  if type(prototype.working_sound) == "table" then louder(prototype.working_sound.sound or prototype.working_sound) end
 end
 
 -- Kopf (A23 prototypes.d.ts:8751; V23 space-age/prototypes/entity/enemies.lua:468, :6500) ---------------------------
