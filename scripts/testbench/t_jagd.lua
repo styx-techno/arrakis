@@ -468,13 +468,14 @@ local function new_vehicle(run, tb, s, name, position, opts)
   return vehicle
 end
 
--- Echter Ornithopter mit Kohle; opts.pilot setzt eine Puppe als Pilot.
+-- Echter Ornithopter mit Raketentreibstoff (ab 0.9.0 nur Flugtreibstoff, opts.rocket Stück); opts.pilot setzt eine
+-- Puppe als Pilot.
 local function new_flyer(run, tb, s, position, opts)
   opts = opts or {}
   local flyer = make(run, tb, s, {name = FLYER, position = position, force = opts.force, raise_built = true,
     create_build_effect_smoke = false}, "flyers")
   if not flyer then return nil end
-  tb.fuel(flyer, "coal", opts.coal or 10)
+  tb.fuel(flyer, "rocket-fuel", opts.rocket or 2)
   if opts.pilot then remember(s, tb.dummy_driver(flyer, opts.force)) end
   return flyer
 end
@@ -1893,7 +1894,7 @@ function t19_steps.s4_build(run, tb, d, s)
   if not s.car then return fail(run, tb, 4, "Aufbau ging nicht (Einzelheiten in der Datei)") end
   s.cars = {s.car}
   s.car_un = s.car.unit_number
-  s.flyer = new_flyer(run, tb, s, c, {force = d.force, pilot = true, coal = 20})
+  s.flyer = new_flyer(run, tb, s, c, {force = d.force, pilot = true, rocket = 4})
   if not s.flyer then return fail(run, tb, 4, "Ornithopter ließ sich nicht bauen") end
   local ok, reason = deploy(s.car)
   if not ok then return fail(run, tb, 4, "Aufbauen ging nicht: " .. tostring(reason)) end
@@ -2217,7 +2218,7 @@ function t5_build.f(run, tb, d, s, p)
   p.dest = {x = c.x + 30, y = c.y}
   keep_key(s, p.dest)
   p.car = t19_harvester(run, tb, d, s, c, {coal = 5})
-  p.flyer = new_flyer(run, tb, s, c, {force = d.force, pilot = true, coal = 20})
+  p.flyer = new_flyer(run, tb, s, c, {force = d.force, pilot = true, rocket = 4})
   if not (p.car and p.flyer) then return false end
   p.un = p.car.unit_number
   return true
@@ -3108,7 +3109,7 @@ t20_enter[4] = function(run, tb, d, player)
     return
   end
   heat_chunk(tb.surface(), d.main.position, 999)
-  d.flyer = new_flyer(run, tb, d.made, t20_spot(run, tb, d, -6, 4, FLYER), {force = d.force, coal = 20})
+  d.flyer = new_flyer(run, tb, d.made, t20_spot(run, tb, d, -6, 4, FLYER), {force = d.force, rocket = 4})
   tb.log(run, "FRAGE", "4) Je Zeichen ja/nein: Alarm unten rechts mit Wurmzeichen-Symbol, Kartenmarkierung, Warnton, roter Ring mit Sekunden,"
     .. " Zeile oben links, Status „Wurmzeichen! Biss in … s“? [V5, V8]")
   tb.log(run, "INFO", "4) Der Ornithopter für Schritt 5 steht neben dir. ALT+O oder /arrakis-test weiter für Schritt 5, solange der Countdown läuft.")

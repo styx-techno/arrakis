@@ -9,6 +9,7 @@
 -- Muss nach prototypes/harvester.lua laufen: Die Probe liest die Kollisionsmaske des Ernters (data.lua).
 local collision_mask_util = require("collision-mask-util")
 local speed = require("prototypes.ornithopter-speed")
+local compat = require("prototypes.compat")
 
 local ornithopter_gfx = "__arrakis__/graphics/entity/ornithopter/"
 
@@ -92,10 +93,13 @@ ornithopter.drawing_box_vertical_extension = 4
 -- Die Engine verbraucht den Treibstoff selbst (Spidertron: void). RUN055 T1: Leistung konstant ≈ 810 kW, mit oder ohne
 -- Sticker. Also 800 kW / 8 Kacheln/s = 100 kJ/Kachel leer und / 5,6 = 143 kJ beladen: Last kostet von selbst mehr, das
 -- Skript zieht nichts ab (Plan 1). 100 Kohle (400 MJ) reichen 500 s Flug.
+-- Ab 0.9.0 nur Flugtreibstoff: die eigene Kategorie, die data-final-fixes.lua Raketentreibstoff und allem Besseren
+-- gibt (prototypes/ornithopter-speed.lua). Kohle, Holz, Festbrennstoff und das Spice-Brikett passen nicht hinein.
+-- Vor 2.1.20 hat ein Item nur eine Kategorie; dort bleibt es bei chemical.
 ornithopter.energy_source =
 {
   type = "burner",
-  fuel_categories = {"chemical"},
+  fuel_categories = {compat.v2120 and speed.FUEL_CATEGORY or "chemical"},
   effectivity = 1,
   fuel_inventory_size = 2
 }
@@ -279,6 +283,14 @@ data:extend({
   }
 })
 data:extend(speed_stickers)
+
+-- Brennstoffkategorie „Flugtreibstoff“ (0.9.0); welche Items sie bekommen, entscheidet data-final-fixes.lua.
+data:extend({
+  {
+    type = "fuel-category",
+    name = speed.FUEL_CATEGORY
+  }
+})
 
 local sprites = {}
 for i = 0, 15 do

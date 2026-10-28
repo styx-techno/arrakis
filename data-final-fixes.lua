@@ -21,3 +21,25 @@ for _, prototype_type in pairs({"character", "god-controller"}) do
     add_spice_category(prototype)
   end
 end
+
+-- Flugtreibstoff für den Ornithopter (0.9.0, prototypes/ornithopter-speed.lua): Jeder chemische Brennstoff, der in
+-- Beschleunigung und Höchsttempo mindestens Raketentreibstoff erreicht, bekommt die Kategorie zusätzlich. chemical bleibt,
+-- Autos, Panzer und Kessel nehmen ihn also weiter. In data-final-fixes, damit auch Brennstoffe anderer Mods dabei sind.
+-- Erst ab 2.1.20 hat ein Item eine Liste von Kategorien (prototypes/compat.lua); davor bleibt alles, wie es ist.
+if require("prototypes.compat").v2120 then
+  local speed = require("prototypes.ornithopter-speed")
+  local item_types = defines and defines.prototypes and defines.prototypes.item or {item = 0}
+  for item_type in pairs(item_types) do
+    for _, item in pairs(data.raw[item_type] or {}) do
+      local categories = item.fuel_categories
+      local chemical, flight = false, false
+      for _, category in pairs(categories or {}) do
+        if category == "chemical" then chemical = true end
+        if category == speed.FUEL_CATEGORY then flight = true end
+      end
+      if chemical and not flight and speed.flight_fuel(item.fuel_acceleration_multiplier or 1, item.fuel_top_speed_multiplier or 1) then
+        table.insert(categories, speed.FUEL_CATEGORY)
+      end
+    end
+  end
+end

@@ -2,6 +2,7 @@ local out = {}
 local function add(s) out[#out+1] = s end
 local raw = data.raw
 local V21 = helpers.compare_versions(mods["base"], "2.1.0") >= 0
+local V2120 = helpers.compare_versions(mods["base"], "2.1.20") >= 0
 add("base " .. mods["base"] .. (V21 and " (2.1-Syntax)" or " (2.0-Syntax)"))
 
 local item_types = {}
@@ -282,7 +283,7 @@ if orni then
     if leg.leg_hit_the_ground_trigger then add("FEHLER 3c: arrakis-ornithopter Bein " .. i .. " mit Bodenstaub-Trigger") end
   end
   local es = orni.energy_source or {}
-  if es.type ~= "burner" or not same_list(es.fuel_categories or {}, {"chemical"}) or es.fuel_inventory_size ~= 2 then
+  if es.type ~= "burner" or not same_list(es.fuel_categories or {}, {V2120 and "arrakis-flight-fuel" or "chemical"}) or es.fuel_inventory_size ~= 2 then
     add("FEHLER 3c: arrakis-ornithopter Brenner " .. tostring(es.type) .. " " .. table.concat(es.fuel_categories or {}, ",") .. " Slots " .. tostring(es.fuel_inventory_size))
   end
   if orni.movement_energy_consumption ~= "800kW" then add("FEHLER 3c: arrakis-ornithopter movement_energy_consumption " .. tostring(orni.movement_energy_consumption)) end
@@ -406,6 +407,26 @@ do
     end
   end
   if car and (car.turret_animation or car.light_animation) then add("FEHLER 0.8.5: Ernter hat noch Turm oder Panzer-Leuchtbild") end
+end
+-- Flugtreibstoff (ab 0.9.0): Raketen- und Atomtreibstoff tragen chemical und arrakis-flight-fuel, die einfachen
+-- Brennstoffe nur chemical. Vor 2.1.20 (eine Kategorie je Item) bleibt alles bei chemical.
+if V2120 then
+  if not (raw["fuel-category"] and raw["fuel-category"]["arrakis-flight-fuel"]) then add("FEHLER 0.9.0: fuel-category arrakis-flight-fuel fehlt") end
+  local function categories(name)
+    local item = raw.item[name]
+    if not item then return nil end
+    local set = {}
+    for _, c in pairs(item.fuel_categories or {item.fuel_category}) do set[c] = true end
+    return set
+  end
+  for _, name in ipairs({"rocket-fuel", "nuclear-fuel"}) do
+    local set = categories(name)
+    if set and not (set.chemical and set["arrakis-flight-fuel"]) then add("FEHLER 0.9.0: " .. name .. " ohne chemical + arrakis-flight-fuel") end
+  end
+  for _, name in ipairs({"coal", "wood", "solid-fuel", "carbon", "arrakis-spice-briquette"}) do
+    local set = categories(name)
+    if set and set["arrakis-flight-fuel"] then add("FEHLER 0.9.0: " .. name .. " ist Flugtreibstoff") end
+  end
 end
 -- Ornithopter-Grafik (ab 0.8.9): Rumpf und Farbmaske, eigener Schatten, kein Spidertron-Unterteil, keine Spidertron-Augen.
 do

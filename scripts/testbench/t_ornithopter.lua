@@ -41,8 +41,12 @@ local SAND = "sand-1"
 local HOLD = "arrakis-hold"
 -- Die beiden Tempo-Sticker aus 0.6.0; seit 0.6.1 gibt es nur noch die Familien aus prototypes/ornithopter-speed.lua.
 local OLD_STICKERS = {"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}
--- Stufe für Kohle (t = 1) und Raketentreibstoff (t = 1,15), Plan 4.9.
+-- Stufe ohne Brennstoff (t = 1) und für Raketentreibstoff (r = 1,15), Plan 4.9. Ab 0.9.0 fliegt der Ornithopter nur mit
+-- Flugtreibstoff; die Prüflinge tanken Raketentreibstoff (100 MJ, bei 800 kW gut 2 min Flug je Stück).
 local COAL_P, ROCKET_P = 100, 115
+local FLIGHT_FUEL = "rocket-fuel"
+-- Stufe für Atomtreibstoff: r = 1,15 / (2,5 / 1,8) ≈ 0,83, nächste Stufe p = 82 (prototypes/ornithopter-speed.lua), 15 f.
+local NUCLEAR_P = speed.percent(speed.fuel_bucket(1.15, 2.5))
 local IMAGE_SPRITE = "arrakis-harvester-carried-"
 local SHADOW_SPRITE = "arrakis-harvester-carried-shadow-"
 local CARRY_INPUT = "arrakis-carry-toggle"
@@ -322,31 +326,42 @@ local function sticker_p(sticker)
   return j and speed.percent(j)
 end
 
--- Brennt der Flieger nur Kohle oder gar nichts? Dann muss sein Sticker die Stufe p = 100 haben (Kohle t = 1; ohne
--- Brennstoff bekommt der erste Sticker t = 1, Plan 4.9). Andere Brennstoffe prüft der Schritt selbst (15 f, T16).
-local function coal_only(flyer)
+-- Was hat der Flieger im Brenner? "none" (nichts, auch kein Feuer), "rocket" (nur normaler Raketentreibstoff) oder
+-- "other". Ohne Brennstoff behält er die Stufe seines Stickers, der erste bekommt t = 1 (p = 100); mit Raketentreibstoff
+-- gilt p = 115 (Plan 4.9). Andere Brennstoffe prüft der Schritt selbst (15 f, T16).
+local function fuel_kind(flyer)
   local burner = read(function() return flyer.burner end)
-  if not burner then return false end
-  local burning = read(function() return burner.currently_burning end)
-  if burning then
-    local name = burning.name
+  if not burner then return "other" end
+  local kind = "none"
+  local function see(name, quality)
     if type(name) ~= "string" then name = name.name end
-    if name ~= "coal" then return false end
+    if type(quality) == "table" then quality = quality.name end
+    if name == FLIGHT_FUEL and (quality == nil or quality == "normal") then
+      if kind == "none" then kind = "rocket" end
+    else
+      kind = "other"
+    end
   end
+  local burning = read(function() return burner.currently_burning end)
+  if burning then see(burning.name, burning.quality) end
   local inventory = burner.inventory
   for i = 1, #inventory do
     local stack = inventory[i]
-    if stack.valid_for_read and stack.name ~= "coal" then return false end
+    if stack.valid_for_read then see(stack.name, stack.quality) end
   end
-  return true
+  return kind
 end
 
--- Genau ein eigener Sticker im Zustand state ("empty", "loaded"); mit Kohle oder ohne Brennstoff in Stufe p = 100.
+-- Genau ein eigener Sticker im Zustand state ("empty", "loaded"); mit Raketentreibstoff in Stufe p = 115, ohne
+-- Brennstoff in p = 100 oder 115.
 local function sticker_ok(flyer, stickers, state)
   if #stickers ~= 1 then return false end
   local got = speed.parse(stickers[1].name)
   if got ~= state then return false end
-  return sticker_p(stickers[1]) == COAL_P or not coal_only(flyer)
+  local p, kind = sticker_p(stickers[1]), fuel_kind(flyer)
+  if kind == "rocket" then return p == ROCKET_P end
+  if kind == "none" then return p == ROCKET_P or p == COAL_P end
+  return true
 end
 
 local function render_ok(object)
@@ -388,7 +403,7 @@ local function check(failed, ok, label)
 end
 
 -- „beladen“ (Plan 4.3, 4.6 Schritt 7): Datensatz trägt car, nicht abbaubar, genau ein eigener Sticker „beladen“ (mit
--- Kohle t1,00), Lastbild und Schatten gültig.
+-- Raketentreibstoff t1,15), Lastbild und Schatten gültig.
 local function check_loaded(failed, label, flyer, car)
   local record = valid(flyer) and flyer_lib.get(flyer)
   if not check(failed, record ~= nil and record ~= false, label .. ": Ornithopter ohne Datensatz") then return false end
@@ -400,7 +415,8 @@ local function check_loaded(failed, label, flyer, car)
   return ok
 end
 
--- „leer“: Datensatz da, keine Last, keine Kopplung, abbaubar, genau ein eigener Sticker „leer“ (mit Kohle t1,00), kein
+-- „leer“: Datensatz da, keine Last, keine Kopplung, abbaubar, genau ein eigener Sticker „leer“ (mit Raketentreibstoff
+-- t1,15), kein
 -- Lastbild.
 local function check_empty(failed, label, flyer)
   local record = valid(flyer) and flyer_lib.get(flyer)
@@ -491,7 +507,13 @@ local function new_flyer(run, tb, position, opts)
   local flyer = create(run, tb, {name = FLYER, position = position, force = force, quality = opts.quality,
     raise_built = not opts.raw, create_build_effect_smoke = false}, opts.surface, "flyers")
   if not flyer then return nil end
-  if opts.fuel then add_fuel(flyer, opts.fuel, opts.count or 5, opts.fuel_quality) end
+  if opts.fuel then
+    add_fuel(flyer, opts.fuel, opts.count or 5, opts.fuel_quality)
+    -- Eingetragen wird beim Bau, also noch ohne Brennstoff (Sticker t1,00). Die Pflege des Taktes gleich hier, damit der
+    -- Sticker schon zum Brennstoff passt (ab 0.9.0 hat Raketentreibstoff t1,15).
+    local record = not opts.raw and flyer_lib.get(flyer)
+    if record then flyer_lib.care(record) end
+  end
   if opts.pilot then
     local pilot = tb.dummy_driver(flyer, force)
     if pilot then remember(run, pilot, "others") end
@@ -501,14 +523,14 @@ end
 
 -- Paar für das Anheben: Ernter bei c (Kachelmitte), Ornithopter 1,5 Kacheln nördlich. Spinnen kollidieren mit nichts
 -- (Vorgabe trigger_target, V23 core/lualib/collision-mask-defaults.lua:190), also auch nicht mit dem Ernter.
--- opts: fuel (Standard Kohle, false: keiner), pilot, force, coal (Ernter), orientation, quality (Ernter).
+-- opts: fuel (Standard Raketentreibstoff, false: keiner), pilot, force, coal (Ernter), orientation, quality (Ernter).
 local function new_pair(run, tb, c, opts)
   opts = opts or {}
   local car = new_car(run, tb, {x = c.x + 0.5, y = c.y + 0.5}, {coal = opts.coal, force = opts.force,
     orientation = opts.orientation, quality = opts.quality})
   local fuel = opts.fuel
-  if fuel == nil then fuel = "coal" end
-  local flyer = new_flyer(run, tb, {x = c.x + 0.5, y = c.y - 1}, {fuel = fuel or nil, count = 5, pilot = opts.pilot,
+  if fuel == nil then fuel = FLIGHT_FUEL end
+  local flyer = new_flyer(run, tb, {x = c.x + 0.5, y = c.y - 1}, {fuel = fuel or nil, count = 2, pilot = opts.pilot,
     force = opts.force})
   return flyer, car
 end
@@ -664,14 +686,30 @@ function t15_steps.s1_check(run, tb, d)
   check(failed, p.type == "spider-vehicle", "Typ " .. tostring(p.type) .. " statt spider-vehicle")
   local legs = read(function() return #p.spider_engine.legs end)
   check(failed, legs == 4, "Beine " .. tostring(legs) .. " statt 4")
+  -- Brenner (0.9.0): nur Flugtreibstoff; Raketen- und Atomtreibstoff tragen die Kategorie, Kohle und Festbrennstoff nicht.
   local burner = p.burner_prototype
-  local chemical = burner and read(function() return burner.fuel_categories["chemical"] end)
-  check(failed, chemical == true, "Brenner ohne Kategorie chemical")
+  local categories = burner and read(function() return burner.fuel_categories end) or {}
+  local flight = categories[speed.FUEL_CATEGORY] == true
+  local names = {}
+  for name in pairs(categories) do table.insert(names, name) end
+  table.sort(names)
+  check(failed, flight and not categories["chemical"], "Brenner " .. table.concat(names, ",") .. " statt nur " .. speed.FUEL_CATEGORY)
+  -- Dieselbe Prüfung wie der Takt (flyer_lib.flight_fuel): passt das Item zu den Kategorien des Brenners?
+  local function has_flight(name)
+    local item = prototypes.item[name]
+    return burner and item and read(function() return flyer_lib.flight_fuel(burner, item) end) == true
+  end
+  for _, name in ipairs({"rocket-fuel", "nuclear-fuel"}) do
+    check(failed, has_flight(name), name .. " ohne " .. speed.FUEL_CATEGORY)
+  end
+  for _, name in ipairs({"coal", "solid-fuel", "arrakis-spice-briquette"}) do
+    check(failed, not has_flight(name), name .. " ist Flugtreibstoff")
+  end
   local slots = burner and burner.fuel_inventory_size
   check(failed, slots == 2, "Brennstoff-Slots " .. tostring(slots) .. " statt 2")
-  table.insert(parts, string.format("%s: %s, %s Beine, Brenner chemical %s, %s Slots", FLYER, tostring(p.type),
-    tostring(legs), tostring(chemical == true), tostring(slots)))
-  -- Tempo-Sticker (0.6.1): je Zustand eine Familie von speed.COUNT Stufen; Stichproben Kohle und Raketentreibstoff,
+  table.insert(parts, string.format("%s: %s, %s Beine, Brenner nur Flugtreibstoff %s, %s Slots", FLYER, tostring(p.type),
+    tostring(legs), tostring(flight and not categories["chemical"]), tostring(slots)))
+  -- Tempo-Sticker (0.6.1): je Zustand eine Familie von speed.COUNT Stufen; Stichproben t = 1 und Raketentreibstoff,
   -- die beiden Sticker aus 0.6.0 gibt es nicht mehr.
   local families = {}
   for _, state in ipairs(speed.STATES) do
@@ -992,7 +1030,7 @@ function t15_steps.s3_build(run, tb, d)
   for key, p in pairs(cells) do
     local cell = {}
     s[key] = cell
-    cell.flyer = new_flyer(run, tb, at(p, 0.5, -1.5), {fuel = "coal", pilot = key == "a"})
+    cell.flyer = new_flyer(run, tb, at(p, 0.5, -1.5), {fuel = FLIGHT_FUEL, pilot = key == "a"})
     cell.car = new_car(run, tb, at(p, 0.5, 0.5), {coal = 2})
     if not (cell.flyer and cell.car) then return fail(run, tb, 3, "Aufbau " .. key .. ") ging nicht") end
     cell.pilot = cell.flyer.get_driver()
@@ -1179,7 +1217,7 @@ function t15_steps.s5_build(run, tb, d)
   local cell = {}
   s.cases.docked = cell
   cell.car = new_car(run, tb, at(o, 0, -3.5), {})
-  cell.flyer = new_flyer(run, tb, at(o, 0, -3.5), {fuel = "coal"})
+  cell.flyer = new_flyer(run, tb, at(o, 0, -3.5), {fuel = FLIGHT_FUEL})
   if not (cell.car and cell.flyer) then return fail(run, tb, 5, "Aufbau docked ging nicht") end
   for _, key in ipairs({"deployed", "packing"}) do
     s.cases[key].toggle = harvester.toggle(s.cases[key].car, nil)
@@ -1368,7 +1406,7 @@ function t15_steps.s6_lift(run, tb, d)
   local s = d.s6
   local car = s.car
   if car_state(car) ~= "deployed" then return fail(run, tb, 6, "Aufbauen auf A nicht fertig: " .. car_state(car)) end
-  local flyer = new_flyer(run, tb, at(car.position, 0, -1.5), {fuel = "coal", count = 20, pilot = true})
+  local flyer = new_flyer(run, tb, at(car.position, 0, -1.5), {fuel = FLIGHT_FUEL, count = 4, pilot = true})
   s.flyer = flyer
   if not flyer then return fail(run, tb, 6, "Ornithopter ließ sich nicht erzeugen") end
   s.pilot = flyer.get_driver()
@@ -2006,9 +2044,9 @@ function t15_steps.s13_build(run, tb, d)
     local cell = {spec = spec, failed = {}, notes = {}}
     s.cases[spec.id] = cell
     if spec.kind == "L" and not spec.car then
-      cell.flyer = new_flyer(run, tb, at(c, 0.5, -1), {fuel = not spec.no_fuel and "coal" or nil})
+      cell.flyer = new_flyer(run, tb, at(c, 0.5, -1), {fuel = not spec.no_fuel and FLIGHT_FUEL or nil})
     else
-      cell.flyer, cell.car = new_pair(run, tb, c, {fuel = not spec.no_fuel and "coal" or false})
+      cell.flyer, cell.car = new_pair(run, tb, c, {fuel = not spec.no_fuel and FLIGHT_FUEL or false})
     end
     if not cell.flyer or (spec.kind ~= "L" or spec.car) and not cell.car then return fail(run, tb, 13, "Aufbau " .. spec.id .. " ging nicht") end
     cell.lift = cell.car and copy_pos(cell.car.position)
@@ -2320,7 +2358,7 @@ function t15_steps.s14_run(run, tb, d)
 end
 
 -- Schritt 15: Pflege [U7, U9, U16]: Sticker weg, zweiter eigener Sticker (anderer Zustand), Bild weg, Teleport auf
--- arrakis-test-hold und zurück, zweiter Sticker gleichen Namens, Brennstoffwechsel Kohle → Raketentreibstoff.
+-- arrakis-test-hold und zurück, zweiter Sticker gleichen Namens, Brennstoffwechsel Raketen- → Atomtreibstoff.
 -- Befund 26.10.2026 (0.6.0): Mit einem zweiten Sticker gleichen Namens (damals Teil b) wurde der Zustand nie „gut“, weil
 -- der Test den gemerkten Sticker erwartete; vermutlich ersetzt die Engine einen Sticker gleichen Namens. Teil b nimmt
 -- deshalb den anderen Zustand, Teil e misst, was die Engine bei gleichem Namen tut. LuaEntity-Vergleiche (==) braucht
@@ -2334,7 +2372,7 @@ local S15_LABEL =
   c = "Bild zerstört",
   d = "Teleport auf die Prüfstand-Ablage und zurück",
   e = "zweiter eigener Sticker, gleicher Name",
-  f = "Brennstoff Kohle → Raketentreibstoff"
+  f = "Brennstoff Raketen- → Atomtreibstoff"
 }
 
 function t15_steps.s15_build(run, tb, d)
@@ -2349,7 +2387,7 @@ end
 -- Pflege-Zustand gut? Genau ein eigener Sticker im Zustand „beladen“, Bild und Schatten gültig. Dazu je Teil:
 -- b) der gemerkte Sticker ist noch gültig (die Pflege hat den „leeren“ zerstört, nicht den gemerkten);
 -- e) der Datensatz zeigt auf einen gültigen Sticker (die Pflege hat übernommen, was die Engine auch tat);
--- f) Stufe p = 115 (Raketentreibstoff);
+-- f) Stufe des Atomtreibstoffs (NUCLEAR_P);
 -- sonst (a, c, d, f) hängt der Sticker am Flieger (sticked_to).
 function t15_steps.s15_good(s, key)
   local record = flyer_lib.get(s.flyer)
@@ -2363,18 +2401,18 @@ function t15_steps.s15_good(s, key)
   elseif read(function() return stickers[1].sticked_to == s.flyer end) ~= true then
     return false
   end
-  if key == "f" and sticker_p(stickers[1]) ~= ROCKET_P then return false end
+  if key == "f" and sticker_p(stickers[1]) ~= NUCLEAR_P then return false end
   return render_ok(record.renders.image) and render_ok(record.renders.shadow)
 end
 
--- f) Raketentreibstoff statt Kohle: Inventar leeren, currently_burning schreiben (LuaBurner, schreibbar; jeder Brennstoff
--- gilt, A23 classes.d.ts:4818–4870) und den Rest auf den vollen Brennwert. Gibt ok, Fehlertext zurück.
+-- f) Atomtreibstoff statt Raketentreibstoff (bis 0.8.9 Raketentreibstoff statt Kohle): Inventar leeren,
+-- currently_burning schreiben (LuaBurner, schreibbar; A23 classes.d.ts:4818–4870) und den Rest auf den vollen Brennwert. Gibt ok, Fehlertext zurück.
 function t15_steps.s15_refuel(flyer)
   return pcall(function()
     local burner = flyer.burner
     burner.inventory.clear()
-    burner.currently_burning = {name = "rocket-fuel", quality = "normal"}
-    burner.remaining_burning_fuel = prototypes.item["rocket-fuel"].fuel_value
+    burner.currently_burning = {name = "nuclear-fuel", quality = "normal"}
+    burner.remaining_burning_fuel = prototypes.item["nuclear-fuel"].fuel_value
   end)
 end
 
@@ -2420,8 +2458,8 @@ function t15_steps.s15_poke(run, tb, d)
       #list, sticker_text(list)))
   else
     local before = own_stickers(s.flyer)
-    if not (#before == 1 and sticker_p(before[1]) == COAL_P) then
-      table.insert(s.failed, "f) vorher nicht genau ein Sticker t1,00 (Kohle), sondern " .. sticker_text(before))
+    if not (#before == 1 and sticker_p(before[1]) == ROCKET_P) then
+      table.insert(s.failed, "f) vorher nicht genau ein Sticker t1,15 (Raketentreibstoff), sondern " .. sticker_text(before))
     end
     local ok, err = t15_steps.s15_refuel(s.flyer)
     if not ok then table.insert(s.failed, "f) Brennstoffwechsel ging nicht: " .. tostring(err)) end
@@ -2755,22 +2793,27 @@ local T16_DIRS =
   S = {x = 0, y = 1},
   NO = {x = math.sqrt(0.5), y = -math.sqrt(0.5)}
 }
--- start relativ zur Fläche (A: Ursprung, B: Ursprung + T16_B). check: "empty" oder "loaded" (Tempo-Grenzen);
--- group = "fuel": Brennstoff-Vergleich [U7]; pair: leere Bahn für das Verhältnis beladen/leer.
+-- start relativ zur Fläche (A: Ursprung, B: Ursprung + T16_B). check: "empty" oder "loaded" (Tempo-Grenzen, geteilt
+-- durch den Tempo-Faktor g des Brennstoffs); group = "fuel": Tempo je Treibstoff [U7]; pair: leere Bahn für das
+-- Verhältnis beladen/leer; to: eigenes Ende des Messfensters (schnelle Bahnen verließen sonst die Fläche); reject:
+-- Brennstoff, der ab 0.9.0 nicht in den Ornithopter passt (die Bahn fliegt nicht, gezählt wird das Einfüllen).
 local T16_LANES =
 {
-  {key = "coal", label = "leer, Kohle, O", fuel = "coal", count = 10, dir = "O", start = {-125, -60}, check = "empty", group = "fuel"},
-  {key = "solid", label = "leer, Festbrennstoff, O", fuel = "solid-fuel", count = 5, dir = "O", start = {-125, -50}, check = "empty", group = "fuel"},
-  {key = "rocket", label = "leer, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, -40}, check = "empty", group = "fuel"},
-  {key = "nuclear", label = "leer, Atomtreibstoff, O", fuel = "nuclear-fuel", count = 1, dir = "O", start = {-125, -30}, check = "empty", group = "fuel"},
-  {key = "briquette", label = "leer, Spice-Brikett, O", fuel = "arrakis-spice-briquette", count = 5, dir = "O", start = {-125, -20}, check = "empty", group = "fuel"},
+  {key = "coal", label = "Kohle einfüllen", fuel = "coal", count = 10, start = {-125, -85}, reject = true},
+  {key = "solid", label = "Festbrennstoff einfüllen", fuel = "solid-fuel", count = 5, start = {-115, -85}, reject = true},
+  {key = "briquette", label = "Spice-Brikett einfüllen", fuel = "arrakis-spice-briquette", count = 5, start = {-105, -85}, reject = true},
+  {key = "rocket", label = "leer, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, -60}, check = "empty", group = "fuel"},
+  {key = "nuclear", label = "leer, Atomtreibstoff, O", fuel = "nuclear-fuel", count = 1, dir = "O", start = {-125, -50}, check = "empty", group = "fuel"},
   {key = "legendary_fuel", label = "leer, Raketentreibstoff legendär, O", fuel = "rocket-fuel", fuel_quality = "legendary", count = 2, dir = "O",
-   start = {-125, -10}, check = "empty", group = "fuel", needs = "legendary"},
-  {key = "uncommon", label = "leer, Kohle, O, Ornithopter ungewöhnlich", fuel = "coal", count = 10, quality = "uncommon", dir = "O",
-   start = {-125, 0}, check = "empty", needs = "uncommon", base = "coal"},
-  {key = "legendary", label = "leer, Kohle, O, Ornithopter legendär", fuel = "coal", count = 10, quality = "legendary", dir = "O",
-   start = {-125, 10}, check = "empty", needs = "legendary", base = "coal"},
-  {key = "loaded_coal", label = "beladen, Kohle, O", fuel = "coal", count = 10, dir = "O", start = {-125, 20}, check = "loaded", loaded = true, pair = "coal"},
+   start = {-125, -40}, check = "empty", group = "fuel", needs = "legendary", to = 10 * 60},
+  {key = "legendary_nuclear", label = "leer, Atomtreibstoff legendär, O", fuel = "nuclear-fuel", fuel_quality = "legendary", count = 1, dir = "O",
+   start = {-125, -30}, check = "empty", group = "fuel", needs = "legendary", to = 10 * 60},
+  {key = "uncommon", label = "leer, Raketentreibstoff, O, Ornithopter ungewöhnlich", fuel = "rocket-fuel", count = 2, quality = "uncommon", dir = "O",
+   start = {-125, 0}, check = "empty", needs = "uncommon", base = "rocket"},
+  {key = "legendary", label = "leer, Raketentreibstoff, O, Ornithopter legendär", fuel = "rocket-fuel", count = 2, quality = "legendary", dir = "O",
+   start = {-125, 10}, check = "empty", needs = "legendary", base = "rocket"},
+  {key = "loaded_nuclear", label = "beladen, Atomtreibstoff, O", fuel = "nuclear-fuel", count = 1, dir = "O", start = {-125, 20}, check = "loaded",
+   loaded = true, pair = "nuclear"},
   {key = "loaded_rocket", label = "beladen, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, 30}, check = "loaded",
    loaded = true, pair = "rocket"},
   {key = "raw", label = "ohne Sticker (Rohwert), Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, 40}, raw = true},
@@ -2778,18 +2821,23 @@ local T16_LANES =
    start = {-125, 50}, raw = true, sticker = "arrakis-test-speed-max-tick"},
   {key = "max_second", label = "Test-Sticker vehicle_speed_max 8, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O",
    start = {-125, 60}, raw = true, sticker = "arrakis-test-speed-max-second"},
-  {key = "west", label = "leer, Kohle, W", fuel = "coal", count = 10, dir = "W", start = {125, 70}, check = "empty"},
-  {key = "northeast", label = "leer, Kohle, NO", fuel = "coal", count = 10, dir = "NO", start = {-125, 85}, check = "empty"},
-  {key = "hover", label = "Schweben beladen, Kohle, ohne Ziel", fuel = "coal", count = 10, loaded = true, hover = true, start = {100, 80}},
-  {key = "north", label = "leer, Kohle, N", fuel = "coal", count = 10, dir = "N", region = "B", start = {-20, 125}, check = "empty"},
-  {key = "loaded_coal_north", label = "beladen, Kohle, N", fuel = "coal", count = 10, dir = "N", region = "B", start = {0, 125}, check = "loaded",
-   loaded = true, pair = "north"},
-  {key = "loaded_rocket_north", label = "beladen, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {20, 125},
-   check = "loaded", loaded = true},
-  {key = "south", label = "leer, Kohle, S", fuel = "coal", count = 10, dir = "S", region = "B", start = {35, -125}, check = "empty"},
+  {key = "west", label = "leer, Raketentreibstoff, W", fuel = "rocket-fuel", count = 2, dir = "W", start = {125, 70}, check = "empty"},
+  {key = "northeast", label = "leer, Raketentreibstoff, NO", fuel = "rocket-fuel", count = 2, dir = "NO", start = {-125, 85}, check = "empty"},
+  {key = "hover", label = "Schweben beladen, Raketentreibstoff, ohne Ziel", fuel = "rocket-fuel", count = 2, loaded = true, hover = true, start = {100, 80}},
+  {key = "north", label = "leer, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {-20, 125}, check = "empty"},
+  {key = "loaded_rocket_north", label = "beladen, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {0, 125},
+   check = "loaded", loaded = true, pair = "north"},
+  {key = "south", label = "leer, Raketentreibstoff, S", fuel = "rocket-fuel", count = 2, dir = "S", region = "B", start = {35, -125}, check = "empty"},
   {key = "effectivity", label = "ohne Sticker, Raketentreibstoff, effectivity_modifier 0,5, O", fuel = "rocket-fuel", count = 2, dir = "O",
    start = {-125, -70}, raw = true, effectivity = 0.5}
 }
+
+-- Tempo-Faktor g eines Brennstoffs samt Qualität (prototypes/ornithopter-speed.lua): Raketentreibstoff normal 1.
+local function t16_gain(fuel, quality)
+  local item = prototypes.item[fuel]
+  local level = quality and prototypes.quality[quality] and prototypes.quality[quality].level or 0
+  return item and speed.gain(item.fuel_acceleration_multiplier + level * item.fuel_acceleration_multiplier_quality_bonus) or 1
+end
 
 local function t16_build(run, tb, d)
   d.lanes = {}
@@ -2800,10 +2848,13 @@ local function t16_build(run, tb, d)
     else
       local base = spec.region == "B" and at(d.origin, T16_B.x, T16_B.y) or d.origin
       local start = at(base, spec.start[1] + 0.5, spec.start[2] + 0.5)
-      local lane = {spec = spec, start = start}
+      local lane = {spec = spec, start = start, gain = t16_gain(spec.fuel, spec.fuel_quality)}
       lane.flyer = new_flyer(run, tb, start, {fuel = spec.fuel, count = spec.count, fuel_quality = spec.fuel_quality,
         quality = spec.quality, raw = spec.raw, pilot = true})
-      if lane.flyer then
+      if lane.flyer and spec.reject then
+        lane.fuel_in = fuel_items(lane.flyer)
+        lane.lost = "fliegt nicht (Brennstoff-Probe)"
+      elseif lane.flyer then
         lane.un = lane.flyer.unit_number
         lane.fuel_in = fuel_items(lane.flyer)
         lane.pilot = lane.flyer.get_driver() ~= nil
@@ -2833,7 +2884,9 @@ local function t16_go(run, tb, d)
   local failed = {}
   for _, lane in ipairs(d.lanes) do
     local spec = lane.spec
-    if not lane.flyer then
+    if spec.reject then
+      tb.trace(run, string.format("Bahn %s: %d von %d %s eingefüllt", spec.label, lane.fuel_in or 0, spec.count, spec.fuel))
+    elseif not lane.flyer then
       lane.lost = "Ornithopter ließ sich nicht erzeugen"
     elseif spec.loaded and not (check_loaded(failed, spec.label, lane.flyer, lane.car) and check_carried(failed, spec.label, lane.car, lane.flyer)) then
       lane.lost = "Anheben ging nicht"
@@ -2847,8 +2900,8 @@ local function t16_go(run, tb, d)
       end)
       if not ok then lane.lost = "autopilot_destination ging nicht" end
     end
-    if lane.lost then tb.log(run, "FEHLER", "Bahn " .. spec.label .. ": " .. lane.lost) end
-    if lane.flyer then
+    if lane.lost and not spec.reject then tb.log(run, "FEHLER", "Bahn " .. spec.label .. ": " .. lane.lost) end
+    if lane.flyer and not spec.reject then
       local effectivity = lane.eff_probe
       local extra = ""
       if effectivity then
@@ -2875,7 +2928,7 @@ end
 local function t16_values(lane)
   local a, b = lane.from, lane.to
   if not (a and b) then return nil end
-  local seconds = (T16_TO - T16_FROM) / 60
+  local seconds = ((lane.spec.to or T16_TO) - T16_FROM) / 60
   local distance = math.sqrt((b.position.x - a.position.x) ^ 2 + (b.position.y - a.position.y) ^ 2)
   local used = (a.energy and b.energy) and (a.energy - b.energy) or nil
   return
@@ -2914,7 +2967,7 @@ local function t16_evaluate(run, tb, d)
   local function speed_of(key)
     return speeds[key]
   end
-  -- 1. leer 7,0–9,0; 2. beladen 5,0–6,5
+  -- 1. leer 7,0–9,0; 2. beladen 5,0–6,5, je geteilt durch den Tempo-Faktor g des Brennstoffs (ab 0.9.0)
   for _, kind in ipairs({"empty", "loaded"}) do
     local range = kind == "empty" and T16_EMPTY or T16_LOADED
     local failed, parts = {}, {}
@@ -2924,12 +2977,14 @@ local function t16_evaluate(run, tb, d)
         if not v then
           table.insert(failed, lane.spec.label .. " nicht gemessen")
         else
-          table.insert(parts, lane.spec.label .. " " .. tb.num(v, 2))
-          if v < range[1] or v > range[2] then table.insert(failed, lane.spec.label .. " " .. tb.num(v, 2)) end
+          local norm = v / lane.gain
+          local text = lane.spec.label .. " " .. tb.num(v, 2) .. (lane.gain ~= 1 and (" (/ g " .. tb.num(lane.gain, 3) .. " = " .. tb.num(norm, 2) .. ")") or "")
+          table.insert(parts, text)
+          if norm < range[1] or norm > range[2] then table.insert(failed, text) end
         end
       end
     end
-    rule((kind == "empty" and "Tempo leer " or "Tempo beladen ") .. range_text(range) .. " Kacheln/s [U6]", failed, table.concat(parts, ", "))
+    rule((kind == "empty" and "Tempo leer " or "Tempo beladen ") .. range_text(range) .. " Kacheln/s · g [U6]", failed, table.concat(parts, ", "))
   end
   -- 3. beladen/leer, gleicher Brennstoff und gleiche Richtung
   do
@@ -2953,31 +3008,48 @@ local function t16_evaluate(run, tb, d)
     end
     rule("Verhältnis beladen/leer " .. range_text(T16_RATIO), failed, table.concat(parts, ", "))
   end
-  -- 4. Brennstoff [U7]: größtes/kleinstes Tempo der leeren Brennstoff-Bahnen
+  -- 4. Treibstoff [U7] (ab 0.9.0): Tempo je Treibstoff im Verhältnis zu Raketentreibstoff wie g (Atomtreibstoff 1,39,
+  -- legendärer Raketentreibstoff 1,67, legendärer Atomtreibstoff 2,64), je höchstens T16_FUEL_SPREAD daneben.
   do
-    local failed = {}
-    local low, high, low_label, high_label = nil, nil, "–", "–"
+    local failed, parts = {}, {}
+    local rocket = speed_of("rocket")
     for _, lane in ipairs(d.lanes) do
-      local v = lane.spec.group == "fuel" and speed_of(lane.spec.key)
-      if v then
-        if not low or v < low then low, low_label = v, lane.spec.label end
-        if not high or v > high then high, high_label = v, lane.spec.label end
+      if lane.spec.group == "fuel" and lane.spec.key ~= "rocket" then
+        local v = speed_of(lane.spec.key)
+        if v and rocket and rocket > 0 then
+          local ratio = v / rocket
+          local text = string.format("%s %s (%s statt %s)", lane.spec.label, tb.num(v, 2), tb.num(ratio, 3), tb.num(lane.gain, 3))
+          table.insert(parts, text)
+          if math.abs(ratio / lane.gain - 1) > T16_FUEL_SPREAD - 1 then table.insert(failed, text) end
+        else
+          table.insert(failed, lane.spec.label .. " nicht gemessen")
+        end
       end
     end
-    local spread = low and low > 0 and high / low
-    check(failed, spread and spread <= T16_FUEL_SPREAD, "max/min " .. tostring(spread and tb.num(spread, 3)))
-    rule("Brennstoff ändert das Tempo nicht [U7], max/min ≤ " .. tb.num(T16_FUEL_SPREAD, 2), failed, string.format("max %s (%s), min %s (%s), max/min %s",
-      tostring(high and tb.num(high, 2)), high_label, tostring(low and tb.num(low, 2)), low_label, tostring(spread and tb.num(spread, 3))))
+    rule("Besserer Treibstoff fliegt schneller [U7], Verhältnis zu Raketentreibstoff = g ± " .. tb.num((T16_FUEL_SPREAD - 1) * 100, 0) .. " %",
+      failed, "Raketentreibstoff " .. tostring(rocket and tb.num(rocket, 2)) .. "; " .. table.concat(parts, ", "))
+  end
+  -- 6. Nur Flugtreibstoff (0.9.0): Kohle, Festbrennstoff und Spice-Brikett gehen nicht hinein.
+  do
+    local failed, parts = {}, {}
+    for _, lane in ipairs(d.lanes) do
+      if lane.spec.reject then
+        local n = lane.fuel_in
+        table.insert(parts, lane.spec.label .. " " .. tostring(n))
+        if n ~= 0 then table.insert(failed, lane.spec.label .. " " .. tostring(n) .. " statt 0") end
+      end
+    end
+    rule("Nur Flugtreibstoff passt hinein", failed, table.concat(parts, ", "))
   end
   -- 5. Qualität [U8]
   do
     local failed, parts = {}, {}
-    local coal = speed_of("coal")
+    local rocket_v = speed_of("rocket")
     for _, lane in ipairs(d.lanes) do
       if lane.spec.base then
         local v = speed_of(lane.spec.key)
-        if v and coal and coal > 0 then
-          local change = math.abs(v - coal) / coal
+        if v and rocket_v and rocket_v > 0 then
+          local change = math.abs(v - rocket_v) / rocket_v
           table.insert(parts, lane.spec.label .. " " .. tb.num(v, 2) .. " (" .. tb.num(change * 100, 1) .. " %)")
           if change > T16_QUALITY_SPREAD then table.insert(failed, lane.spec.label .. " " .. tb.num(change * 100, 1) .. " %") end
         else
@@ -2988,7 +3060,7 @@ local function t16_evaluate(run, tb, d)
     if #parts == 0 and #failed == 0 then
       tb.log(run, "INFO", "Qualität [U8]: ohne Quality nicht prüfbar")
     else
-      rule("Qualität ändert das Tempo um höchstens 10 % [U8]", failed, "Kohle normal " .. tostring(coal and tb.num(coal, 2)) .. "; " .. table.concat(parts, ", "))
+      rule("Qualität ändert das Tempo um höchstens 10 % [U8]", failed, "Raketentreibstoff normal " .. tostring(rocket_v and tb.num(rocket_v, 2)) .. "; " .. table.concat(parts, ", "))
     end
   end
   -- Vergleichsbahnen [U22], effectivity_modifier und Schweben [U10]: nur MESSUNG/INFO.
@@ -3019,18 +3091,21 @@ local function t16_evaluate(run, tb, d)
       tb.log(run, "INFO", "U10 hält nicht: Schweben kostet " .. tb.num(hv.kw, 1) .. " kW (docs/plan-3c.md 4.16 nimmt das hin)")
     end
   end
-  -- Kohle hat t = 1, ihr Sticker also genau BASE (prototypes/ornithopter-speed.lua).
-  local empty, loaded = speed_of("coal"), speed_of("loaded_coal")
-  tb.log(run, "INFO", string.format("Vorschlag aus den Ost-Bahnen mit Kohle [U6]: BASE_EMPTY %s · 8 / %s = %s, BASE_LOADED %s · 5.6 / %s = %s"
+  -- Raketentreibstoff: r = t = 1,15, sein Sticker BASE / 1,15 ergibt BASE · Rohtempo bei t = 1 (prototypes/ornithopter-speed.lua).
+  local empty, loaded = speed_of("rocket"), speed_of("loaded_rocket")
+  tb.log(run, "INFO", string.format("Vorschlag aus den Ost-Bahnen mit Raketentreibstoff [U6]: BASE_EMPTY %s · 8 / %s = %s, BASE_LOADED %s · 5.6 / %s = %s"
     .. " (prototypes/ornithopter-speed.lua)",
     tb.num(speed.BASE_EMPTY, 3), tostring(empty and tb.num(empty, 2)), (empty and empty > 0) and tb.num(speed.BASE_EMPTY * 8 / empty, 3) or "–",
     tb.num(speed.BASE_LOADED, 3), tostring(loaded and tb.num(loaded, 2)), (loaded and loaded > 0) and tb.num(speed.BASE_LOADED * 5.6 / loaded, 3) or "–"))
   for _, lane in ipairs(d.lanes) do
     if valid(lane.flyer) then pcall(function() lane.flyer.autopilot_destination = nil end) end
   end
-  local measured = 0
-  for _, lane in ipairs(d.lanes) do if lane.values then measured = measured + 1 end end
-  local summary = string.format("%d/%d Bahnen gemessen, Kriterien %d/%d OK", measured, #d.lanes, ok_count, criteria)
+  local measured, flying = 0, 0
+  for _, lane in ipairs(d.lanes) do
+    if not lane.spec.reject then flying = flying + 1 end
+    if lane.values then measured = measured + 1 end
+  end
+  local summary = string.format("%d/%d Bahnen gemessen, Kriterien %d/%d OK", measured, flying, ok_count, criteria)
   tb.finish(run, summary)
 end
 
@@ -3066,8 +3141,11 @@ local function t16_tick(run, tb)
     local elapsed = game.tick - d.t0
     if elapsed == T16_FROM then
       for _, lane in ipairs(d.lanes) do if not lane.lost then t16_sample(lane, "from") end end
-    elseif elapsed >= T16_TO then
-      for _, lane in ipairs(d.lanes) do if not lane.lost and lane.from then t16_sample(lane, "to") end end
+    end
+    for _, lane in ipairs(d.lanes) do
+      if not lane.lost and lane.from and not lane.to and elapsed >= (lane.spec.to or T16_TO) then t16_sample(lane, "to") end
+    end
+    if elapsed >= T16_TO then
       d.phase = "done"
       t16_evaluate(run, tb, d)
     end
@@ -3081,7 +3159,7 @@ local function t16_cleanup(run, tb)
 end
 
 -- T17 Ornithopter: Bedienung (interaktiv) -------------------------------------------------------------
--- Neben Max: ein Ornithopter mit Kohle, ein Ernter mit 500 Spice-Sand, 30 Kacheln weiter eine Annahme auf Fels.
+-- Neben Max: ein Ornithopter mit Raketentreibstoff, ein Ernter mit 500 Spice-Sand, 30 Kacheln weiter eine Annahme auf Fels.
 -- Jeder Druck auf die Taste (arrakis-carry-toggle) und jeder Klick auf eine der beiden Verknüpfungen schreibt eine
 -- MESSUNG-Zeile (Weiterleitung carry_key und shortcut aus runner.lua, zusätzlich zu flyer.lua: event_handler fasst sie
 -- zusammen, die Reihenfolge ist nicht zugesichert; der Zustand in der Zeile kann also vor oder nach dem Laufzeitcode
@@ -3164,7 +3242,7 @@ local function t17_start(run, tb)
     tb.log(run, "INFO", "„Ornithopter“ für deine Force erforscht (sonst gäbe es die Verknüpfungen nicht)")
   end
   tb.watch(run, player, origin)
-  d.flyer = new_flyer(run, tb, at(origin, 4.5, 0.5), {fuel = "coal", count = 20, force = force})
+  d.flyer = new_flyer(run, tb, at(origin, 4.5, 0.5), {fuel = FLIGHT_FUEL, count = 4, force = force})
   d.car = new_car(run, tb, at(origin, 12.5, 0.5), {coal = 10, force = force})
   local rock = at(origin, 42, 0)
   tb.fill({{rock.x - 8, rock.y - 8}, {rock.x + 8, rock.y + 8}}, ROCK, surface)
@@ -3176,7 +3254,7 @@ local function t17_start(run, tb)
   end
   local spice = d.car.get_inventory(defines.inventory.car_trunk).insert{name = SPICE, count = 500}
   local record = intake.get(d.intake)
-  tb.log(run, "INFO", string.format("Ornithopter %s mit Kohle, Ernter %s mit %d Spice-Sand, Annahme %s auf Fels%s",
+  tb.log(run, "INFO", string.format("Ornithopter %s mit Raketentreibstoff, Ernter %s mit %d Spice-Sand, Annahme %s auf Fels%s",
     pos_text(tb, d.flyer.position), pos_text(tb, d.car.position), spice, pos_text(tb, d.intake.position),
     (record and not record.bad) and "" or " (FEHLER: nicht richtig eingetragen)"))
   d.last_flyer, d.last_car = t17_states(d)

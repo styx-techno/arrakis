@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.9.0
+Date: 2026-10-28
+  Changes:
+    - Der Ornithopter fliegt nur noch mit Flugtreibstoff: Raketentreibstoff, Atomtreibstoff und gleichwertigen Treibstoffen anderer Mods. Kohle, Holz, Festbrennstoff und das Spice-Brikett passen nicht mehr hinein; Autos, Panzer und der Spice-Ernter nehmen alles wie bisher.
+    - Besserer Treibstoff fliegt schneller: leer etwa 8 Kacheln/s mit Raketentreibstoff, 11 mit Atomtreibstoff, 13 mit legendärem Raketentreibstoff und 21 mit legendärem Atomtreibstoff, beladen je 70 % davon. Bisher flog jeder Brennstoff gleich schnell.
+    - Alte Spielstände: Kohle und andere einfache Brennstoffe im Brennstofffach eines Ornithopters wandern in seinen Kofferraum (was nicht passt, auf den Boden), ein solches Feuer geht aus.
+  Modding:
+    - Neue Brennstoffkategorie arrakis-flight-fuel. data-final-fixes.lua gibt sie zusätzlich jedem chemischen Brennstoff, der in Beschleunigung und Höchsttempo mindestens Raketentreibstoff erreicht.
+    - Prüfstand: T15 und T16 an die neue Regel angepasst (Einfüllprobe, Tempo je Treibstoff), alle Ornithopter-Prüflinge tanken Raketentreibstoff.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.9
 Date: 2026-10-28
   Graphics:

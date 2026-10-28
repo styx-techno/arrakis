@@ -408,6 +408,7 @@ unit_number und Ausrichtung bleiben beim Teleport erhalten (RUN055 T3 b: 10/10 g
 - 0.6.1: U6 und U7 hielten nicht (T16 vom 26.10.2026). Beide Ausweichwege sind genommen: Basis 0,603 und 0,427 aus der T16-INFO,
   dazu je Zustand eine Familie von Stickern, eine je Stufe des Brennstoff-Höchsttempos t. Die Pflege wählt den Sticker nach dem
   Brennstoff; die Namen sind nicht mehr nur `-empty` und `-loaded`. Einzelheiten in 9.
+- 0.9.0 (Wunsch von Max, 28.10.2026): nur Flugtreibstoff, besserer Treibstoff fliegt schneller. Einzelheiten in 10.
 
 ### 4.10 Absturzregeln und Sonderfälle
 - **Landesuche** `land_cargo(h, crash_pos, damage)`, gemeinsam für Absturz, „anders entfernt“, Waisen, gelöschte Oberflächen und
@@ -858,3 +859,26 @@ T14 ohne FEHLER; T15 15/17 (FEHLER in 2 und 15), T16 Kriterien 2/5 (FEHLER leer,
   sonst die Engine.
 - Einen 0.6.0-Spielstand mit Ornithopter laden: leer 8 und beladen 5,6 Kacheln/s nach höchstens 1 s, Last und Bild bleiben.
 - Im Flug Raketentreibstoff statt Kohle tanken: Das Tempo bleibt gleich.
+
+## 10. Nachtrag 0.9.0 (28.10.2026): Flugtreibstoff
+
+Max nach T22 (28.10.2026): Der Ornithopter soll nicht mit Kohle oder anderen „primitiven“ Brennstoffen fliegen, nur mit
+Raketentreibstoff, Atomtreibstoff und Besserem, und bessere Treibstoffe sollen ihn deutlich schneller machen. Das hebt U7 („Brennstoff
+ändert das Tempo nicht“) für den Ornithopter auf. Vorgaben, an Max gemeldet: Raketentreibstoff 8, Atomtreibstoff etwa 11,
+legendärer Raketentreibstoff etwa 13, legendärer Atomtreibstoff etwa 21 Kacheln/s leer, beladen je 70 %.
+
+- Datenstufe: eigene Brennstoffkategorie `arrakis-flight-fuel` (Locale „Flugtreibstoff“). Der Brenner des Ornithopters nimmt nur
+  sie. `data-final-fixes.lua` gibt sie jedem chemischen Brennstoff zusätzlich, der in Beschleunigung (≥ 1,8) und Höchsttempo
+  (≥ 1,15) mindestens Raketentreibstoff erreicht; `chemical` bleibt, Autos, Panzer und Kessel merken nichts. Erst ab 2.1.20 hat ein
+  Item eine Liste von Kategorien; davor bleibt der Ornithopter bei `chemical` (compat-Weiche, main verlangt ohnehin 2.1.23).
+- Tempo: Die Stickerfamilien aus 0.6.1 bleiben. Die Stufe richtet sich nach r = t / g mit g = a / 1,8 (a: Beschleunigungs-Faktor samt
+  Qualitätsbonus, 30 % von a − 1 je Stufe). Der Sticker BASE / r ergibt 8 · g Kacheln/s leer und 5,6 · g beladen. Stufen: Raketentreibstoff
+  p = 115, Atomtreibstoff und legendärer Raketentreibstoff p = 82, legendärer Atomtreibstoff p = 52 (Raster bis 0,50).
+- Altbestände: Der 60-Tick-Takt räumt Brennstoff ohne die Kategorie aus dem Brennstofffach in den Kofferraum (Rest auf den Boden) und
+  löscht ein solches Feuer (`remaining_burning_fuel = 0`). Ob die Engine beim Laden ungültige Brennstoffe selbst entfernt, ist offen.
+- Prüfstand: T15 Schritt 1 prüft die Kategorien, Schritt 15 f tauscht Raketen- gegen Atomtreibstoff (p = 82). T16: drei Einfüllproben
+  (Kohle, Festbrennstoff, Spice-Brikett, je 0 eingefüllt), Tempo-Grenzen geteilt durch g, neues Kriterium „Verhältnis zu
+  Raketentreibstoff = g ± 10 %“ statt „max/min ≤ 1,10“; die legendären Bahnen messen bis 10 s. Alle Prüflinge in T15, T16, T19, T20
+  und T21 tanken Raketentreibstoff.
+- Offen: ob die Spinnenbeine 21 Kacheln/s mitgehen (legendärer Atomtreibstoff, Sticker-Modifier 1,16 > 1). T1 erreichte mit der
+  schnellsten Beinvariante 19,6. Hält es nicht, deckelt eine nächste Version das Tempo.

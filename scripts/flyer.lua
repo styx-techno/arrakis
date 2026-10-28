@@ -215,11 +215,11 @@ end
 -- Tempo-Sticker (Plan 4.9) --------------------------------------------------------------------------
 
 -- Das Tempo des Ornithopters ist proportional zum Höchsttempo-Faktor t des Brennstoffs (T16 vom 26.10.2026) [U7].
--- Deshalb gibt es je Zustand eine Familie von Stickern, eine je Stufe von t (prototypes/ornithopter-speed.lua), und
--- jeder Brennstoff fliegt gleich schnell: 8 Kacheln/s leer, 5,6 beladen, auf ±1 % (Ausweichweg aus Plan 4.16 wie
--- apply_fuel_normalization beim Ernter, scripts/harvester.lua). t wie dort: fuel_top_speed_multiplier
--- + Qualitätsstufe · fuel_top_speed_multiplier_quality_bonus (A23 classes.d.ts:14576–14580). Die Qualität des
--- Ornithopters wirkt nicht (T16) [U8].
+-- Deshalb gibt es je Zustand eine Familie von Stickern, eine je Stufe (prototypes/ornithopter-speed.lua). Bis 0.8.9
+-- flog damit jeder Brennstoff gleich schnell; ab 0.9.0 nimmt der Ornithopter nur Flugtreibstoff (Raketentreibstoff und
+-- Besseres), und die Stufe r = t / g hebt das Tempo auf 8 · g Kacheln/s leer und 5,6 · g beladen, g = a / 1,8 aus dem
+-- Beschleunigungs-Faktor a (Raketentreibstoff 1). t und a wie beim Ernter: Faktor + Qualitätsstufe · Qualitätsbonus
+-- (A23 classes.d.ts:14576–14580). Die Qualität des Ornithopters wirkt nicht (T16) [U8].
 
 -- Stufe je Brennstoff und Qualität ("item/qualität" → j). Prototypen ändern sich nur, wenn die Mods neu geladen werden;
 -- deshalb nur je Lua-Sitzung gemerkt, nie in storage (wie fuel_top_speed_acts in scripts/harvester.lua). Jeder Rechner
@@ -231,7 +231,8 @@ local function fuel_bucket(item, quality)
   local j = fuel_buckets[key]
   if not j then
     local level = quality and quality.level or 0
-    j = speed.bucket(item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus)
+    j = speed.fuel_bucket(item.fuel_top_speed_multiplier + level * item.fuel_top_speed_multiplier_quality_bonus,
+      item.fuel_acceleration_multiplier + level * item.fuel_acceleration_multiplier_quality_bonus)
     fuel_buckets[key] = j
   end
   return j
@@ -270,6 +271,41 @@ end
 function lib.sticker_state(name)
   return speed.parse(name)
 end
+
+-- Ab 0.9.0 nimmt der Brenner nur Flugtreibstoff (prototypes/ornithopter.lua). Ältere Spielstände können noch Kohle &c.
+-- im Brennstofffach oder im Feuer haben; was die Kategorie des Brenners nicht trägt, wandert in den Kofferraum (Rest auf
+-- den Boden), und ein solches Feuer geht aus. Der 60-Tick-Takt ruft das vor ensure_sticker für jeden Flieger (care).
+local function flight_fuel(burner, item)
+  local allowed = burner.fuel_categories or {}
+  for _, category in pairs(item.fuel_categories or {}) do
+    if allowed[category] then return true end
+  end
+  return false
+end
+
+local function purge_fuel(record)
+  local flyer = record.entity
+  local burner = flyer.valid and flyer.burner
+  if not burner then return end
+  local burning = burner.currently_burning
+  if burning and not flight_fuel(burner, burning.name) then burner.remaining_burning_fuel = 0 end
+  local inventory = burner.inventory
+  for i = 1, #inventory do
+    local stack = inventory[i]
+    if stack.valid_for_read and not flight_fuel(burner, stack.prototype) then
+      local item = {name = stack.name, count = stack.count, quality = stack.quality}
+      local trunk = flyer.get_inventory(defines.inventory.spider_trunk)
+      local moved = trunk and trunk.insert(item) or 0
+      if moved < item.count then
+        item.count = item.count - moved
+        flyer.surface.spill_item_stack{position = flyer.position, stack = item, allow_belts = false}
+      end
+      stack.clear()
+    end
+  end
+end
+lib.flight_fuel = flight_fuel
+lib.purge_fuel = purge_fuel
 
 -- Genau ein eigener Sticker je Flieger, Name nach Zustand und Brennstoff. Der gemerkte taugt, wenn er gültig ist, am
 -- Flieger hängt (sticked_to, A23 classes.d.ts:8552), so heißt, wie er soll, und noch lange genug lebt (time_to_live nur
@@ -1069,6 +1105,7 @@ care = function(record)
   end
   local minable = record.cargo == nil
   if flyer.minable_flag ~= minable then flyer.minable_flag = minable end
+  purge_fuel(record)
   ensure_sticker(record)
   if record.cargo then
     draw_cargo(record)

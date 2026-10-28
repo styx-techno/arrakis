@@ -16,6 +16,13 @@
 -- logarithmischen Abstand, der Tempo-Fehler also höchstens ±1 %. Brennstoffe außerhalb des Rasters (Fäulnis hat 0,5)
 -- bekommen die Randstufe.
 
+-- Ab 0.9.0 (Wunsch von Max, 28.10.2026): Der Ornithopter fliegt nur mit Raketentreibstoff und Besserem, und besserer
+-- Treibstoff macht ihn schneller. Die Stickerfamilien bleiben; die Stufe richtet sich jetzt nach r = t / g mit dem
+-- Tempo-Faktor g = a / A_REF (a: Beschleunigungs-Faktor des Brennstoffs samt Qualitätsbonus, A_REF der von
+-- Raketentreibstoff). Der Sticker BASE / r_j ergibt dann 8 · g Kacheln/s leer und 5,6 · g beladen: Raketentreibstoff 8,
+-- Atomtreibstoff 8 · 2,5 / 1,8 ≈ 11,1, legendärer Raketentreibstoff 8 · 3,0 / 1,8 ≈ 13,3, legendärer Atomtreibstoff
+-- 8 · 4,75 / 1,8 ≈ 21,1 (Qualitätsbonus je Stufe 30 % von a − 1, ItemPrototype::fuel_acceleration_multiplier_quality_bonus).
+
 local speed = {}
 
 -- Basis-Modifier für t = 1 (T16 vom 26.10.2026, siehe oben).
@@ -25,6 +32,11 @@ speed.BASE_LOADED = 0.427
 speed.STEP = 1.02
 speed.MIN_J = -35
 speed.MAX_J = 70
+-- Treibstoffregel (0.9.0): eigene Brennstoffkategorie, die nur Brennstoffe mindestens so gut wie Raketentreibstoff
+-- bekommen (data-final-fixes.lua), und der Beschleunigungs-Faktor von Raketentreibstoff als Bezug für das Tempo.
+speed.FUEL_CATEGORY = "arrakis-flight-fuel"
+speed.A_REF = 1.8
+speed.T_MIN = 1.15
 -- Zustände in fester Reihenfolge; Namensanfang je Zustand.
 speed.STATES = {"empty", "loaded"}
 speed.PREFIX = {empty = "arrakis-ornithopter-empty-", loaded = "arrakis-ornithopter-loaded-"}
@@ -75,6 +87,25 @@ function speed.bucket(t)
   if j < speed.MIN_J then return speed.MIN_J end
   if j > speed.MAX_J then return speed.MAX_J end
   return j
+end
+
+-- Bekommt ein Brennstoff mit Beschleunigungs-Faktor a und Höchsttempo-Faktor t (beide ohne Qualität) die Kategorie?
+-- Ja, wenn er in beidem mindestens Raketentreibstoff erreicht (Atomtreibstoff 2,5 und 1,15; Festbrennstoff 1,2 und
+-- 1,05 nicht).
+function speed.flight_fuel(a, t)
+  return type(a) == "number" and type(t) == "number" and a >= speed.A_REF and t >= speed.T_MIN
+end
+
+-- Tempo-Faktor g zum Beschleunigungs-Faktor a samt Qualitätsbonus (Raketentreibstoff normal 1).
+function speed.gain(a)
+  if type(a) ~= "number" or a <= 0 then return 1 end
+  return a / speed.A_REF
+end
+
+-- Stufe zu Höchsttempo-Faktor t und Beschleunigungs-Faktor a (beide samt Qualitätsbonus): r = t / g.
+function speed.fuel_bucket(t, a)
+  if type(t) ~= "number" or t <= 0 then t = 1 end
+  return speed.bucket(t / speed.gain(a))
 end
 
 -- Stickername zu Zustand ("empty", "loaded") und Stufe.

@@ -580,12 +580,13 @@ local function new_car(run, tb, d, s, position, opts)
   return car
 end
 
--- Echter Ornithopter mit Kohle; opts.pilot setzt eine Puppe als Pilot.
+-- Echter Ornithopter mit Raketentreibstoff (ab 0.9.0 nur Flugtreibstoff, opts.rocket Stück); opts.pilot setzt eine
+-- Puppe als Pilot.
 local function new_flyer(run, tb, d, s, position, opts)
   opts = opts or {}
   local flyer = make(run, tb, s, {name = FLYER, position = position, force = opts.force or d.force, create_build_effect_smoke = false}, "flyers")
   if not flyer then return nil end
-  tb.fuel(flyer, "coal", opts.coal or 10)
+  tb.fuel(flyer, "rocket-fuel", opts.rocket or 2)
   if opts.pilot then remember(s, tb.dummy_driver(flyer, opts.force or d.force)) end
   return flyer
 end
@@ -1573,9 +1574,9 @@ function steps.s6_escort_start(run, tb, d, s)
   local nodes = s.hunt.worm and valid(s.hunt.worm.unit) and s.hunt.worm.unit.get_body_nodes()
   if not nodes then return fail(run, tb, 6, "kein Wurm 600 Ticks nach dem Spawn") end
   local head = nodes[1]
-  s.o6 = new_flyer(run, tb, d, s, head, {pilot = true, coal = 20})
-  s.o6b = new_flyer(run, tb, d, s, at(head, 0, -ESCORT_SIDE), {pilot = true, coal = 20})
-  s.o6c = new_flyer(run, tb, d, s, at(head, 0, ESCORT_SIDE), {pilot = true, coal = 20})
+  s.o6 = new_flyer(run, tb, d, s, head, {pilot = true, rocket = 4})
+  s.o6b = new_flyer(run, tb, d, s, at(head, 0, -ESCORT_SIDE), {pilot = true, rocket = 4})
+  s.o6c = new_flyer(run, tb, d, s, at(head, 0, ESCORT_SIDE), {pilot = true, rocket = 4})
   if not (s.o6 and s.o6b and s.o6c) then return fail(run, tb, 6, "Ornithopter ließen sich nicht bauen") end
   s.pilot6, s.pilot6b = pilot_of(s.o6), pilot_of(s.o6b)
   s.health = {o6 = s.o6.health, o6b = s.o6b.health, p6 = s.pilot6 and s.pilot6.health, p6b = s.pilot6b and s.pilot6b.health}
@@ -1774,7 +1775,7 @@ function steps.s7_build(run, tb, d, s)
   s.car_un = s.car.unit_number
   s.driver = driver_of(s, s.car)
   s.cars = {s.car}
-  s.flyer = new_flyer(run, tb, d, s, c, {pilot = true, coal = 20})
+  s.flyer = new_flyer(run, tb, d, s, c, {pilot = true, rocket = 4})
   if not s.flyer then return fail(run, tb, 7, "Ornithopter O7 ließ sich nicht bauen") end
   s.pilot = pilot_of(s.flyer)
   local ok, reason = deploy(s.car)
@@ -2783,7 +2784,7 @@ end
 t22_enter[5] = function(run, tb, d)
   local o = d.origin
   local base = t22_base(d)
-  d.flyer = valid(d.flyer) and d.flyer or new_flyer(run, tb, d, d.made, at(base, 4, 0), {force = d.force, coal = 50})
+  d.flyer = valid(d.flyer) and d.flyer or new_flyer(run, tb, d, d.made, at(base, 4, 0), {force = d.force, rocket = 10})
   local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, 120), force = d.force})
   if not chest then return tb.log(run, "FEHLER", "5) Kiste ließ sich nicht bauen") end
   -- 0.8.4 (T22 am 28.10.2026): Aufgabe klarer, 90 statt 60 s; die Kiste ist nur Köder.
