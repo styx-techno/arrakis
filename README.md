@@ -27,6 +27,7 @@ Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Grafiken
    - Linux: `~/.factorio/mods/arrakis`
    - Nur für Factorio 2.0.77: danach im Ordner `arrakis` `git fetch` und `git checkout factorio-2.0`.
    - Aktualisieren: im Ordner `arrakis` `git pull`.
+   - Aus der Claude-App unter Windows nicht unter AppData klonen oder aktualisieren: Die App leitet neue Dateien dort in eine Ablage um, die Factorio nicht sieht. Stattdessen außerhalb von AppData klonen und per Verbindung (Junction) einhängen, siehe [docs/pruefstand.md](docs/pruefstand.md#claude-app-unter-windows).
 2. Factorio starten, Mod aktivieren, neues Spiel mit Space Age.
 3. Schnelltest ohne Forschung: im Chat `/arrakis` eingeben (als Admin). Erzeugt die Oberfläche und teleportiert dich hin.
    Alle Arrakis-Forschungen auf einmal freischalten (schaltet Achievements ab):

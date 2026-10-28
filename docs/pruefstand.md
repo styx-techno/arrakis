@@ -196,9 +196,19 @@ Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 9
 |---|---|
 | 0 | kein FEHLER (offene FRAGEn zählen nicht) |
 | 1 | mindestens ein FEHLER, oder ein Test lief ins Zeitlimit. Dann schickt das Werkzeug `/arrakis-test stop`, die übrigen Tests laufen nicht. |
-| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Strg+C, ein Test wurde abgelehnt (T9, T12, T17, T20, T22, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
+| 2 | Einrichtung oder Infrastruktur: Factorio startet nicht, Spielstand oder RCON geht nicht, Prüfstand-Einstellung nicht aktiv, Zeitraffer geht nicht (Mod vor 0.5.5 und `--tempo` nicht 1), Server abgestürzt (etwa mit `T7:ja`) oder tickt nicht mehr, Ordner schon in Benutzung, Mod unter AppData in der Claude-App ([unten](#claude-app-unter-windows)), Strg+C, ein Test wurde abgelehnt (T9, T12, T17, T20, T22, unbekannte ID) oder endete ohne ERGEBNIS. 2 geht vor 1. |
 
 Mit `T7:ja` trifft ein Absturz nur den Server, nicht dein Spiel; das Ende des Server-Logs steht dann in der Ausgabe.
+
+### Claude-App unter Windows
+
+Die Claude-App ist unter Windows ein App-Paket (MSIX). Alles, was in ihr läuft (der PC-Assistent, git, Python, der Server des Prüfstands), schreibt neue Dateien unter `%APPDATA%` und `%LOCALAPPDATA%` in eine eigene Ablage unter `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\`, die nur die App sieht.
+Ein `git pull` aus der App im Factorio-mods-Ordner kommt deshalb in deinem normalen Factorio nicht an, während der Prüfstand in der App den neuen Stand sieht und besteht. Am 28.10.2026 fiel auf, dass Max' Factorio die Mod nicht zeigte, obwohl alle Läufe bis 0.8.3 in der App bestanden hatten.
+
+- Den Klon außerhalb von AppData anlegen (etwa `C:\Users\<Name>\arrakis`) und in einem normalen PowerShell-Fenster, nicht aus der App, mit dem mods-Ordner verbinden: `New-Item -ItemType Junction -Path "$env:APPDATA\Factorio\mods\arrakis" -Target "$env:USERPROFILE\arrakis"`. Schritt für Schritt steht das in der Anleitung `anleitungen/mod-neu-holen.md` im Projektordner.
+- In der App nur in diesem Klon arbeiten (`git pull`, `pruefstand.py`), nie über den Pfad unter AppData. Die Verbindung im mods-Ordner nicht aus der App anlegen oder ändern.
+- Das Werkzeug bricht mit Rückgabewert 2 ab, wenn es in einem App-Paket läuft und die Mod unter AppData liegt. Der Arbeitsordner darf in der Ablage landen, ihn liest nur das Werkzeug.
+- Die Mod nicht über die Mod-Verwaltung im Spiel aktualisieren oder löschen, solange sie eine Verbindung ist, sondern nur mit `git pull` im Klon.
 
 ## Was die Zeilen bedeuten
 
