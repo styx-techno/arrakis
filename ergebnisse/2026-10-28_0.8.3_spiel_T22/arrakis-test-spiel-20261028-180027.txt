@@ -394,3 +394,7 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +321.4s: Schritt 4 von 9
 [T22] INFO +321.4s: 4) Zerdrücken: Band, Kisten und ein Auto auf der Linie, ein Auto 6 Kacheln daneben, eine Kiste auf Fels: Jagd 5, Biss bei 0 in 60 s
 [T22] FRAGE +381.5s: 4) Verschwinden Band, Kisten und das Auto auf der Linie am Kopf (Wracks), bleiben das Auto neben der Spur und die Kiste auf dem Fels heil, und fährt der Wurm durch, ohne hängen zu bleiben?
+[T22] INFO +537.9s: Schritt 5 von 9
+[T22] INFO +537.9s: 5) Steig in den Ornithopter neben dir, flieg zum Wurm (taucht 160 Kacheln westlich der Kiste auf, fährt nach Osten), schwebe über dem fahrenden Kopf, halt an, dann flieg voll nach Westen über den Körper weg.
+[T22] INFO +537.9s: 5) Ornithopter über dem Kopf [W12]: Jagd 6, Biss bei 0 in 60 s
+[T22] FRAGE +598.0s: 5) Merkst du ein Bremsen, Ruckeln oder Schaden?

@@ -10,3 +10,4 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Nachtrag Frage 3: Max bestätigt "ja beide" – 3a (biegt glatt vor der Insel ab, ohne Fels) und 3b (Ernter wird trotzdem gebissen, Wurm bleibt auf Sand) beide ja.
 - Frage 4: "ja er zerstört alles auf seinem weg, die kiste auf dem felsen bleibt heile, da die felsfläche sehr klein war kann ich nicht garantierent dass das pathfinding dem felsen wirklich ausgewichen ist"
 - Nachtrag Frage 4: "ja und ja" – Auto neben der Spur bleibt heil; Wurm fährt durch, ohne hängen zu bleiben.
+- Frage 5 (Ornithopter über dem Kopf, W12): nicht getestet. Max: "nicht geschafft" – er hat den Ablauf nicht verstanden (dachte, es gehe um die Holzkiste), der Wurm hatte schon gebissen, bevor er losflog. Muss in einem neuen T22-Lauf wiederholt werden. Hinweis für die Anleitung: die INFO zu Schritt 5 im Chat war offenbar nicht klar genug.
