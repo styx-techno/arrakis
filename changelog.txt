@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.9
+Date: 2026-10-28
+  Graphics:
+    - Ornithopter mit eigener Grafik statt getöntem Spidertron: schlanker Rumpf mit Glaskanzel, zwei Paar lange, spitze Flügel, zwei Triebwerke und Greifklauen, sandgrau, in 64 Richtungen mit Schatten am Boden. Die Flügelspitzen zeigen die Spielerfarbe. Eigenes Symbol für Gegenstand und Forschung. Zerstört hinterlässt er Schutt statt eines Spidertron-Wracks; die Spidertron-Augenlichter sind weg.
+    - Der getragene Ernter hängt jetzt an den Greifklauen, tiefer als in 0.8.8. Ein schon vor dem Update getragener Ernter behält bis zum nächsten Absetzen die alte Lage.
+  Modding:
+    - tools/grafik/ornithopter-modell.py baut und rendert den Ornithopter, pack.py nimmt den Dateinamen als drittes Argument. tools/check/checks.lua prüft die Bildebenen, das Symbol und dass vom Spidertron nichts Sichtbares übrig ist.
+---------------------------------------------------------------------------------------------------
 Version: 0.8.8
 Date: 2026-10-28
   Changes:

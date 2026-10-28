@@ -32,7 +32,28 @@ Festlegungen, an denen `prototypes/harvester.lua` und das Lastbild in `prototype
   `scale = 1`). Die Farbmaske zeigt Seitenschürzen und Rückenplatten in Spielerfarbe.
 - Farben in Standard-sRGB (`view_transform = "Standard"`); Blenders Vorgabe AgX wäscht sie aus.
 
-## Ornithopter (Entwurf, noch nicht im Spiel)
+## Ornithopter (ab 0.8.9)
 
-`ornithopter-modell.py` baut einen schlanken Rumpf mit Kanzel, zwei Flügelpaaren, Triebwerken und Greifklauen. Der
-Rumpf sitzt mit seiner Mitte im Ursprung (Rumpfpunkt des Fahrzeugs); Aufrufe wie beim Ernter.
+```
+python ornithopter-modell.py roh base 64
+python ornithopter-modell.py roh mask 64
+python ornithopter-modell.py roh shadow 64
+python ornithopter-modell.py roh icon
+python pack.py roh blaetter ornithopter
+```
+
+Aus `blaetter/` kommen `ornithopter-base.png`, `ornithopter-mask.png` und `ornithopter-shadow.png` nach
+`graphics/entity/ornithopter/`, die Symbole nach `graphics/icons/ornithopter.png` und
+`graphics/technology/ornithopter.png`.
+
+Abweichend vom Ernter:
+
+- Die Bildmitte ist der Rumpfmittelpunkt, nicht ein Bodenpunkt. `prototypes/ornithopter.lua` schiebt das Bild mit dem
+  Vanilla-shift des Spidertron-Rumpfs (−19 px) dorthin, wo das Spiel den Rumpf zeichnet.
+- Die Flughöhe setzt das Spiel selbst über den Abstand des Schattens. Das Schattenbild entsteht deshalb nur 0,6 Kacheln
+  über dem Boden (`LIFT`, damit die Klauen nicht im Boden stecken), 8 Kacheln zu 32 px (256 px, `scale = 1`). Sein
+  Schwerpunkt liegt im Mittel 0,33 Kacheln rechts und 0,33 unter der Bildmitte; das zieht der shift im Prototyp ab.
+- Rumpf und Farbmaske sind 7 Kacheln breit (448 px, `scale = 0.5`), sonst stoßen die Flügelspitzen an den Rand. Die
+  Farbmaske zeigt die Streifen an den Flügelspitzen.
+- Die Greifklauen reichen 0,6 Kacheln unter die Rumpfmitte; daran hängt das Lastbild des Ernters
+  (`scripts/flyer.lua`, `IMAGE_OFFSET`).

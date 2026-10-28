@@ -4,27 +4,28 @@
 -- Anheben, Tragen und Absetzen steuert das Skript (scripts/flyer.lua, scripts/hold.lua).
 -- 2.0-Schreibweise wie überall; compat.finish (prototypes/compat.lua) schreibt unter 2.1 um. Hier braucht nichts eine
 -- Umschreibung: Das Rezept hat keine Kategorie, die Forschung einen craft-item-Trigger, kein Item ist Brennstoff.
--- Grafiken sind getönte Vanilla-Platzhalter wie beim Ernter (prototypes/harvester.lua) und im Prüfstand
--- (prototypes/testbench/flyers.lua); eigene Grafik kommt mit Phase 6.
+-- Eigene Grafik ab 0.8.9 (tools/grafik/ornithopter-modell.py, Festlegungen in tools/grafik/README.md); der Prüfstand
+-- (prototypes/testbench/flyers.lua) bleibt bei getönten Vanilla-Bildern.
 -- Muss nach prototypes/harvester.lua laufen: Die Probe liest die Kollisionsmaske des Ernters (data.lua).
 local collision_mask_util = require("collision-mask-util")
 local speed = require("prototypes.ornithopter-speed")
 
-local sand_tint = {r = 1, g = 0.85, b = 0.55}
+local ornithopter_gfx = "__arrakis__/graphics/entity/ornithopter/"
 
-local function tinted(icon, tint)
-  return {{icon = icon, tint = tint}}
-end
-
--- Tönt alle normalen Bildebenen; Schatten, Farbmasken und Leuchten bleiben (Regel wie prototypes/testbench/flyers.lua:7–15).
-local function tint_layers(animation, tint)
-  if type(animation) ~= "table" then return end
-  if animation.layers then
-    for _, layer in pairs(animation.layers) do tint_layers(layer, tint) end
-    return
-  end
-  if animation.draw_as_shadow or animation.apply_runtime_tint or animation.draw_as_glow or animation.draw_as_light then return end
-  animation.tint = tint
+-- Ebene aus einem 8 × 8-Blatt mit 64 Richtungen (0 = Nord, im Uhrzeigersinn), wie beim Ernter (prototypes/harvester.lua).
+local function ornithopter_layer(file, size, scale, shift, extra)
+  local layer =
+  {
+    filename = ornithopter_gfx .. file,
+    width = size,
+    height = size,
+    line_length = 8,
+    direction_count = 64,
+    scale = scale,
+    shift = shift
+  }
+  for key, value in pairs(extra or {}) do layer[key] = value end
+  return layer
 end
 
 -- Bein: Kopie eines Spidertron-Beins ohne Grafik (graphics_set ist optional), ohne Geräusche, ohne Kollision.
@@ -61,14 +62,15 @@ local function vanilla_leg(leg_name, index, walking_group)
 end
 
 -- Ornithopter: Kopie des Spidertrons, Flug wie der T1-Prüfling arrakis-test-flyer-4 (prototypes/testbench/flyers.lua:72–105).
--- Geerbt und so gewollt: max_health 3000, Resistenzen, corpse, dying_explosion, is_military_target, Kollision ±1,
+-- Geerbt und so gewollt: max_health 3000, Resistenzen, dying_explosion, is_military_target, Kollision ±1,
 -- sticker_box ±1,5 und surface_conditions (Schwerkraft ≥ 1; setzt Space Age schon in seiner data.lua,
 -- V23 space-age/base-data-updates.lua:192, also vor dieser Datei). collision_mask bleibt ungesetzt: Vorgabe nur
 -- trigger_target (V23 core/lualib/collision-mask-defaults.lua:190), der Ernter fährt darunter durch [U21].
 local ornithopter = table.deepcopy(spidertron)
 ornithopter.name = "arrakis-ornithopter"
-ornithopter.icon = nil
-ornithopter.icons = tinted("__base__/graphics/icons/spidertron.png", sand_tint)
+ornithopter.icon = "__arrakis__/graphics/icons/ornithopter.png"
+ornithopter.icon_size = 64
+ornithopter.icons = nil
 ornithopter.minable = {mining_time = 1, result = "arrakis-ornithopter"}
 ornithopter.factoriopedia_simulation = nil
 ornithopter.guns = nil
@@ -101,8 +103,32 @@ ornithopter.movement_energy_consumption = "800kW"
 -- Oberteil über allem am Boden. base_render_layer bleibt (higher-object-above, schon über Gebäuden), damit das
 -- Unterteil unter dem Oberteil gezeichnet wird. Das Lastbild liegt darunter auf "smoke" (Plan 4.12).
 ornithopter.graphics_set.render_layer = "air-object"
-tint_layers(ornithopter.graphics_set.base_animation, sand_tint)
-tint_layers(ornithopter.graphics_set.animation, sand_tint)
+-- Rumpf und Farbmaske 448 px mit scale 0,5, Schatten 256 px mit scale 1. Der Rumpfpunkt liegt in der Bildmitte; der
+-- shift setzt ihn dahin, wo der Spidertron seinen Rumpf zeichnet (Vanilla-shift −19 px, V2123
+-- base/prototypes/entity/spidertron-animations.lua:357), sonst hinge das Lastbild (scripts/flyer.lua IMAGE_OFFSET)
+-- nicht mehr unter dem Rumpf. Der Schatten bekommt den Vanilla-shift (26 px, 0,5 px; ebenda :380) abzüglich des
+-- Versatzes, den das knapp über dem Boden gerenderte Schattenbild schon mitbringt. Das Unterteil (base_animation)
+-- und seine Lichter, Augen und Spiegelung gehörten zum Spidertron und fallen weg.
+-- Schattenbild: Schwerpunkt im Mittel über alle Richtungen 0,33 Kacheln rechts und 0,33 unter der Bildmitte (Licht
+-- von links oben).
+local SHADOW_SHIFT = {26 / 32 - 0.33, 0.5 / 32 - 0.33}
+ornithopter.graphics_set.base_animation = nil
+ornithopter.graphics_set.shadow_base_animation = nil
+ornithopter.graphics_set.animation =
+{
+  layers =
+  {
+    ornithopter_layer("ornithopter-base.png", 448, 0.5, {0, -19 / 32}),
+    ornithopter_layer("ornithopter-mask.png", 448, 0.5, {0, -19 / 32}, {apply_runtime_tint = true})
+  }
+}
+ornithopter.graphics_set.shadow_animation = ornithopter_layer("ornithopter-shadow.png", 256, 1, SHADOW_SHIFT,
+  {draw_as_shadow = true})
+ornithopter.graphics_set.water_reflection = nil
+ornithopter.graphics_set.light_positions = nil
+ornithopter.graphics_set.eye_light = nil
+-- Wrack: allgemeiner Schutt statt Spidertron-Wrack, wie beim Ernter.
+ornithopter.corpse = "big-remnants"
 -- 4 Beine im Trab wie der T1-Prüfling (prototypes/testbench/flyers.lua:67–69): Vanilla 1 und 8 zusammen, 5 und 4
 -- zusammen. Laufgruppen beginnen bei 1 und sind lückenlos. Die Positionen drehen nicht mit der Flugrichtung
 -- (flyers.lua:51–53); T16 misst N und S deshalb getrennt.
@@ -119,8 +145,9 @@ ornithopter.spider_engine.legs =
 -- gespeicherter Farbe zeigte sonst das getönte Spidertron-Bild statt des Ornithopters (A23 prototypes.d.ts:5330–5356).
 local item = table.deepcopy(data.raw["item-with-entity-data"]["spidertron"])
 item.name = "arrakis-ornithopter"
-item.icon = nil
-item.icons = ornithopter.icons
+item.icon = ornithopter.icon
+item.icon_size = ornithopter.icon_size
+item.icons = nil
 for _, key in pairs({"icon_tintable", "icon_tintable_mask", "icon_tintable_size", "icon_tintable_mask_size",
   "icon_tintables", "icon_tintable_masks"}) do
   item[key] = nil
@@ -236,7 +263,8 @@ data:extend({
   {
     type = "technology",
     name = "arrakis-ornithopter",
-    icons = {{icon = "__base__/graphics/technology/spidertron.png", icon_size = 256, tint = sand_tint}},
+    icon = "__arrakis__/graphics/technology/ornithopter.png",
+    icon_size = 256,
     effects =
     {
       {type = "unlock-recipe", recipe = "arrakis-ornithopter"}

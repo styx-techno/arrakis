@@ -1,15 +1,16 @@
 # Ornithopter aus einfachen Formen: schlanker Rumpf mit Kanzel, zwei Flügelpaare, Triebwerke, Greifklauen.
 # Aufruf: python ornithopter-modell.py ROH_DIR MODUS [richtungen]  (Python mit dem Modul bpy, pip install bpy)
 # MODUS wie beim Ernter (szene.py). Der Rumpf sitzt mit seiner Mitte im Ursprung: Das ist der Rumpfpunkt des
-# Spider-Fahrzeugs in Flughöhe (prototypes/ornithopter.lua, height = 3). Der Schatten fällt aus dieser Höhe.
+# Spider-Fahrzeugs (prototypes/ornithopter.lua). Den Abstand des Schattens zur Flughöhe setzt das Spiel selbst; das
+# Schattenbild entsteht deshalb nur knapp über dem Boden (LIFT), damit die Klauen nicht im Boden stecken.
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import szene
 from szene import mat, box, cyl, slab, prism
 
-FLIGHT_HEIGHT = 3
-# Spannweite gut 4,4 Kacheln; mit dem Schatten aus 3 Kacheln Höhe reicht ein Schattenbild von 9 Kacheln.
-szene.start("ornithopter", {"vorschau": 7, "shadow": 9, "default": 6}, ("stripe",))
+LIFT = 0.6
+# Spannweite gut 4,4 Kacheln; mit der V-Form ragen die Flügelspitzen gut 3 Kacheln aus der Mitte: Rumpf 7, Schatten 8 Kacheln.
+szene.start("ornithopter", {"vorschau": 7, "shadow": 8, "default": 7}, ("stripe",))
 
 BODY = mat("body", (0.30, 0.27, 0.22), 0.6, 0.35)        # sandgraues Metall
 BODY2 = mat("body2", (0.17, 0.155, 0.135), 0.6, 0.4)     # dunklere Rahmen und Gelenke
@@ -71,4 +72,4 @@ for sy in (-1, 1):
 for sx in (-1, 1):
     box(f"tip{sx}", (0.06, 0.06, 0.04), (sx * (ROOT_X + 2.2), -0.7, 0.5), GLOW, 0.0)
 
-szene.render(lift=FLIGHT_HEIGHT)
+szene.render(lift=LIFT)

@@ -2,7 +2,7 @@
 
 Factorio-Mod für **Factorio 2.1 + Space Age** (ab 2.1.23): ein neuer Wüstenplanet mit Wassermangel, Sandwürmern und Spice. Factorio 2.1 lädt keine Mods für 2.0. Für **Factorio 2.0.77** gibt es den Zweig `factorio-2.0` (Mod 0.5.0): im Mod-Ordner `arrakis` einmal `git fetch` und dann `git checkout factorio-2.0` ausführen.
 
-Stand: Phase 3d2 (0.8.8). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Seit 0.5.0 gibt es den Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt seit 0.7.0).
+Stand: Phase 3d2 (0.8.9). Sandwüste mit Felsinseln, Erze nur auf Fels, Spice-Sand im offenen Sand, Tiefenwasser-Brunnen und Windfalle. Dazu die Spice-Kette mit Spice-Raffinerie, Melange, Spice-Essenz und Spice-Wissenschaft. Seit 0.5.0 gibt es den Spice-Ernter: Er wird auf einem Spicefeld aufgebaut (`Umschalt+H` oder Knopf im Fahrzeugfenster) und fördert Spice-Sand, eine Spice-Annahme auf Fels entlädt ihn, ein Tankstutzen tankt ihn auf. Spice-Sand bauen nur noch der Ernter und die Hand ab, keine Bohrer. Dazu das Spice-Brikett als Brennstoff und die Mod-Einstellung „Wurmbiss“ (wirkt seit 0.7.0).
 
 Neu in 0.5.4 ist die Karte von Arrakis: Der Start liegt auf einer Startinsel mit allen Erzen und einem Tiefenbrunnen, ringsum bis 220 Kacheln vom Start nur Sand, dahinter gleich große Felsinseln. Ein Lehrfeld mit etwa 100 000 Spice-Sand liegt 41–59 Kacheln vom Inselrand, alle anderen Spicefelder mindestens 100 Kacheln vom Fels. **Sicher gibt es die neue Karte nur in einem neuen Spiel.** Spielstände, in denen Arrakis schon angelegt ist, behalten die alte Karte, auch in neu erkundeten Gebieten. Ob ein älterer Spielstand, in dem Arrakis noch nicht angelegt ist, beim ersten Besuch die neue oder die alte Karte bekommt, ist noch nicht geprüft. Bekommt Arrakis die alte Karte, sagt die Mod das einmal im Chat.
 
@@ -18,7 +18,7 @@ Neu in 0.8.0 ist der **Sandwurm** selbst (Phase 3d2): Gut 11 s nach dem Wurmzeic
 
 **Vor dem Entfernen der Mod** als Admin `/arrakis-uninstall` und dann `/arrakis-uninstall ja` eingeben: Das setzt alle getragenen Ernter ab, löscht die versteckte Ablage-Oberfläche `arrakis-hold`, beendet laufende Jagden ohne Biss, lässt alle Sandwürmer abtauchen und räumt Markierungen, Fenster und Anzeigen. **Zurück auf 0.7.0** erst danach, sonst löscht Factorio die Würmer, und laufende Jagden beißen ohne Wurm. **Zurück auf 0.6.x** ebenso, sonst bleiben Markierungen laufender Jagden und die Sandwurm-Force im Spielstand. **Zurück auf 0.5.x** mit einem getragenen Ernter geht nicht; vorher jeden Ernter absetzen.
 
-Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Der Spice-Ernter hat ab 0.8.5 eigene Grafik (aus Blender-Skripten, siehe `tools/grafik/`), die übrigen Grafiken sind eingefärbte Vanilla-Platzhalter.
+Der Prüfstand `/arrakis-test` ist für Testspielstände (siehe unten). Spice-Ernter (ab 0.8.5) und Ornithopter (ab 0.8.9) haben eigene Grafik (aus Blender-Skripten, siehe `tools/grafik/`), die übrigen Grafiken sind eingefärbte Vanilla-Platzhalter.
 
 ## Installation zum Testen
 

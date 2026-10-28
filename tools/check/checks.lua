@@ -292,9 +292,9 @@ if orni then
   -- Körper ohne eigene Maske: Vorgabe nur trigger_target, der Ernter fährt darunter durch (Plan 3, U21).
   if orni.collision_mask ~= nil then add("FEHLER 3c: arrakis-ornithopter hat eine collision_mask") end
   if orni.tall then add("FEHLER 3c: arrakis-ornithopter tall gesetzt") end
-  if orni.icon ~= nil or not orni.icons then add("FEHLER 3c: arrakis-ornithopter icon statt icons") end
+  if orni.icon ~= "__arrakis__/graphics/icons/ornithopter.png" or orni.icon_size ~= 64 or orni.icons then add("FEHLER 0.8.9: arrakis-ornithopter ohne eigenes Symbol") end
   if orni.height ~= 3 or not (orni.graphics_set and orni.graphics_set.render_layer == "air-object") then add("FEHLER 3c: arrakis-ornithopter Flughöhe/render_layer") end
-  -- Kein Feld, das auf den Spidertron zeigt, außer den gewollten (Leiche, Explosion; DOC 5.5).
+  -- Kein Feld, das auf den Spidertron zeigt, außer der gewollten Explosion (DOC 5.5).
   for _, key in ipairs({"factoriopedia_alternative", "factoriopedia_simulation", "fast_replaceable_group", "next_upgrade", "placeable_by"}) do
     if orni[key] ~= nil then add("FEHLER 3c: arrakis-ornithopter " .. key .. " geerbt") end
   end
@@ -302,7 +302,7 @@ end
 local orni_item = raw["item-with-entity-data"]["arrakis-ornithopter"]
 if orni_item then
   -- Ohne icon_tintable* zeigte ein Item mit gespeicherter Farbe das getönte Spidertron-Bild (Plan 3).
-  if orni_item.icon ~= nil or not orni_item.icons then add("FEHLER 3c: item arrakis-ornithopter icon statt icons") end
+  if orni_item.icon ~= "__arrakis__/graphics/icons/ornithopter.png" or orni_item.icons then add("FEHLER 0.8.9: item arrakis-ornithopter ohne eigenes Symbol") end
   for _, key in ipairs({"icon_tintable", "icon_tintable_mask", "icon_tintable_size", "icon_tintable_mask_size", "icon_tintables", "icon_tintable_masks"}) do
     if orni_item[key] ~= nil then add("FEHLER 3c: item arrakis-ornithopter " .. key .. " gesetzt") end
   end
@@ -406,6 +406,26 @@ do
     end
   end
   if car and (car.turret_animation or car.light_animation) then add("FEHLER 0.8.5: Ernter hat noch Turm oder Panzer-Leuchtbild") end
+end
+-- Ornithopter-Grafik (ab 0.8.9): Rumpf und Farbmaske, eigener Schatten, kein Spidertron-Unterteil, keine Spidertron-Augen.
+do
+  local gs = orni and orni.graphics_set or {}
+  local layers = gs.animation and gs.animation.layers or {}
+  local gfx = "__arrakis__/graphics/entity/ornithopter/"
+  local want = {{"ornithopter-base.png", 448, 0.5}, {"ornithopter-mask.png", 448, 0.5, "apply_runtime_tint"},
+                {"ornithopter-shadow.png", 256, 1, "draw_as_shadow"}}
+  if #layers ~= 2 then add("FEHLER 0.8.9: Ornithopter hat " .. #layers .. " Bildebenen statt 2") end
+  for j, w in ipairs(want) do
+    local l = (j == 3 and gs.shadow_animation or layers[j]) or {}
+    if l.filename ~= gfx .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3] or not l.shift
+        or l.direction_count ~= 64 or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) or l.tint then
+      add("FEHLER 0.8.9: Ornithopter Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
+    end
+  end
+  for _, key in ipairs({"base_animation", "shadow_base_animation", "water_reflection", "light_positions", "eye_light"}) do
+    if gs[key] ~= nil then add("FEHLER 0.8.9: Ornithopter graphics_set." .. key .. " vom Spidertron geerbt") end
+  end
+  if orni and orni.corpse ~= "big-remnants" then add("FEHLER 0.8.9: Ornithopter-Wrack " .. tostring(orni.corpse)) end
 end
 -- Jede Datei __arrakis__/… in den Prototypen muss im Repo liegen (aus dem Repo-Root starten).
 do

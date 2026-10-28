@@ -73,13 +73,15 @@ lib.BOARD_RANGE = 6
 lib.speed = speed
 -- Ein Sticker mit weniger Restzeit wird ersetzt (Ticks; halbe Laufzeit von 216000).
 lib.STICKER_MIN_TTL = 108000
--- Lastbild und Schatten relativ zum Bodenpunkt des Fliegers (Kacheln, Plan 4.12) [U27]. Ab 0.8.8 hängt der Ernter
--- sichtbar unter dem Rumpf: Max' Screenshot vom 28.10.2026 zeigte den Rumpf etwa 0,1 Kacheln unter dem Bodenpunkt und
--- das Lastbild bei -1,5 also 1,6 Kacheln darüber. Jetzt liegt die Mitte des Ernters 1,3 Kacheln unter dem Bodenpunkt,
--- der Rumpf (Ebene air-object) deckt sein oberes Ende. Der Schatten liegt rechts unter dem Ernter, näher als der des
--- Fliegers, weil der Ernter tiefer hängt; das Schattenbild bringt seinen eigenen Versatz schon mit.
-lib.IMAGE_OFFSET = {0, 1.3}
-lib.SHADOW_OFFSET = {0.8, 2.1}
+-- Lastbild und Schatten relativ zum Bodenpunkt des Fliegers (Kacheln, Plan 4.12) [U27]. Max' Screenshot vom 28.10.2026
+-- zeigte den Rumpf etwa 0,1 Kacheln unter dem Bodenpunkt; die eigene Grafik (ab 0.8.9) zeichnet ihn an derselben
+-- Stelle. Die Klauen reichen 0,6 Kacheln unter die Rumpfmitte, das Deck des Ernters liegt 1,35 über seinem Bodenpunkt
+-- (tools/grafik/ornithopter-modell.py, ernter-modell.py): Hängt das Deck an den Klauen, liegt die Bildmitte des Ernters
+-- 0,1 + 0,6 + 1,35 ≈ 2 Kacheln unter dem Bodenpunkt. Der Rumpf (Ebene air-object) deckt das obere Ende des Ernters.
+-- Der Schatten liegt wie in 0.8.8 um 0,8 Kacheln nach rechts unten versetzt; das Schattenbild bringt seinen eigenen
+-- Versatz schon mit.
+lib.IMAGE_OFFSET = {0, 2}
+lib.SHADOW_OFFSET = {0.8, 2.8}
 
 local RING_COLOR = {r = 0.45, g = 1, b = 0.55, a = 0.8}
 -- Grund → Hinweis (toggle_carry).

@@ -176,17 +176,16 @@ def prism(name, outline, z0, z1, material, loc=(0, 0, 0), rot=(0, 0, 0), bevel=0
 
 
 def render(lift=0.0):
-    """Rendert alle Richtungen im Modus MODE nach OUT/<modus>-<nn>.png. lift hebt das Modell nur für den Schatten an
-    (Flieger: der Schatten fällt aus der Flughöhe; das Bild selbst bleibt auf der Bildmitte)."""
+    """Rendert alle Richtungen im Modus MODE nach OUT/<modus>-<nn>.png. lift hebt das Modell für Schatten und Vorschau
+    über den Boden (Flieger: Teile unter dem Rumpfpunkt stecken sonst im Boden); das Bild selbst bleibt auf der
+    Bildmitte."""
     # Boden als Schattenfänger
     bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 0, 0))
     ground = bpy.context.object
     ground.is_shadow_catcher = True
     parts = [o for o in scene.objects if o.parent == root]
-    if MODE == "shadow":
+    if MODE in ("shadow", "vorschau"):
         root.location.z = lift
-    elif MODE == "vorschau" and lift:
-        root.location.z = 0.6   # nur damit in der Vorschau nichts im Boden steckt
     if MODE in ("base", "mask", "icon"):
         ground.hide_render = True
     if MODE == "shadow":
