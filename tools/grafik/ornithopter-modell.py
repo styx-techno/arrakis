@@ -5,7 +5,7 @@
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import szene
-from szene import mat, box, cyl, slab
+from szene import mat, box, cyl, slab, prism
 
 FLIGHT_HEIGHT = 3
 # Spannweite gut 4,4 Kacheln; mit dem Schatten aus 3 Kacheln Höhe reicht ein Schattenbild von 9 Kacheln.
@@ -35,16 +35,33 @@ box("tailplane", (0.9, 0.22, 0.03), (0, 1.38, 0.05), BODY2, 0.01)
 for sx in (-1, 1):
     cyl(f"engine{sx}", 0.13, 0.7, (sx * 0.5, 0.15, -0.05), BODY2, rot=(math.pi / 2, 0, 0), verts=16)
     cyl(f"exhaust{sx}", 0.09, 0.04, (sx * 0.5, 0.51, -0.05), GLOW, rot=(math.pi / 2, 0, 0), verts=16)
-# Zwei Flügelpaare wie bei einer Libelle: vorne und hinten, je Seite ein langer, schmaler Flügel mit Rahmen und
-# einem Streifen in Spielerfarbe. Leicht nach oben angestellt (V-Form).
-for pair, (y, span, chord, sweep) in enumerate(((-0.45, 2.2, 0.42, -8), (0.25, 2.0, 0.38, 6))):
+# Zwei Flügelpaare wie bei einer Libelle: vorne und hinten, je Seite ein langer, spitz zulaufender Flügel mit Rippen
+# und einem Streifen in Spielerfarbe an der Spitze. Leicht nach oben angestellt (V-Form), das hintere Paar kürzer.
+ROOT_X = 0.4
+for pair, (y, span, chord, sweep) in enumerate(((-0.45, 2.2, 0.5, -0.25), (0.25, 1.9, 0.44, 0.2))):
     for sx in (-1, 1):
-        rot = (0, sx * math.radians(-6), sx * math.radians(sweep))
-        x = sx * (0.42 + span / 2)
-        box(f"wing{pair}{sx}", (span, chord, 0.03), (x, y, 0.22), WING, 0.01, rot=rot)
-        box(f"spar{pair}{sx}", (span, 0.05, 0.05), (x, y - chord / 2 + 0.03, 0.24), BODY2, 0.01, rot=rot)
-        box(f"stripe{pair}{sx}", (span * 0.25, chord * 0.9, 0.035), (sx * (0.42 + span * 0.8), y, 0.225), WING, 0.0, rot=rot)
-        cyl(f"hinge{pair}{sx}", 0.08, 0.18, (sx * 0.42, y, 0.22), STEEL, rot=(math.pi / 2, 0, 0), verts=12)
+        tip = chord * 0.45
+        outline = [(0, -chord / 2), (span, sweep - tip / 2), (span, sweep + tip / 2), (0, chord / 2)]
+        if sx < 0:
+            outline = [(-x, yy) for x, yy in reversed(outline)]
+        rot = (0, sx * math.radians(-7), 0)
+        loc = (sx * ROOT_X, y, 0.22)
+        prism(f"wing{pair}{sx}", outline, -0.012, 0.012, WING, loc, rot, 0.005)
+        # Vorderkante als Holm, Rippen quer
+        prism(f"spar{pair}{sx}", [(sx * x, yy) for x, yy in ((0, -chord / 2), (span, sweep - tip / 2), (span, sweep - tip / 2 + 0.05),
+                                                              (0, -chord / 2 + 0.07))][::sx], -0.03, 0.03, BODY2, loc, rot, 0.005)
+        for k in range(1, 6):
+            f = k / 6
+            x = span * f
+            y0 = -chord / 2 + (sweep - tip / 2 + chord / 2) * f
+            y1 = chord / 2 + (sweep + tip / 2 - chord / 2) * f
+            prism(f"rib{pair}{sx}{k}", [(sx * xx, yy) for xx, yy in ((x - 0.015, y0), (x + 0.015, y0), (x + 0.015, y1), (x - 0.015, y1))][::sx],
+                  -0.018, 0.018, BODY2, loc, rot, 0.0)
+        f0 = 0.72
+        s0 = [(span * f0, -chord / 2 + (sweep - tip / 2 + chord / 2) * f0), (span * 0.92, -chord / 2 + (sweep - tip / 2 + chord / 2) * 0.92),
+              (span * 0.92, chord / 2 + (sweep + tip / 2 - chord / 2) * 0.92), (span * f0, chord / 2 + (sweep + tip / 2 - chord / 2) * f0)]
+        prism(f"stripe{pair}{sx}", [(sx * xx, yy) for xx, yy in s0][::sx], -0.016, 0.016, WING, loc, rot, 0.0)
+        cyl(f"hinge{pair}{sx}", 0.08, 0.18, (sx * ROOT_X, y, 0.22), STEEL, rot=(math.pi / 2, 0, 0), verts=12)
 # Greifklauen unter dem Rumpf für den Ernter
 for sy in (-1, 1):
     box(f"claw{sy}", (0.7, 0.06, 0.06), (0, -0.25 + sy * 0.35, -0.32), STEEL, 0.01)
@@ -52,6 +69,6 @@ for sy in (-1, 1):
         box(f"talon{sy}{sx}", (0.05, 0.05, 0.22), (sx * 0.33, -0.25 + sy * 0.35, -0.42), STEEL, 0.01)
 # Positionslichter an den Flügelspitzen
 for sx in (-1, 1):
-    box(f"tip{sx}", (0.06, 0.06, 0.04), (sx * 2.6, -0.45, 0.28), GLOW, 0.0)
+    box(f"tip{sx}", (0.06, 0.06, 0.04), (sx * (ROOT_X + 2.2), -0.7, 0.5), GLOW, 0.0)
 
 szene.render(lift=FLIGHT_HEIGHT)

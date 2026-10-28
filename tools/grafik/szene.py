@@ -151,6 +151,30 @@ def slab(name, bottom, top, z0, z1, material, bevel=0.05):
     return finish(o, material, bevel)
 
 
+def prism(name, outline, z0, z1, material, loc=(0, 0, 0), rot=(0, 0, 0), bevel=0.01):
+    """Senkrecht ausgezogenes Vieleck: outline = [(x, y), …] gegen den Uhrzeigersinn, von z0 bis z1, um den eigenen
+    Ursprung gedreht (rot) und nach loc gesetzt."""
+    import bmesh
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    low = [bm.verts.new((x, y, z0)) for x, y in outline]
+    high = [bm.verts.new((x, y, z1)) for x, y in outline]
+    bm.faces.new(list(reversed(low)))
+    bm.faces.new(high)
+    n = len(outline)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((low[i], low[j], high[j], high[i]))
+    bm.normal_update()
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(name, me)
+    o.location = loc
+    o.rotation_euler = rot
+    scene.collection.objects.link(o)
+    return finish(o, material, bevel)
+
+
 def render(lift=0.0):
     """Rendert alle Richtungen im Modus MODE nach OUT/<modus>-<nn>.png. lift hebt das Modell nur für den Schatten an
     (Flieger: der Schatten fällt aus der Flughöhe; das Bild selbst bleibt auf der Bildmitte)."""
@@ -161,6 +185,8 @@ def render(lift=0.0):
     parts = [o for o in scene.objects if o.parent == root]
     if MODE == "shadow":
         root.location.z = lift
+    elif MODE == "vorschau" and lift:
+        root.location.z = 0.6   # nur damit in der Vorschau nichts im Boden steckt
     if MODE in ("base", "mask", "icon"):
         ground.hide_render = True
     if MODE == "shadow":
