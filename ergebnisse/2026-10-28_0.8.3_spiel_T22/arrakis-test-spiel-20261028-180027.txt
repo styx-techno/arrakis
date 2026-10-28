@@ -391,3 +391,6 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] FRAGE +179.7s: 3) Biegt er glatt vor der Insel ab, ohne den Fels zu berühren?
 [T22] INFO +179.7s: 3) Ernter 10 Kacheln vor dem Inselrand, Wurm frontal auf den Fels dahinter: Jagd 4, Biss bei 0 in 60 s
 [T22] FRAGE +240.0s: 3) Wird der Ernter trotzdem gebissen, und bleibt der Wurm dabei auf dem Sand?
+[T22] INFO +321.4s: Schritt 4 von 9
+[T22] INFO +321.4s: 4) Zerdrücken: Band, Kisten und ein Auto auf der Linie, ein Auto 6 Kacheln daneben, eine Kiste auf Fels: Jagd 5, Biss bei 0 in 60 s
+[T22] FRAGE +381.5s: 4) Verschwinden Band, Kisten und das Auto auf der Linie am Kopf (Wracks), bleiben das Auto neben der Spur und die Kiste auf dem Fels heil, und fährt der Wurm durch, ohne hängen zu bleiben?
