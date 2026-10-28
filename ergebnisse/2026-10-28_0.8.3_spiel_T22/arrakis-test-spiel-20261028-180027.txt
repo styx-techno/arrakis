@@ -402,3 +402,6 @@ Zurück zu deiner Position vor dem Test: /arrakis-test zurück
 [T22] INFO +747.6s: 6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.
 [T22] INFO +747.6s: 6) Rettung: Jagd 7, Biss bei 0 in 60 s
 [T22] FRAGE +807.7s: 6) Hält der Wurm neben dir, beißt ins Leere und taucht ab?
+[T22] INFO +980.6s: Schritt 7 von 9
+[T22] INFO +980.6s: 7) Wurm getötet (10 s nach dem Auftauchen): Jagd 8, Biss bei 0 in 60 s
+[T22] FRAGE +1002.7s: 7) Stirbt der Wurm mit Sandstaub, ohne Leiche und ohne Wolfram, steht im Chat „… ist gerettet“, und verschwindet die Jagd oben links?

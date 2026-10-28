@@ -13,3 +13,6 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Frage 5 (Ornithopter über dem Kopf, W12): nicht getestet. Max: "nicht geschafft" – er hat den Ablauf nicht verstanden (dachte, es gehe um die Holzkiste), der Wurm hatte schon gebissen, bevor er losflog. Muss in einem neuen T22-Lauf wiederholt werden. Hinweis für die Anleitung: die INFO zu Schritt 5 im Chat war offenbar nicht klar genug.
 - Beobachtung von Max (17:14): "sollte das spice feld auf dem felsen spawnen? der spawn beim testen war etwas unglücklich" – nicht geklärt, ob Testfläche oder echte Karte und was genau auf dem Fels lag.
 - Max hat T22 an dieser Stelle unterbrochen ("lass uns das später noch mal testen"). Offen: Schritte 5 (Ornithopter über dem Kopf) bis 9 sowie die Spice-auf-Fels-Beobachtung.
+- Korrektur: T22 lief doch weiter (Schritt 6 bei +747,6 s, Schritt 7 bei +980,6 s).
+- Frage 6 (Rettung: hält der Wurm neben dir, beißt ins Leere, taucht ab?): keine Antwort von Max.
+- Frage 7 (Wurmtod: Sandstaub, keine Leiche, kein Wolfram, Chat „… ist gerettet“, Jagd verschwindet oben links): "ja, funktioniert alles"
