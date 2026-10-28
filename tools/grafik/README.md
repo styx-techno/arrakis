@@ -57,3 +57,28 @@ Abweichend vom Ernter:
   Farbmaske zeigt die Streifen an den Flügelspitzen.
 - Die Greifklauen reichen 0,6 Kacheln unter die Rumpfmitte; daran hängt das Lastbild des Ernters
   (`scripts/flyer.lua`, `IMAGE_OFFSET`).
+
+## Carryall und Leitstelle (ab 0.10.0)
+
+```
+python carryall-modell.py roh base 64
+python carryall-modell.py roh mask 64
+python carryall-modell.py roh shadow 64
+python carryall-modell.py roh icon
+python pack.py roh blaetter carryall
+python leitstelle-modell.py roh2 base 1
+python leitstelle-modell.py roh2 shadow 1
+python leitstelle-modell.py roh2 icon
+python pack.py roh2 blaetter2 depot
+```
+
+Der Carryall ist der Ornithopter 1,25-mal so groß (`K` im Modell), dunkel, mit vier Triebwerken und Greifrahmen.
+Rumpf und Farbmaske 9 Kacheln (576 px, `scale = 0.5`), Schatten 10 Kacheln (320 px, `scale = 1`); der Schatten-shift
+in `prototypes/carryall.lua` ist der des Ornithopters mal 1,25 (0,41 statt 0,33 Kacheln). Aus `blaetter/` kommen
+`carryall-base.png`, `carryall-mask.png` und `carryall-shadow.png` nach `graphics/entity/carryall/`, das Symbol
+`carryall-icon-64.png` nach `graphics/icons/carryall.png`.
+
+Die Leitstelle (4×4 Kacheln) hat eine Ansicht: Rumpf 7 Kacheln (448 px, `scale = 0.5`), Schatten 8 Kacheln (256 px,
+`scale = 1`); `pack.py` legt bei einem Bild ein Blatt ohne leere Spalten an. `depot-base.png` und `depot-shadow.png`
+kommen nach `graphics/entity/depot/`, `depot-icon-64.png` nach `graphics/icons/depot.png`, `depot-icon-256.png` nach
+`graphics/technology/depot.png`.

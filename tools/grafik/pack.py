@@ -17,6 +17,7 @@ def sheet(mode, cols=8, shadow=False):
     files = sorted(glob.glob(f"{src}/{mode}-*.png"))
     frames = [load(f) for f in files]
     w = frames[0].width
+    cols = min(cols, len(frames))   # Gebäude: eine Ansicht, Blatt ohne leere Spalten
     rows = (len(frames) + cols - 1) // cols
     out = Image.new("RGBA", (w * cols, w * rows), (0, 0, 0, 0))
     for i, im in enumerate(frames):
