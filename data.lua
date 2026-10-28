@@ -10,11 +10,14 @@ require("prototypes.tiles")
 require("prototypes.harvester")
 -- Direkt nach harvester.lua: Die Absetz-Probe übernimmt die Kollisionsmaske des Ernters (docs/plan-3c.md 2).
 require("prototypes.ornithopter")
+-- Phase 3e (docs/plan-3e.md 3): Carryall kopiert den Ornithopter, die Leitstelle braucht die Forschungen aus technology.lua.
+require("prototypes.carryall")
 require("prototypes.resources")
 require("prototypes.windtrap")
 require("prototypes.spice")
 require("prototypes.planet.planet")
 require("prototypes.technology")
+require("prototypes.depot")
 -- Phase 3d1 (docs/plan-3d1.md 3): Eruption, Sandstaub, Signal, Geräusche, Vibrationsanzeige, Tipps.
 require("prototypes.worms")
 -- Phase 3d2 (docs/plan-3d2.md 3): Sandwurm, Bohrstaub, Auf- und Abtauchen. Direkt nach worms.lua: arrakis-worm-dive kopiert

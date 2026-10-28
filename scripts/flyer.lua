@@ -12,7 +12,7 @@
 -- (cargo == un), nie über den Datensatz des Ernters.
 --
 -- Datensatz storage.flyers[un] (Plan 4.2):
---   un, entity, kind = "ornithopter", cargo = harvester_un|nil,
+--   un, entity, kind = "ornithopter"|"carryall", cargo = harvester_un|nil,
 --   coupling = {harvester = harvester_un, start_tick, done_tick, player_index|nil}|nil,
 --   renders = {image, shadow, ring}, sticker = LuaEntity|nil, image_index = 0..15|nil,
 --   last_cargo = LuaEntity|nil, last_toggle_tick
@@ -30,6 +30,9 @@ local speed = require("prototypes.ornithopter-speed")
 local lib = {}
 
 local NAME = "arrakis-ornithopter"
+-- Carryall (0.10.0, docs/plan-3e.md): unbemannter Flieger der Leitstelle, sonst wie der Ornithopter (kind = "carryall").
+local CARRYALL = "arrakis-carryall"
+local KIND = {[NAME] = "ornithopter", [CARRYALL] = "carryall"}
 local HARVESTER = harvester.NAME
 local PROBE = "arrakis-harvester-probe"
 local CARRY_INPUT = "arrakis-carry-toggle"
@@ -43,6 +46,8 @@ local SHADOW_SPRITE = "arrakis-harvester-carried-shadow-"
 
 -- Name des Ornithopter-Prototyps.
 lib.NAME = NAME
+lib.CARRYALL = CARRYALL
+lib.KIND = KIND
 -- Ankoppeln (Ticks); geprüft im 10-Tick-Takt, also 120 bis 129 Ticks.
 lib.COUPLE_TICKS = 120
 -- Ankoppel- und Suchabstand Flieger ↔ Ernter (Kacheln, Mittelpunkte).
@@ -98,7 +103,7 @@ local deleting = {}
 -- Hilfen ----------------------------------------------------------------------------------------
 
 local function is_flyer(entity)
-  return entity and entity.valid and entity.name == NAME
+  return entity and entity.valid and KIND[entity.name] ~= nil
 end
 
 local function is_harvester(entity)
@@ -264,7 +269,8 @@ end
 -- Name des Stickers, den der Flieger jetzt haben soll: Zustand (beladen, wenn cargo gesetzt ist, sonst leer) und
 -- Brennstoff-Stufe. Für den Prüfstand exportiert.
 function lib.wanted_sticker(record)
-  return speed.name(record.cargo and "loaded" or "empty", wanted_bucket(record))
+  local states = speed.KIND_STATES[record.kind] or speed.KIND_STATES.ornithopter
+  return speed.name(record.cargo and states[2] or states[1], wanted_bucket(record))
 end
 
 -- Zustand ("empty", "loaded") und Stufe eines Stickernamens, nil für fremde Sticker (Prüfstand).
@@ -352,7 +358,7 @@ function lib.register(entity)
   {
     un = un,
     entity = entity,
-    kind = "ornithopter",
+    kind = KIND[entity.name],
     renders = {},
     last_toggle_tick = 0
   }
@@ -692,6 +698,18 @@ local function start_coupling(record, entity, player)
   return true, "coupling"
 end
 
+-- Kopplung ohne Spieler (Carryall-Automatik, scripts/fleet.lua): dieselben Prüfungen wie Taste und Verknüpfung.
+-- Gibt ok, Grund zurück ("coupling" oder ein Grund aus candidate_problem, "busy", "loaded").
+function lib.couple(record, entity)
+  local flyer = record and record.entity
+  if not (flyer and flyer.valid) then return false, "no_flyer" end
+  if record.cargo then return false, "loaded" end
+  if record.coupling then return false, "busy" end
+  local problem = candidate_problem(flyer, entity)
+  if problem then return false, problem end
+  return start_coupling(record, entity, nil)
+end
+
 -- Anheben, wenn die Kopplung fertig ist (Plan 4.6, Reihenfolge fest). Die Kopplung endet hier in jedem Fall.
 local function lift(record)
   local flyer = record.entity
@@ -869,7 +887,7 @@ function lib.resolve_flyer(player, cursor_position)
   end
   if car then
     local best, best_distance = nil, nil
-    local found = car.surface.find_entities_filtered{name = NAME, position = car.position, radius = lib.COUPLE_RANGE,
+    local found = car.surface.find_entities_filtered{name = {NAME, CARRYALL}, position = car.position, radius = lib.COUPLE_RANGE,
       force = player.force}
     for _, entity in pairs(found) do
       local record = lib.get(entity)
@@ -1175,6 +1193,8 @@ end
 -- /arrakis-uninstall ja (Plan 4.15): jeden Ernter auf der Ablage herunterholen, alle Bilder weg; steht danach keiner
 -- mehr dort, die Ablage löschen (A23 classes.d.ts:11769). Gibt n (abgesetzt) und rest (übrig, warten) zurück.
 function lib.uninstall()
+  -- Erst die Carryall-Automatik anhalten (scripts/fleet.lua setzt den Haken), sonst hebt sie gleich wieder an.
+  if lib.before_uninstall then lib.before_uninstall() end
   for _, record in pairs(storage.flyers) do care(record) end
   local surface = hold.surface() or game.get_surface(hold.NAME)
   if not surface then return 0, 0 end
@@ -1225,6 +1245,7 @@ local function uninstall_command(command)
   -- alle Sandwürmer (docs/plan-3d2.md 4.14), die zweite Zahl.
   local hunts, worms = worms_lib.uninstall()
   reply(player, {"arrakis-message.uninstall-worms", hunts, worms})
+  if lib.before_uninstall then reply(player, {"arrakis-message.uninstall-fleet"}) end
 end
 
 -- Takte ------------------------------------------------------------------------------------------
@@ -1253,7 +1274,7 @@ end
 local function on_died(event)
   local entity = event.entity
   if not (entity and entity.valid) then return end
-  if entity.name == NAME then
+  if KIND[entity.name] then
     local record = lib.get(entity)
     if record then lib.crash(record) end
   elseif entity.name == HARVESTER then
@@ -1265,7 +1286,7 @@ end
 local function on_removed(event)
   local entity = event.entity
   if not (entity and entity.valid) then return end
-  if entity.name == NAME then
+  if KIND[entity.name] then
     local record = lib.get(entity)
     if record then flyer_removed(record, "entfernt") end
   elseif entity.name == HARVESTER then
@@ -1300,7 +1321,7 @@ end
 local function on_teleported(event)
   local entity = event.entity
   if not (entity and entity.valid) then return end
-  if entity.name == NAME then
+  if KIND[entity.name] then
     local record = lib.get(entity) or lib.register(entity)
     care(record)
     if record.coupling and storage.flyers[record.un] then update_coupling(record, event.tick) end

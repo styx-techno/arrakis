@@ -1,4 +1,4 @@
--- Relatives Fenster am Fahrzeugfenster des Ornithopters (Phase 3c, docs/plan-3c.md 4.13): Zustand, Hauptknopf
+-- Relatives Fenster am Fahrzeugfenster des Ornithopters und (ab 0.10.0) des Carryalls (Phase 3c, docs/plan-3c.md 4.13): Zustand, Hauptknopf
 -- Anheben/Abbrechen/Absetzen (gleichwertig zur Taste Umschalt+C und zur Verknüpfung), Fernbedienung und
 -- „In den Ernter steigen“. Bibliothek für __core__/lualib/event_handler. Offene Fenster stehen in
 -- storage.flyer_gui_open[player_index] = flyer_un. Muster wie scripts/harvester-gui.lua.
@@ -29,6 +29,12 @@ local function update(player, record)
   local frame = player.gui.relative[FRAME]
   if not frame then return end
   frame.arrakis_flyer_state.caption = {"arrakis-message.gui-state", flyer_lib.state_text(record)}
+  -- Carryall: Betriebsart der Leitstelle (scripts/fleet.lua)
+  local mode = frame.arrakis_flyer_mode
+  mode.visible = record.kind == "carryall"
+  if mode.visible then
+    mode.caption = {"arrakis-message.gui-fleet-mode-" .. (record.fleet_mode or "auto")}
+  end
   frame[CARRY].caption = {"arrakis-message." .. carry_caption(record)}
   frame[BOARD].visible = flyer_lib.board_target(record, player) ~= nil
 end
@@ -45,10 +51,11 @@ local function build(player, record)
     {
       gui = defines.relative_gui_type.spider_vehicle_gui,
       position = defines.relative_gui_position.right,
-      names = {flyer_lib.NAME}
+      names = {flyer_lib.NAME, flyer_lib.CARRYALL}
     }
   }
   frame.add{type = "label", name = "arrakis_flyer_state"}
+  frame.add{type = "label", name = "arrakis_flyer_mode"}
   frame.add{type = "button", name = CARRY, tooltip = {"arrakis-message.gui-carry-tooltip"}}
   frame.add{type = "button", name = REMOTE, caption = {"arrakis-message.gui-remote"}}
   frame.add{type = "button", name = BOARD, caption = {"arrakis-message.gui-board-harvester"}}
@@ -66,7 +73,7 @@ local function open_record(player)
   local record = storage.flyers[storage.flyer_gui_open[player.index] or 0]
   if record and record.entity.valid then return record end
   local opened = player.opened
-  if opened and type(opened) ~= "number" and opened.object_name == "LuaEntity" and opened.name == flyer_lib.NAME then
+  if opened and type(opened) ~= "number" and opened.object_name == "LuaEntity" and flyer_lib.KIND[opened.name] then
     return flyer_lib.get(opened) or flyer_lib.register(opened)
   end
   return nil
@@ -74,7 +81,7 @@ end
 
 local function on_gui_opened(event)
   local entity = event.entity
-  if not (entity and entity.valid and entity.name == flyer_lib.NAME) then return end
+  if not (entity and entity.valid and flyer_lib.KIND[entity.name]) then return end
   local player = game.get_player(event.player_index)
   if not player then return end
   local record = flyer_lib.get(entity) or flyer_lib.register(entity)
@@ -86,7 +93,7 @@ end
 local function on_gui_closed(event)
   if not storage.flyer_gui_open[event.player_index] then return end
   local entity = event.entity
-  if entity and entity.valid and entity.name ~= flyer_lib.NAME then return end
+  if entity and entity.valid and not flyer_lib.KIND[entity.name] then return end
   close(event.player_index)
 end
 

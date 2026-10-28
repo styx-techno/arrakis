@@ -15,5 +15,16 @@ data:extend({
     default_value = "total-loss",
     allowed_values = {"total-loss", "heavy-damage"},
     order = "a[worm]-a[bite]"
+  },
+  {
+    -- Reichweite der Ornithopter-Leitstelle (docs/plan-3e.md 1.3): Betreuung und Anzeige beim Bauen. Startup, weil die
+    -- Reichweitenanzeige im Prototyp steht.
+    type = "int-setting",
+    name = "arrakis-depot-range",
+    setting_type = "startup",
+    default_value = 300,
+    minimum_value = 150,
+    maximum_value = 600,
+    order = "b[fleet]-a[range]"
   }
 })

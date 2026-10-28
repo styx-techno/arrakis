@@ -37,16 +37,34 @@ speed.MAX_J = 70
 speed.FUEL_CATEGORY = "arrakis-flight-fuel"
 speed.A_REF = 1.8
 speed.T_MIN = 1.15
--- Zustände in fester Reihenfolge; Namensanfang je Zustand.
-speed.STATES = {"empty", "loaded"}
-speed.PREFIX = {empty = "arrakis-ornithopter-empty-", loaded = "arrakis-ornithopter-loaded-"}
+-- Carryall (0.10.0, docs/plan-3e.md 1.2): dieselben Stufen, 1,125-mal so schnell (9 Kacheln/s leer, 6,3 beladen mit
+-- Raketentreibstoff), eigene Stickerfamilien "arrakis-carryall-empty-<p>" und "-loaded-<p>".
+speed.CARRYALL_FACTOR = 1.125
+-- Zustände in fester Reihenfolge; Namensanfang je Zustand. Die Carryall-Zustände heißen carryall-empty/-loaded.
+speed.STATES = {"empty", "loaded", "carryall-empty", "carryall-loaded"}
+-- Zustände je Fluggerät (Datensatz kind in scripts/flyer.lua): leer zuerst, dann beladen.
+speed.KIND_STATES = {ornithopter = {"empty", "loaded"}, carryall = {"carryall-empty", "carryall-loaded"}}
+speed.PREFIX =
+{
+  empty = "arrakis-ornithopter-empty-",
+  loaded = "arrakis-ornithopter-loaded-",
+  ["carryall-empty"] = "arrakis-carryall-empty-",
+  ["carryall-loaded"] = "arrakis-carryall-loaded-"
+}
 
-local BASE = {empty = speed.BASE_EMPTY, loaded = speed.BASE_LOADED}
+local BASE =
+{
+  empty = speed.BASE_EMPTY,
+  loaded = speed.BASE_LOADED,
+  ["carryall-empty"] = speed.BASE_EMPTY * speed.CARRYALL_FACTOR,
+  ["carryall-loaded"] = speed.BASE_LOADED * speed.CARRYALL_FACTOR
+}
 local LOG_STEP = math.log(speed.STEP)
 
 local factors = {}   -- j → t_j
 local percents = {}  -- j → p
-local names = {empty = {}, loaded = {}}  -- Zustand → j → Name
+local names = {}  -- Zustand → j → Name
+for _, state in ipairs(speed.STATES) do names[state] = {} end
 local parsed = {}    -- Name → {Zustand, j}
 
 do

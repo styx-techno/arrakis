@@ -68,7 +68,7 @@ local FIXED = {["mining-drill"] = true, ["assembling-machine"] = true, furnace =
 local SCAN_TYPES = {"car", "spider-vehicle", "locomotive", "mining-drill", "assembling-machine", "furnace"}
 local FIXED_TYPES = {"mining-drill", "assembling-machine", "furnace"}
 -- Ernter stehen in storage.harvesters, der Ornithopter vibriert nicht (Plan 1 „Gewichte sonst“).
-local EXCLUDED = {[harvester.NAME] = true, [FLYER] = true}
+local EXCLUDED = {[harvester.NAME] = true, [FLYER] = true, ["arrakis-carryall"] = true}
 
 local OVERLAY_COLOR =
 {

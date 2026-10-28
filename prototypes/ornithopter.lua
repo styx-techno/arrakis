@@ -185,7 +185,7 @@ local function speed_sticker(state, j)
 end
 
 local speed_stickers = {}
-for _, state in ipairs(speed.STATES) do
+for _, state in ipairs(speed.KIND_STATES.ornithopter) do
   for j = speed.MIN_J, speed.MAX_J do
     table.insert(speed_stickers, speed_sticker(state, j))
   end

@@ -655,6 +655,8 @@ local plan_techs = {
   ["melange-productivity"] = "unit",
   ["arrakis-spice-harvesting"] = "craft-item melange 10",
   ["arrakis-ornithopter"] = "craft-item spice-harvester 1",
+  -- 0.10.0 (docs/plan-3e.md 3)
+  ["arrakis-ornithopter-depot"] = "unit",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -670,7 +672,7 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 7 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 7") end
+if tech_count ~= 8 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 8") end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
 -- Phase 3d2 (docs/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
@@ -887,6 +889,97 @@ local labs = {}
 for n, l in pairs(raw.lab) do for _, i in ipairs(l.inputs or {}) do if i == "spice-science-pack" then labs[#labs+1] = n end end end
 table.sort(labs); add("Labore mit Spice-Wissenschaft: " .. table.concat(labs, ","))
 for n, l in pairs(raw.lab) do for _, i in ipairs(l.inputs or {}) do if not item_exists(i) then add("FEHLER lab " .. n .. " input " .. i) end end end
+
+-- Phase 3e (docs/plan-3e.md 3): Carryall, Leitstelle, Forschung, Tempo-Sticker. Werte stehen hier fest.
+do
+  local n3e = 0
+  local car = raw["spider-vehicle"]["arrakis-carryall"]
+  if not car then add("FEHLER 3e: spider-vehicle arrakis-carryall fehlt") else
+    n3e = n3e + 1
+    if car.hidden then add("FEHLER 3e: arrakis-carryall hidden") end
+    local es = car.energy_source or {}
+    if es.type ~= "burner" or not same_list(es.fuel_categories or {}, {V2120 and "arrakis-flight-fuel" or "chemical"}) then add("FEHLER 3e: arrakis-carryall Brenner " .. tostring(es.type) .. " " .. table.concat(es.fuel_categories or {}, ",")) end
+    if car.movement_energy_consumption ~= "800kW" then add("FEHLER 3e: arrakis-carryall movement_energy_consumption " .. tostring(car.movement_energy_consumption)) end
+    if car.inventory_size ~= 20 then add("FEHLER 3e: arrakis-carryall inventory_size " .. tostring(car.inventory_size)) end
+    if car.allow_remote_driving ~= true then add("FEHLER 3e: arrakis-carryall ohne allow_remote_driving") end
+    if not (car.minable and car.minable.result == "arrakis-carryall") then add("FEHLER 3e: arrakis-carryall minable.result") end
+    if car.height ~= 3 or not (car.graphics_set and car.graphics_set.render_layer == "air-object") then add("FEHLER 3e: arrakis-carryall Flughöhe/render_layer") end
+    if car.icon ~= "__arrakis__/graphics/icons/carryall.png" then add("FEHLER 3e: arrakis-carryall Icon " .. tostring(car.icon)) end
+    local gs = car.graphics_set or {}
+    local layers = gs.animation and gs.animation.layers or {}
+    local gfx3e = "__arrakis__/graphics/entity/carryall/"
+    local want3e = {{"carryall-base.png", 576, 0.5}, {"carryall-mask.png", 576, 0.5, "apply_runtime_tint"}, {"carryall-shadow.png", 320, 1, "draw_as_shadow"}}
+    for j, w in ipairs(want3e) do
+      local l = (j == 3 and gs.shadow_animation or layers[j]) or {}
+      if l.filename ~= gfx3e .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3] or l.direction_count ~= 64
+          or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) then
+        add("FEHLER 3e: Carryall Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
+      end
+    end
+    if #layers ~= 2 then add("FEHLER 3e: Carryall hat " .. #layers .. " Ebenen statt 2") end
+  end
+  local car_item = raw["item-with-entity-data"]["arrakis-carryall"]
+  if not (car_item and car_item.place_result == "arrakis-carryall") then add("FEHLER 3e: item arrakis-carryall fehlt oder place_result falsch") else n3e = n3e + 1 end
+  local car_recipe = raw.recipe["arrakis-carryall"]
+  if not car_recipe or car_recipe.enabled ~= false then add("FEHLER 3e: recipe arrakis-carryall fehlt oder von Anfang an frei") else n3e = n3e + 1 end
+  -- Tempo-Sticker des Carryalls: wie beim Ornithopter, Basis mal 1,125.
+  if speed_ok and type(speed) == "table" then
+    if speed.CARRYALL_FACTOR ~= 1.125 then add("FEHLER 3e: speed.CARRYALL_FACTOR " .. tostring(speed.CARRYALL_FACTOR)) end
+    for _, state in ipairs({"empty", "loaded"}) do
+      local count = 0
+      for j = PLAN_MIN_J, PLAN_MAX_J do
+        local t = PLAN_STEP ^ j
+        local n = "arrakis-carryall-" .. state .. "-" .. math.floor(100 * t + 0.5)
+        local st = raw.sticker[n]
+        if not st then add("FEHLER 3e: sticker " .. n .. " fehlt") else
+          count = count + 1
+          if st.hidden ~= true then add("FEHLER 3e: sticker " .. n .. " nicht hidden") end
+          if math.abs((st.vehicle_speed_modifier or 0) - PLAN_BASE[state] * 1.125 / t) > 1e-9 then add("FEHLER 3e: sticker " .. n .. " vehicle_speed_modifier " .. tostring(st.vehicle_speed_modifier)) end
+          local ln = st.localised_name
+          if not (type(ln) == "table" and ln[1] == "entity-name.arrakis-carryall-" .. state) then add("FEHLER 3e: sticker " .. n .. " localised_name") end
+          local ps, pj = speed.parse(n)
+          if ps ~= "carryall-" .. state or pj ~= j then add("FEHLER 3e: speed.parse(" .. n .. ")") end
+        end
+      end
+      if count ~= 106 then add("FEHLER 3e: " .. count .. " Carryall-Sticker " .. state .. " statt 106") end
+    end
+    for n in pairs(raw.sticker) do
+      if n:find("^arrakis%-carryall%-") and not speed.parse(n) then add("FEHLER 3e: sticker " .. n .. " gehört zu keiner Stufe") end
+    end
+  end
+  local depot = raw.container["arrakis-depot"]
+  if not depot then add("FEHLER 3e: container arrakis-depot fehlt") else
+    n3e = n3e + 1
+    if depot.inventory_size ~= 48 then add("FEHLER 3e: arrakis-depot inventory_size " .. tostring(depot.inventory_size)) end
+    local rules = depot.tile_buildability_rules or {}
+    local rock = rules[1] and rules[1].required_tiles and rules[1].required_tiles.layers
+    if #rules ~= 1 or not (rock and rock.arrakis_rock) then add("FEHLER 3e: arrakis-depot nicht nur auf Fels") end
+    local rv = depot.radius_visualisation_specification
+    local range = settings.startup["arrakis-depot-range"]
+    if not (rv and rv.sprite and range and rv.distance == range.value) then add("FEHLER 3e: arrakis-depot Reichweitenkreis passt nicht zur Einstellung") end
+    local pl = depot.picture and depot.picture.layers or {}
+    if #pl ~= 2 or pl[1].width ~= 448 or pl[1].scale ~= 0.5 or pl[2].width ~= 256 or pl[2].draw_as_shadow ~= true then add("FEHLER 3e: arrakis-depot Bild passt nicht zu tools/grafik/README.md") end
+    if not (depot.minable and depot.minable.result == "arrakis-depot") then add("FEHLER 3e: arrakis-depot minable.result") end
+  end
+  local depot_item = raw.item["arrakis-depot"]
+  if not (depot_item and depot_item.place_result == "arrakis-depot") then add("FEHLER 3e: item arrakis-depot fehlt oder place_result falsch") else n3e = n3e + 1 end
+  local depot_recipe = raw.recipe["arrakis-depot"]
+  if not depot_recipe or depot_recipe.enabled ~= false then add("FEHLER 3e: recipe arrakis-depot fehlt oder von Anfang an frei") else n3e = n3e + 1 end
+  local tech = raw.technology["arrakis-ornithopter-depot"]
+  if not tech then add("FEHLER 3e: tech arrakis-ornithopter-depot fehlt") else
+    n3e = n3e + 1
+    local unlocked = {}
+    for _, e in ipairs(tech.effects or {}) do if e.type == "unlock-recipe" then unlocked[e.recipe] = true end end
+    if not (unlocked["arrakis-depot"] and unlocked["arrakis-carryall"]) then add("FEHLER 3e: tech arrakis-ornithopter-depot schaltet nicht beide Rezepte frei") end
+    if not (has_value(tech.prerequisites, "spice-science-pack") and has_value(tech.prerequisites, "arrakis-ornithopter")) then add("FEHLER 3e: tech arrakis-ornithopter-depot Voraussetzungen") end
+    local spice_pack = false
+    for _, ing in ipairs(tech.unit and tech.unit.ingredients or {}) do if ing[1] == "spice-science-pack" then spice_pack = true end end
+    if not spice_pack then add("FEHLER 3e: tech arrakis-ornithopter-depot ohne Spice-Wissenschaft") end
+  end
+  local range = settings.startup["arrakis-depot-range"]
+  if not range then add("FEHLER 3e: Einstellung arrakis-depot-range fehlt") end
+  add("3e: " .. n3e .. "/7 Prototypen")
+end
 
 -- planet
 local pl = raw.planet.arrakis

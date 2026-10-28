@@ -13,6 +13,9 @@ local libraries =
   require("scripts.hold"),
   require("scripts.flyer"),
   require("scripts.flyer-gui"),
+  -- Phase 3e (docs/plan-3e.md 4.1): Leitstelle und Carryall-Aufträge, nach flyer (setzt nur Ziele, ruft couple/drop).
+  require("scripts.fleet"),
+  require("scripts.fleet-gui"),
   -- Phase 3d1 (docs/plan-3d1.md 4.1): Vibration, Würmer (einzige Wurm-Takte), Fenster oben links.
   require("scripts.vibration"),
   -- Phase 3d2 (docs/plan-3d2.md 4.1): der Sandwurm als Fahrzeug, direkt vor worms (worms ruft ihn auf).

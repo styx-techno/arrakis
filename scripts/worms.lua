@@ -90,6 +90,7 @@ local ERUPTION = "arrakis-worm-eruption"
 local WORMSIGN_SOUND = "arrakis-wormsign"
 local BITE_SETTING = "arrakis-worm-bite"
 local FLYER = "arrakis-ornithopter"
+local CARRYALL = "arrakis-carryall"
 local ARRAKIS = "arrakis"
 local ORNITHOPTER_TECH = "arrakis-ornithopter"
 local DISCOVERY_TECH = "planet-discovery-arrakis"
@@ -484,7 +485,7 @@ function lib.start_hunt(entity, opts)
   if not (entity and entity.valid and entity.is_entity_with_health and entity.unit_number) then return nil, "no-target" end
   local surface = entity.surface
   if not terrain.harvest_allowed(surface) then return nil, "not-allowed" end
-  if entity.name == FLYER then return nil, "flyer" end
+  if entity.name == FLYER or entity.name == CARRYALL then return nil, "flyer" end
   if lib.hunt_of(entity) then return nil, "busy" end
   local tick = game.tick
   local seconds = opts.seconds or (opts.teaching and lib.TEACH_TICKS / 60) or (lib.WARN_TICKS / 60)
@@ -739,7 +740,7 @@ end
 local function victim_ok(entity)
   if not (entity and entity.valid and entity.is_entity_with_health) then return false end
   if entity.destructible == false then return false end
-  if NO_VICTIM[entity.type] or entity.name == FLYER then return false end
+  if NO_VICTIM[entity.type] or entity.name == FLYER or entity.name == CARRYALL then return false end
   if entity.force.name == FORCE then return false end
   return true
 end

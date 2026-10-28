@@ -55,6 +55,15 @@
 -- on_configuration_changed, nicht nur bei old < 4: Nach 0.8.0 → 0.7.0 → 0.8.0 steht schema schon auf 4 (math.max).
 -- Herunterstufen auf 0.7.0: vorher /arrakis-uninstall ja (sonst löscht die Engine die Würmer, Jagden beißen ohne Wurm).
 --
+-- Schema 5 (0.10.0, Phase 3e, docs/plan-3e.md 4.2), dazu:
+--   storage.depots[un]      Leitstellen (scripts/fleet.lua), storage.reg zusätzlich kind "depot"
+--   storage.jobs            {next_id, list = {[id] = Auftrag}, refused = {[hunt_id] = tick}}, storage.job_of[harvester_un] = job_id
+--   storage.depot_gui_open[player_index] = depot_un (scripts/fleet-gui.lua)
+--   storage.fleet_pause_until  Tick, bis zu dem die Automatik nach /arrakis-uninstall ruht, oder nil
+--   storage.flyers[un]      zusätzlich kind "carryall" mit depot, job, fleet_mode, fleet_goal
+-- 0.9.x → 0.10.0: nur neue Tabellen; alte Flieger haben kind "ornithopter" schon seit 0.6.0.
+-- Herunterstufen auf 0.9.x: vorher alle Carryalls und Leitstellen abbauen (die Engine löscht sie sonst samt Last).
+--
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
 -- Oberfläche schon existiert, sonst beim Anlegen der Oberfläche. Ob ein vor 0.5.4 begonnener Spielstand
@@ -66,7 +75,7 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 4
+local SCHEMA = 5
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
@@ -117,6 +126,14 @@ function migrate.init()
   hunts.log = hunts.log or {}
   hunts.log_next = hunts.log_next or 1
   hunts.ersatz = hunts.ersatz or 0
+  -- Schema 5 (Phase 3e)
+  storage.depots = storage.depots or {}
+  storage.jobs = storage.jobs or {next_id = 1, list = {}}
+  storage.jobs.next_id = storage.jobs.next_id or 1
+  storage.jobs.list = storage.jobs.list or {}
+  storage.jobs.refused = storage.jobs.refused or {}
+  storage.job_of = storage.job_of or {}
+  storage.depot_gui_open = storage.depot_gui_open or {}
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt
