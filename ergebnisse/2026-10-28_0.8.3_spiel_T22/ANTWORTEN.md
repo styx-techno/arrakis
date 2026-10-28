@@ -7,3 +7,4 @@ Antworten von Max auf die FRAGE-Zeilen (wörtlich):
 - Frage 1: "ja, er dürfte aber früher oder mehr zu hören sein"
 - Frage 2: "ja aber er ist mehr despawnt als abgetaucht"
 - Frage 3: "ja" (Datei-Stand 18:03:28; T22 stellt zwei Fragen mit der Nummer 3: "Biegt er glatt vor der Insel ab, ohne den Fels zu berühren?" und "Wird der Ernter trotzdem gebissen, und bleibt der Wurm dabei auf dem Sand?" – Max' "ja" ist nicht einer davon zugeordnet)
+- Nachtrag Frage 3: Max bestätigt "ja beide" – 3a (biegt glatt vor der Insel ab, ohne Fels) und 3b (Ernter wird trotzdem gebissen, Wurm bleibt auf Sand) beide ja.
