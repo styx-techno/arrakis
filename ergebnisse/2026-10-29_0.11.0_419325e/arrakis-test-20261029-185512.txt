@@ -1,0 +1,190 @@
+
+=== T23 Carryall-Automatik: echter Code | Tick 409 | Arrakis 0.11.0 | base 2.1.24 | Spieler - ===
+[T23] INFO +0.0s: Start: Carryall-Automatik: echter Code
+[T23] INFO +0.0s: Zeitraffer: game.speed 10
+[T23] INFO +0.0s: Zehn Schritte mit der echten Carryall-Automatik (Übernahme, Rettung zur Leitstelle, Absage, Entladen, Tanken, Handbetrieb, Pause, Abriss, Wurm lauert), Force arrakis-t23 ohne Wurm. Dauer etwa 6 min Spielzeit.
+[T23] OK +0.5s: 1) Prototypen und storage: Sticker 212, Reichweite 300, Schema 5
+[T23] OK +1.7s: 2) Leitstelle übernimmt und füllt nach: geparkt nach 1.0 s, Raketentreibstoff 21, Kohle im Kofferraum 100 (2 Stapel), Leitstelle noch 0 Raketentreibstoff
+[T23] MESSUNG +98.9s: T23 Carryall leer mit Raketentreibstoff: 8.93 Kacheln/s (Ornithopter 8,0)
+[T23] OK +98.9s: 3) Rettung bei Wurmzeichen: Auftrag nach 0.3 s, angehoben nach 13.8 s (Biss bei 45.1 s), an der Leitstelle nach 29.3 s (9.3 Kacheln von ihrer Mitte), Jagd escaped, zurück aufgebaut nach 78.8 s, geparkt nach 90.5 s, Tempo 8.93
+[T23] OK +118.5s: 4) Ehrliche Absage: Absage true, Auftrag gesehen false, Jagd bitten
+[T23] OK +169.7s: 5) Entladen an der Annahme: Auftrag nach 1.0 s, angehoben nach 11.5 s, angedockt nach 25.0 s (Abstand 2.7, 1879 Spice-Sand), zurück nach 38.0 s, geparkt nach 49.5 s
+[T23] OK +187.7s: 6) Tanken: betankt nach 8.5 s auf 101 Kohle (Kofferraum vorher 100), geparkt nach 16.5 s
+[T23] OK +206.2s: 7) Handbetrieb: Auftrag offen true, Automatik wieder true, betankt true
+[T23] OK +212.2s: 8) Pause nach /arrakis-uninstall: Pause true, Auftrag in der Pause false, danach true
+[T23] OK +214.7s: 9) Leitstelle abgerissen: Datensatz false, Carryall Leitstelle nil
+[T23] OK +310.6s: 10) Wurm lauert: Jagd escaped, an der Leitstelle nach 40.1 s, Wurm lauert 214.0 s, Rückflug während des Lauerns false, Wurmzeichen auf Ernter 2 5.5 s nach dem Aufbau (lauert true), zurück aufgebaut 19.5 s nach dem Ende des Lauerns, getötet: Ruhe true, Lauern false
+[T23] ENDE +310.8s: 10/10 Schritte OK (OK 10, FEHLER 0, FRAGE 0, 310.8 s)
+
+=== T24 Carryall-Automatik: Dauerlauf | Tick 20085 | Arrakis 0.11.0 | base 2.1.24 | Spieler - ===
+[T24] INFO +0.0s: Start: Carryall-Automatik: Dauerlauf
+[T24] INFO +0.0s: Zeitraffer: game.speed 10
+[T24] INFO +0.0s: Dauerlauf 60 min Spielzeit: 2 Carryalls, 4 Ernter, alle 75 s ein Wurmzeichen (60 s). Erwartet: kein Biss, mindestens ein Entladen und ein Tanken, kein Auftrag hängt länger als 4 min, kein Ernter länger als 2 min ohne Brennstoff.
+[T24] MESSUNG +0.0s: Stand: C1 -/- Last nil bei 43850.0, 8.0; C2 -/- Last nil bei 43854.0, 8.0; E1 deploying 0.00 50; E2 deploying 0.00 3; E3 deploying 0.93 50; E4 deploying 0.00 50
+[T24] MESSUNG +30.0s: Stand: C1 -/- Last nil bei 43851.0, -2.5; C2 return/to_spot Last 154 bei 43874.6, -6.7; E1 deployed 0.07 47; E2 deployed 0.07 0; E3 carried 0.00 49; E4 deployed 0.07 47
+[T24] MESSUNG +30.0s: Wurmzeichen auf Ernter 1, Jagd 6
+[T24] MESSUNG +60.0s: Stand: C1 -/- Last nil bei 43853.0, -0.6; C2 refuel/fly Last nil bei 43848.0, 1.4; E1 mobile 0.10 146; E2 deployed 0.07 0; E3 deployed 0.05 48; E4 deployed 0.15 44
+[T24] MESSUNG +90.0s: Stand: C1 -/- Last nil bei 43849.8, -1.1; C2 -/- Last nil bei 43848.2, 0.7; E1 mobile 0.10 146; E2 deployed 0.15 97; E3 deployed 0.13 45; E4 deployed 0.23 41
+[T24] MESSUNG +105.0s: Wurmzeichen auf Ernter 2, Jagd 7
+[T24] MESSUNG +120.0s: Stand: C1 -/- Last nil bei 43943.1, 0.5; C2 rescue/to_base Last 153 bei 43901.9, 21.4; E1 deploying 0.10 150; E2 carried 0.20 150; E3 deployed 0.20 42; E4 deployed 0.30 38
+[T24] MESSUNG +150.0s: Stand: C1 -/- Last nil bei 43848.9, -1.0; C2 -/- Last nil bei 43847.9, 1.0; E1 deployed 0.18 147; E2 mobile 0.20 150; E3 deployed 0.28 39; E4 deployed 0.38 35
+[T24] MESSUNG +180.0s: Stand: C1 return/to_spot Last 153 bei 43860.6, 1.5; C2 -/- Last nil bei 43847.9, 1.0; E1 deployed 0.25 144; E2 carried 0.20 150; E3 deployed 0.35 36; E4 deployed 0.45 32
+[T24] MESSUNG +180.0s: Wurmzeichen auf Ernter 3, Jagd 8
+[T24] MESSUNG +210.0s: Stand: C1 -/- Last nil bei 43849.6, -1.6; C2 -/- Last nil bei 43848.2, 1.0; E1 deployed 0.32 141; E2 deployed 0.25 148; E3 mobile 0.38 130; E4 deployed 0.53 29
+[T24] MESSUNG +240.0s: Stand: C1 -/- Last nil bei 43849.6, -1.6; C2 -/- Last nil bei 43848.2, 1.0; E1 deployed 0.40 138; E2 deployed 0.32 145; E3 mobile 0.38 130; E4 deployed 0.60 26
+[T24] MESSUNG +255.0s: Wurmzeichen auf Ernter 4, Jagd 9
+[T24] MESSUNG +270.0s: Stand: C1 -/- Last nil bei 43903.3, -18.6; C2 rescue/fly Last nil bei 43973.2, 21.2; E1 deployed 0.48 135; E2 deployed 0.40 142; E3 deployed 0.38 150; E4 deployed 0.68 23
+[T24] MESSUNG +300.0s: Stand: C1 -/- Last nil bei 43849.6, -0.5; C2 -/- Last nil bei 43847.6, 1.2; E1 deployed 0.55 132; E2 deployed 0.48 139; E3 deployed 0.45 147; E4 mobile 0.68 123
+[T24] MESSUNG +330.0s: Stand: C1 return/to_spot Last 155 bei 43863.0, 0.9; C2 -/- Last nil bei 43847.6, 1.2; E1 deployed 0.63 129; E2 deployed 0.55 136; E3 deployed 0.53 144; E4 carried 0.68 150
+[T24] MESSUNG +330.0s: Wurmzeichen auf Ernter 1, Jagd 10
+[T24] MESSUNG +360.0s: Stand: C1 -/- Last nil bei 43908.4, 9.5; C2 rescue/to_base Last 152 bei 43875.9, 0.3; E1 carried 0.65 150; E2 deployed 0.63 133; E3 deployed 0.60 141; E4 deployed 0.70 149
+[T24] MESSUNG +390.0s: Stand: C1 -/- Last nil bei 43849.8, -1.1; C2 -/- Last nil bei 43847.9, 1.0; E1 mobile 0.65 150; E2 deployed 0.70 130; E3 deployed 0.68 138; E4 deployed 0.78 146
+[T24] MESSUNG +405.0s: Wurmzeichen auf Ernter 2, Jagd 11
+[T24] MESSUNG +420.0s: Stand: C1 -/- Last nil bei 43937.7, 0.3; C2 rescue/to_base Last 153 bei 43901.1, 21.1; E1 deploying 0.65 150; E2 carried 0.78 150; E3 deployed 0.75 135; E4 deployed 0.85 143
+[T24] MESSUNG +450.0s: Stand: C1 unload/fly Last nil bei 43956.3, 17.9; C2 -/- Last nil bei 43847.9, 1.0; E1 deployed 0.73 147; E2 mobile 0.78 150; E3 deployed 0.83 132; E4 deployed 0.93 140
+[T24] MESSUNG +480.0s: Stand: C1 unload/relift Last nil bei 43864.1, -3.1; C2 -/- Last nil bei 43847.9, 1.0; E1 deployed 0.80 144; E2 mobile 0.78 150; E3 deployed 0.90 129; E4 docked 0.00 150
+[T24] MESSUNG +480.0s: Wurmzeichen auf Ernter 3, Jagd 12
+[T24] MESSUNG +510.0s: Stand: C1 -/- Last nil bei 43951.8, 17.3; C2 rescue/to_base Last 154 bei 43849.8, -1.0; E1 deployed 0.88 141; E2 mobile 0.78 150; E3 carried 0.00 150; E4 deployed 0.03 150
+[T24] MESSUNG +540.0s: Stand: C1 -/- Last nil bei 43849.1, -1.3; C2 unload/to_intake Last 152 bei 43917.0, -1.4; E1 carried 0.93 150; E2 deployed 0.78 150; E3 mobile 0.00 150; E4 deployed 0.10 147
+[T24] MESSUNG +555.0s: Wurmzeichen auf Ernter 4, Jagd 13
+[T24] MESSUNG +570.0s: Stand: C1 rescue/fly Last nil bei 43973.6, 20.9; C2 -/- Last nil bei 43929.3, 0.4; E1 deploying 0.00 150; E2 deployed 0.85 147; E3 mobile 0.00 150; E4 deployed 0.18 144
+[T24] MESSUNG +600.0s: Stand: C1 unload/fly Last nil bei 43904.8, 22.8; C2 -/- Last nil bei 43847.4, 1.0; E1 deployed 0.07 147; E2 deployed 0.93 144; E3 mobile 0.00 150; E4 mobile 0.18 150
+[T24] MESSUNG +630.0s: Stand: C1 -/- Last nil bei 43851.0, -1.4; C2 return/to_spot Last 154 bei 43854.2, -4.5; E1 deployed 0.15 144; E2 mobile 0.00 150; E3 carried 0.00 150; E4 mobile 0.18 150
+[T24] MESSUNG +630.0s: Wurmzeichen auf Ernter 1, Jagd 14
+[T24] MESSUNG +660.0s: Stand: C1 rescue/to_base Last 152 bei 43882.1, 0.1; C2 -/- Last nil bei 43847.4, 1.5; E1 carried 0.20 150; E2 mobile 0.00 150; E3 deployed 0.05 149; E4 mobile 0.18 150
+[T24] MESSUNG +690.0s: Stand: C1 -/- Last nil bei 43849.7, -1.3; C2 -/- Last nil bei 43848.9, 0.1; E1 mobile 0.20 150; E2 mobile 0.00 150; E3 deployed 0.13 146; E4 mobile 0.18 150
+[T24] MESSUNG +705.0s: Wurmzeichen auf Ernter 3, Jagd 15
+[T24] MESSUNG +720.0s: Stand: C1 rescue/to_base Last 154 bei 43912.2, -21.9; C2 return/to_spot Last 152 bei 43918.8, 0.1; E1 carried 0.20 150; E2 mobile 0.00 150; E3 carried 0.20 150; E4 mobile 0.18 150
+[T24] MESSUNG +750.0s: Stand: C1 -/- Last nil bei 43899.3, 20.3; C2 return/couple Last nil bei 43858.8, 0.1; E1 deployed 0.25 148; E2 deploying 0.00 150; E3 mobile 0.20 150; E4 mobile 0.18 150
+[T24] MESSUNG +780.0s: Stand: C1 return/to_spot Last 154 bei 43847.6, -1.5; C2 -/- Last nil bei 43899.1, 9.4; E1 deployed 0.32 145; E2 deployed 0.07 147; E3 carried 0.20 150; E4 deployed 0.18 150
+[T24] MESSUNG +780.0s: Wurmzeichen auf Ernter 4, Jagd 16
+[T24] MESSUNG +810.0s: Stand: C1 -/- Last nil bei 43849.9, -0.6; C2 rescue/to_base Last 155 bei 43896.6, 7.4; E1 deployed 0.40 142; E2 deployed 0.15 144; E3 deployed 0.23 149; E4 carried 0.20 150
+[T24] MESSUNG +840.0s: Stand: C1 -/- Last nil bei 43849.9, -0.6; C2 -/- Last nil bei 43847.8, 1.2; E1 deployed 0.48 139; E2 deployed 0.23 141; E3 deployed 0.30 146; E4 mobile 0.20 150
+[T24] MESSUNG +855.0s: Wurmzeichen auf Ernter 1, Jagd 17
+[T24] MESSUNG +870.0s: Stand: C1 return/to_spot Last 155 bei 43956.5, 17.5; C2 rescue/to_base Last 152 bei 43935.3, 0.1; E1 carried 0.55 150; E2 deployed 0.30 138; E3 deployed 0.38 143; E4 carried 0.20 150
+[T24] MESSUNG +900.0s: Stand: C1 -/- Last nil bei 43849.2, -1.4; C2 -/- Last nil bei 43847.7, 1.0; E1 mobile 0.55 150; E2 deployed 0.38 135; E3 deployed 0.45 140; E4 deployed 0.28 148
+[T24] MESSUNG +930.0s: Stand: C1 return/to_spot Last 152 bei 43863.0, 0.1; C2 -/- Last nil bei 43847.7, 1.0; E1 carried 0.55 150; E2 deployed 0.45 132; E3 deployed 0.53 137; E4 deployed 0.35 145
+[T24] MESSUNG +930.0s: Wurmzeichen auf Ernter 2, Jagd 18
+[T24] MESSUNG +960.0s: Stand: C1 -/- Last nil bei 43849.4, -0.9; C2 -/- Last nil bei 43847.8, 1.1; E1 deployed 0.58 148; E2 mobile 0.48 150; E3 deployed 0.60 134; E4 deployed 0.43 142
+[T24] MESSUNG +990.0s: Stand: C1 -/- Last nil bei 43849.4, -0.9; C2 -/- Last nil bei 43847.8, 1.1; E1 deployed 0.65 145; E2 mobile 0.48 150; E3 deployed 0.68 131; E4 deployed 0.50 139
+[T24] MESSUNG +1005.0s: Wurmzeichen auf Ernter 3, Jagd 19
+[T24] MESSUNG +1020.0s: Stand: C1 -/- Last nil bei 43873.5, 9.0; C2 rescue/to_base Last 154 bei 43908.1, -19.7; E1 deployed 0.73 142; E2 deployed 0.50 150; E3 carried 0.73 150; E4 deployed 0.58 136
+[T24] MESSUNG +1050.0s: Stand: C1 -/- Last nil bei 43849.6, -1.5; C2 -/- Last nil bei 43848.1, 1.0; E1 deployed 0.80 139; E2 deployed 0.58 147; E3 mobile 0.73 150; E4 deployed 0.65 133
+[T24] MESSUNG +1080.0s: Stand: C1 return/to_spot Last 154 bei 43862.6, -1.7; C2 -/- Last nil bei 43848.1, 1.0; E1 deployed 0.88 136; E2 deployed 0.65 144; E3 carried 0.73 150; E4 deployed 0.73 130
+[T24] MESSUNG +1080.0s: Wurmzeichen auf Ernter 4, Jagd 20
+[T24] MESSUNG +1110.0s: Stand: C1 -/- Last nil bei 43849.8, -0.5; C2 rescue/to_base Last 155 bei 43903.6, 8.6; E1 deployed 0.95 133; E2 deployed 0.73 141; E3 deployed 0.78 148; E4 carried 0.75 150
+[T24] MESSUNG +1140.0s: Stand: C1 -/- Last nil bei 43849.8, -0.5; C2 unload/to_intake Last 152 bei 43889.2, -1.8; E1 carried 1.00 150; E2 deployed 0.80 138; E3 deployed 0.85 145; E4 mobile 0.75 150
+[T24] MESSUNG +1155.0s: Wurmzeichen auf Ernter 2, Jagd 21
+[T24] MESSUNG +1170.0s: Stand: C1 -/- Last nil bei 43850.3, -1.1; C2 rescue/to_base Last 153 bei 43899.2, 21.6; E1 mobile 0.00 150; E2 carried 0.85 150; E3 deployed 0.93 142; E4 mobile 0.75 150
+[T24] MESSUNG +1200.0s: Stand: C1 unload/to_intake Last 154 bei 43886.9, -11.6; C2 -/- Last nil bei 43848.9, 0.6; E1 mobile 0.00 150; E2 mobile 0.85 150; E3 carried 0.98 150; E4 mobile 0.75 150
+[T24] MESSUNG +1230.0s: Stand: C1 -/- Last nil bei 43886.2, -12.7; C2 return/to_spot Last 152 bei 43859.6, -0.4; E1 carried 0.00 150; E2 mobile 0.85 150; E3 deployed 0.03 150; E4 mobile 0.75 150
+[T24] MESSUNG +1230.0s: Wurmzeichen auf Ernter 3, Jagd 22
+[T24] MESSUNG +1260.0s: Stand: C1 -/- Last nil bei 43851.7, -0.9; C2 return/to_spot Last 153 bei 43851.0, 8.1; E1 deployed 0.05 149; E2 carried 0.85 150; E3 mobile 0.05 150; E4 mobile 0.75 150
+[T24] MESSUNG +1290.0s: Stand: C1 return/to_spot Last 155 bei 43954.4, 17.0; C2 -/- Last nil bei 43848.8, 0.8; E1 deployed 0.13 146; E2 deployed 0.88 148; E3 mobile 0.05 150; E4 carried 0.75 150
+[T24] MESSUNG +1305.0s: Wurmzeichen auf Ernter 4, Jagd 23
+[T24] MESSUNG +1320.0s: Stand: C1 rescue/to_base Last 155 bei 43973.0, 20.8; C2 -/- Last nil bei 43857.2, -0.3; E1 deployed 0.20 143; E2 mobile 0.00 150; E3 mobile 0.05 150; E4 carried 0.80 150
+[T24] MESSUNG +1350.0s: Stand: C1 -/- Last nil bei 43851.2, -2.2; C2 return/to_spot Last 154 bei 43878.5, -11.1; E1 deployed 0.28 140; E2 mobile 0.00 150; E3 carried 0.05 150; E4 mobile 0.80 150
+[T24] MESSUNG +1380.0s: Stand: C1 return/to_spot Last 153 bei 43863.5, 1.2; C2 -/- Last nil bei 43847.7, 1.5; E1 deployed 0.35 137; E2 carried 0.00 150; E3 deployed 0.07 148; E4 mobile 0.80 150
+[T24] MESSUNG +1380.0s: Wurmzeichen auf Ernter 1, Jagd 24
+[T24] MESSUNG +1410.0s: Stand: C1 -/- Last nil bei 43849.4, -1.7; C2 return/couple Last nil bei 43851.3, 7.5; E1 mobile 0.38 150; E2 deployed 0.05 148; E3 deployed 0.15 145; E4 mobile 0.80 150
+[T24] MESSUNG +1440.0s: Stand: C1 -/- Last nil bei 43849.4, -1.7; C2 -/- Last nil bei 43848.2, 2.1; E1 mobile 0.38 150; E2 deployed 0.13 145; E3 deployed 0.23 142; E4 mobile 0.80 150
+[T24] MESSUNG +1455.0s: Wurmzeichen auf Ernter 2, Jagd 25
+[T24] MESSUNG +1470.0s: Stand: C1 -/- Last nil bei 43927.4, 0.1; C2 rescue/to_base Last 153 bei 43883.3, 12.4; E1 deploying 0.38 150; E2 carried 0.20 150; E3 deployed 0.30 139; E4 mobile 0.80 150
+[T24] MESSUNG +1500.0s: Stand: C1 -/- Last nil bei 43849.6, -1.0; C2 -/- Last nil bei 43849.3, 0.9; E1 deployed 0.45 147; E2 mobile 0.20 150; E3 deployed 0.38 136; E4 mobile 0.80 150
+[T24] MESSUNG +1530.0s: Stand: C1 return/to_spot Last 153 bei 43861.3, 1.8; C2 -/- Last nil bei 43849.3, 0.9; E1 deployed 0.53 144; E2 carried 0.20 150; E3 deployed 0.45 133; E4 mobile 0.80 150
+[T24] MESSUNG +1530.0s: Wurmzeichen auf Ernter 3, Jagd 26
+[T24] MESSUNG +1560.0s: Stand: C1 return/to_spot Last 155 bei 43864.5, 4.9; C2 -/- Last nil bei 43849.2, 1.0; E1 deployed 0.60 141; E2 deployed 0.23 148; E3 mobile 0.48 150; E4 carried 0.80 150
+[T24] MESSUNG +1590.0s: Stand: C1 -/- Last nil bei 43889.1, 6.1; C2 -/- Last nil bei 43849.2, 1.0; E1 deployed 0.68 138; E2 deployed 0.30 145; E3 mobile 0.48 150; E4 deployed 0.83 149
+[T24] MESSUNG +1605.0s: Wurmzeichen auf Ernter 4, Jagd 27
+[T24] MESSUNG +1620.0s: Stand: C1 -/- Last nil bei 43870.5, -7.6; C2 rescue/couple Last nil bei 43973.4, 20.6; E1 deployed 0.75 135; E2 deployed 0.38 142; E3 deployed 0.50 150; E4 deployed 0.90 146
+[T24] MESSUNG +1650.0s: Stand: C1 -/- Last nil bei 43849.4, -0.4; C2 rescue/to_base Last 155 bei 43863.6, -2.6; E1 deployed 0.83 132; E2 deployed 0.45 139; E3 deployed 0.58 147; E4 carried 0.00 150
+[T24] MESSUNG +1680.0s: Stand: C1 return/to_spot Last 155 bei 43861.6, -0.7; C2 -/- Last nil bei 43847.5, 1.2; E1 deployed 0.90 129; E2 deployed 0.53 136; E3 deployed 0.65 144; E4 carried 0.00 150
+[T24] MESSUNG +1680.0s: Wurmzeichen auf Ernter 1, Jagd 28
+[T24] MESSUNG +1710.0s: Stand: C1 -/- Last nil bei 43866.7, 2.0; C2 unload/unloading Last nil bei 43865.5, -2.9; E1 mobile 0.93 150; E2 deployed 0.60 133; E3 deployed 0.73 141; E4 deployed 0.03 149
+[T24] MESSUNG +1740.0s: Stand: C1 -/- Last nil bei 43849.8, -1.3; C2 -/- Last nil bei 43847.5, 1.0; E1 mobile 0.00 150; E2 deployed 0.68 130; E3 deployed 0.80 138; E4 deployed 0.10 146
+[T24] MESSUNG +1755.0s: Wurmzeichen auf Ernter 2, Jagd 29
+[T24] MESSUNG +1770.0s: Stand: C1 -/- Last nil bei 43926.4, 0.0; C2 rescue/to_base Last 153 bei 43882.3, 11.9; E1 mobile 0.00 150; E2 carried 0.75 150; E3 deployed 0.88 135; E4 deployed 0.18 143
+[T24] MESSUNG +1800.0s: Stand: C1 unload/to_intake Last 154 bei 43892.5, -13.6; C2 -/- Last nil bei 43847.8, 1.0; E1 mobile 0.00 150; E2 mobile 0.75 150; E3 carried 0.93 150; E4 deployed 0.25 140
+[T24] MESSUNG +1830.0s: Stand: C1 -/- Last nil bei 43864.9, -5.7; C2 return/to_spot Last 153 bei 43860.1, 1.1; E1 mobile 0.00 150; E2 carried 0.75 150; E3 deployed 0.03 150; E4 deployed 0.32 137
+[T24] MESSUNG +1830.0s: Wurmzeichen auf Ernter 3, Jagd 30
+[T24] MESSUNG +1860.0s: Stand: C1 -/- Last nil bei 43849.6, -0.9; C2 -/- Last nil bei 43847.2, 0.3; E1 mobile 0.00 150; E2 deployed 0.78 148; E3 mobile 0.05 150; E4 deployed 0.40 134
+[T24] MESSUNG +1890.0s: Stand: C1 -/- Last nil bei 43849.6, -0.9; C2 -/- Last nil bei 43847.2, 0.3; E1 mobile 0.00 150; E2 deployed 0.85 145; E3 mobile 0.05 150; E4 deployed 0.48 131
+[T24] MESSUNG +1905.0s: Wurmzeichen auf Ernter 4, Jagd 31
+[T24] MESSUNG +1920.0s: Stand: C1 rescue/to_base Last 155 bei 43957.0, 17.8; C2 -/- Last nil bei 43847.2, 0.3; E1 mobile 0.00 150; E2 deployed 0.93 142; E3 mobile 0.05 150; E4 carried 0.55 150
+[T24] MESSUNG +1950.0s: Stand: C1 -/- Last nil bei 43851.1, -1.0; C2 unload/to_intake Last 153 bei 43903.0, 21.2; E1 mobile 0.00 150; E2 carried 1.00 150; E3 mobile 0.05 150; E4 mobile 0.55 150
+[T24] MESSUNG +1980.0s: Stand: C1 return/to_spot Last 154 bei 43912.2, -20.9; C2 -/- Last nil bei 43848.8, -0.5; E1 mobile 0.00 150; E2 mobile 0.00 150; E3 carried 0.05 150; E4 mobile 0.55 150
+[T24] MESSUNG +2010.0s: Stand: C1 return/to_spot Last 155 bei 43913.5, 10.5; C2 -/- Last nil bei 43847.6, 0.6; E1 mobile 0.00 150; E2 deployed 0.05 149; E3 deployed 0.10 147; E4 carried 0.55 150
+[T24] MESSUNG +2040.0s: Stand: C1 -/- Last nil bei 43849.1, -1.4; C2 -/- Last nil bei 43847.6, 0.6; E1 mobile 0.00 150; E2 deployed 0.13 146; E3 deployed 0.18 144; E4 deployed 0.58 148
+[T24] MESSUNG +2055.0s: Wurmzeichen auf Ernter 2, Jagd 32
+[T24] MESSUNG +2070.0s: Stand: C1 rescue/to_base Last 153 bei 43894.9, 17.9; C2 -/- Last nil bei 43847.6, 0.6; E1 mobile 0.00 150; E2 carried 0.18 150; E3 deployed 0.25 141; E4 deployed 0.65 145
+[T24] MESSUNG +2100.0s: Stand: C1 -/- Last nil bei 43849.8, -1.2; C2 -/- Last nil bei 43847.6, 0.6; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 deployed 0.32 138; E4 deployed 0.73 142
+[T24] MESSUNG +2130.0s: Stand: C1 return/to_spot Last 153 bei 43861.8, 2.0; C2 -/- Last nil bei 43847.6, 0.6; E1 mobile 0.00 150; E2 carried 0.18 150; E3 deployed 0.40 135; E4 deployed 0.80 139
+[T24] MESSUNG +2130.0s: Wurmzeichen auf Ernter 3, Jagd 33
+[T24] MESSUNG +2160.0s: Stand: C1 -/- Last nil bei 43849.9, -1.5; C2 -/- Last nil bei 43847.6, 1.1; E1 mobile 0.00 150; E2 deployed 0.23 148; E3 mobile 0.43 150; E4 deployed 0.88 136
+[T24] MESSUNG +2190.0s: Stand: C1 unload/to_intake Last 155 bei 43892.8, 3.3; C2 -/- Last nil bei 43847.6, 1.1; E1 mobile 0.00 150; E2 deployed 0.30 145; E3 mobile 0.43 150; E4 carried 0.93 150
+[T24] MESSUNG +2205.0s: Wurmzeichen auf Ernter 2, Jagd 34
+[T24] MESSUNG +2220.0s: Stand: C1 -/- Last nil bei 43952.8, 17.0; C2 rescue/to_base Last 153 bei 43875.7, 11.9; E1 mobile 0.00 150; E2 carried 0.35 150; E3 mobile 0.43 150; E4 mobile 0.00 150
+[T24] MESSUNG +2250.0s: Stand: C1 -/- Last nil bei 43849.2, -1.3; C2 -/- Last nil bei 43848.4, 1.2; E1 mobile 0.00 150; E2 mobile 0.35 150; E3 deployed 0.45 150; E4 mobile 0.00 150
+[T24] MESSUNG +2280.0s: Stand: C1 -/- Last nil bei 43849.2, -1.3; C2 return/to_spot Last 153 bei 43849.9, 2.1; E1 mobile 0.00 150; E2 carried 0.35 150; E3 deployed 0.53 147; E4 mobile 0.00 150
+[T24] MESSUNG +2280.0s: Wurmzeichen auf Ernter 3, Jagd 35
+[T24] MESSUNG +2310.0s: Stand: C1 -/- Last nil bei 43850.1, -0.8; C2 -/- Last nil bei 43847.6, 0.4; E1 mobile 0.00 150; E2 deployed 0.40 148; E3 mobile 0.55 150; E4 mobile 0.00 150
+[T24] MESSUNG +2340.0s: Stand: C1 -/- Last nil bei 43850.1, -0.8; C2 -/- Last nil bei 43847.6, 0.4; E1 mobile 0.00 150; E2 deployed 0.48 145; E3 mobile 0.55 150; E4 mobile 0.00 150
+[T24] MESSUNG +2355.0s: Wurmzeichen auf Ernter 2, Jagd 36
+[T24] MESSUNG +2370.0s: Stand: C1 -/- Last nil bei 43858.8, -3.7; C2 rescue/to_base Last 153 bei 43876.3, 9.3; E1 mobile 0.00 150; E2 carried 0.53 150; E3 deployed 0.55 150; E4 mobile 0.00 150
+[T24] MESSUNG +2400.0s: Stand: C1 -/- Last nil bei 43849.8, -0.6; C2 -/- Last nil bei 43847.5, 1.2; E1 mobile 0.00 150; E2 mobile 0.53 150; E3 deployed 0.63 147; E4 mobile 0.00 150
+[T24] MESSUNG +2430.0s: Stand: C1 return/to_spot Last 153 bei 43862.4, 2.4; C2 -/- Last nil bei 43847.5, 1.2; E1 mobile 0.00 150; E2 carried 0.53 150; E3 deployed 0.70 144; E4 mobile 0.00 150
+[T24] MESSUNG +2430.0s: Wurmzeichen auf Ernter 3, Jagd 37
+[T24] MESSUNG +2460.0s: Stand: C1 -/- Last nil bei 43849.3, -1.7; C2 -/- Last nil bei 43847.9, 1.2; E1 mobile 0.00 150; E2 deployed 0.58 148; E3 mobile 0.73 150; E4 mobile 0.00 150
+[T24] MESSUNG +2490.0s: Stand: C1 -/- Last nil bei 43849.3, -1.7; C2 -/- Last nil bei 43847.9, 1.2; E1 mobile 0.00 150; E2 deployed 0.65 145; E3 mobile 0.73 150; E4 mobile 0.00 150
+[T24] MESSUNG +2505.0s: Wurmzeichen auf Ernter 2, Jagd 38
+[T24] MESSUNG +2520.0s: Stand: C1 -/- Last nil bei 43881.3, -10.9; C2 rescue/to_base Last 153 bei 43893.7, 17.2; E1 mobile 0.00 150; E2 carried 0.70 150; E3 deployed 0.73 150; E4 mobile 0.00 150
+[T24] MESSUNG +2550.0s: Stand: C1 -/- Last nil bei 43849.4, -0.4; C2 -/- Last nil bei 43847.4, 1.3; E1 mobile 0.00 150; E2 mobile 0.70 150; E3 deployed 0.80 147; E4 mobile 0.00 150
+[T24] MESSUNG +2580.0s: Stand: C1 return/to_spot Last 153 bei 43861.2, 1.4; C2 -/- Last nil bei 43847.4, 1.3; E1 mobile 0.00 150; E2 carried 0.70 150; E3 deployed 0.88 144; E4 mobile 0.00 150
+[T24] MESSUNG +2580.0s: Wurmzeichen auf Ernter 3, Jagd 39
+[T24] MESSUNG +2610.0s: Stand: C1 -/- Last nil bei 43849.9, -1.5; C2 -/- Last nil bei 43848.4, 1.1; E1 mobile 0.00 150; E2 deployed 0.75 149; E3 mobile 0.00 150; E4 mobile 0.00 150
+[T24] MESSUNG +2640.0s: Stand: C1 -/- Last nil bei 43849.9, -1.5; C2 -/- Last nil bei 43848.4, 1.1; E1 mobile 0.00 150; E2 deployed 0.83 146; E3 mobile 0.00 150; E4 mobile 0.00 150
+[T24] MESSUNG +2655.0s: Wurmzeichen auf Ernter 2, Jagd 40
+[T24] MESSUNG +2670.0s: Stand: C1 -/- Last nil bei 43856.3, -2.8; C2 unload/to_intake Last 153 bei 43888.5, 12.5; E1 mobile 0.00 150; E2 carried 0.90 150; E3 deployed 0.03 149; E4 mobile 0.00 150
+[T24] MESSUNG +2700.0s: Stand: C1 -/- Last nil bei 43849.5, -0.5; C2 -/- Last nil bei 43847.8, 1.2; E1 mobile 0.00 150; E2 mobile 0.90 150; E3 deployed 0.10 146; E4 mobile 0.00 150
+[T24] MESSUNG +2730.0s: Stand: C1 unload/to_intake Last 153 bei 43864.1, -2.6; C2 -/- Last nil bei 43847.8, 1.2; E1 mobile 0.00 150; E2 carried 0.90 150; E3 deployed 0.18 143; E4 mobile 0.00 150
+[T24] MESSUNG +2730.0s: Wurmzeichen auf Ernter 3, Jagd 41
+[T24] MESSUNG +2760.0s: Stand: C1 -/- Last nil bei 43849.8, -1.5; C2 -/- Last nil bei 43847.7, 1.2; E1 mobile 0.00 150; E2 deployed 0.05 149; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2790.0s: Stand: C1 -/- Last nil bei 43849.8, -1.5; C2 -/- Last nil bei 43847.7, 1.2; E1 mobile 0.00 150; E2 deployed 0.13 146; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2805.0s: Wurmzeichen auf Ernter 2, Jagd 42
+[T24] MESSUNG +2820.0s: Stand: C1 -/- Last nil bei 43852.6, -1.6; C2 rescue/to_base Last 153 bei 43869.3, 5.7; E1 mobile 0.00 150; E2 carried 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2850.0s: Stand: C1 -/- Last nil bei 43849.6, -0.5; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2880.0s: Stand: C1 return/to_spot Last 153 bei 43862.5, 2.5; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 carried 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2910.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2940.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +2970.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3000.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3030.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3060.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3090.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3120.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3150.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3180.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3210.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3240.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3270.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3300.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3330.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3360.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3390.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3420.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3450.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3480.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3510.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3540.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3570.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3600.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3630.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3660.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3690.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3720.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3750.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3780.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3810.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] MESSUNG +3840.0s: Stand: C1 -/- Last nil bei 43849.9, -1.4; C2 -/- Last nil bei 43848.6, 1.0; E1 mobile 0.00 150; E2 mobile 0.18 150; E3 mobile 0.20 150; E4 mobile 0.00 150
+[T24] OK +3840.0s: Dauerlauf: Wurmzeichen 37 (entkommen 37), Aufträge rescue 37, unload 12, refuel 1, return 46, entladen 15, längster Auftrag 91.5 s, längste Zeit ohne Brennstoff 32.5 s, Carryalls daheim 2, Ernter an der Leitstelle 0, Wurmzeichen ausgefallen (kein Ernter aufgebaut) 11
+[T24] ENDE +3840.0s: Dauerlauf OK (OK 1, FEHLER 0, FRAGE 0, 3840.0 s)
