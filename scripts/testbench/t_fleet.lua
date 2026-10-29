@@ -1796,10 +1796,14 @@ local function t27_tick(run, tb)
       local h = deployed[(i % #deployed) + 1]
       empty_field(tb, h.entity.position)
       s.empties[i] = tick
+      s.moves_before = s.moves_before or {}
+      s.moves_before[i] = s.kinds.move or 0
       tb.trace(run, "Feld leer bei " .. pos_text(tb, h.entity.position))
     end
-    -- Wieder drei: drei aktiv (aufgebaut oder nach einer Rettung wartend) und kein Einsatz oder Umsetzen offen.
-    if s.empties[i] and not s.recover[i] and tick > s.empties[i] + 120 and c and c.active == 3
+    -- Wieder drei: seit dem leeren Feld ein Umsetzen begonnen, drei aktiv (aufgebaut oder nach einer Rettung wartend)
+    -- und kein Einsatz oder Umsetzen offen. (PC-Lauf 325d24b zählte ohne die erste Bedingung 2 s, bevor der Ernter
+    -- „Feld leer“ meldete.)
+    if s.empties[i] and not s.recover[i] and (s.kinds.move or 0) > s.moves_before[i] and c and c.active == 3
         and not open_transfer(s) then
       s.recover[i] = tick - s.empties[i]
     end
