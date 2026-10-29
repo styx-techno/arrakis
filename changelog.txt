@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.10.1
+Date: 2026-10-29
+  Bugfixes:
+    - Prüfstand T25: Der Sandwurm taucht jetzt sichtbar auf (bisher biss ein unsichtbarer Wurm wie in T23). Für die Frage nach dem Reichweitenkreis liegt während des Tests eine Leitstelle im Inventar.
+  Modding:
+    - Prüfstand T21 Schritt 6: zusätzliche Messwerte je 20 Ticks für O6 (Abstand zum Wurmkörper, Brenner, Autopilot-Ziel, Beine), um ein einmal gemessenes Bremsen über dem Wurm aufzuklären.
+---------------------------------------------------------------------------------------------------
 Version: 0.10.0
 Date: 2026-10-28
   Features:

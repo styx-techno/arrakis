@@ -1677,6 +1677,32 @@ function steps.s6_flight(run, tb, d, s)
       if age > 0 and age <= BRAKE.profile_ticks and age % BRAKE.profile_step == 0 then table.insert(f.profile[i], tb.speed_tps(flyer) or 0) end
     end
   end
+  -- MESSUNG seit 0.10.1 (Lauf 29.10.2026: O6 einmal über dem Körper auf 0,7 Kacheln/s gebremst, Wiederholung ohne Bremsen): je
+  -- BRAKE.profile_step Ticks für O6 kleinster Abstand zu einem Körperknoten, Brennwert im Brenner (MJ), ob das Autopilot-Ziel noch
+  -- steht und der größte Abstand eines Beins zur Mitte (hängt ein Bein fest?).
+  if valid(s.o6) and age > 0 and age <= BRAKE.profile_ticks and age % BRAKE.profile_step == 0 then
+    local o6 = s.o6
+    local near
+    if valid(unit) then
+      for _, node in ipairs(unit.get_body_nodes()) do
+        local gap = dist(o6.position, node)
+        if not near or gap < near then near = gap end
+      end
+    end
+    local burner = o6.burner
+    local mj = burner and ((burner.remaining_burning_fuel or 0) / 1e6) or nil
+    local legs = read(function() return o6.get_spider_legs() end) or {}
+    local reach
+    for _, leg in ipairs(legs) do
+      if valid(leg) then
+        local gap = dist(o6.position, leg.position)
+        if not reach or gap > reach then reach = gap end
+      end
+    end
+    f.diag = f.diag or {}
+    table.insert(f.diag, string.format("%s/%s/%s/%s", tb.num(near, 1), tb.num(mj, 1), o6.autopilot_destination and "j" or "n",
+      tb.num(reach, 1)))
+  end
   if not a6 and valid(s.o6) and valid(unit) then
     local near
     for _, node in ipairs(unit.get_body_nodes()) do
@@ -1761,6 +1787,8 @@ function steps.s6_eval(run, tb, d, s)
     .. "O6 %s / O6b %s / O6c %s Kacheln; Tempo je %d Ticks O6 %s | O6b %s | O6c %s",
     tostring(wp[1]), tostring(wp[2]), tostring(wp[3]), tb.num(f.side[1], 2), tb.num(f.side[2], 2), tb.num(f.side[3], 2), BRAKE.profile_step,
     profile(f.profile[1]), profile(f.profile[2]), profile(f.profile[3])))
+  tb.log(run, "MESSUNG", "6) O6 je " .. BRAKE.profile_step .. " Ticks (Abstand zum Körper / Brenner MJ / Ziel j/n / weitestes Bein): "
+    .. table.concat(f.diag or {}, " "))
   return verdict(run, tb, 6, "Ornithopter über dem Kopf [W12]", failed, string.format("Tempo über dem Körper %s %%, Flugzeit %s %%, über dem Körper %d Ticks, "
     .. "Abstand +%s, Sticker %d, Biss %s",
     tb.num(oref > 0 and 100 * o6 / oref or nil, 0), tb.num(f.t6 and tref and tref > 0 and 100 * f.t6 / tref or nil, 1), f.over,
