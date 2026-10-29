@@ -99,7 +99,8 @@ data:extend({
   {
     type = "virtual-signal",
     name = "arrakis-signal-spice",
-    icons = {{icon = "__base__/graphics/icons/signal/signal-S.png", tint = {r = 1, g = 0.7, b = 0.3}}},
+    -- Symbol von signal-S übernehmen (die Datei heißt signal_S.png; 0.12.0 lud mit signal-S.png nicht, tools/check/base_paths.py).
+    icons = {{icon = data.raw["virtual-signal"]["signal-S"].icon, tint = {r = 1, g = 0.7, b = 0.3}}},
     subgroup = "virtual-signal",
     order = "e[alert]-z[arrakis-fleet-e]"
   },
