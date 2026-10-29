@@ -64,6 +64,8 @@ lib.RESERVE = 1.2
 lib.RESCUE_MARGIN = 3 * 60
 -- Angekommen: so nah am Ziel (Kacheln).
 lib.ARRIVE = 2.5
+-- So oft fliegt ein Carryall nach einer abgebrochenen Kopplung wieder an den Ernter heran, bevor der Auftrag endet.
+lib.COUPLE_TRIES = 5
 -- Tanken: Abstand zum Ernter (Kacheln) und Schwelle (J): unter 100 MJ (gut 4 min Ernten bei 400 kW).
 lib.REFUEL_RANGE = 4
 lib.REFUEL_BELOW = 100e6
@@ -358,6 +360,15 @@ local function end_job(job, why)
     if not record.cargo then stop(record) end
   end
   if why then log("Arrakis Leitstelle: Auftrag " .. job.id .. " (" .. job.kind .. ") Ende: " .. why) end
+  -- Bricht ein Auftrag ab, während der Ernter an der Annahme angedockt ist, holt ihn sonst niemand mehr ab, und die
+  -- Annahme bleibt belegt: Er wartet dort wie nach einer Rettung und fliegt zurück an seinen Platz.
+  local h = why and storage.harvesters[job.harvester]
+  local pos = job.return_pos
+  if h and h.state == "docked" and not h.fleet_wait and pos and h.entity and h.entity.valid then
+    local p = h.entity.position
+    h.fleet_wait = {surface = pos.surface, x = pos.x, y = pos.y, base = {x = p.x, y = p.y},
+      depot = record and record.depot, since = game.tick, reason = "rescue"}
+  end
 end
 
 -- Auftrag in einen anderen umwandeln (Rettung → Rückkehr/Entladen, Entladen → Rückkehr); der Carryall bleibt.
@@ -470,7 +481,8 @@ lib.calm = calm
 local function check_wait(un, h)
   local fw = h.fleet_wait
   local entity = h.entity
-  if h.state ~= "mobile" or driven_by_player(entity) or entity.surface.index ~= fw.surface
+  -- Angedockt wartet er nur nach einem abgebrochenen Auftrag an der Annahme (end_job).
+  if (h.state ~= "mobile" and h.state ~= "docked") or driven_by_player(entity) or entity.surface.index ~= fw.surface
       or distance(entity.position, fw.base) > lib.WAIT_LEAVE then
     h.fleet_wait = nil
     return
@@ -710,6 +722,22 @@ end
 local function step_coupling(job, record, h)
   if record.cargo == h.un then return true end
   if not record.coupling then
+    -- Abgedriftet, etwa nach einer abgebrochenen Kopplung (PC-Lauf 1e4d625: Umsetzen und Wiederanheben an der Annahme
+    -- endeten mit „no_harvester“, der Ernter blieb an der Annahme hängen): wieder heranfliegen und neu ankoppeln.
+    local entity = h.entity
+    if entity.valid and distance(record.entity.position, entity.position) > lib.ARRIVE then
+      if not job.realign then
+        job.couple_tries = (job.couple_tries or 0) + 1
+        job.realign = true
+      end
+      if job.couple_tries <= lib.COUPLE_TRIES then
+        fly(record, entity.position)
+        return false
+      end
+    elseif job.realign then
+      job.realign = nil
+      stop(record)
+    end
     local ok, why = flyer_lib.couple(record, h.entity)
     if not ok then
       end_job(job, "Ankoppeln: " .. tostring(why))
@@ -1392,7 +1420,8 @@ lib.control = control
 -- Takt ---------------------------------------------------------------------------------------------
 
 function lib.tick(tick)
-  if next(storage.depots) == nil then return end
+  -- Laufende Aufträge auch ohne Leitstelle zu Ende führen (oder beenden, wenn Ernter oder Carryall fehlen).
+  if next(storage.depots) == nil and next(storage.jobs.list) == nil then return end
   if storage.fleet_pause_until then
     if tick < storage.fleet_pause_until then return end
     storage.fleet_pause_until = nil
