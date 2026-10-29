@@ -34,3 +34,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-29 18:55 | 0.11.0 | 419325e | 0 (kein FEHLER) |
 | 2026-10-29 22:35 | 0.12.0 | 6fe82de | 2 (Einrichtung/Infrastruktur) |
 | 2026-10-29 22:53 | 0.12.0 | 325d24b | 0 (kein FEHLER) |
+| 2026-10-29 23:01 | 0.12.0 | fa36b5f | 1 (FEHLER in T27) |
