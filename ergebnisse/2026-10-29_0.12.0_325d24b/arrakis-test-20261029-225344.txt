@@ -1,0 +1,158 @@
+
+=== T26 Flottenleitung: echter Code | Tick 413 | Arrakis 0.12.0 | base 2.1.24 | Spieler - ===
+[T26] INFO +0.0s: Start: Flottenleitung: echter Code
+[T26] INFO +0.0s: Zeitraffer: game.speed 10
+[T26] INFO +0.0s: Sieben Schritte Flottenleitung mit der echten Automatik (Soll, H, Rückruf ins Lager, Umsetzen, Feldsuche, R), Force arrakis-t23 ohne Wurm. Dauer etwa 12 min Spielzeit.
+[T26] OK +0.5s: 1) Prototypen, Schema 6, Schaltungsgebäude: Schema 6, Schaltungsgebäude da, Drähte 2
+[T26] INFO +10.7s: 2) Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung
+[T26] OK +89.8s: 2) Soll 2 aus dem Fenster: zwei eingesetzt nach 79.1 s, Abstand 54.7, Signale aktiv 2 / Reserve 1 / freie Carryalls 3
+[T26] OK +117.3s: 3) Signal H = 3: dritter nach 27.3 s, Signale aktiv 3 / Reserve 0
+[T26] OK +151.3s: 4) Signal H = 1 holt zwei ins Lager: nach 33.8 s, im Lager 2 Ernter und 479 Spice-Sand, Signale aktiv 1 / Reserve 2
+[T26] OK +183.8s: 5) Umsetzen bei leerem Feld: umgesetzt nach 32.3 s, 57.4 Kacheln weiter
+[T26] INFO +194.0s: 6) Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung
+[T26] INFO +194.0s: 6) Vorrang der Kartenmarkierung nicht prüfbar (Chunks nicht kartiert, V6)
+[T26] OK +194.0s: 6) Feldsuche: Abstand, Markierung, lauernder Wurm: ohne Markierung 47960.5, 20.5, mit Markierung 47960.5, 20.5, Wurm am markierten 47960.5, 20.5, beide gesperrt –; Plätze bekannt 3
+[T26] OK +296.6s: 7) Signal R holt alle, R = 0 bringt sie zurück: an der Leitstelle nach 47.5 s, zurück nach 34.5 s
+[T26] ENDE +296.8s: 7/7 Schritte OK (OK 7, FEHLER 0, FRAGE 0, 296.8 s)
+
+=== T27 Flottenleitung: Dauerlauf | Tick 20082 | Arrakis 0.12.0 | base 2.1.24 | Spieler - ===
+[T27] INFO +0.0s: Start: Flottenleitung: Dauerlauf
+[T27] INFO +0.0s: Zeitraffer: game.speed 10
+[T27] INFO +0.0s: Dauerlauf 60 min Spielzeit: 5 Ernter im Lager, Signal H = 3, sechs Felder, nach 8, 23 und 38 min wird je ein Feld leer, alle 75 s ein Wurmzeichen. Erwartet: nie mehr als 3 aktiv, nach jedem leeren Feld binnen 4 min wieder 3 aufgebaut, kein Biss, kein Ernter verloren.
+[T27] MESSUNG +0.0s: Stand: aufgebaut 0, aktiv nil, Reserve nil, Aufträge 0
+[T27] INFO +10.0s: Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung
+[T27] MESSUNG +30.0s: Stand: aufgebaut 0, aktiv 0, Reserve 5, Aufträge 0
+[T27] MESSUNG +60.0s: Stand: aufgebaut 0, aktiv 0, Reserve 5, Aufträge 1
+[T27] MESSUNG +90.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 1
+[T27] MESSUNG +120.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +150.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +180.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +210.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +240.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +270.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +300.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +330.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +360.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +390.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +420.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +450.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +480.0s: Feld leer bei 49956.7, 21.5
+[T27] MESSUNG +480.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +510.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +540.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +570.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 1
+[T27] MESSUNG +600.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +630.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +660.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +690.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +720.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +750.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +780.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +810.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +840.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +870.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +900.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +930.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +960.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +990.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1020.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1050.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1080.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1110.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1140.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1170.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1200.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1230.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1260.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1290.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1320.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1350.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1380.0s: Feld leer bei 50003.6, -19.9
+[T27] MESSUNG +1380.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1410.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1440.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1470.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1500.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1530.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1560.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1590.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1620.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1650.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1680.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1710.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1740.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1770.0s: Stand: aufgebaut 1, aktiv 2, Reserve 2, Aufträge 1
+[T27] MESSUNG +1800.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1830.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1860.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1890.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1920.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1950.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +1980.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2010.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2040.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2070.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2100.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2130.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2160.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2190.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2220.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2250.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2280.0s: Feld leer bei 49894.4, 27.0
+[T27] MESSUNG +2280.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2310.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2340.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2370.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2400.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2430.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2460.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2490.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2520.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2550.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2580.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2610.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2640.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2670.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2700.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2730.0s: Stand: aufgebaut 0, aktiv 3, Reserve 2, Aufträge 1
+[T27] MESSUNG +2760.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2790.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2820.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2850.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2880.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2910.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2940.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +2970.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3000.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3030.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3060.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3090.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3120.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3150.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3180.0s: Stand: aufgebaut 0, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3210.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3240.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3270.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3300.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3330.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3360.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3390.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3420.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3450.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3480.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3510.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3540.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3570.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3600.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3630.0s: Stand: aufgebaut 1, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3660.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3690.0s: Stand: aufgebaut 2, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3720.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3750.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3780.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3810.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3840.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3870.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] MESSUNG +3900.0s: Stand: aufgebaut 3, aktiv 3, Reserve 2, Aufträge 0
+[T27] OK +3900.0s: Dauerlauf Flottenleitung: Wurmzeichen 47 (entkommen 47), höchstens 3 aktiv, wieder 3 nach 2.0/2.0/2.0 s, Aufträge deploy 3, move 8, recall 0, rescue 47, return 48, unload 15, refuel 0, entladen 17, ausgefallen 0
+[T27] ENDE +3900.0s: Dauerlauf OK (OK 1, FEHLER 0, FRAGE 0, 3900.0 s)
