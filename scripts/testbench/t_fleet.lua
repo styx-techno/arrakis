@@ -1903,6 +1903,11 @@ local function t28_start(run, tb)
       constant = 2}
   end)
   s.viewer = player.index
+  -- Leitstelle und Carryalls gehören der Prüfstand-Force (Flottenleitung erforscht, ohne Wurm). Damit du das Fenster
+  -- öffnen kannst, spielst du während T28 in dieser Force; das Aufräumen setzt dich zurück (Max 29.10.: „gehören zu
+  -- einer anderen Fraktion“).
+  s.player_force = player.force.name
+  player.force = t23_force()
   tb.watch(run, player, at(s.depot.position, 8, 4))
   tb.protect(run, player)
   s.start = game.tick
@@ -1925,6 +1930,11 @@ local function t28_tick(run, tb)
 end
 
 local function t28_cleanup(run, tb)
+  local s = run.data and run.data.s
+  local player = s and s.viewer and game.get_player(s.viewer)
+  if player and player.valid and s.player_force and game.forces[s.player_force] then
+    pcall(function() player.force = game.forces[s.player_force] end)
+  end
   pcall(tidy, run)
   pcall(sweep, run, tb)
   pcall(fleet_force, false)
