@@ -1834,7 +1834,9 @@ local function t27_tick(run, tb)
   check(failed, #s.hunts >= 25, #s.hunts .. " Wurmzeichen statt mindestens 25")
   check(failed, bitten == 0 and open == 0, bitten .. " gebissen, " .. open .. " ohne Ende")
   check(failed, s.max_active <= 3, "bis zu " .. s.max_active .. " aktiv")
-  check(failed, #deployed == 3, #deployed .. " aufgebaut am Ende statt 3")
+  -- Aktiv statt aufgebaut: Auch nach den Wurmzeichen sind oft ein oder zwei gerade zum Entladen an der Annahme
+  -- (PC-Lauf fa36b5f: aufgebaut 1 bis 3, aktiv immer 3).
+  check(failed, c ~= nil and c.active == 3, tostring(c and c.active) .. " aktiv am Ende statt 3")
   local total = #owned(s) + depot_items(s, NAME)
   check(failed, total == 5, total .. " Ernter statt 5 (draußen und im Lager)")
   local recover = {}
