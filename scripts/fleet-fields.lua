@@ -167,7 +167,7 @@ local function refill(d, range, tick)
         local key = vibration_lib.chunk_key(cx, cy)
         local rec = chunks[key]
         if not queued[key] and (not rec or rec.dirty or tick - rec.tick >= lib.MAX_AGE)
-            and force.is_chunk_charted(surface, {cx, cy}) then
+            and (f.skip_chart or force.is_chunk_charted(surface, {cx, cy})) then
           queued[key] = true
           table.insert(f.queue, {s = s, cx = cx, cy = cy})
         end
@@ -333,6 +333,13 @@ end
 -- Prüfstand: alles vergessen.
 function lib.reset()
   storage.fields = {chunks = {}, queue = {}, queued = {}, refill = {}, claims = {}}
+end
+
+-- Nur für den Prüfstand: Ohne Spieler kartiert force.chart auf dem Server nichts (V6, docs/plan-3d1.md); bis zum
+-- nächsten reset() zählt die Feldsuche dann auch nicht kartierte Chunks.
+function lib.skip_chart()
+  data().skip_chart = true
+  data().refill = {}
 end
 
 return lib

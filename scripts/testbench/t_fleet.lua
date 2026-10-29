@@ -1264,6 +1264,20 @@ local function charted(tb, points)
   return true
 end
 
+-- Ohne Spieler kartiert force.chart auf dem Server nichts (V6, wie T18 Schritt 2, PC-Lauf 0.12.0): Die Feldsuche zählt
+-- dann im Test auch nicht kartierte Chunks (fields.skip_chart bis zum nächsten fields.reset).
+local function skip_chart(run, tb, label)
+  fields.skip_chart()
+  tb.log(run, "INFO", label .. "Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung")
+end
+
+-- T27, T28: 10 s nach dem Start einmal prüfen.
+local function chart_or_skip(run, tb, s)
+  if s.chart_checked or game.tick < s.start + 600 then return end
+  s.chart_checked = true
+  if not charted(tb, s.fields) then skip_chart(run, tb, "") end
+end
+
 -- Alles im Testbereich weg: Ernter (auch getragene der Leitstelle), Spice-Sand, Kartenmarkierungen, lauernde Würmer.
 local function sweep(run, tb)
   local surface = tb.surface()
@@ -1333,7 +1347,7 @@ end
 function t26.s2_chart(run, tb, d)
   local s = d.s2
   local r = wait_for(s, function() return charted(tb, s.fields) end,
-    function() return fail(run, tb, 2, "Felder nach 10 s nicht kartiert") end)
+    function() skip_chart(run, tb, "2) ") return 1 end)
   if r == 1 then
     fleet.set_target(depot_record(s), 2)
     s.start = game.tick
@@ -1514,7 +1528,11 @@ end
 function t26.s6_chart(run, tb, d)
   local s = d.s6
   return wait_for(s, function() return charted(tb, s.fields) end,
-    function() return fail(run, tb, 6, "Felder nach 10 s nicht kartiert") end)
+    function()
+      skip_chart(run, tb, "6) ")
+      s.uncharted = true
+      return 1
+    end)
 end
 
 function t26.s6_check(run, tb, d)
@@ -1529,11 +1547,18 @@ function t26.s6_check(run, tb, d)
   local function near(spot, p) return spot and fleet_distance(spot, p) <= 3 end
   local a = fields.find_spot(dr, fleet.RANGE)
   check(failed, near(a, s.fields[1]), "ohne Markierung nicht das nähere Feld: " .. pos_text(tb, a))
-  local tag = t23_force().add_chart_tag(surface, {position = s.fields[2], icon = {type = "item", name = SPICE}})
-  check(failed, tag ~= nil, "Kartenmarkierung ließ sich nicht setzen")
+  -- Kartenmarkierungen gehen nur auf kartierten Chunks.
+  local tag
+  if s.uncharted then
+    tb.log(run, "INFO", "6) Vorrang der Kartenmarkierung nicht prüfbar (Chunks nicht kartiert, V6)")
+  else
+    tag = t23_force().add_chart_tag(surface, {position = s.fields[2], icon = {type = "item", name = SPICE}})
+    check(failed, tag ~= nil, "Kartenmarkierung ließ sich nicht setzen")
+  end
   local b = fields.find_spot(dr, fleet.RANGE)
-  tb.trace(run, "Markierungen gefunden: " .. #t23_force().find_chart_tags(surface))
-  check(failed, near(b, s.fields[2]), "mit Markierung nicht das markierte Feld: " .. pos_text(tb, b))
+  if not s.uncharted then
+    check(failed, near(b, s.fields[2]), "mit Markierung nicht das markierte Feld: " .. pos_text(tb, b))
+  end
   local _, sector = vibration_lib.key_of(s.fields[2])
   worms_lib.lurk(surface.index, sector, game.tick + 60 * 60)
   local c = fields.find_spot(dr, fleet.RANGE)
@@ -1737,6 +1762,7 @@ local function t27_tick(run, tb)
   local s = d.s
   if not (s and s.start) then return end
   local tick = game.tick
+  chart_or_skip(run, tb, s)
   local dr = depot_record(s)
   local c = dr and dr.census
   if c and c.active > s.max_active then s.max_active = c.active end
@@ -1877,6 +1903,7 @@ end
 local function t28_tick(run, tb)
   local s = run.data.s
   if not (s and s.start) then return end
+  chart_or_skip(run, tb, s)
   if game.tick >= s.start + T28_END then
     s.start = nil
     tb.log(run, "FRAGE", "Passen das Fenster der Leitstelle (Soll mit - und +, Rückruf-Knopf, Zeilen Aktiv/Reserve/Feldsuche) und"

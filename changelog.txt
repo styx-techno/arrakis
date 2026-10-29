@@ -13,7 +13,7 @@ Date: 2026-10-29
     - Tipp „Wurmzeichen“: sagt jetzt, dass der Wurm nach einer Jagd 2 bis 4 Minuten lauert (bisher „ist die Gegend ruhig“).
   Modding:
     - storage-Schema 6: storage.fields (Feldsuche), Leitstelle mit target, recall_button, recall, soll, last_h, last_r und signal_entity (verstecktes Schaltungsgebäude arrakis-depot-signals), Ernter mit fleet_owner und fleet_wait.reason. Neue Datei scripts/fleet-fields.lua; neue Aufträge deploy, move, recall in scripts/fleet.lua (fleet.set_target, fleet.set_recall_button, fleet.census).
-    - Prüfstand: T26 (Flottenleitung, sieben Schritte), T27 (Dauerlauf 60 min), T28 (Ansicht, interaktiv).
+    - Prüfstand: T26 (Flottenleitung, sieben Schritte), T27 (Dauerlauf 60 min), T28 (Ansicht, interaktiv). Ohne Spieler kartiert force.chart auf dem Server nichts; dann sucht die Feldsuche im Test auch in nicht kartierten Chunks (INFO-Zeile), und der Vorrang der Kartenmarkierung bleibt ungeprüft.
 ---------------------------------------------------------------------------------------------------
 Version: 0.11.0
 Date: 2026-10-29
