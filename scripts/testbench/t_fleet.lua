@@ -1001,6 +1001,7 @@ local function t24_tick(run, tb)
   -- Wurmzeichen.
   if tick >= s.next_hunt and tick < s.start + T24_TICKS then
     s.next_hunt = tick + T24_HUNT_EVERY
+    local started = false
     for _ = 1, #s.cars do
       s.target = s.target % #s.cars + 1
       local car = s.cars[s.target]
@@ -1009,10 +1010,13 @@ local function t24_tick(run, tb)
         if hunt then
           table.insert(s.hunts, hunt)
           tb.trace(run, "Wurmzeichen auf Ernter " .. s.target .. ", Jagd " .. hunt.id)
+          started = true
         end
         break
       end
     end
+    -- Seit 0.11.0 stehen gerettete Ernter länger an der Leitstelle; ist keiner aufgebaut, fällt das Wurmzeichen aus.
+    if not started then s.skipped = (s.skipped or 0) + 1 end
   end
   if tick < s.start + T24_TICKS + T24_SETTLE then return end
   -- Auswertung.
@@ -1023,7 +1027,8 @@ local function t24_tick(run, tb)
     elseif hunt.outcome == "bitten" then bitten = bitten + 1
     else open = open + 1 end
   end
-  check(failed, #s.hunts >= 40, #s.hunts .. " Wurmzeichen statt mindestens 40")
+  -- 48 Termine; bis 0.10.x gut 40 Wurmzeichen, seit 0.11.0 (Ernter warten an der Leitstelle) am 29.10.2026 36.
+  check(failed, #s.hunts >= 30, #s.hunts .. " Wurmzeichen statt mindestens 30")
   check(failed, bitten == 0 and open == 0, bitten .. " gebissen, " .. open .. " ohne Ende")
   local lost, waiting = 0, 0
   for _, car in ipairs(s.cars) do
@@ -1045,8 +1050,8 @@ local function t24_tick(run, tb)
   check(failed, home == #s.carryalls, home .. " von " .. #s.carryalls .. " Carryalls an der Leitstelle")
   local kinds = {}
   for _, kind in ipairs({"rescue", "unload", "refuel", "return"}) do table.insert(kinds, kind .. " " .. (s.kinds[kind] or 0)) end
-  local values = string.format("Wurmzeichen %d (entkommen %d), Aufträge %s, entladen %d, längster Auftrag %s s, längste Zeit ohne Brennstoff %s s, Carryalls daheim %d, Ernter an der Leitstelle %d",
-    #s.hunts, escaped, table.concat(kinds, ", "), s.docked, tb.num(s.max_job / 60), tb.num(s.max_no_fuel / 60), home, waiting)
+  local values = string.format("Wurmzeichen %d (entkommen %d), Aufträge %s, entladen %d, längster Auftrag %s s, längste Zeit ohne Brennstoff %s s, Carryalls daheim %d, Ernter an der Leitstelle %d, Wurmzeichen ausgefallen (kein Ernter aufgebaut) %d",
+    #s.hunts, escaped, table.concat(kinds, ", "), s.docked, tb.num(s.max_job / 60), tb.num(s.max_no_fuel / 60), home, waiting, s.skipped or 0)
   tb.log(run, #failed == 0 and "OK" or "FEHLER", "Dauerlauf: " .. values
     .. (#failed > 0 and (" | nicht erfüllt: " .. table.concat(failed, "; ")) or ""))
   s.start = nil
