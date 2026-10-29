@@ -12,7 +12,7 @@ Date: 2026-10-29
   Changes:
     - Tipp „Wurmzeichen“: sagt jetzt, dass der Wurm nach einer Jagd 2 bis 4 Minuten lauert (bisher „ist die Gegend ruhig“).
   Bugfixes:
-    - Driftete ein Carryall beim Ankoppeln vom Ernter weg, brach sein Auftrag ab. Geschah das beim Wiederanheben an der Spice-Annahme, blieb der leere Ernter dort stehen und blockierte die Annahme für alle anderen. Jetzt fliegt der Carryall bis zu fünfmal wieder heran; bricht ein Auftrag trotzdem an der Annahme ab, wartet der Ernter dort und wird wie nach einer Rettung an seinen Platz zurückgebracht.
+    - Driftete ein Carryall beim Ankoppeln vom Ernter weg, brach sein Auftrag ab. Geschah das beim Wiederanheben an der Spice-Annahme, blieb der leere Ernter dort stehen und blockierte die Annahme für alle anderen. Dasselbe geschah, wenn ein Wurmzeichen den Entladeauftrag abbrach, während der Ernter schon an der Annahme stand. Jetzt fliegt der Carryall bis zu fünfmal wieder heran, ein Wurmzeichen bricht das Entladen an der Annahme nicht mehr ab (dort steht der Ernter auf Fels), und geht der Auftrag trotzdem verloren, wird der leere Ernter wie nach einer Rettung an seinen Platz zurückgebracht.
     - Laufende Aufträge enden jetzt auch dann sauber, wenn die letzte Leitstelle abgerissen wurde.
   Modding:
     - storage-Schema 6: storage.fields (Feldsuche), Leitstelle mit target, recall_button, recall, soll, last_h, last_r und signal_entity (verstecktes Schaltungsgebäude arrakis-depot-signals), Ernter mit fleet_owner und fleet_wait.reason. Neue Datei scripts/fleet-fields.lua; neue Aufträge deploy, move, recall in scripts/fleet.lua (fleet.set_target, fleet.set_recall_button, fleet.census).

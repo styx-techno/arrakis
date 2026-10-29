@@ -17,6 +17,8 @@
 -- storage.harvesters[un].fleet_refuel_after = tick: kein neuer Tankauftrag vorher (Kofferraum war leer).
 -- storage.harvesters[un].fleet_wait = {surface, x, y, base = {x, y}, depot = un, since}: gerettet und an der Leitstelle
 --   abgestellt (0.11.0); ein Rückflug bringt ihn nach (x, y), sobald dort kein Wurm mehr lauert (scripts/worms.lua).
+-- storage.harvesters[un].fleet_home = {surface, x, y}: an der Annahme abgesetzt, Rückweg (0.12.0); geht der
+--   Entladeauftrag dort verloren, wartet er angedockt (fleet_wait) und fliegt danach zurück.
 -- Ablauf der Rettung ab 0.11.0: anheben, zur Leitstelle (über 90 % voll erst zur Annahme), dort absetzen; Rückflug,
 -- wenn der Sektor ruhig ist. Lauert dort kein Wurm mehr, fliegt ein Carryall nach dem Entladen gleich zurück.
 --
@@ -360,15 +362,6 @@ local function end_job(job, why)
     if not record.cargo then stop(record) end
   end
   if why then log("Arrakis Leitstelle: Auftrag " .. job.id .. " (" .. job.kind .. ") Ende: " .. why) end
-  -- Bricht ein Auftrag ab, während der Ernter an der Annahme angedockt ist, holt ihn sonst niemand mehr ab, und die
-  -- Annahme bleibt belegt: Er wartet dort wie nach einer Rettung und fliegt zurück an seinen Platz.
-  local h = why and storage.harvesters[job.harvester]
-  local pos = job.return_pos
-  if h and h.state == "docked" and not h.fleet_wait and pos and h.entity and h.entity.valid then
-    local p = h.entity.position
-    h.fleet_wait = {surface = pos.surface, x = pos.x, y = pos.y, base = {x = p.x, y = p.y},
-      depot = record and record.depot, since = game.tick, reason = "rescue"}
-  end
 end
 
 -- Auftrag in einen anderen umwandeln (Rettung → Rückkehr/Entladen, Entladen → Rückkehr); der Carryall bleibt.
@@ -444,7 +437,10 @@ local function scan_hunts(tick)
       if h and h.state ~= "carried" and h.state ~= "docked" and not h.fleet_wait and not driven_by_player(h.entity)
           and covering_depot(h.entity) then
         local job = job_of_harvester(h.un)
-        if job and job.kind ~= "rescue" and job.hunt ~= hunt.id and not (job.carryall and storage.flyers[job.carryall]
+        -- An der Annahme abgesetzt (unloading, relift) steht er auf Fels: Der Entladeauftrag läuft weiter (PC-Lauf
+        -- daf3cb4, T24: abgebrochen, dann dockte der Ernter an und blieb dort ohne Auftrag stehen).
+        local at_intake = job and job.kind == "unload" and (job.state == "unloading" or job.state == "relift")
+        if job and not at_intake and job.kind ~= "rescue" and job.hunt ~= hunt.id and not (job.carryall and storage.flyers[job.carryall]
             and storage.flyers[job.carryall].cargo == h.un) then
           -- Ein laufender Tank- oder Entladeauftrag ohne Last weicht der Rettung.
           end_job(job, "Wurmzeichen")
@@ -498,6 +494,14 @@ end
 local function scan_harvesters(tick)
   for un, h in pairs(storage.harvesters) do
     local entity = h.entity
+    -- Leer an der Annahme ohne Auftrag (der Entladeauftrag ging verloren): wie nach einer Rettung zurück an den Platz,
+    -- sonst bliebe die Annahme für alle belegt (PC-Läufe 1e4d625 und daf3cb4).
+    if h.fleet_home and h.state == "docked" and not h.fleet_wait and not storage.job_of[un] and entity and entity.valid
+        and entity.get_inventory(defines.inventory.car_trunk).is_empty() then
+      local pos, p = h.fleet_home, entity.position
+      h.fleet_wait = {surface = pos.surface, x = pos.x, y = pos.y, base = {x = p.x, y = p.y}, since = tick, reason = "rescue"}
+      h.fleet_home = nil
+    end
     if h.fleet_wait and entity and entity.valid and not storage.job_of[un] then check_wait(un, h) end
     if entity and entity.valid and ACTIVE[h.state] and not storage.job_of[un] and covering_depot(entity) then
       if fill_of(entity) >= lib.UNLOAD_FILL or h.status == "trunk_full" then
@@ -974,6 +978,8 @@ local function step(job, tick)
         stop(record)
         local ok = flyer_lib.drop(record, nil, true)
         if ok then
+          -- Rückweg auch am Ernter merken: Geht der Auftrag an der Annahme verloren, holt scan_harvesters ihn zurück.
+          h.fleet_home = job.return_pos
           job.state = "unloading"
           job.wait_until = tick + lib.UNLOAD_WAIT
           job.dock_by = tick + lib.DOCK_GRACE
@@ -992,12 +998,16 @@ local function step(job, tick)
     if job.state == "relift" then
       -- Erst prüfen, ob er schon hängt: Angehoben steht der Ernter auf der Ablage, sein Ort zählt dann nicht mehr.
       if carried_by_us then
+        h.fleet_home = nil
         after_lift(job, record, h, true)
       elseif distance(record.entity.position, entity.position) > lib.ARRIVE then
         fly(record, entity.position)
       else
         stop(record)
-        if step_coupling(job, record, h) then after_lift(job, record, h, true) end
+        if step_coupling(job, record, h) then
+          h.fleet_home = nil
+          after_lift(job, record, h, true)
+        end
       end
     end
     if job.kind ~= "unload" then step(job, tick) end
