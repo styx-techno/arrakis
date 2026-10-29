@@ -29,3 +29,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-29 00:31 | 0.10.0 | cdc41e7 | 0 (kein FEHLER) |
 | 2026-10-29 02:46 | 0.10.1 | 733aa55 | 1 (FEHLER in T21) |
 | 2026-10-29 02:55 | 0.10.1 | bf25172 | 0 (kein FEHLER) |
+| 2026-10-29 18:26 | 0.11.0 | 0aee38d | 1 (FEHLER in T24) |
