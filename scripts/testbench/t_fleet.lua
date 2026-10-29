@@ -1030,13 +1030,15 @@ local function t24_tick(run, tb)
   -- 48 Termine; bis 0.10.x gut 40 Wurmzeichen, seit 0.11.0 (Ernter warten an der Leitstelle) am 29.10.2026 36.
   check(failed, #s.hunts >= 30, #s.hunts .. " Wurmzeichen statt mindestens 30")
   check(failed, bitten == 0 and open == 0, bitten .. " gebissen, " .. open .. " ohne Ende")
-  local lost, waiting = 0, 0
+  local lost, waiting, stuck = 0, 0, 0
   for _, car in ipairs(s.cars) do
     local state = state_of(car)
     if not valid(car) or state == "carried" then lost = lost + 1 end
     local h = h_of(car)
     if h and h.fleet_wait then waiting = waiting + 1 end
+    if state == "docked" then stuck = stuck + 1 end
   end
+  check(failed, stuck == 0, stuck .. " Ernter hängen noch an der Annahme")
   check(failed, lost == 0, lost .. " Ernter weg oder noch in der Luft")
   check(failed, waiting == 0, waiting .. " Ernter warten noch an der Leitstelle")
   check(failed, s.docked >= 1, "kein Entladen an der Annahme")

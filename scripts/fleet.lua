@@ -383,9 +383,12 @@ local function scan_hunts(tick)
     if hunt.kind == "harvest" and not hunt.outcome and not refused[hunt.id] and hunt.target and hunt.target.valid then
       local h = harvester.get(hunt.target)
       -- An der Leitstelle abgestellt (fleet_wait): schon in Sicherheit, kein neuer Rettungsflug.
-      if h and h.state ~= "carried" and not h.fleet_wait and not driven_by_player(h.entity) and covering_depot(h.entity) then
+      -- Angedockt an der Annahme steht er auf Fels und ist sicher; ein Auftrag aus dieser Jagd (Rettung, die zum
+      -- Entladen wurde) läuft weiter, sonst bliebe der Ernter nach dem Entladen an der Annahme hängen.
+      if h and h.state ~= "carried" and h.state ~= "docked" and not h.fleet_wait and not driven_by_player(h.entity)
+          and covering_depot(h.entity) then
         local job = job_of_harvester(h.un)
-        if job and job.kind ~= "rescue" and not (job.carryall and storage.flyers[job.carryall]
+        if job and job.kind ~= "rescue" and job.hunt ~= hunt.id and not (job.carryall and storage.flyers[job.carryall]
             and storage.flyers[job.carryall].cargo == h.un) then
           -- Ein laufender Tank- oder Entladeauftrag ohne Last weicht der Rettung.
           end_job(job, "Wurmzeichen")

@@ -5,9 +5,11 @@ Date: 2026-10-29
     - Der Wurm lauert: Überlebt der Sandwurm eine Jagd, bleibt er 2 bis 4 Minuten im Revier (Sektor von 4×4 Chunks, so lange wie die bisherige Ruhe). Wer dort in dieser Zeit einen Ernter aufbaut, bekommt nach 5 Sekunden ein neues Wurmzeichen mit vollem Countdown. Ernter-Fenster und Vibrationsanzeige zeigen „Der Wurm lauert noch …“. Ist der Wurm getötet, lauert nichts.
     - Rettung wie im Film: Bei einem Wurmzeichen bringt der Carryall den Ernter zur Leitstelle und stellt ihn dort ab (bis zu 16 Plätze rund um die Leitstelle, Fels bevorzugt). Sobald am Feld keine Jagd mehr läuft und kein Wurm mehr lauert, holt ein Carryall ihn ab und baut ihn an der alten Stelle wieder auf. Fast volle Ernter gehen wie bisher erst zur Annahme. Fährst du einen abgestellten Ernter selbst weg, gilt er als übernommen.
     - Fenster der Leitstelle: zählt die Ernter, die gerade in Sicherheit an der Leitstelle stehen; ein Carryall auf dem Weg dorthin heißt „bringt Ernter in Sicherheit zur Leitstelle“.
+  Bugfixes:
+    - Ein Ernter, den ein Carryall bei einem Wurmzeichen fast voll zur Annahme gebracht hatte, blieb nach dem Entladen dort hängen: Die Rettung brach den Entladeauftrag ab. Jetzt läuft der Auftrag weiter, und angedockte Ernter gelten als sicher.
   Modding:
     - storage.hunts.lurk[Oberfläche][Sektor] = Ende-Tick und storage.harvesters[un].fleet_wait (ohne neues Schema). worms.lurk, worms.lurking, worms.lurking_at, worms.clear_lurk; fleet.calm.
-    - Prüfstand: T23 hat zehn Schritte (Schritt 3 jetzt mit Abstellen an der Leitstelle, neuer Schritt 10 „Wurm lauert“), T24 prüft, dass am Ende kein Ernter mehr an der Leitstelle wartet, und verlangt mindestens 30 statt 40 Wurmzeichen (ausgefallene Termine stehen in der Ergebniszeile), T25 zeigt den neuen Ablauf. T19 Schritt 4 prüft, dass der Wurm so lange lauert, wie der Sektor ruht.
+    - Prüfstand: T23 hat zehn Schritte (Schritt 3 jetzt mit Abstellen an der Leitstelle, neuer Schritt 10 „Wurm lauert“), T24 prüft, dass am Ende kein Ernter mehr an der Leitstelle wartet, dass keiner an der Annahme hängen bleibt, und verlangt mindestens 30 statt 40 Wurmzeichen (ausgefallene Termine stehen in der Ergebniszeile), T25 zeigt den neuen Ablauf. T19 Schritt 4 prüft, dass der Wurm so lange lauert, wie der Sektor ruht.
 ---------------------------------------------------------------------------------------------------
 Version: 0.10.1
 Date: 2026-10-29
