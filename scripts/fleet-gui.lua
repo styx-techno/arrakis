@@ -19,7 +19,10 @@ end
 local function carryall_state(record, d)
   if record.fleet_mode == "manual" then return {"arrakis-message.gui-fleet-state-manual"} end
   local job = record.job and storage.jobs.list[record.job]
-  if job then return {"arrakis-message.gui-fleet-job-" .. job.kind} end
+  if job then
+    if job.kind == "rescue" and job.state == "to_base" then return {"arrakis-message.gui-fleet-job-to-base"} end
+    return {"arrakis-message.gui-fleet-job-" .. job.kind}
+  end
   local entity = record.entity
   local dx, dy = entity.position.x - d.position.x, entity.position.y - d.position.y
   if dx * dx + dy * dy <= 9 then return {"arrakis-message.gui-fleet-state-parked"} end
@@ -43,16 +46,17 @@ local function update(player, d)
     end
   end
   frame.arrakis_depot_carryalls.caption = {"arrakis-message.gui-depot-carryalls", count, free, busy, manual}
-  local harvesters = 0
+  local harvesters, waiting = 0, 0
   local entity = d.entity
   for _, h in pairs(storage.harvesters) do
     local e = h.entity
     if e and e.valid and e.surface.index == d.surface_index and e.force.index == d.force_index then
       local dx, dy = e.position.x - d.position.x, e.position.y - d.position.y
       if dx * dx + dy * dy <= fleet.RANGE * fleet.RANGE then harvesters = harvesters + 1 end
+      if h.fleet_wait and h.fleet_wait.depot == d.un then waiting = waiting + 1 end
     end
   end
-  frame.arrakis_depot_harvesters.caption = {"arrakis-message.gui-depot-harvesters", harvesters, fleet.RANGE}
+  frame.arrakis_depot_harvesters.caption = {"arrakis-message.gui-depot-harvesters", harvesters, fleet.RANGE, waiting}
   local jobs = 0
   for _, job in pairs(storage.jobs.list) do
     local record = job.carryall and storage.flyers[job.carryall]

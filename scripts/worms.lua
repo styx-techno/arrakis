@@ -41,6 +41,9 @@ lib.REST_MIN = 7200
 lib.REST_MAX = 14400
 -- Höchstens so viele Jagden zugleich (ohne Befehlsjagden), über alle Forces und Oberflächen.
 lib.MAX_HUNTS = 3
+-- Der Wurm lauert (0.11.0): Ein Ernter, der in einem Sektor mit lauerndem Wurm aufbaut, bekommt nach so vielen Ticks
+-- sein Wurmzeichen (normaler Countdown, WARN_TICKS).
+lib.LURK_DELAY = 5 * 60
 -- Schonfrist: nach „Ornithopter“ bzw. nach der ersten Landung auf Arrakis (Ticks).
 lib.GRACE_ORNITHOPTER = 36000
 lib.GRACE_LANDING = 108000
@@ -502,6 +505,7 @@ function lib.start_hunt(entity, opts)
     kind = kind_of(entity),
     debug = opts.debug == true,
     teaching = opts.teaching == true,
+    lurk = opts.lurk == true,
     bite = opts.bite,
     target = entity,
     target_un = entity.unit_number,
@@ -536,7 +540,8 @@ function lib.start_hunt(entity, opts)
   end
   place_tag(hunt, force)
   draw_marks(hunt, force)
-  force.print({"arrakis-message.msg-wormsign", gps(surface, position), hunt.target_name, hunt.second})
+  force.print({"arrakis-message." .. (hunt.lurk and "msg-wormsign-lurk" or "msg-wormsign"), gps(surface, position),
+    hunt.target_name, hunt.second})
   harvester_alarm(hunt, eta, nil)
   worms_gui.refresh_force(force)
   -- Wurm oder nicht (docs/plan-3d2.md 4.4 Schritt 1): Phase warten oder ohne mit Grund.
@@ -595,7 +600,10 @@ function lib.end_hunt(hunt, outcome, mode)
   if not hunt.debug then
     if mode ~= "abort" then
       vibration_lib.reset_around(hunt.surface_index, hunt.origin_key)
-      vibration_lib.rest(hunt.surface_index, hunt.sector_key, storage.rng(lib.REST_MIN, lib.REST_MAX))
+      local ticks = storage.rng(lib.REST_MIN, lib.REST_MAX)
+      vibration_lib.rest(hunt.surface_index, hunt.sector_key, ticks)
+      -- Der Wurm lauert (0.11.0, Max 29.10.2026): Lebt er noch, bleibt er so lange im Sektor (siehe lurk_tick).
+      if hunt.outcome ~= "killed" then lib.lurk(hunt.surface_index, hunt.sector_key, game.tick + ticks) end
     end
     -- Lehrjagd-Merker: jeder Datensatz, der auf diese Jagd zeigt (nach einem Force-Wechsel der der alten Force).
     for _, g in pairs(storage.grace) do
@@ -1192,6 +1200,62 @@ local function hunts_second(tick)
   end
 end
 
+-- 60-Tick-Takt nach dem Wurmzeichen: Der Wurm lauert (0.11.0). Baut ein Ernter in einem Sektor mit lauerndem Wurm auf
+-- (deploying oder deployed, auf Sand), bekommt er nach LURK_DELAY sein Wurmzeichen, ohne Wärme. Höchstens eine Jagd je
+-- Sektor und MAX_HUNTS zugleich; Schonfrist und Lehrjagd wie beim normalen Wurmzeichen. Abgelaufene Einträge fallen weg.
+local LURK_STATES = {deploying = true, deployed = true}
+
+local function lurk_tick(tick)
+  local hunts = storage.hunts
+  local lurk = hunts.lurk
+  if not lurk or next(lurk) == nil then return end
+  for s, list in pairs(lurk) do
+    for sector, until_tick in pairs(list) do
+      if until_tick <= tick then list[sector] = nil end
+    end
+    if next(list) == nil then lurk[s] = nil end
+  end
+  if next(lurk) == nil then return end
+  if hunts.paused_until and hunts.paused_until > tick then return end
+  local count = 0
+  local busy = {}
+  for _, hunt in pairs(hunts.list) do
+    if not hunt.debug then
+      count = count + 1
+      busy[hunt.surface_index .. "/" .. hunt.sector_key] = true
+    end
+  end
+  local uns = {}
+  for un in pairs(storage.harvesters) do uns[#uns + 1] = un end
+  table.sort(uns)
+  for _, un in ipairs(uns) do
+    if count >= lib.MAX_HUNTS then return end
+    local h = storage.harvesters[un]
+    local entity = h and h.entity
+    if entity and entity.valid and LURK_STATES[h.state] and h.vib_key and (h.vib_weight or 0) > 0 then
+      local s = entity.surface.index
+      local sector = vibration_lib.sector_of_key(h.vib_key)
+      if lurk[s] and lurk[s][sector] and not busy[s .. "/" .. sector] and not lib.hunt_of(entity) then
+        local g = storage.grace[entity.force.index]
+        if g and g.awake and not teaching_running(g) then
+          h.lurk_since = h.lurk_since or tick
+          if tick - h.lurk_since >= lib.LURK_DELAY then
+            h.lurk_since = nil
+            if lib.start_hunt(entity, {teaching = not g.first_hunt_done, lurk = true}) then
+              count = count + 1
+              busy[s .. "/" .. sector] = true
+            end
+          end
+        end
+      else
+        h.lurk_since = nil
+      end
+    elseif h then
+      h.lurk_since = nil
+    end
+  end
+end
+
 -- 60-Tick-Takt in fester Reihenfolge (Plan 4.4).
 local function on_nth_tick_60(event)
   local tick = event.tick
@@ -1200,6 +1264,7 @@ local function on_nth_tick_60(event)
   grace_tick(tick)
   vibration_lib.unrest_tick(tick)
   wormsign_tick(tick)
+  lurk_tick(tick)
   hunts_second(tick)
   vibration_lib.overlay_tick(tick)
 end
@@ -1377,6 +1442,31 @@ end
 -- Pause neuer Wurmzeichen bis zu diesem Tick (nil: keine).
 function lib.set_paused(until_tick)
   storage.hunts.paused_until = until_tick
+end
+
+-- Der Wurm lauert im Sektor bis until_tick (0.11.0). storage.hunts.lurk[surface_index][sector_key] = until_tick.
+function lib.lurk(surface_index, sector_key, until_tick)
+  local lurk = storage.hunts.lurk
+  lurk[surface_index] = lurk[surface_index] or {}
+  lurk[surface_index][sector_key] = until_tick
+end
+
+-- Lauert im Sektor ein Wurm? Gibt den Ende-Tick zurück, sonst nil.
+function lib.lurking(surface_index, sector_key)
+  local list = storage.hunts.lurk and storage.hunts.lurk[surface_index]
+  local until_tick = list and list[sector_key]
+  if until_tick and until_tick > game.tick then return until_tick end
+  return nil
+end
+
+-- Lauert an der Stelle ein Wurm? (Sektor der Stelle, für scripts/fleet.lua und die Ernter-Anzeige.)
+function lib.lurking_at(surface_index, position)
+  return lib.lurking(surface_index, vibration_lib.sector_of_key(vibration_lib.key_of(position)))
+end
+
+-- Alle lauernden Würmer der Oberfläche vergessen (Prüfstand: Aufräumen zwischen Schritten).
+function lib.clear_lurk(surface_index)
+  if storage.hunts.lurk then storage.hunts.lurk[surface_index] = nil end
 end
 
 -- Kein Wurm für Jagden der Force, die danach starten (docs/plan-3d2.md 4.18); on false oder nil schaltet zurück.
@@ -1611,6 +1701,7 @@ lib.on_configuration_changed = function()
   storage.path_requests = storage.path_requests or {}
   hunts.worm_off = hunts.worm_off or {}
   hunts.spawn_dir = hunts.spawn_dir or {}
+  hunts.lurk = hunts.lurk or {}
   hunts.log = hunts.log or {}
   hunts.log_next = hunts.log_next or 1
   hunts.ersatz = hunts.ersatz or 0

@@ -48,7 +48,22 @@ local function update_worms(frame, h)
   local key = h.vib_key
   local heat = key and vibration_lib.near_key(storage.vib.heat[s], key) or 0
   local resting = key and vibration_lib.resting(s, vibration_lib.sector_of_key(key))
-  if resting then
+  local lurk = storage.hunts.lurk and storage.hunts.lurk[s]
+  local lurking = key and lurk and lurk[vibration_lib.sector_of_key(key)]
+  local fw = h.fleet_wait
+  if fw then
+    -- Gerettet und an der Leitstelle abgestellt (0.11.0, scripts/fleet.lua): Wie lange lauert der Wurm am Feld noch?
+    local field = storage.hunts.lurk and storage.hunts.lurk[fw.surface]
+    local _, sector = vibration_lib.key_of({x = fw.x, y = fw.y})
+    local until_tick = field and field[sector]
+    if until_tick and until_tick > tick then
+      frame.arrakis_vibration.caption = {"arrakis-message.gui-fleet-wait-lurk", mmss(until_tick - tick)}
+    else
+      frame.arrakis_vibration.caption = {"arrakis-message.gui-fleet-wait"}
+    end
+  elseif lurking and lurking > tick then
+    frame.arrakis_vibration.caption = {"arrakis-message.gui-vibration-lurk", mmss(lurking - tick)}
+  elseif resting then
     frame.arrakis_vibration.caption = {"arrakis-message.gui-vibration-rest", mmss(resting - tick)}
   else
     frame.arrakis_vibration.caption = {"arrakis-message.gui-vibration", h.vib_weight or 0, math.floor(heat + 0.5)}

@@ -62,6 +62,8 @@
 --   storage.fleet_pause_until  Tick, bis zu dem die Automatik nach /arrakis-uninstall ruht, oder nil
 --   storage.flyers[un]      zusätzlich kind "carryall" mit depot, job, fleet_mode, fleet_goal
 -- 0.9.x → 0.10.0: nur neue Tabellen; alte Flieger haben kind "ornithopter" schon seit 0.6.0.
+-- 0.11.0 (ohne neues Schema): storage.hunts.lurk[surface_index][sector_key] = until_tick (der Wurm lauert),
+--   storage.harvesters[un] zusätzlich lurk_since (scripts/worms.lua) und fleet_wait (scripts/fleet.lua)
 -- Herunterstufen auf 0.9.x: vorher alle Carryalls und Leitstellen abbauen (die Engine löscht sie sonst samt Last).
 --
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
@@ -123,6 +125,8 @@ function migrate.init()
   local hunts = storage.hunts
   hunts.worm_off = hunts.worm_off or {}
   hunts.spawn_dir = hunts.spawn_dir or {}
+  -- 0.11.0: lauernde Würmer je Sektor (scripts/worms.lua lurk_tick)
+  hunts.lurk = hunts.lurk or {}
   hunts.log = hunts.log or {}
   hunts.log_next = hunts.log_next or 1
   hunts.ersatz = hunts.ersatz or 0

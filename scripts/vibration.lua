@@ -712,6 +712,8 @@ local function draw_overlay(player, entry, tick)
   local s = surface.index
   local e = storage.vib.heat[s]
   local cool = storage.sector_cooldown[s]
+  -- Lauert dort ein Wurm (0.11.0, scripts/worms.lua lurk_tick)? Dann heißt die Ruhe „Wurm lauert“.
+  local lurk = storage.hunts and storage.hunts.lurk and storage.hunts.lurk[s]
   local x, y = xy(player.position)
   local ccx, ccy = math.floor(x / CHUNK), math.floor(y / CHUNK)
   local R = lib.OVERLAY_RADIUS
@@ -724,7 +726,12 @@ local function draw_overlay(player, entry, tick)
       local until_tick = cool and cool[lib.sector_key(cx, cy)]
       if until_tick and until_tick > tick then
         stage = "rest"
-        text = {"arrakis-message.overlay-rest", mmss(until_tick - tick)}
+        local lurk_until = lurk and lurk[lib.sector_key(cx, cy)]
+        if lurk_until and lurk_until > tick then
+          text = {"arrakis-message.overlay-lurk", mmss(lurk_until - tick)}
+        else
+          text = {"arrakis-message.overlay-rest", mmss(until_tick - tick)}
+        end
       else
         local v = e and e.sum3[key] or 0
         if v >= lib.WORMSIGN then

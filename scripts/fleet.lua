@@ -15,9 +15,16 @@
 -- storage.job_of[harvester_un] = job_id: jeder Ernter steht in höchstens einem Auftrag.
 -- storage.jobs.refused[hunt_id] = tick: Jagden mit ehrlicher Absage (nur einmal melden, kein neuer Auftrag).
 -- storage.harvesters[un].fleet_refuel_after = tick: kein neuer Tankauftrag vorher (Kofferraum war leer).
+-- storage.harvesters[un].fleet_wait = {surface, x, y, base = {x, y}, depot = un, since}: gerettet und an der Leitstelle
+--   abgestellt (0.11.0); ein Rückflug bringt ihn nach (x, y), sobald dort kein Wurm mehr lauert (scripts/worms.lua).
+-- Ablauf der Rettung ab 0.11.0: anheben, zur Leitstelle (über 90 % voll erst zur Annahme), dort absetzen; Rückflug,
+-- wenn der Sektor ruhig ist. Lauert dort kein Wurm mehr, fliegt ein Carryall nach dem Entladen gleich zurück.
 
 local harvester = require("scripts.harvester")
 local flyer_lib = require("scripts.flyer")
+local worms_lib = require("scripts.worms")
+local vibration_lib = require("scripts.vibration")
+local terrain = require("scripts.terrain")
 local speed = require("prototypes.ornithopter-speed")
 
 local lib = {}
@@ -59,6 +66,15 @@ lib.TRUNK_STACKS = 2
 lib.PARK_OFFSETS = {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}
 -- Tankflug ohne Ernter-Treibstoff an Bord: so lange keinen neuen Tankauftrag für diesen Ernter (Ticks).
 lib.REFUEL_COOLDOWN = 5 * 60 * 60
+-- Abstellplätze für gerettete Ernter an der Leitstelle (0.11.0, Max 29.10.2026: „zur Basis fliegen“): Versatz von der
+-- Mitte der Leitstelle (Kacheln), in dieser Reihenfolge; Fels bevorzugt, frei von anderen Erntern.
+lib.BASE_OFFSETS =
+{
+  {7, 0}, {-7, 0}, {0, 7}, {0, -7}, {7, 7}, {-7, 7}, {7, -7}, {-7, -7},
+  {12, 0}, {-12, 0}, {0, 12}, {0, -12}, {12, 12}, {-12, 12}, {12, -12}, {-12, -12}
+}
+-- Ein wartender Ernter, den jemand weiter als so weit vom Abstellplatz fährt, gilt als übernommen (Kacheln).
+lib.WAIT_LEAVE = 8
 
 local function distance(a, b)
   local dx, dy = a.x - b.x, a.y - b.y
@@ -366,7 +382,8 @@ local function scan_hunts(tick)
   for _, hunt in pairs(hunts.list) do
     if hunt.kind == "harvest" and not hunt.outcome and not refused[hunt.id] and hunt.target and hunt.target.valid then
       local h = harvester.get(hunt.target)
-      if h and h.state ~= "carried" and not driven_by_player(h.entity) and covering_depot(h.entity) then
+      -- An der Leitstelle abgestellt (fleet_wait): schon in Sicherheit, kein neuer Rettungsflug.
+      if h and h.state ~= "carried" and not h.fleet_wait and not driven_by_player(h.entity) and covering_depot(h.entity) then
         local job = job_of_harvester(h.un)
         if job and job.kind ~= "rescue" and not (job.carryall and storage.flyers[job.carryall]
             and storage.flyers[job.carryall].cargo == h.un) then
@@ -382,9 +399,43 @@ local function scan_hunts(tick)
   end
 end
 
+-- Ist es an der Stelle ruhig: kein lauernder Wurm (scripts/worms.lua) und keine Jagd im selben Sektor? Auch eine Jagd
+-- mit Ergebnis zählt, solange sie in der Liste steht (der Wurm sucht nach dem Fehlbiss noch, SEARCH_TICKS).
+local function calm(pos)
+  if not pos then return false end
+  if worms_lib.lurking_at(pos.surface, pos) then return false end
+  local hunts = storage.hunts and storage.hunts.list
+  if hunts then
+    local sector = vibration_lib.sector_of_key(vibration_lib.key_of(pos))
+    for _, hunt in pairs(hunts) do
+      if hunt.surface_index == pos.surface and hunt.sector_key == sector then
+        return false
+      end
+    end
+  end
+  return true
+end
+lib.calm = calm
+
+-- Gerettete Ernter an der Leitstelle (0.11.0): Ist es am Feld ruhig, holt ein Rückflug sie ab. Wer den Ernter
+-- selbst fährt, ihn wegbringt oder aufbaut, hat übernommen; dann wartet er nicht mehr.
+local function check_wait(un, h)
+  local fw = h.fleet_wait
+  local entity = h.entity
+  if h.state ~= "mobile" or driven_by_player(entity) or entity.surface.index ~= fw.surface
+      or distance(entity.position, fw.base) > lib.WAIT_LEAVE then
+    h.fleet_wait = nil
+    return
+  end
+  if storage.job_of[un] or not covering_depot(entity) then return end
+  local pos = {surface = fw.surface, x = fw.x, y = fw.y}
+  if calm(pos) then new_job("return", h, {return_pos = pos}) end
+end
+
 local function scan_harvesters(tick)
   for un, h in pairs(storage.harvesters) do
     local entity = h.entity
+    if h.fleet_wait and entity and entity.valid and not storage.job_of[un] then check_wait(un, h) end
     if entity and entity.valid and ACTIVE[h.state] and not storage.job_of[un] and covering_depot(entity) then
       if fill_of(entity) >= lib.UNLOAD_FILL or h.status == "trunk_full" then
         if nearest_intake(entity.surface.index, entity.position, entity.force.index) then
@@ -532,6 +583,53 @@ local function begin_return(job, h)
   convert(job, "return", "to_spot")
 end
 
+-- Abstellplatz an der Leitstelle für einen geretteten Ernter: der erste Versatz aus BASE_OFFSETS mit Fels unter dem
+-- Ernter, ohne anderen Ernter und ohne anderen Auftrag dorthin; sonst der erste freie, sonst der erste.
+local function base_spot(d, job)
+  local surface = d.entity.surface
+  local taken = {}
+  for _, other in pairs(storage.jobs.list) do
+    if other ~= job and other.base_spot then taken[other.base_spot.x .. "/" .. other.base_spot.y] = true end
+  end
+  local first_free
+  for _, offset in ipairs(lib.BASE_OFFSETS) do
+    local p = {x = d.position.x + offset[1], y = d.position.y + offset[2]}
+    local free = not taken[p.x .. "/" .. p.y]
+      and #surface.find_entities_filtered{name = harvester.NAME, position = p, radius = 3, limit = 1} == 0
+    if free then
+      if terrain.is_rock_area(surface, {{p.x - 2, p.y - 2}, {p.x + 2, p.y + 2}}) then return p end
+      first_free = first_free or p
+    end
+  end
+  return first_free or {x = d.position.x + lib.BASE_OFFSETS[1][1], y = d.position.y + lib.BASE_OFFSETS[1][2]}
+end
+
+-- Nach dem Anheben (Rettung, Rückflug von der Leitstelle) oder nach dem Entladen: über 90 % voll erst zur Annahme,
+-- sonst zurück aufs Feld, wenn es dort ruhig ist, sonst zur Leitstelle.
+local function after_lift(job, record, h, unloaded)
+  local entity = h.entity
+  if not unloaded and fill_of(entity) >= lib.UNLOAD_FILL then
+    local intake = nearest_intake(record.entity.surface.index, record.entity.position, record.entity.force.index)
+    if intake then
+      job.intake = intake
+      convert(job, "unload", "to_intake")
+      return
+    end
+  end
+  if calm(job.return_pos) then
+    begin_return(job, h)
+    return
+  end
+  local d = depot_of(record.depot)
+  if not d then
+    -- Ohne Leitstelle (abgerissen): in der Luft warten wie bis 0.10.x.
+    convert(job, "rescue", "hover")
+    return
+  end
+  job.base_spot = base_spot(d, job)
+  convert(job, "rescue", "to_base")
+end
+
 local function step_coupling(job, record, h)
   if record.cargo == h.un then return true end
   if not record.coupling then
@@ -584,24 +682,38 @@ local function step(job, tick)
     end
     if job.state == "couple" then
       if step_coupling(job, record, h) then
-        job.state = "hover"
         refuel_harvester(record, entity)
+        after_lift(job, record, h, false)
       end
-    elseif job.state == "hover" then
+    end
+    if job.kind == "rescue" and job.state == "hover" then
       if not carried_by_us then
         end_job(job, "Last verloren")
-      elseif not hunt_running(job) then
-        if fill_of(entity) >= lib.UNLOAD_FILL then
-          local intake = nearest_intake(record.entity.surface.index, record.entity.position, record.entity.force.index)
-          if intake then
-            job.intake = intake
-            convert(job, "unload", "to_intake")
-          else
-            begin_return(job, h)
-          end
-        else
-          begin_return(job, h)
+      else
+        stop(record)
+        if calm(job.return_pos) then begin_return(job, h) end
+      end
+      return
+    end
+    if job.kind == "rescue" and job.state == "to_base" then
+      -- Zur Leitstelle und dort abstellen; der Rückflug kommt aus scan_harvesters, wenn es am Feld ruhig ist.
+      local spot = job.base_spot
+      if not carried_by_us then
+        end_job(job, "Last verloren")
+      elseif not spot then
+        begin_return(job, h)
+      elseif arrived(record, spot) then
+        stop(record)
+        local ok = flyer_lib.drop(record, nil, true)
+        if ok then
+          local p = entity.position
+          local pos = job.return_pos
+          h.fleet_wait = {surface = pos.surface, x = pos.x, y = pos.y, base = {x = p.x, y = p.y}, depot = record.depot,
+            since = tick}
+          end_job(job, nil)
         end
+      else
+        fly(record, spot)
       end
     end
     return
@@ -663,18 +775,38 @@ local function step(job, tick)
     if job.state == "relift" then
       -- Erst prüfen, ob er schon hängt: Angehoben steht der Ernter auf der Ablage, sein Ort zählt dann nicht mehr.
       if carried_by_us then
-        begin_return(job, h)
+        after_lift(job, record, h, true)
       elseif distance(record.entity.position, entity.position) > lib.ARRIVE then
         fly(record, entity.position)
       else
         stop(record)
-        if step_coupling(job, record, h) then begin_return(job, h) end
+        if step_coupling(job, record, h) then after_lift(job, record, h, true) end
       end
     end
+    if job.kind == "rescue" and job.state == "to_base" then step(job, tick) end
     return
   end
   if job.kind == "return" then
     local pos = job.return_pos
+    -- Rückflug von der Leitstelle (0.11.0): erst hinfliegen und ankoppeln, dann wie nach dem Anheben (voll erst zur
+    -- Annahme; lauert inzwischen wieder ein Wurm, zurück an die Leitstelle).
+    if job.state == "fly" then
+      if not arrived(record, entity.position) then
+        fly(record, entity.position)
+        return
+      end
+      stop(record)
+      job.state = "couple"
+    end
+    if job.state == "couple" then
+      if step_coupling(job, record, h) then
+        h.fleet_wait = nil
+        refuel_harvester(record, entity)
+        after_lift(job, record, h, false)
+        if job.kind ~= "return" then step(job, tick) end
+      end
+      return
+    end
     if not carried_by_us then
       end_job(job, "Last verloren")
       return

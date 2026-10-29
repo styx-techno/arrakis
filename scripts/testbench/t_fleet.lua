@@ -1,7 +1,7 @@
 -- Prüfstand: Leitstelle und Carryall-Automatik (Phase 3e, docs/plan-3e.md 7; Vertrag siehe runner.lua).
 --   T23: scripts/fleet.lua mit dem echten Flieger-, Ernter-, Annahme- und Wurmcode auf der Prüfstand-Fläche
 --        (terrain.harvest_allowed erlaubt sie mit der Startup-Einstellung). Force arrakis-t23, Jagden ohne Wurm
---        (worms_lib.set_worm_off): Der Biss fällt nach dem Countdown wie in 0.7.0. Neun Schritte, je eine OK/FEHLER-Zeile.
+--        (worms_lib.set_worm_off): Der Biss fällt nach dem Countdown wie in 0.7.0. Zehn Schritte, je eine OK/FEHLER-Zeile.
 --   T24: Dauerlauf, 60 min Spielzeit (Ziel aus docs/plan-3e.md: 60 min ohne Eingriff, kein Ernter verloren, keiner ohne
 --        Treibstoff): eine Leitstelle, zwei Carryalls, vier Ernter, alle 75 s ein Wurmzeichen auf einen
 --        aufgebauten Ernter; ein Ernter ist fast voll (Entladen), einer fast leer (Tanken).
@@ -16,6 +16,7 @@ local fleet = require("scripts.fleet")
 local harvester = require("scripts.harvester")
 local intake = require("scripts.intake")
 local worms_lib = require("scripts.worms")
+local vibration_lib = require("scripts.vibration")
 local speed = require("prototypes.ornithopter-speed")
 
 local CARRYALL = "arrakis-carryall"
@@ -309,8 +310,9 @@ function t23.s2_check(run, tb, d)
     coal_stacks, item_count(s.depot.get_inventory(defines.inventory.chest), FLIGHT_FUEL)))
 end
 
--- 3) Rettung: Wurmzeichen 45 s auf einen Ernter 100 Kacheln weit. Anheben vor dem Biss, schweben bis zum Ende der
--- Jagd, zurücksetzen und wieder aufbauen; Tempo leer zwischen 2 s und 4 s Flug.
+-- 3) Rettung: Wurmzeichen 45 s auf einen Ernter 100 Kacheln weit. Anheben vor dem Biss, zur Leitstelle bringen und dort
+-- abstellen (0.11.0), nach dem Ende der Jagd zurückbringen und wieder aufbauen; Tempo leer zwischen 2 s und 4 s Flug.
+-- Die Befehlsjagd hinterlässt keinen lauernden Wurm, deshalb geht der Rückflug gleich nach der Jagd los.
 function t23.s3_build(run, tb, d)
   local s = d.s3
   s.car = new_harvester(run, tb, d, d.pos.rescue)
@@ -327,7 +329,7 @@ function t23.s3_hunt(run, tb, d)
   s.hunt = hunt
   s.eta = hunt.eta_tick
   s.start = game.tick
-  s.deadline = s.eta + 60 * 60
+  s.deadline = s.eta + 90 * 60
   return 1
 end
 
@@ -350,8 +352,13 @@ function t23.s3_watch(run, tb, d)
   if state_of(s.car) == "carried" and not s.lift_tick then s.lift_tick = tick end
   if s.hunt and not s.outcome and s.hunt.outcome then s.outcome = s.hunt.outcome end
   if s.hunt and not hunt_alive(s.hunt) and not s.outcome then s.outcome = s.hunt.outcome or "?" end
+  if s.hunt and not hunt_alive(s.hunt) and not s.end_tick then s.end_tick = tick end
   local h = h_of(s.car)
-  local back = s.lift_tick and h and (h.state == "deploying" or h.state == "deployed")
+  if h and h.fleet_wait and not s.safe_tick then
+    s.safe_tick = tick
+    s.base_dist = fleet_distance(s.car.position, s.depot.position)
+  end
+  local back = s.safe_tick and h and (h.state == "deploying" or h.state == "deployed")
     and fleet_distance(s.car.position, s.origin) <= 6
   if back and not s.back_tick then s.back_tick = tick end
   if s.back_tick and parked(s) then
@@ -368,16 +375,20 @@ function t23.s3_check(run, tb, d)
   check(failed, s.job_kind == "rescue", "kein Rettungsauftrag (" .. tostring(s.job_kind) .. ")")
   check(failed, s.lift_tick ~= nil and s.lift_tick < s.eta, "nicht vor dem Biss angehoben")
   check(failed, s.outcome == "escaped", "Jagd endet " .. tostring(s.outcome) .. " statt escaped")
+  check(failed, s.base_dist ~= nil and s.base_dist <= 15, "nicht an der Leitstelle abgestellt (Abstand "
+    .. (s.base_dist and tb.num(s.base_dist) or "–") .. ")")
   check(failed, s.back_tick ~= nil, "Ernter nicht zurück am Feld aufgebaut (" .. state_of(s.car) .. ")")
+  check(failed, s.back_tick == nil or (s.end_tick ~= nil and s.back_tick > s.end_tick), "zurück am Feld vor dem Ende der Jagd")
   check(failed, s.home_tick ~= nil, "Carryall nicht zurück an der Leitstelle")
   check(failed, s.speed ~= nil and math.abs(s.speed - T23_SPEED) <= T23_SPEED * T23_SPEED_TOL,
     "Tempo " .. tb.num(s.speed) .. " statt " .. tb.num(T23_SPEED) .. " ±10 %")
   tb.log(run, "MESSUNG", string.format("T23 Carryall leer mit Raketentreibstoff: %s Kacheln/s (Ornithopter 8,0)", tb.num(s.speed, 2)))
   local function since(t) return t and tb.num((t - s.start) / 60) or "–" end
   return verdict(run, tb, 3, "Rettung bei Wurmzeichen", failed, string.format(
-    "Auftrag nach %s s, angehoben nach %s s (Biss bei %s s), Jagd %s, zurück aufgebaut nach %s s, geparkt nach %s s, Tempo %s",
-    since(s.job_tick), since(s.lift_tick), tb.num((s.eta - s.start) / 60), tostring(s.outcome), since(s.back_tick),
-    since(s.home_tick), tb.num(s.speed, 2)))
+    "Auftrag nach %s s, angehoben nach %s s (Biss bei %s s), an der Leitstelle nach %s s (%s Kacheln von ihrer Mitte), Jagd %s,"
+    .. " zurück aufgebaut nach %s s, geparkt nach %s s, Tempo %s",
+    since(s.job_tick), since(s.lift_tick), tb.num((s.eta - s.start) / 60), since(s.safe_tick), s.base_dist and tb.num(s.base_dist) or "–",
+    tostring(s.outcome), since(s.back_tick), since(s.home_tick), tb.num(s.speed, 2)))
 end
 
 -- 4) Ehrliche Absage: 250 Kacheln, 10 s Countdown. Kein Auftrag, Absage einmal vermerkt, Carryall bleibt stehen.
@@ -635,6 +646,163 @@ function t23.s9_check(run, tb, d)
     tostring(storage.depots[s.un] ~= nil), tostring(record and record.depot)))
 end
 
+-- 10) Der Wurm lauert (0.11.0, Max 29.10.2026): reguläre Jagd 30 s auf einen Ernter. Der Carryall bringt ihn zur
+-- Leitstelle; nach der Jagd lauert der Wurm im Sektor (2 bis 4 min), der Ernter wartet. Ein zweiter Ernter, der dort
+-- aufbaut, bekommt nach fünf Sekunden ein Wurmzeichen (Jagd abgebrochen, Ernter weg). Dann endet das Lauern (vom
+-- Test verkürzt), der Carryall bringt den ersten zurück. Zuletzt: Eine Jagd, die mit „Wurm getötet“ endet, hinterlässt
+-- keinen lauernden Wurm. Die Force ist dafür wach und ihre Vibration zählt; danach wie vorher.
+local function t23_s10_restore(d)
+  local s = d.s10
+  if not (s and s.force and s.force.valid) then return end
+  if s.grace_saved then worms_lib.grace_restore(s.force, s.grace) end
+  s.grace_saved = nil
+  vibration_lib.testbench_disable(s.force)
+  local own = {}
+  for _, hunt in pairs(storage.hunts.list) do
+    if hunt.force_index == s.force.index then table.insert(own, hunt) end
+  end
+  for _, hunt in ipairs(own) do pcall(worms_lib.end_hunt, hunt, nil, "abort") end
+  if s.surface_index and s.sector then
+    vibration_lib.rest(s.surface_index, s.sector, 0)
+    worms_lib.clear_lurk(s.surface_index)
+  end
+end
+
+function t23.s10_build(run, tb, d)
+  local s = d.s10
+  local force = t23_force()
+  s.force = force
+  s.grace = worms_lib.grace_snapshot(force)
+  s.grace_saved = true
+  worms_lib.set_grace(force, {awake = true, first_hunt_done = true}, {"first_hunt"})
+  vibration_lib.testbench_enable(force)
+  s.car = new_harvester(run, tb, d, d.pos.rescue)
+  if not s.car then return fail(run, tb, 10, "Ernter ließ sich nicht bauen") end
+  s.origin = {x = s.car.position.x, y = s.car.position.y}
+  s.surface_index = s.car.surface.index
+  return harvester.DEPLOY_TICKS + 10
+end
+
+function t23.s10_hunt(run, tb, d)
+  local s = d.s10
+  if state_of(s.car) ~= "deployed" then return fail(run, tb, 10, "Ernter baut nicht auf (" .. state_of(s.car) .. ")") end
+  local hunt, reason = worms_lib.start_hunt(s.car, {seconds = 30})
+  if not hunt then return fail(run, tb, 10, "start_hunt: " .. tostring(reason)) end
+  s.hunt = hunt
+  s.sector = hunt.sector_key
+  s.start = game.tick
+  s.deadline = hunt.eta_tick + 30 * 60
+  return 1
+end
+
+function t23.s10_evac(run, tb, d)
+  local s = d.s10
+  return wait_for(s, function()
+    local h = h_of(s.car)
+    if not (h and h.fleet_wait and not hunt_alive(s.hunt)) then return false end
+    s.outcome = s.hunt.outcome
+    s.safe_tick = game.tick
+    local until_tick = worms_lib.lurking(s.surface_index, s.sector)
+    s.lurk_left = until_tick and (until_tick - game.tick)
+    return true
+  end, function()
+    return fail(run, tb, 10, string.format("Ernter nach der Jagd nicht an der Leitstelle (Zustand %s, Jagd %s)",
+      state_of(s.car), tostring(s.hunt.outcome)))
+  end)
+end
+
+-- Sechs Sekunden: länger als LURK_DELAY und als ein Takt von scan_harvesters.
+function t23.s10_second(run, tb, d)
+  return 6 * 60
+end
+
+function t23.s10_lurking(run, tb, d)
+  local s = d.s10
+  local h = h_of(s.car)
+  s.waits = h ~= nil and h.fleet_wait ~= nil
+  s.job_while_lurking = job_of(s.car) ~= nil
+  s.car2 = new_harvester(run, tb, d, s.origin)
+  if not s.car2 then return fail(run, tb, 10, "zweiter Ernter ließ sich nicht bauen") end
+  s.deadline = game.tick + 30 * 60
+  return 1
+end
+
+function t23.s10_sign(run, tb, d)
+  local s = d.s10
+  if state_of(s.car2) == "deployed" and not s.deployed2 then s.deployed2 = game.tick end
+  local hunt = worms_lib.hunt_of(s.car2)
+  if hunt then
+    s.sign_lurk = hunt.lurk == true
+    s.sign_delay = s.deployed2 and (hunt.warn_tick - s.deployed2)
+    worms_lib.end_hunt(hunt, nil, "abort")
+    s.car2.destroy{raise_destroy = true}
+    -- Lauern vom Test verkürzt: in einer Sekunde ist es am Feld ruhig.
+    worms_lib.lurk(s.surface_index, s.sector, game.tick + 60)
+    s.calm_tick = game.tick + 60
+    s.deadline = game.tick + 90 * 60
+    return 1
+  end
+  if game.tick >= s.deadline then
+    s.deadline = game.tick + 90 * 60
+    worms_lib.lurk(s.surface_index, s.sector, game.tick + 60)
+    s.calm_tick = game.tick + 60
+    return 1
+  end
+  return "poll"
+end
+
+function t23.s10_return(run, tb, d)
+  local s = d.s10
+  local h = h_of(s.car)
+  if not s.back_tick and h and (h.state == "deploying" or h.state == "deployed") and fleet_distance(s.car.position, s.origin) <= 6 then
+    s.back_tick = game.tick
+  end
+  if s.back_tick and parked(s) then return 1 end
+  if game.tick >= s.deadline or not valid(s.car) then return 1 end
+  return "poll"
+end
+
+function t23.s10_killed(run, tb, d)
+  local s = d.s10
+  vibration_lib.rest(s.surface_index, s.sector, 0)
+  worms_lib.clear_lurk(s.surface_index)
+  local target = valid(s.car) and s.car or nil
+  local hunt = target and worms_lib.start_hunt(target, {seconds = 30})
+  if hunt then
+    worms_lib.end_hunt(hunt, "killed", "quiet")
+    s.killed_rest = vibration_lib.resting(s.surface_index, hunt.sector_key) ~= nil
+    s.killed_lurk = worms_lib.lurking(s.surface_index, hunt.sector_key)
+    s.killed_done = true
+  end
+  return 1
+end
+
+function t23.s10_check(run, tb, d)
+  local s = d.s10
+  local failed = {}
+  local min, max = worms_lib.REST_MIN, worms_lib.REST_MAX
+  check(failed, s.outcome == "escaped", "Jagd endet " .. tostring(s.outcome) .. " statt escaped")
+  check(failed, s.lurk_left ~= nil and s.lurk_left > min - 120 and s.lurk_left <= max,
+    "Wurm lauert " .. tostring(s.lurk_left) .. " Ticks statt 7200 bis 14400")
+  check(failed, s.waits == true, "Ernter wartet nicht an der Leitstelle")
+  check(failed, not s.job_while_lurking, "Rückflug, obwohl der Wurm lauert")
+  check(failed, s.sign_delay ~= nil and s.sign_delay >= worms_lib.LURK_DELAY and s.sign_delay <= worms_lib.LURK_DELAY + 120,
+    "Wurmzeichen auf den zweiten Ernter nach " .. tostring(s.sign_delay) .. " Ticks statt 300 bis 420")
+  check(failed, s.sign_lurk == true, "Wurmzeichen nicht als „Wurm lauert“ markiert")
+  check(failed, s.back_tick ~= nil and s.back_tick > s.calm_tick, "nach dem Lauern nicht zurück am Feld aufgebaut ("
+    .. state_of(s.car) .. ")")
+  check(failed, s.killed_done == true and s.killed_rest == true and s.killed_lurk == nil,
+    "getöteter Wurm: Ruhe " .. tostring(s.killed_rest) .. ", Lauern " .. tostring(s.killed_lurk))
+  t23_s10_restore(d)
+  local function since(t) return t and tb.num((t - s.start) / 60) or "–" end
+  return verdict(run, tb, 10, "Wurm lauert", failed, string.format(
+    "Jagd %s, an der Leitstelle nach %s s, Wurm lauert %s s, Rückflug während des Lauerns %s, Wurmzeichen auf Ernter 2"
+    .. " %s s nach dem Aufbau (lauert %s), zurück aufgebaut %s s nach dem Ende des Lauerns, getötet: Ruhe %s, Lauern %s",
+    tostring(s.outcome), since(s.safe_tick), s.lurk_left and tb.num(s.lurk_left / 60) or "–", tostring(s.job_while_lurking),
+    s.sign_delay and tb.num(s.sign_delay / 60) or "–", tostring(s.sign_lurk), s.back_tick and tb.num((s.back_tick - s.calm_tick) / 60) or "–",
+    tostring(s.killed_rest), tostring(s.killed_lurk ~= nil)))
+end
+
 local T23_STEPS =
 {
   {t23.s1},
@@ -645,7 +813,9 @@ local T23_STEPS =
   {base_phase(6), parked_phase(6), t23.s6_build, t23.s6_watch, t23.s6_check},
   {base_phase(7), parked_phase(7), t23.s7_go, t23.s7_manual, t23.s7_harvester, t23.s7_still, t23.s7_back, t23.s7_check},
   {base_phase(8), parked_phase(8), t23.s8_pause, t23.s8_resume, t23.s8_job, t23.s8_check},
-  {base_phase(9), parked_phase(9), t23.s9_remove, t23.s9_check}
+  {base_phase(9), parked_phase(9), t23.s9_remove, t23.s9_check},
+  {base_phase(10), parked_phase(10), t23.s10_build, t23.s10_hunt, t23.s10_evac, t23.s10_second, t23.s10_lurking,
+    t23.s10_sign, t23.s10_return, t23.s10_killed, t23.s10_check}
 }
 
 local function summary(run, steps)
@@ -680,8 +850,8 @@ local function t23_start(run, tb)
   local d = run.data
   for number = 1, #T23_STEPS do d["s" .. number] = {} end
   tb.watch(run, nil, d.pos.watch)
-  tb.log(run, "INFO", "Neun Schritte mit der echten Carryall-Automatik (Übernahme, Rettung, Absage, Entladen, Tanken,"
-    .. " Handbetrieb, Pause, Abriss), Force " .. T23_FORCE .. " ohne Wurm. Dauer etwa 4 min Spielzeit.")
+  tb.log(run, "INFO", "Zehn Schritte mit der echten Carryall-Automatik (Übernahme, Rettung zur Leitstelle, Absage, Entladen,"
+    .. " Tanken, Handbetrieb, Pause, Abriss, Wurm lauert), Force " .. T23_FORCE .. " ohne Wurm. Dauer etwa 6 min Spielzeit.")
   d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
 end
 
@@ -724,6 +894,7 @@ local function t23_tick(run, tb)
 end
 
 local function t23_cleanup(run, tb)
+  pcall(t23_s10_restore, run.data)
   pcall(tidy, run)
   storage.fleet_pause_until = nil
 end
@@ -854,12 +1025,15 @@ local function t24_tick(run, tb)
   end
   check(failed, #s.hunts >= 40, #s.hunts .. " Wurmzeichen statt mindestens 40")
   check(failed, bitten == 0 and open == 0, bitten .. " gebissen, " .. open .. " ohne Ende")
-  local lost = 0
+  local lost, waiting = 0, 0
   for _, car in ipairs(s.cars) do
     local state = state_of(car)
     if not valid(car) or state == "carried" then lost = lost + 1 end
+    local h = h_of(car)
+    if h and h.fleet_wait then waiting = waiting + 1 end
   end
   check(failed, lost == 0, lost .. " Ernter weg oder noch in der Luft")
+  check(failed, waiting == 0, waiting .. " Ernter warten noch an der Leitstelle")
   check(failed, s.docked >= 1, "kein Entladen an der Annahme")
   check(failed, fuel_items(s.cars[2]) > s.fuel_before, "Ernter 2 nicht betankt")
   check(failed, s.max_job <= T24_JOB_LIMIT, "Auftrag " .. tb.num(s.max_job / 60) .. " s alt")
@@ -871,8 +1045,8 @@ local function t24_tick(run, tb)
   check(failed, home == #s.carryalls, home .. " von " .. #s.carryalls .. " Carryalls an der Leitstelle")
   local kinds = {}
   for _, kind in ipairs({"rescue", "unload", "refuel", "return"}) do table.insert(kinds, kind .. " " .. (s.kinds[kind] or 0)) end
-  local values = string.format("Wurmzeichen %d (entkommen %d), Aufträge %s, entladen %d, längster Auftrag %s s, längste Zeit ohne Brennstoff %s s, Carryalls daheim %d",
-    #s.hunts, escaped, table.concat(kinds, ", "), s.docked, tb.num(s.max_job / 60), tb.num(s.max_no_fuel / 60), home)
+  local values = string.format("Wurmzeichen %d (entkommen %d), Aufträge %s, entladen %d, längster Auftrag %s s, längste Zeit ohne Brennstoff %s s, Carryalls daheim %d, Ernter an der Leitstelle %d",
+    #s.hunts, escaped, table.concat(kinds, ", "), s.docked, tb.num(s.max_job / 60), tb.num(s.max_no_fuel / 60), home, waiting)
   tb.log(run, #failed == 0 and "OK" or "FEHLER", "Dauerlauf: " .. values
     .. (#failed > 0 and (" | nicht erfüllt: " .. table.concat(failed, "; ")) or ""))
   s.start = nil
@@ -890,7 +1064,7 @@ end
 
 local T25_HUNT_AFTER = 15 * 60
 local T25_HUNT_SECONDS = 60
-local T25_END = 120 * 60
+local T25_END = 150 * 60
 local T25_SPAWN_DIR = 4
 
 local function t25_start(run, tb)
@@ -921,7 +1095,7 @@ local function t25_start(run, tb)
   tb.protect(run, player)
   s.start = game.tick
   tb.log(run, "INFO", "Leitstelle links auf Fels, Carryall parkt dort, Ernter 45 Kacheln rechts. In 15 s kommt ein Wurmzeichen,"
-    .. " der Wurm taucht von Osten auf: Der Carryall holt den Ernter, schwebt bis zum Biss und setzt ihn danach zurück."
+    .. " der Wurm taucht von Osten auf: Der Carryall holt den Ernter, bringt ihn zur Leitstelle und nach der Jagd zurück aufs Feld."
     .. (s.given > 0 and " Eine Leitstelle liegt in deinem Inventar: Nimm sie in die Hand und zeig auf die Felsinsel, dann siehst du"
       .. " den Reichweitenkreis (setzen darfst du sie auch)." or " Eine Leitstelle ließ sich nicht ins Inventar legen."))
 end
@@ -936,8 +1110,8 @@ local function t25_tick(run, tb)
   end
   if tick >= s.start + T25_END then
     s.start = nil
-    tb.log(run, "FRAGE", "Passt der Carryall im Flug (Form, Farbe, Schatten, Ernter darunter), der Wurm und die Leitstelle,"
-      .. " und zeigt die Leitstelle in der Hand den Reichweitenkreis? Antwort bitte im Thread.")
+    tb.log(run, "FRAGE", "Passt der Ablauf wie im Film (Ernter zur Leitstelle, nach der Jagd zurück aufs Feld)? Antwort bitte im"
+      .. " Thread.")
     tb.finish(run, "Ansicht gezeigt")
   end
 end

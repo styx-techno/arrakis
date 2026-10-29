@@ -352,6 +352,7 @@ local function clear_area(surface, box)
       if overlaps(box, area) then vibration_lib.rest(s, sector, 0) end
     end
   end
+  worms_lib.clear_lurk(s)
 end
 
 -- Jagden ----------------------------------------------------------------------------------------
@@ -520,6 +521,8 @@ local function tidy(s)
   if surface and s.keys then
     for key in pairs(s.keys) do pcall(zero_around, surface, key) end
   end
+  -- 0.11.0: Nach einer regulären Jagd lauert der Wurm im Sektor; der nächste Schritt baut dort neu.
+  if surface then worms_lib.clear_lurk(surface.index) end
 end
 
 -- Merkt den Chunk einer Quelle für das Aufräumen.
@@ -1954,6 +1957,11 @@ function t19_steps.s4_end(run, tb, d, s)
   check(failed, storage.hunts.list[hunt.id] == nil, "Jagd nach der Suche noch da")
   check(failed, nine_zero(surface, hunt.origin_key), "9 Chunks um den Ursprung nicht 0")
   check(failed, vibration_lib.resting(surface.index, hunt.sector_key) ~= nil, "Sektor ruht nicht")
+  -- 0.11.0: Der Wurm lauert jetzt so lange, wie der Sektor ruht. Was das Lauern tut, prüft T23 Schritt 10; hier geht es
+  -- wie bisher nur um die Wärme, deshalb vergisst der Test den lauernden Wurm vor dem Wiederaufbau.
+  check(failed, worms_lib.lurking(surface.index, hunt.sector_key) == vibration_lib.resting(surface.index, hunt.sector_key),
+    "Wurm lauert nicht so lange, wie der Sektor ruht")
+  worms_lib.clear_lurk(surface.index)
   local stats = worms_lib.stats_of(d.force)
   check(failed, (stats.escaped or 0) == (s.stats0.escaped or 0) + 1, "escaped " .. tostring(s.stats0.escaped) .. " → " .. tostring(stats.escaped))
   check(failed, stats.first_escape_tick ~= nil, "first_escape_tick nicht gesetzt")
