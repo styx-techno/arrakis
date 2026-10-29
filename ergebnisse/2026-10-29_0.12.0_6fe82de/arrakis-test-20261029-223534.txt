@@ -1,0 +1,31 @@
+
+=== T23 Carryall-Automatik: echter Code | Tick 409 | Arrakis 0.12.0 | base 2.1.24 | Spieler - ===
+[T23] INFO +0.0s: Start: Carryall-Automatik: echter Code
+[T23] INFO +0.0s: Zeitraffer: game.speed 10
+[T23] INFO +0.0s: Zehn Schritte mit der echten Carryall-Automatik (Übernahme, Rettung zur Leitstelle, Absage, Entladen, Tanken, Handbetrieb, Pause, Abriss, Wurm lauert), Force arrakis-t23 ohne Wurm. Dauer etwa 6 min Spielzeit.
+[T23] OK +0.5s: 1) Prototypen und storage: Sticker 212, Reichweite 300, Schema 6
+[T23] OK +1.7s: 2) Leitstelle übernimmt und füllt nach: geparkt nach 1.0 s, Raketentreibstoff 21, Kohle im Kofferraum 100 (2 Stapel), Leitstelle noch 0 Raketentreibstoff
+[T23] MESSUNG +94.9s: T23 Carryall leer mit Raketentreibstoff: 8.88 Kacheln/s (Ornithopter 8,0)
+[T23] OK +94.9s: 3) Rettung bei Wurmzeichen: Auftrag nach 0.3 s, angehoben nach 13.8 s (Biss bei 45.1 s), an der Leitstelle nach 29.3 s (8.8 Kacheln von ihrer Mitte), Jagd escaped, zurück aufgebaut nach 74.8 s, geparkt nach 86.5 s, Tempo 8.88
+[T23] OK +114.5s: 4) Ehrliche Absage: Absage true, Auftrag gesehen false, Jagd bitten
+[T23] OK +165.7s: 5) Entladen an der Annahme: Auftrag nach 1.0 s, angehoben nach 11.5 s, angedockt nach 28.0 s (Abstand 2.8, 1879 Spice-Sand), zurück nach 40.5 s, geparkt nach 49.5 s
+[T23] OK +186.2s: 6) Tanken: betankt nach 8.5 s auf 101 Kohle (Kofferraum vorher 100), geparkt nach 19.0 s
+[T23] OK +205.2s: 7) Handbetrieb: Auftrag offen true, Automatik wieder true, betankt true
+[T23] OK +211.2s: 8) Pause nach /arrakis-uninstall: Pause true, Auftrag in der Pause false, danach true
+[T23] OK +213.7s: 9) Leitstelle abgerissen: Datensatz false, Carryall Leitstelle nil
+[T23] OK +312.1s: 10) Wurm lauert: Jagd escaped, an der Leitstelle nach 40.1 s, Wurm lauert 224.1 s, Rückflug während des Lauerns false, Wurmzeichen auf Ernter 2 5.5 s nach dem Aufbau (lauert true), zurück aufgebaut 20.0 s nach dem Ende des Lauerns, getötet: Ruhe true, Lauern false
+[T23] ENDE +312.3s: 10/10 Schritte OK (OK 10, FEHLER 0, FRAGE 0, 312.3 s)
+
+=== T26 Flottenleitung: echter Code | Tick 20085 | Arrakis 0.12.0 | base 2.1.24 | Spieler - ===
+[T26] INFO +0.0s: Start: Flottenleitung: echter Code
+[T26] INFO +0.0s: Zeitraffer: game.speed 10
+[T26] INFO +0.0s: Sieben Schritte Flottenleitung mit der echten Automatik (Soll, H, Rückruf ins Lager, Umsetzen, Feldsuche, R), Force arrakis-t23 ohne Wurm. Dauer etwa 12 min Spielzeit.
+[T26] OK +0.5s: 1) Prototypen, Schema 6, Schaltungsgebäude: Schema 6, Schaltungsgebäude da, Drähte 2
+[T26] INFO +10.7s: 2) Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung
+[T26] OK +88.4s: 2) Soll 2 aus dem Fenster: zwei eingesetzt nach 77.8 s, Abstand 52.7, Signale aktiv 2 / Reserve 1 / freie Carryalls 3
+[T26] OK +116.4s: 3) Signal H = 3: dritter nach 27.8 s, Signale aktiv 3 / Reserve 0
+[T26] OK +147.9s: 4) Signal H = 1 holt zwei ins Lager: nach 31.3 s, im Lager 2 Ernter und 487 Spice-Sand, Signale aktiv 1 / Reserve 2
+[T26] OK +180.4s: 5) Umsetzen bei leerem Feld: umgesetzt nach 32.3 s, 59.5 Kacheln weiter
+[T26] INFO +190.6s: 6) Chunks nach 10 s nicht kartiert (ohne Spieler, V6): Feldsuche im Test ohne Kartierungsprüfung
+[T26] INFO +190.6s: 6) Vorrang der Kartenmarkierung nicht prüfbar (Chunks nicht kartiert, V6)
+[T26] OK +190.6s: 6) Feldsuche: Abstand, Markierung, lauernder Wurm: ohne Markierung 47960.5, 20.5, mit Markierung 47960.5, 20.5, Wurm am markierten 47960.5, 20.5, beide gesperrt –; Plätze bekannt 3
