@@ -861,6 +861,10 @@ local function t23_start(run, tb)
   d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
 end
 
+-- Aufräumen nach jedem Schritt, über den Namen in d.after_step (run.data liegt in storage, Funktionen lassen sich
+-- nicht speichern: PC-Lauf 6fe82de brach beim Autosave mit „Cannot serialise lua functions“ ab).
+local AFTER_STEP = {}
+
 local function run_steps(run, tb, steps)
   local d = run.data
   if not d.step or game.tick < d.wait_until then return end
@@ -894,7 +898,7 @@ local function run_steps(run, tb, steps)
     local ok, err = pcall(tidy, run)
     if not ok then tb.trace(run, "Aufräumen nach Schritt " .. d.step .. " ging nicht: " .. tostring(err)) end
     if d.after_step then
-      ok, err = pcall(d.after_step, run, tb)
+      ok, err = pcall(AFTER_STEP[d.after_step], run, tb)
       if not ok then tb.trace(run, "Aufräumen nach Schritt " .. d.step .. " ging nicht: " .. tostring(err)) end
     end
     d.step, d.phase = d.step + 1, 1
@@ -1302,6 +1306,8 @@ local function sweep(run, tb)
   fields.reset()
 end
 
+AFTER_STEP.sweep = sweep
+
 local t26 = {}
 
 -- 1) Prototypen, storage (Schema 6) und das versteckte Schaltungsgebäude an einer neuen Leitstelle.
@@ -1676,7 +1682,7 @@ local function t26_start(run, tb)
   local d = run.data
   d.run_id = run.id
   for number = 1, #T26_STEPS do d["s" .. number] = d["s" .. number] or {} end
-  d.after_step = sweep
+  d.after_step = "sweep"
   fleet_force(true)
   fields.reset()
   tb.watch(run, nil, d.pos.watch)
