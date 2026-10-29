@@ -51,7 +51,12 @@ local function update_worms(frame, h)
   local lurk = storage.hunts.lurk and storage.hunts.lurk[s]
   local lurking = key and lurk and lurk[vibration_lib.sector_of_key(key)]
   local fw = h.fleet_wait
-  if fw then
+  if fw and (fw.reason == "reserve" or not fw.x) then
+    -- Reserve der Flottenleitung (0.12.0): wartet an der Leitstelle auf einen freien Platz.
+    frame.arrakis_vibration.caption = {"arrakis-message.gui-fleet-wait-reserve"}
+  elseif fw and fw.reason == "recall" then
+    frame.arrakis_vibration.caption = {"arrakis-message.gui-fleet-wait-recall"}
+  elseif fw then
     -- Gerettet und an der Leitstelle abgestellt (0.11.0, scripts/fleet.lua): Wie lange lauert der Wurm am Feld noch?
     local field = storage.hunts.lurk and storage.hunts.lurk[fw.surface]
     local _, sector = vibration_lib.key_of({x = fw.x, y = fw.y})

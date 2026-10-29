@@ -66,6 +66,15 @@
 --   storage.harvesters[un] zusätzlich lurk_since (scripts/worms.lua) und fleet_wait (scripts/fleet.lua)
 -- Herunterstufen auf 0.9.x: vorher alle Carryalls und Leitstellen abbauen (die Engine löscht sie sonst samt Last).
 --
+-- Schema 6 (0.12.0, Phase 3f, docs/plan-3f.md 3.1), dazu:
+--   storage.fields          {chunks, queue, queued, refill, claims}: Feldsuche (scripts/fleet-fields.lua)
+--   storage.depots[un]      zusätzlich target, recall_button, signal_entity, last_h, last_r, soll, recall, census
+--   storage.jobs.list[id]   zusätzlich kind "deploy"|"move"|"recall", depot, target, store, wait_reason, priority
+--   storage.harvesters[un]  zusätzlich fleet_owner, fleet_wait.reason ("rescue"|"recall"|"reserve")
+-- 0.11.0 → 0.12.0: Leitstellen bekommen die neuen Felder; das versteckte Schaltungsgebäude legt scripts/fleet.lua im
+-- ersten Takt an. Herunterstufen auf 0.11.0: vorher Soll auf aus und Rückruf aus, Reserve-Ernter selbst wegfahren
+-- (0.11.0 kennt fleet_wait ohne Rückweg nicht).
+--
 -- Karte 2 (0.5.4) kommt nur auf eine neu angelegte Arrakis-Oberfläche. Behält ein Spielstand Karte 1,
 -- meldet migrate das einmal (Merker storage.migration.old_map_notice): beim Mod-Update, wenn die
 -- Oberfläche schon existiert, sonst beim Anlegen der Oberfläche. Ob ein vor 0.5.4 begonnener Spielstand
@@ -77,7 +86,7 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 5
+local SCHEMA = 6
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
@@ -138,6 +147,22 @@ function migrate.init()
   storage.jobs.refused = storage.jobs.refused or {}
   storage.job_of = storage.job_of or {}
   storage.depot_gui_open = storage.depot_gui_open or {}
+  -- Schema 6 (Phase 3f)
+  storage.fields = storage.fields or {}
+  local fields = storage.fields
+  fields.chunks = fields.chunks or {}
+  fields.queue = fields.queue or {}
+  fields.queued = fields.queued or {}
+  fields.refill = fields.refill or {}
+  fields.claims = fields.claims or {}
+  for _, d in pairs(storage.depots) do
+    if d.target == nil then d.target = 0 end
+    if d.recall_button == nil then d.recall_button = false end
+    d.last_h = d.last_h or 0
+    d.last_r = d.last_r or 0
+    d.soll = d.soll or 0
+    if d.recall == nil then d.recall = false end
+  end
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt

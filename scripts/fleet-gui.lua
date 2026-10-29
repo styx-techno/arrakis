@@ -1,9 +1,12 @@
 -- Relatives Fenster am Lagerfenster der Ornithopter-Leitstelle (Phase 3e, docs/plan-3e.md 6): Carryalls der
--- Leitstelle mit Zustand und Flugtreibstoff, Ernter in Reichweite, laufende Aufträge. Nur Anzeige. Bibliothek für
+-- Leitstelle mit Zustand und Flugtreibstoff, Ernter in Reichweite, laufende Aufträge. Mit der Forschung
+-- „Flottenleitung“ (Phase 3f, docs/plan-3f.md 1.9) dazu Soll-Zahl mit − und +, Hinweis auf Signal H, Knopf „Alle
+-- zurückrufen“, Zeilen für Aktive, Reserve und Feldsuche. Bibliothek für
 -- __core__/lualib/event_handler. Offene Fenster stehen in storage.depot_gui_open[player_index] = depot_un. Muster wie
 -- scripts/flyer-gui.lua.
 
 local fleet = require("scripts.fleet")
+local fields = require("scripts.fleet-fields")
 
 local gui = {}
 
@@ -20,7 +23,9 @@ local function carryall_state(record, d)
   if record.fleet_mode == "manual" then return {"arrakis-message.gui-fleet-state-manual"} end
   local job = record.job and storage.jobs.list[record.job]
   if job then
-    if job.kind == "rescue" and job.state == "to_base" then return {"arrakis-message.gui-fleet-job-to-base"} end
+    if (job.kind == "rescue" or job.kind == "recall") and job.state == "to_base" then
+      return {"arrakis-message.gui-fleet-job-to-base"}
+    end
     return {"arrakis-message.gui-fleet-job-" .. job.kind}
   end
   local entity = record.entity
@@ -63,6 +68,25 @@ local function update(player, d)
     if record and record.depot == d.un then jobs = jobs + 1 end
   end
   frame.arrakis_depot_jobs.caption = {"arrakis-message.gui-depot-jobs", jobs}
+  local box = frame.arrakis_depot_fleet
+  local on = entity.valid and fleet.fleet_on(d)
+  box.visible = on
+  if on then
+    local c = d.census or {}
+    local row = box.arrakis_depot_target_row
+    row.arrakis_depot_target.caption = (d.target or 0) > 0 and tostring(d.target)
+      or {"arrakis-message.gui-depot-target-off"}
+    local h_signal = d.last_h or 0
+    box.arrakis_depot_h.visible = h_signal > 0
+    box.arrakis_depot_h.caption = {"arrakis-message.gui-depot-signal-h", h_signal}
+    box.arrakis_depot_active.caption = {"arrakis-message.gui-depot-active", c.active or 0, d.soll or 0,
+      c.reserve or 0, c.items or 0}
+    box.arrakis_depot_fields.caption = {"arrakis-message.gui-depot-fields", fields.known_spots(d, fleet.RANGE),
+      fields.queue_length()}
+    local button = box.arrakis_depot_recall
+    button.caption = d.recall_button and {"arrakis-message.gui-depot-recall-off"} or {"arrakis-message.gui-depot-recall"}
+    box.arrakis_depot_r.visible = (d.last_r or 0) > 0
+  end
   if count == 0 and entity.valid then
     list.add{type = "label", caption = {"arrakis-message.gui-depot-empty"}}
   end
@@ -87,6 +111,21 @@ local function build(player, d)
   frame.add{type = "flow", name = "arrakis_depot_list", direction = "vertical"}
   frame.add{type = "label", name = "arrakis_depot_harvesters"}
   frame.add{type = "label", name = "arrakis_depot_jobs"}
+  local box = frame.add{type = "flow", name = "arrakis_depot_fleet", direction = "vertical"}
+  box.add{type = "line"}
+  box.add{type = "label", caption = {"technology-name.arrakis-fleet-control"}, style = "caption_label"}
+  local row = box.add{type = "flow", name = "arrakis_depot_target_row", direction = "horizontal"}
+  row.add{type = "label", caption = {"arrakis-message.gui-depot-target"}}
+  row.add{type = "button", name = "arrakis_depot_minus", caption = "-", style = "tool_button",
+    tooltip = {"arrakis-message.gui-depot-target-tip"}}
+  row.add{type = "label", name = "arrakis_depot_target"}
+  row.add{type = "button", name = "arrakis_depot_plus", caption = "+", style = "tool_button",
+    tooltip = {"arrakis-message.gui-depot-target-tip"}}
+  box.add{type = "label", name = "arrakis_depot_h"}
+  box.add{type = "label", name = "arrakis_depot_active"}
+  box.add{type = "label", name = "arrakis_depot_fields"}
+  box.add{type = "button", name = "arrakis_depot_recall", tooltip = {"arrakis-message.gui-depot-recall-tip"}}
+  box.add{type = "label", name = "arrakis_depot_r", caption = {"arrakis-message.gui-depot-signal-r"}}
   update(player, d)
 end
 
@@ -113,6 +152,26 @@ local function on_gui_closed(event)
   close(event.player_index)
 end
 
+-- Knöpfe der Flottenleitung.
+local CLICK = {arrakis_depot_minus = true, arrakis_depot_plus = true, arrakis_depot_recall = true}
+
+local function on_gui_click(event)
+  local element = event.element
+  if not (element and element.valid and CLICK[element.name]) then return end
+  local player = game.get_player(event.player_index)
+  local d = player and fleet.depot_of(storage.depot_gui_open[event.player_index])
+  if not d then return end
+  local step = event.shift and 5 or 1
+  if element.name == "arrakis_depot_minus" then
+    fleet.set_target(d, (d.target or 0) - step)
+  elseif element.name == "arrakis_depot_plus" then
+    fleet.set_target(d, (d.target or 0) + step)
+  else
+    fleet.set_recall_button(d, not d.recall_button)
+  end
+  update(player, d)
+end
+
 -- Offene Fenster jede Sekunde auffrischen; Fenster zu verschwundenen Leitstellen oder Spielern schließen.
 local function on_nth_tick_60()
   local open = storage.depot_gui_open
@@ -131,7 +190,8 @@ end
 gui.events =
 {
   [defines.events.on_gui_opened] = on_gui_opened,
-  [defines.events.on_gui_closed] = on_gui_closed
+  [defines.events.on_gui_closed] = on_gui_closed,
+  [defines.events.on_gui_click] = on_gui_click
 }
 
 gui.on_nth_tick =

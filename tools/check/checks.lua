@@ -657,6 +657,8 @@ local plan_techs = {
   ["arrakis-ornithopter"] = "craft-item spice-harvester 1",
   -- 0.10.0 (docs/plan-3e.md 3)
   ["arrakis-ornithopter-depot"] = "unit",
+  -- 0.12.0 (docs/plan-3f.md 1.10)
+  ["arrakis-fleet-control"] = "unit",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -672,7 +674,7 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 8 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 8") end
+if tech_count ~= 9 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 9") end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
 -- Phase 3d2 (docs/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
@@ -979,6 +981,45 @@ do
   local range = settings.startup["arrakis-depot-range"]
   if not range then add("FEHLER 3e: Einstellung arrakis-depot-range fehlt") end
   add("3e: " .. n3e .. "/7 Prototypen")
+end
+
+-- Phase 3f (docs/plan-3f.md 1.8 bis 1.10): Draht an der Leitstelle, verstecktes Schaltungsgebäude, Statussignale, Forschung.
+do
+  local n3f = 0
+  local depot = raw.container["arrakis-depot"]
+  if depot and depot.circuit_connector and depot.circuit_wire_max_distance and depot.circuit_wire_max_distance > 0 then n3f = n3f + 1
+  else add("FEHLER 3f: arrakis-depot ohne Draht-Anschluss") end
+  local cc = raw["constant-combinator"]["arrakis-depot-signals"]
+  if not cc then add("FEHLER 3f: constant-combinator arrakis-depot-signals fehlt") else
+    n3f = n3f + 1
+    if not cc.hidden then add("FEHLER 3f: arrakis-depot-signals nicht hidden") end
+    if cc.minable then add("FEHLER 3f: arrakis-depot-signals abbaubar") end
+    if cc.selectable_in_game ~= false then add("FEHLER 3f: arrakis-depot-signals wählbar") end
+    -- Pflichtfelder (ConstantCombinatorPrototype, Lehre aus 0.8.5): je vier Einträge.
+    if #(cc.circuit_wire_connection_points or {}) ~= 4 then add("FEHLER 3f: arrakis-depot-signals ohne circuit_wire_connection_points") end
+    if #(cc.activity_led_light_offsets or {}) ~= 4 then add("FEHLER 3f: arrakis-depot-signals ohne activity_led_light_offsets") end
+    if next((cc.collision_mask or {}).layers or {"x"}) then add("FEHLER 3f: arrakis-depot-signals mit Kollision") end
+    for _, f in ipairs({"not-on-map", "not-blueprintable", "not-deconstructable"}) do
+      if not has_value(cc.flags, f) then add("FEHLER 3f: arrakis-depot-signals ohne Flag " .. f) end
+    end
+  end
+  for _, n in ipairs({"arrakis-signal-harvesters", "arrakis-signal-reserve", "arrakis-signal-carryalls",
+    "arrakis-signal-rescues", "arrakis-signal-spice", "arrakis-wormsign"}) do
+    if raw["virtual-signal"][n] then n3f = n3f + 1 else add("FEHLER 3f: virtual-signal " .. n .. " fehlt") end
+  end
+  local tech = raw.technology["arrakis-fleet-control"]
+  if not tech then add("FEHLER 3f: tech arrakis-fleet-control fehlt") else
+    n3f = n3f + 1
+    if not (has_value(tech.prerequisites, "arrakis-ornithopter-depot") and has_value(tech.prerequisites, "metallurgic-science-pack")) then add("FEHLER 3f: tech arrakis-fleet-control Voraussetzungen") end
+    local packs = {}
+    for _, ing in ipairs(tech.unit and tech.unit.ingredients or {}) do packs[ing[1]] = true end
+    for _, pk in ipairs({"automation-science-pack", "logistic-science-pack", "chemical-science-pack", "space-science-pack",
+      "metallurgic-science-pack", "spice-science-pack"}) do
+      if not packs[pk] then add("FEHLER 3f: tech arrakis-fleet-control ohne " .. pk) end
+    end
+    if not (tech.unit and tech.unit.count == 1000) then add("FEHLER 3f: tech arrakis-fleet-control count") end
+  end
+  add("3f: " .. n3f .. "/9 Prototypen")
 end
 
 -- planet

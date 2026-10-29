@@ -1,6 +1,7 @@
 -- Phase 3e (docs/plan-3e.md 3): Ornithopter-Leitstelle, ein Lager 4×4 nur auf Fels. Ihr Inventar nimmt Flugtreibstoff
 -- für die Carryalls und Brennstoff für die Ernter auf; die Carryalls parken auf ihr (scripts/fleet.lua). Beim Bauen
 -- zeigt ein Kreis die Reichweite (Mod-Einstellung arrakis-depot-range). Grafik aus tools/grafik/leitstelle-modell.py.
+-- Phase 3f: Draht-Anschluss, verstecktes Schaltungsgebäude für die Statussignale, Forschung „Flottenleitung“.
 local RANGE = settings.startup["arrakis-depot-range"].value
 
 local gfx = "__arrakis__/graphics/entity/depot/"
@@ -43,8 +44,65 @@ local depot =
   close_sound = {filename = "__base__/sound/metallic-chest-close.ogg", volume = 0.5}
 }
 
+-- Phase 3f (docs/plan-3f.md 1.8, 1.9): Draht-Anschluss wie die Eisenkiste. Die Leitstelle gibt ihren Inhalt aus wie jede
+-- Kiste; die Flottenleitung liest dort H und R und schreibt ihre Statussignale über arrakis-depot-signals dazu.
+local chest = data.raw.container["iron-chest"]
+depot.circuit_connector = table.deepcopy(chest.circuit_connector)
+depot.circuit_wire_max_distance = chest.circuit_wire_max_distance
+
+-- Verstecktes Schaltungsgebäude unter der Leitstelle (scripts/fleet.lua verdrahtet es per Skript mit ihr).
+local signals = table.deepcopy(data.raw["constant-combinator"]["constant-combinator"])
+signals.name = "arrakis-depot-signals"
+signals.icon = depot.icon
+signals.icon_size = 64
+signals.icons = nil
+signals.flags = {"placeable-off-grid", "not-on-map", "not-blueprintable", "not-deconstructable", "hide-alt-info",
+  "not-flammable", "no-copy-paste", "not-upgradable"}
+signals.hidden = true
+signals.minable = nil
+signals.selectable_in_game = false
+signals.collision_box = {{-0.1, -0.1}, {0.1, 0.1}}
+signals.selection_box = {{-0.1, -0.1}, {0.1, 0.1}}
+signals.collision_mask = {layers = {}}
+signals.sprites = nil
+signals.activity_led_sprites = nil
+-- circuit_wire_connection_points und activity_led_light_offsets sind Pflicht (ConstantCombinatorPrototype) und bleiben
+-- aus der Vorlage; gezeichnet wird kein Draht (draw_circuit_wires).
+signals.draw_circuit_wires = false
+signals.circuit_wire_max_distance = 10
+signals.corpse = nil
+signals.dying_explosion = nil
+signals.fast_replaceable_group = nil
+signals.next_upgrade = nil
+signals.placeable_by = nil
+
+-- Statussignale (docs/plan-3f.md 1.8); den Wurmalarm trägt das Signal arrakis-wormsign aus prototypes/worms.lua.
+local function status_signal(name, icon, order)
+  return
+  {
+    type = "virtual-signal",
+    name = name,
+    icon = icon,
+    icon_size = 64,
+    subgroup = "virtual-signal",
+    order = "e[alert]-z[arrakis-fleet-" .. order .. "]"
+  }
+end
+
 data:extend({
   depot,
+  signals,
+  status_signal("arrakis-signal-harvesters", "__arrakis__/graphics/icons/spice-harvester.png", "a"),
+  status_signal("arrakis-signal-reserve", "__arrakis__/graphics/icons/depot.png", "b"),
+  status_signal("arrakis-signal-carryalls", "__arrakis__/graphics/icons/carryall.png", "c"),
+  status_signal("arrakis-signal-rescues", "__arrakis__/graphics/icons/ornithopter.png", "d"),
+  {
+    type = "virtual-signal",
+    name = "arrakis-signal-spice",
+    icons = {{icon = "__base__/graphics/icons/signal/signal-S.png", tint = {r = 1, g = 0.7, b = 0.3}}},
+    subgroup = "virtual-signal",
+    order = "e[alert]-z[arrakis-fleet-e]"
+  },
   {
     type = "item",
     name = "arrakis-depot",
@@ -92,6 +150,33 @@ data:extend({
         {"logistic-science-pack", 1},
         {"chemical-science-pack", 1},
         {"space-science-pack", 1},
+        {"spice-science-pack", 1}
+      },
+      time = 30
+    }
+  },
+  {
+    -- Design 6, docs/plan-3f.md 1.10: Stufe 3. Die Leitstelle setzt Ernter ein, setzt um und ruft zurück; Signale H und R.
+    type = "technology",
+    name = "arrakis-fleet-control",
+    icon = "__arrakis__/graphics/technology/depot.png",
+    icon_size = 256,
+    effects =
+    {
+      {type = "nothing", effect_description = {"technology-effect.arrakis-fleet-control"},
+        icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64}
+    },
+    prerequisites = {"arrakis-ornithopter-depot", "metallurgic-science-pack"},
+    unit =
+    {
+      count = 1000,
+      ingredients =
+      {
+        {"automation-science-pack", 1},
+        {"logistic-science-pack", 1},
+        {"chemical-science-pack", 1},
+        {"space-science-pack", 1},
+        {"metallurgic-science-pack", 1},
         {"spice-science-pack", 1}
       },
       time = 30

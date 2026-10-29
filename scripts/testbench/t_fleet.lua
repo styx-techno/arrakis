@@ -6,6 +6,10 @@
 --        Treibstoff): eine Leitstelle, zwei Carryalls, vier Ernter, alle 75 s ein Wurmzeichen auf einen
 --        aufgebauten Ernter; ein Ernter ist fast voll (Entladen), einer fast leer (Tanken).
 --   T25: Ansicht (interaktiv, nur mit Spieler): Leitstelle, Carryall und Rettung vor Ort; FRAGE an Max.
+--   T26: Flottenleitung (docs/plan-3f.md 4): Soll aus dem Fenster, Signal H, Rückruf Überzähliger ins Lager, Umsetzen,
+--        Feldsuche (lauernder Wurm, Kartenmarkierung), Signal R; Statussignale in jedem Schritt. Sieben Schritte.
+--   T27: Dauerlauf Flottenleitung, 60 min Spielzeit: 5 Ernter im Lager, H = 3, Felder werden leer, Wurmzeichen alle 75 s.
+--   T28: Ansicht Flottenleitung (interaktiv): Fenster mit Soll und Rückruf-Knopf, Lampe am Draht; FRAGE an Max.
 -- Jeder Schritt baut seine Leitstelle neu (Abstand der Felder unter der Reichweite, siehe T23_PLACES) und räumt danach
 -- alles ab (tidy, raise_destroy). Zustand nur in run.data (Zahlen, Texte, Positionen, LuaEntity-Referenzen, die Jagd
 -- aus storage.hunts.list); Entities vor jeder Benutzung prüfen. Die Modultabelle von scripts/flyer.lua heißt flyer_lib
@@ -13,6 +17,7 @@
 
 local flyer_lib = require("scripts.flyer")
 local fleet = require("scripts.fleet")
+local fields = require("scripts.fleet-fields")
 local harvester = require("scripts.harvester")
 local intake = require("scripts.intake")
 local worms_lib = require("scripts.worms")
@@ -40,6 +45,7 @@ local T23_PLACES =
   intake = {x = -135, y = -6},
   carryall = {x = -150, y = 8},
   carryall2 = {x = -146, y = 8},
+  carryall3 = {x = -154, y = 8},
   rescue = {x = -50, y = 0},       -- 100 Kacheln: Rettung in 45 s gut machbar
   far = {x = 100, y = 0},          -- 250 Kacheln: in 10 s nicht erreichbar
   unload = {x = -80, y = -25},
@@ -153,7 +159,7 @@ local function build_base(run, tb, d, s, opts)
   inventory.insert{name = "coal", count = opts.coal or 300}
   s.carryalls = {}
   for i = 1, opts.carryalls or 1 do
-    local place = i == 1 and d.pos.carryall or d.pos.carryall2
+    local place = ({d.pos.carryall, d.pos.carryall2, d.pos.carryall3})[i] or d.pos.carryall2
     local car = create(run, tb, {name = CARRYALL, position = place, force = force, raise_built = true,
       create_build_effect_smoke = false}, "flyers")
     if not car then return false end
@@ -286,7 +292,7 @@ function t23.s1(run, tb, d)
   check(failed, fleet.RANGE == settings.startup["arrakis-depot-range"].value, "fleet.RANGE passt nicht zur Einstellung")
   check(failed, storage.depots ~= nil and storage.jobs ~= nil and storage.jobs.list ~= nil and storage.job_of ~= nil
     and storage.jobs.refused ~= nil, "storage Schema 5 fehlt")
-  check(failed, storage.schema == 5, "storage.schema " .. tostring(storage.schema))
+  check(failed, storage.schema >= 5, "storage.schema " .. tostring(storage.schema))
   return verdict(run, tb, 1, "Prototypen und storage", failed, string.format("Sticker %d, Reichweite %d, Schema %s",
     stickers, fleet.RANGE, tostring(storage.schema)))
 end
@@ -878,9 +884,19 @@ local function run_steps(run, tb, steps)
     result = value
   end
   if result == "poll" then return end
+  if result == "keep" then
+    -- Nächster Schritt auf demselben Aufbau (T26 Schritte 2 bis 5): nichts abräumen.
+    d.step, d.phase = d.step + 1, 1
+    d.wait_until = game.tick + T23_GAP
+    return
+  end
   if result == "end" then
     local ok, err = pcall(tidy, run)
     if not ok then tb.trace(run, "Aufräumen nach Schritt " .. d.step .. " ging nicht: " .. tostring(err)) end
+    if d.after_step then
+      ok, err = pcall(d.after_step, run, tb)
+      if not ok then tb.trace(run, "Aufräumen nach Schritt " .. d.step .. " ging nicht: " .. tostring(err)) end
+    end
     d.step, d.phase = d.step + 1, 1
     d.wait_until = game.tick + T23_GAP
   else
@@ -1150,6 +1166,731 @@ local function t25_cleanup(run, tb)
   if player and s.given and s.given > 0 then pcall(function() player.remove_item{name = DEPOT, count = s.given} end) end
 end
 
+-- T26 Flottenleitung -----------------------------------------------------------------------------------
+-- Gleiche Fläche wie T23 (Felsinsel links, Sand rechts). Die Force arrakis-t23 bekommt für T26 bis T28 die Forschung
+-- „Flottenleitung“; das Aufräumen nimmt sie wieder weg. Ernter, die die Leitstelle aus dem Lager einsetzt, stehen nicht in
+-- run.data.made: sweep räumt nach jedem Schritt alle Ernter, Spice-Sand und Kartenmarkierungen im Testbereich ab.
+
+local FLEET_TECH = "arrakis-fleet-control"
+local SIGNAL_SLOTS = {H = 1, R = 2}
+-- Spicefelder 13×13 mit je 2000 Spice-Sand je Kachel (338 000 im Erntekreis), relativ zum Testbereich.
+local T26_FIELDS = {{x = -90, y = -22}, {x = -40, y = 22}, {x = 10, y = -22}, {x = 60, y = 22}, {x = 110, y = -22},
+  {x = -100, y = 32}}
+local T26_AMOUNT = 2000
+local T26_SETTLE = 130
+
+local function fleet_force(on)
+  local force = t23_force()
+  local tech = force.technologies[FLEET_TECH]
+  if tech then tech.researched = on end
+  return force
+end
+
+local function red_signal(entity, name)
+  if not valid(entity) then return 0 end
+  return entity.get_signal({type = "virtual", name = name}, defines.wire_connector_id.circuit_red)
+end
+
+local function depot_record(s)
+  return valid(s.depot) and fleet.depot_of(s.depot.unit_number)
+end
+
+local function depot_items(s, name)
+  return valid(s.depot) and item_count(s.depot.get_inventory(defines.inventory.chest), name) or 0
+end
+
+-- Ernter der Leitstelle (fleet_owner) und alle Ernter im Testbereich, nach Zustand gezählt.
+local function owned(s, state)
+  local list = {}
+  local un = valid(s.depot) and s.depot.unit_number
+  for _, h in pairs(storage.harvesters) do
+    if h.fleet_owner == un and h.entity.valid and (not state or h.state == state) then table.insert(list, h) end
+  end
+  table.sort(list, function(a, b) return a.un < b.un end)
+  return list
+end
+
+local function depot_jobs(s)
+  local n = 0
+  local un = valid(s.depot) and s.depot.unit_number
+  for _, job in pairs(storage.jobs.list) do
+    if job.depot == un then n = n + 1 end
+  end
+  return n
+end
+
+-- Signal H oder R über ein Konstant-Schaltungsgebäude neben der Leitstelle (grüner Draht); 0 löscht.
+local function set_wire_signal(run, tb, s, letter, value)
+  if not valid(s.box) then
+    s.box = create(run, tb, {name = "constant-combinator", position = at(s.depot.position, 3, -4), force = t23_force()},
+      "others")
+    if not s.box then return false end
+    s.box.get_wire_connector(defines.wire_connector_id.circuit_green, true).connect_to(
+      s.depot.get_wire_connector(defines.wire_connector_id.circuit_green, true), false)
+  end
+  local behavior = s.box.get_or_create_control_behavior()
+  local section = behavior.get_section(1) or behavior.add_section()
+  local slot = SIGNAL_SLOTS[letter]
+  if value > 0 then
+    section.set_slot(slot, {value = {type = "virtual", name = "signal-" .. letter, quality = "normal"}, min = value})
+  else
+    section.clear_slot(slot)
+  end
+  return true
+end
+
+local function place_fields(tb, d, list)
+  local surface = tb.surface()
+  local origin = tb.area(d.run_id)
+  local placed = {}
+  for _, offset in ipairs(list) do
+    local p = at(origin, offset.x, offset.y)
+    place_spice(surface, p, 6, T26_AMOUNT)
+    table.insert(placed, {x = math.floor(p.x) + 0.5, y = math.floor(p.y) + 0.5})
+  end
+  return placed
+end
+
+local function chart_area(tb, d)
+  local origin = tb.area(d.run_id)
+  t23_force().chart(tb.surface(), {{origin.x - T23_HALF.x, origin.y - T23_HALF.y}, {origin.x + T23_HALF.x, origin.y + T23_HALF.y}})
+end
+
+local function charted(tb, points)
+  local force = t23_force()
+  for _, p in ipairs(points) do
+    if not force.is_chunk_charted(tb.surface(), {math.floor(p.x / 32), math.floor(p.y / 32)}) then return false end
+  end
+  return true
+end
+
+-- Alles im Testbereich weg: Ernter (auch getragene der Leitstelle), Spice-Sand, Kartenmarkierungen, lauernde Würmer.
+local function sweep(run, tb)
+  local surface = tb.surface()
+  local origin = tb.area(run.id)
+  local area = {{origin.x - T23_HALF.x - 10, origin.y - T23_HALF.y - 10}, {origin.x + T23_HALF.x + 10, origin.y + T23_HALF.y + 10}}
+  local force = game.forces[T23_FORCE]
+  for un, h in pairs(storage.harvesters) do
+    local e = h.entity
+    if e and e.valid and e.force == force and (h.state == "carried" or h.fleet_owner) then
+      pcall(function() e.destroy{raise_destroy = true} end)
+    end
+  end
+  for _, name in ipairs({NAME, SPICE, "constant-combinator"}) do
+    for _, e in pairs(surface.find_entities_filtered{name = name, area = area}) do
+      if e.valid then pcall(function() e.destroy{raise_destroy = true} end) end
+    end
+  end
+  if force then
+    for _, tag in pairs(force.find_chart_tags(surface, area)) do tag.destroy() end
+  end
+  worms_lib.clear_lurk(surface.index)
+  fields.reset()
+end
+
+local t26 = {}
+
+-- 1) Prototypen, storage (Schema 6) und das versteckte Schaltungsgebäude an einer neuen Leitstelle.
+function t26.s1(run, tb, d)
+  local s = d.s1
+  local failed = {}
+  fleet_force(true)
+  check(failed, prototypes.technology[FLEET_TECH] ~= nil, "Forschung " .. FLEET_TECH .. " fehlt")
+  for _, name in ipairs(fleet.STATUS_SIGNALS) do
+    check(failed, prototypes.virtual_signal[name] ~= nil, "Signal " .. name .. " fehlt")
+  end
+  check(failed, prototypes.entity["arrakis-depot-signals"] ~= nil, "arrakis-depot-signals fehlt")
+  check(failed, storage.schema >= 6 and storage.fields ~= nil and storage.fields.chunks ~= nil, "storage Schema 6 fehlt")
+  s.depot = create(run, tb, {name = DEPOT, position = d.pos.depot, force = t23_force(), raise_built = true}, "others")
+  local dr = s.depot and fleet.depot_of(s.depot.unit_number)
+  local cc = dr and dr.signal_entity
+  check(failed, valid(cc) and cc.name == "arrakis-depot-signals", "kein Schaltungsgebäude an der Leitstelle")
+  local wired = 0
+  if valid(cc) then
+    for _, id in ipairs({defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green}) do
+      local connector = cc.get_wire_connector(id, false)
+      if connector and connector.connection_count >= 1 then wired = wired + 1 end
+    end
+  end
+  check(failed, wired == 2, wired .. " von 2 Drähten am Schaltungsgebäude")
+  check(failed, dr and dr.target == 0 and dr.recall_button == false, "Soll nicht aus oder Rückruf an")
+  return verdict(run, tb, 1, "Prototypen, Schema 6, Schaltungsgebäude", failed, string.format(
+    "Schema %s, Schaltungsgebäude %s, Drähte %d", tostring(storage.schema), valid(cc) and "da" or "fehlt", wired))
+end
+
+-- 2) Soll 2 aus dem Fenster: zwei Ernter aus dem Lager (3 Items) auf zwei Felder, Reserve 1.
+function t26.s2_build(run, tb, d)
+  local s = d.s2
+  fleet_force(true)
+  if not build_base(run, tb, d, s, {carryalls = 3, rocket = 60, coal = 300}) then return fail(run, tb, 2, "Leitstelle oder Carryalls ließen sich nicht bauen") end
+  s.depot.get_inventory(defines.inventory.chest).insert{name = NAME, count = 3}
+  s.fields = place_fields(tb, d, T26_FIELDS)
+  chart_area(tb, d)
+  s.deadline = game.tick + 10 * 60
+  return 1
+end
+
+function t26.s2_chart(run, tb, d)
+  local s = d.s2
+  local r = wait_for(s, function() return charted(tb, s.fields) end,
+    function() return fail(run, tb, 2, "Felder nach 10 s nicht kartiert") end)
+  if r == 1 then
+    fleet.set_target(depot_record(s), 2)
+    s.start = game.tick
+    s.deadline = game.tick + 240 * 60
+  end
+  return r
+end
+
+function t26.s2_wait(run, tb, d)
+  local s = d.s2
+  local r = wait_for(s, function()
+    return #owned(s, "deployed") == 2 and depot_jobs(s) == 0
+  end, function()
+    return fail(run, tb, 2, string.format("nach 240 s %d eigene Ernter aufgebaut, %d im Lager, Aufträge %d, Feldsuche offen %d",
+      #owned(s, "deployed"), depot_items(s, NAME), depot_jobs(s), fields.queue_length()))
+  end)
+  if r == 1 then return T26_SETTLE end
+  return r
+end
+
+-- Feld leeren: Spice-Sand bis 10 Kacheln um die Stelle (mehr als der Erntekreis, damit kein Rest daneben bleibt).
+local function empty_field(tb, position)
+  local area = {{position.x - 10, position.y - 10}, {position.x + 10, position.y + 10}}
+  for _, e in pairs(tb.surface().find_entities_filtered{name = SPICE, area = area}) do e.destroy() end
+end
+
+local function on_field(h)
+  return h.entity.valid and fields.amount_at(h.entity.surface, h.entity.position) >= fields.MIN_AMOUNT
+end
+
+function t26.s2_check(run, tb, d)
+  local s = d.s2
+  local failed = {}
+  local list = owned(s, "deployed")
+  check(failed, depot_items(s, NAME) == 1, depot_items(s, NAME) .. " Ernter im Lager statt 1")
+  local gap = #list == 2 and fleet_distance(list[1].entity.position, list[2].entity.position) or 0
+  check(failed, gap >= fields.SPACING, "Abstand der beiden " .. tb.num(gap))
+  for i, h in ipairs(list) do check(failed, on_field(h), "Ernter " .. i .. " nicht auf Spice") end
+  local active, reserve = red_signal(s.depot, "arrakis-signal-harvesters"), red_signal(s.depot, "arrakis-signal-reserve")
+  check(failed, active == 2 and reserve == 1, "Statussignale aktiv " .. active .. ", Reserve " .. reserve)
+  s.ok = #failed == 0
+  local result = verdict(run, tb, 2, "Soll 2 aus dem Fenster", failed, string.format(
+    "zwei eingesetzt nach %s s, Abstand %s, Signale aktiv %d / Reserve %d / freie Carryalls %d",
+    tb.num((game.tick - s.start) / 60), tb.num(gap), active, reserve, red_signal(s.depot, "arrakis-signal-carryalls")))
+  d.s3, d.s4, d.s5 = s, s, s
+  return s.ok and "keep" or result
+end
+
+-- 3) Signal H = 3 (Vorrang vor dem Fenster): der dritte Ernter aus dem Lager.
+function t26.s3_set(run, tb, d)
+  local s = d.s3
+  if not (s and s.ok) then return fail(run, tb, 3, "folgt aus Schritt 2 (nicht erfüllt)") end
+  if not set_wire_signal(run, tb, s, "H", 3) then return fail(run, tb, 3, "Konstant-Schaltungsgebäude ließ sich nicht bauen") end
+  s.start = game.tick
+  s.deadline = game.tick + 240 * 60
+  return 1
+end
+
+function t26.s3_wait(run, tb, d)
+  local s = d.s3
+  local r = wait_for(s, function()
+    return #owned(s, "deployed") == 3 and depot_jobs(s) == 0
+  end, function()
+    local dr = depot_record(s)
+    return fail(run, tb, 3, string.format("nach 240 s %d eigene Ernter aufgebaut, Soll %s, gelesenes H %s",
+      #owned(s, "deployed"), tostring(dr and dr.soll), tostring(dr and dr.last_h)))
+  end)
+  if r == 1 then return T26_SETTLE end
+  return r
+end
+
+function t26.s3_check(run, tb, d)
+  local s = d.s3
+  local failed = {}
+  local dr = depot_record(s)
+  check(failed, dr and dr.soll == 3 and dr.last_h == 3, "Soll " .. tostring(dr and dr.soll) .. " statt 3")
+  check(failed, depot_items(s, NAME) == 0, depot_items(s, NAME) .. " Ernter im Lager statt 0")
+  local active, reserve = red_signal(s.depot, "arrakis-signal-harvesters"), red_signal(s.depot, "arrakis-signal-reserve")
+  check(failed, active == 3 and reserve == 0, "Statussignale aktiv " .. active .. ", Reserve " .. reserve)
+  s.ok = #failed == 0
+  local result = verdict(run, tb, 3, "Signal H = 3", failed, string.format("dritter nach %s s, Signale aktiv %d / Reserve %d",
+    tb.num((game.tick - s.start) / 60), active, reserve))
+  return s.ok and "keep" or result
+end
+
+-- 4) H = 1: die zwei zuletzt eingesetzten zurück ins Lager (Ladung im Lager, kein Umweg ohne Annahme).
+function t26.s4_set(run, tb, d)
+  local s = d.s4
+  if not (s and s.ok) then return fail(run, tb, 4, "folgt aus Schritt 3 (nicht erfüllt)") end
+  set_wire_signal(run, tb, s, "H", 1)
+  s.start = game.tick
+  s.deadline = game.tick + 400 * 60
+  return 1
+end
+
+function t26.s4_wait(run, tb, d)
+  local s = d.s4
+  local r = wait_for(s, function()
+    return #owned(s) == 1 and depot_items(s, NAME) == 2 and depot_jobs(s) == 0
+  end, function()
+    return fail(run, tb, 4, string.format("nach 400 s %d eigene Ernter draußen, %d im Lager, Aufträge %d",
+      #owned(s), depot_items(s, NAME), depot_jobs(s)))
+  end)
+  if r == 1 then return T26_SETTLE end
+  return r
+end
+
+function t26.s4_check(run, tb, d)
+  local s = d.s4
+  local failed = {}
+  local list = owned(s, "deployed")
+  check(failed, #list == 1, #list .. " aufgebaut statt 1")
+  local active, reserve = red_signal(s.depot, "arrakis-signal-harvesters"), red_signal(s.depot, "arrakis-signal-reserve")
+  check(failed, active == 1 and reserve == 2, "Statussignale aktiv " .. active .. ", Reserve " .. reserve)
+  s.ok = #failed == 0
+  local result = verdict(run, tb, 4, "Signal H = 1 holt zwei ins Lager", failed, string.format(
+    "nach %s s, im Lager %d Ernter und %d Spice-Sand, Signale aktiv %d / Reserve %d", tb.num((game.tick - s.start) / 60),
+    depot_items(s, NAME), depot_items(s, SPICE), active, reserve))
+  return s.ok and "keep" or result
+end
+
+-- 5) Umsetzen: Das Feld des letzten wird leer (Spice-Sand entfernt), die Leitstelle setzt ihn auf ein freies Feld.
+function t26.s5_empty(run, tb, d)
+  local s = d.s5
+  if not (s and s.ok) then return fail(run, tb, 5, "folgt aus Schritt 4 (nicht erfüllt)") end
+  local h = owned(s, "deployed")[1]
+  if not h then return fail(run, tb, 5, "kein aufgebauter Ernter") end
+  s.mover = h.entity
+  s.from = {x = h.entity.position.x, y = h.entity.position.y}
+  empty_field(tb, s.from)
+  s.start = game.tick
+  s.deadline = game.tick + 240 * 60
+  return 1
+end
+
+function t26.s5_wait(run, tb, d)
+  local s = d.s5
+  local r = wait_for(s, function()
+    local h = h_of(s.mover)
+    if h and h.status == "field_empty" then s.seen_empty = true end
+    return h and h.state == "deployed" and h.status ~= "field_empty" and fleet_distance(s.mover.position, s.from) >= fields.SPACING
+      and depot_jobs(s) == 0
+  end, function()
+    return fail(run, tb, 5, string.format("nach 240 s Ernter %s bei %s (vorher %s), Status %s", state_of(s.mover),
+      valid(s.mover) and pos_text(tb, s.mover.position) or "–", pos_text(tb, s.from), tostring((h_of(s.mover) or {}).status)))
+  end)
+  if r == 1 then return T26_SETTLE end
+  return r
+end
+
+function t26.s5_check(run, tb, d)
+  local s = d.s5
+  local failed = {}
+  local h = h_of(s.mover)
+  check(failed, s.seen_empty, "Status „Feld leer“ nie gesehen")
+  check(failed, h and on_field(h), "nicht auf Spice")
+  check(failed, red_signal(s.depot, "arrakis-signal-harvesters") == 1, "Signal aktiv " .. red_signal(s.depot, "arrakis-signal-harvesters"))
+  check(failed, depot_items(s, NAME) == 2, depot_items(s, NAME) .. " im Lager statt 2")
+  return verdict(run, tb, 5, "Umsetzen bei leerem Feld", failed, string.format("umgesetzt nach %s s, %s Kacheln weiter",
+    tb.num((game.tick - s.start) / 60), tb.num(valid(s.mover) and fleet_distance(s.mover.position, s.from) or 0)))
+end
+
+-- 6) Feldsuche ohne Flug: nähere Felder gewinnen, eine Kartenmarkierung mit Spice-Sand-Symbol geht vor, ein lauernder
+-- Wurm sperrt seinen Sektor.
+function t26.s6_build(run, tb, d)
+  local s = d.s6
+  fleet_force(true)
+  s.depot = create(run, tb, {name = DEPOT, position = d.pos.depot, force = t23_force(), raise_built = true}, "others")
+  if not s.depot then return fail(run, tb, 6, "Leitstelle ließ sich nicht bauen") end
+  -- P1 110 Kacheln von der Leitstelle, P2 250 Kacheln: mehr als ein Sektor (128) auseinander. y = 20: weg von der
+  -- Sektorgrenze bei y = 0 (Sektoren 128 Kacheln, ab 0 gezählt), sonst hätte jedes Feld Plätze in zwei Sektoren.
+  s.fields = place_fields(tb, d, {{x = -40, y = 20}, {x = 100, y = 20}})
+  chart_area(tb, d)
+  s.deadline = game.tick + 10 * 60
+  return 1
+end
+
+function t26.s6_chart(run, tb, d)
+  local s = d.s6
+  return wait_for(s, function() return charted(tb, s.fields) end,
+    function() return fail(run, tb, 6, "Felder nach 10 s nicht kartiert") end)
+end
+
+function t26.s6_check(run, tb, d)
+  local s = d.s6
+  local failed = {}
+  local surface = tb.surface()
+  for _, p in ipairs(s.fields) do
+    local cx, cy = math.floor(p.x / 32), math.floor(p.y / 32)
+    for dx = -1, 1 do for dy = -1, 1 do fields.count(surface, cx + dx, cy + dy) end end
+  end
+  local dr = depot_record(s)
+  local function near(spot, p) return spot and fleet_distance(spot, p) <= 3 end
+  local a = fields.find_spot(dr, fleet.RANGE)
+  check(failed, near(a, s.fields[1]), "ohne Markierung nicht das nähere Feld: " .. pos_text(tb, a))
+  local tag = t23_force().add_chart_tag(surface, {position = s.fields[2], icon = {type = "item", name = SPICE}})
+  check(failed, tag ~= nil, "Kartenmarkierung ließ sich nicht setzen")
+  local b = fields.find_spot(dr, fleet.RANGE)
+  tb.trace(run, "Markierungen gefunden: " .. #t23_force().find_chart_tags(surface))
+  check(failed, near(b, s.fields[2]), "mit Markierung nicht das markierte Feld: " .. pos_text(tb, b))
+  local _, sector = vibration_lib.key_of(s.fields[2])
+  worms_lib.lurk(surface.index, sector, game.tick + 60 * 60)
+  local c = fields.find_spot(dr, fleet.RANGE)
+  check(failed, near(c, s.fields[1]), "lauernder Wurm am markierten Feld nicht gemieden: " .. pos_text(tb, c))
+  local _, sector1 = vibration_lib.key_of(s.fields[1])
+  check(failed, sector1 ~= sector, "beide Felder im selben Sektor")
+  worms_lib.lurk(surface.index, sector1, game.tick + 60 * 60)
+  local e = fields.find_spot(dr, fleet.RANGE)
+  check(failed, e == nil, "beide Sektoren gesperrt, trotzdem Platz " .. pos_text(tb, e))
+  worms_lib.clear_lurk(surface.index)
+  if tag and tag.valid then tag.destroy() end
+  return verdict(run, tb, 6, "Feldsuche: Abstand, Markierung, lauernder Wurm", failed, string.format(
+    "ohne Markierung %s, mit Markierung %s, Wurm am markierten %s, beide gesperrt %s; Plätze bekannt %d",
+    pos_text(tb, a), pos_text(tb, b), pos_text(tb, c), pos_text(tb, e), fields.known_spots(dr, fleet.RANGE)))
+end
+
+-- 7) Signal R: beide Ernter (einer selbst gesetzt, einer eigener mit Ladung) an die Leitstelle; solange R gilt, keiner
+-- zurück; R = 0 bringt beide auf ihre Felder.
+local T26_R_FIELDS = {{x = -60, y = 20}, {x = -10, y = -20}}
+
+function t26.s7_build(run, tb, d)
+  local s = d.s7
+  fleet_force(true)
+  if not build_base(run, tb, d, s, {carryalls = 3, rocket = 60, coal = 300}) then return fail(run, tb, 7, "Leitstelle oder Carryalls ließen sich nicht bauen") end
+  local origin = tb.area(run.id)
+  s.cars = {
+    new_harvester(run, tb, d, at(origin, T26_R_FIELDS[1].x, T26_R_FIELDS[1].y)),
+    new_harvester(run, tb, d, at(origin, T26_R_FIELDS[2].x, T26_R_FIELDS[2].y), {fill = 1})
+  }
+  if not (s.cars[1] and s.cars[2]) then return fail(run, tb, 7, "Ernter ließen sich nicht bauen") end
+  h_of(s.cars[2]).fleet_owner = s.depot.unit_number
+  s.origins = {}
+  for i, car in ipairs(s.cars) do s.origins[i] = {x = car.position.x, y = car.position.y} end
+  fleet.set_target(depot_record(s), 2)
+  return harvester.DEPLOY_TICKS + 30
+end
+
+function t26.s7_recall(run, tb, d)
+  local s = d.s7
+  for i, car in ipairs(s.cars) do
+    if state_of(car) ~= "deployed" then return fail(run, tb, 7, "Ernter " .. i .. " baut nicht auf (" .. state_of(car) .. ")") end
+  end
+  if not set_wire_signal(run, tb, s, "R", 1) then return fail(run, tb, 7, "Konstant-Schaltungsgebäude ließ sich nicht bauen") end
+  s.start = game.tick
+  s.deadline = game.tick + 240 * 60
+  return 1
+end
+
+local function both_recalled(s)
+  for _, car in ipairs(s.cars) do
+    local h = h_of(car)
+    if not (h and h.state == "mobile" and h.fleet_wait and h.fleet_wait.reason == "recall") then return false end
+  end
+  return true
+end
+
+function t26.s7_home(run, tb, d)
+  local s = d.s7
+  local r = wait_for(s, function()
+    if not both_recalled(s) then return false end
+    s.home_tick = game.tick
+    return true
+  end, function()
+    return fail(run, tb, 7, string.format("nach 240 s nicht beide an der Leitstelle: %s / %s", state_of(s.cars[1]), state_of(s.cars[2])))
+  end)
+  if r == 1 then return 15 * 60 end
+  return r
+end
+
+function t26.s7_hold(run, tb, d)
+  local s = d.s7
+  -- 15 s später: noch immer beide an der Leitstelle (R gilt), kein Auftrag.
+  s.held = both_recalled(s) and depot_jobs(s) == 0
+  s.dist_home = valid(s.cars[1]) and fleet_distance(s.cars[1].position, s.depot.position) or -1
+  set_wire_signal(run, tb, s, "R", 0)
+  s.release = game.tick
+  s.deadline = game.tick + 240 * 60
+  return 1
+end
+
+function t26.s7_back(run, tb, d)
+  local s = d.s7
+  return wait_for(s, function()
+    for i, car in ipairs(s.cars) do
+      if not (state_of(car) == "deployed" and fleet_distance(car.position, s.origins[i]) <= 4) then return false end
+    end
+    return true
+  end, function()
+    return fail(run, tb, 7, string.format("nach 240 s nicht beide zurück: %s / %s", state_of(s.cars[1]), state_of(s.cars[2])))
+  end)
+end
+
+function t26.s7_check(run, tb, d)
+  local s = d.s7
+  local failed = {}
+  check(failed, s.held, "während R nicht beide wartend an der Leitstelle")
+  check(failed, s.dist_home <= 18, "Ernter 1 " .. tb.num(s.dist_home) .. " Kacheln von der Leitstelle")
+  return verdict(run, tb, 7, "Signal R holt alle, R = 0 bringt sie zurück", failed, string.format(
+    "an der Leitstelle nach %s s, zurück nach %s s", tb.num((s.home_tick - s.start) / 60), tb.num((game.tick - s.release) / 60)))
+end
+
+local T26_STEPS =
+{
+  {t26.s1},
+  {t26.s2_build, t26.s2_chart, t26.s2_wait, t26.s2_check},
+  {t26.s3_set, t26.s3_wait, t26.s3_check},
+  {t26.s4_set, t26.s4_wait, t26.s4_check},
+  {t26.s5_empty, t26.s5_wait, t26.s5_check},
+  {t26.s6_build, t26.s6_chart, t26.s6_check},
+  {t26.s7_build, t26.s7_recall, t26.s7_home, t26.s7_hold, t26.s7_back, t26.s7_check}
+}
+
+local function t26_start(run, tb)
+  prepare(run, tb)
+  local d = run.data
+  d.run_id = run.id
+  for number = 1, #T26_STEPS do d["s" .. number] = d["s" .. number] or {} end
+  d.after_step = sweep
+  fleet_force(true)
+  fields.reset()
+  tb.watch(run, nil, d.pos.watch)
+  tb.log(run, "INFO", "Sieben Schritte Flottenleitung mit der echten Automatik (Soll, H, Rückruf ins Lager, Umsetzen,"
+    .. " Feldsuche, R), Force " .. T23_FORCE .. " ohne Wurm. Dauer etwa 12 min Spielzeit.")
+  d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
+end
+
+local function t26_tick(run, tb)
+  run_steps(run, tb, T26_STEPS)
+end
+
+local function t26_cleanup(run, tb)
+  pcall(tidy, run)
+  pcall(sweep, run, tb)
+  pcall(fleet_force, false)
+  storage.fleet_pause_until = nil
+end
+
+-- T27 Dauerlauf Flottenleitung ---------------------------------------------------------------------------
+
+local T27_TICKS = 60 * 60 * 60
+local T27_SETTLE = 300 * 60
+local T27_HUNT_EVERY = 75 * 60
+-- Nach so vielen Minuten wird je ein Feld leer (das Feld eines aufgebauten Ernters).
+local T27_EMPTY_AT = {8, 23, 38}
+-- Nach einem leeren Feld spätestens so lange, bis wieder drei laufen (Ticks).
+local T27_RECOVER = 240 * 60
+
+local function open_transfer(s)
+  local un = valid(s.depot) and s.depot.unit_number
+  for _, job in pairs(storage.jobs.list) do
+    if job.depot == un and (job.kind == "move" or job.kind == "deploy") then return true end
+  end
+  return false
+end
+
+local function t27_start(run, tb)
+  prepare(run, tb)
+  local d = run.data
+  d.run_id = run.id
+  d.s = {}
+  local s = d.s
+  fleet_force(true)
+  fields.reset()
+  if not build_base(run, tb, d, s, {carryalls = 3, rocket = 100, coal = 1500}) then
+    tb.log(run, "FEHLER", "Leitstelle oder Carryalls ließen sich nicht bauen")
+    tb.finish(run, "abgebrochen (Aufbau)")
+    return
+  end
+  -- 48 Plätze: 30 Kohle, 5 Raketentreibstoff, 5 Ernter (Stapel 1).
+  local inserted = s.depot.get_inventory(defines.inventory.chest).insert{name = NAME, count = 5}
+  if inserted ~= 5 then
+    tb.log(run, "FEHLER", "nur " .. inserted .. " von 5 Erntern passen ins Lager der Leitstelle")
+    tb.finish(run, "abgebrochen (Aufbau)")
+    return
+  end
+  s.intake = create(run, tb, {name = INTAKE, position = d.pos.intake, force = t23_force(), raise_built = true}, "others")
+  s.fields = place_fields(tb, d, T26_FIELDS)
+  chart_area(tb, d)
+  if not set_wire_signal(run, tb, s, "H", 3) then
+    tb.finish(run, "abgebrochen (Aufbau)")
+    return
+  end
+  s.start = game.tick
+  s.next_hunt = game.tick + 90 * 60
+  s.target = 0
+  s.hunts = {}
+  s.kinds = {}
+  s.jobs = {}
+  s.max_active = 0
+  s.empties = {}
+  s.recover = {}
+  s.docked = 0
+  tb.watch(run, nil, d.pos.watch)
+  tb.log(run, "INFO", "Dauerlauf 60 min Spielzeit: 5 Ernter im Lager, Signal H = 3, sechs Felder, nach 8, 23 und 38 min wird je"
+    .. " ein Feld leer, alle 75 s ein Wurmzeichen. Erwartet: nie mehr als 3 aktiv, nach jedem leeren Feld binnen 4 min wieder 3"
+    .. " aufgebaut, kein Biss, kein Ernter verloren.")
+end
+
+local function t27_tick(run, tb)
+  local d = run.data
+  local s = d.s
+  if not (s and s.start) then return end
+  local tick = game.tick
+  local dr = depot_record(s)
+  local c = dr and dr.census
+  if c and c.active > s.max_active then s.max_active = c.active end
+  for id, job in pairs(storage.jobs.list) do
+    if not s.jobs[id] then
+      s.jobs[id] = true
+      s.kinds[job.kind] = (s.kinds[job.kind] or 0) + 1
+    end
+  end
+  local deployed = owned(s, "deployed")
+  -- Annahme wie in T24: angedockte Ernter werden geleert.
+  if tick % 60 == 0 then
+    for _, h in ipairs(owned(s, "docked")) do
+      local trunk = h.entity.get_inventory(defines.inventory.car_trunk)
+      if not trunk.is_empty() then
+        trunk.clear()
+        s.docked = s.docked + 1
+      end
+    end
+  end
+  -- Felder leeren.
+  local minute = (tick - s.start) / 3600
+  for i, at_min in ipairs(T27_EMPTY_AT) do
+    if not s.empties[i] and minute >= at_min and #deployed > 0 then
+      local h = deployed[(i % #deployed) + 1]
+      empty_field(tb, h.entity.position)
+      s.empties[i] = tick
+      tb.trace(run, "Feld leer bei " .. pos_text(tb, h.entity.position))
+    end
+    -- Wieder drei: drei aktiv (aufgebaut oder nach einer Rettung wartend) und kein Einsatz oder Umsetzen offen.
+    if s.empties[i] and not s.recover[i] and tick > s.empties[i] + 120 and c and c.active == 3
+        and not open_transfer(s) then
+      s.recover[i] = tick - s.empties[i]
+    end
+  end
+  -- Wurmzeichen.
+  if tick >= s.next_hunt and tick < s.start + T27_TICKS then
+    s.next_hunt = tick + T27_HUNT_EVERY
+    if #deployed > 0 then
+      s.target = s.target % #deployed + 1
+      local hunt = worms_lib.start_hunt(deployed[s.target].entity, {seconds = 60, debug = true})
+      if hunt then table.insert(s.hunts, hunt) end
+    else
+      s.skipped = (s.skipped or 0) + 1
+    end
+  end
+  if (tick - s.start) % 1800 == 0 then
+    tb.trace(run, string.format("Stand: aufgebaut %d, aktiv %s, Reserve %s, Aufträge %d", #deployed, tostring(c and c.active),
+      tostring(c and c.reserve), depot_jobs(s)))
+  end
+  if tick < s.start + T27_TICKS + T27_SETTLE then return end
+  local failed = {}
+  local escaped, bitten, open = 0, 0, 0
+  for _, hunt in ipairs(s.hunts) do
+    if hunt.outcome == "escaped" then escaped = escaped + 1
+    elseif hunt.outcome == "bitten" then bitten = bitten + 1
+    else open = open + 1 end
+  end
+  check(failed, #s.hunts >= 25, #s.hunts .. " Wurmzeichen statt mindestens 25")
+  check(failed, bitten == 0 and open == 0, bitten .. " gebissen, " .. open .. " ohne Ende")
+  check(failed, s.max_active <= 3, "bis zu " .. s.max_active .. " aktiv")
+  check(failed, #deployed == 3, #deployed .. " aufgebaut am Ende statt 3")
+  local total = #owned(s) + depot_items(s, NAME)
+  check(failed, total == 5, total .. " Ernter statt 5 (draußen und im Lager)")
+  local recover = {}
+  for i = 1, #T27_EMPTY_AT do
+    local r = s.recover[i]
+    table.insert(recover, r and tb.num(r / 60) or "nie")
+    check(failed, r ~= nil and r <= T27_RECOVER, "nach leerem Feld " .. i .. " nicht binnen 4 min wieder 3")
+  end
+  check(failed, (s.kinds.move or 0) >= #T27_EMPTY_AT, (s.kinds.move or 0) .. " Umsetzen statt mindestens " .. #T27_EMPTY_AT)
+  local kinds = {}
+  for _, kind in ipairs({"deploy", "move", "recall", "rescue", "return", "unload", "refuel"}) do
+    table.insert(kinds, kind .. " " .. (s.kinds[kind] or 0))
+  end
+  tb.log(run, #failed == 0 and "OK" or "FEHLER", string.format(
+    "Dauerlauf Flottenleitung: Wurmzeichen %d (entkommen %d), höchstens %d aktiv, wieder 3 nach %s s, Aufträge %s, entladen %d"
+    .. ", ausgefallen %d", #s.hunts, escaped, s.max_active, table.concat(recover, "/"), table.concat(kinds, ", "), s.docked,
+    s.skipped or 0) .. (#failed > 0 and (" | nicht erfüllt: " .. table.concat(failed, "; ")) or ""))
+  s.start = nil
+  tb.finish(run, #failed == 0 and "Dauerlauf OK" or "Dauerlauf FEHLER")
+end
+
+local function t27_cleanup(run, tb)
+  pcall(tidy, run)
+  pcall(sweep, run, tb)
+  pcall(fleet_force, false)
+end
+
+-- T28 Ansicht Flottenleitung (interaktiv) ------------------------------------------------------------------
+
+local T28_END = 300 * 60
+
+local function t28_start(run, tb)
+  local player = tb.player(run)
+  if not player then
+    tb.log(run, "FEHLER", "T28 braucht einen Spieler")
+    tb.finish(run, "abgebrochen (ohne Spieler)")
+    return
+  end
+  prepare(run, tb)
+  local d = run.data
+  d.run_id = run.id
+  d.s = {}
+  local s = d.s
+  fleet_force(true)
+  fields.reset()
+  if not build_base(run, tb, d, s, {carryalls = 2, rocket = 60, coal = 300}) then
+    tb.finish(run, "abgebrochen (Aufbau)")
+    return
+  end
+  s.depot.get_inventory(defines.inventory.chest).insert{name = NAME, count = 3}
+  s.fields = place_fields(tb, d, {T26_FIELDS[1], T26_FIELDS[2], T26_FIELDS[3]})
+  chart_area(tb, d)
+  -- Lampe am roten Draht: leuchtet, sobald mindestens zwei Ernter aktiv sind (Strom aus einer Energieschnittstelle).
+  pcall(function()
+    local p = s.depot.position
+    create(run, tb, {name = "electric-energy-interface", position = at(p, -6, -9), force = t23_force()}, "others")
+    create(run, tb, {name = "small-electric-pole", position = at(p, -4, -9), force = t23_force()}, "others")
+    s.lamp = create(run, tb, {name = "small-lamp", position = at(p, -3, -6), force = t23_force()}, "others")
+    s.lamp.get_wire_connector(defines.wire_connector_id.circuit_red, true).connect_to(
+      s.depot.get_wire_connector(defines.wire_connector_id.circuit_red, true), false)
+    local behavior = s.lamp.get_or_create_control_behavior()
+    behavior.circuit_enable_disable = true
+    behavior.circuit_condition = {first_signal = {type = "virtual", name = "arrakis-signal-harvesters"}, comparator = "≥",
+      constant = 2}
+  end)
+  s.viewer = player.index
+  tb.watch(run, player, at(s.depot.position, 8, 4))
+  tb.protect(run, player)
+  s.start = game.tick
+  tb.log(run, "INFO", "Leitstelle mit Flottenleitung, 3 Ernter im Lager, drei Spicefelder rechts. Öffne die Leitstelle: Stell die"
+    .. " Soll-Zahl mit + auf 2; zwei Carryalls setzen nacheinander je einen Ernter ein, die Lampe links oben leuchtet ab zwei"
+    .. " aktiven. Dann „Alle zurückrufen“ drücken (beide kommen an die Leitstelle) und noch einmal drücken (sie fliegen"
+    .. " zurück). 5 min Zeit.")
+end
+
+local function t28_tick(run, tb)
+  local s = run.data.s
+  if not (s and s.start) then return end
+  if game.tick >= s.start + T28_END then
+    s.start = nil
+    tb.log(run, "FRAGE", "Passen das Fenster der Leitstelle (Soll mit - und +, Rückruf-Knopf, Zeilen Aktiv/Reserve/Feldsuche) und"
+      .. " der Ablauf (Einsatz aus dem Lager, Rückruf, Lampe am Draht)? Antwort bitte im Thread.")
+    tb.finish(run, "Ansicht gezeigt")
+  end
+end
+
+local function t28_cleanup(run, tb)
+  pcall(tidy, run)
+  pcall(sweep, run, tb)
+  pcall(fleet_force, false)
+end
+
 return
 {
   T23 =
@@ -1182,5 +1923,36 @@ return
     start = t25_start,
     tick = t25_tick,
     cleanup = t25_cleanup
+  },
+  T26 =
+  {
+    title = "Flottenleitung: echter Code",
+    timeout = 20 * 60 * 60,
+    interactive = false,
+    confirm = nil,
+    start = t26_start,
+    tick = t26_tick,
+    cleanup = t26_cleanup
+  },
+  T27 =
+  {
+    title = "Flottenleitung: Dauerlauf",
+    timeout = T27_TICKS + T27_SETTLE + 60 * 60,
+    interactive = false,
+    confirm = nil,
+    start = t27_start,
+    tick = t27_tick,
+    cleanup = t27_cleanup
+  },
+  T28 =
+  {
+    title = "Flottenleitung: Ansicht",
+    timeout = T28_END + 60 * 60,
+    interactive = true,
+    answer_time = 120 * 60,
+    confirm = nil,
+    start = t28_start,
+    tick = t28_tick,
+    cleanup = t28_cleanup
   }
 }

@@ -28,6 +28,7 @@ Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisher
 - **T13** einmal ganz, als Gegenprobe für den Ernter-Code.
 - **T18, T19 und T20 (Würmer, neu in 0.7.0):** T18 und T19 ohne Spieler laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T18 T19` (beide sollen ohne FEHLER enden), dann T20 mit dir im Spiel (vorher `/arrakis-test tempo 1`). Sie entscheiden die Engine-Annahmen V1 bis V22 aus `docs/plan-3d1.md`, Abschnitt 4.17; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8.
 - **T23, T24 und T25 (Carryall-Automatik, neu in 0.10.0):** T23 prüft ohne Spieler in zehn Schritten (etwa 5 min Spielzeit) die Leitstelle mit dem echten Code: Übernahme und Nachfüllen, Rettung bei Wurmzeichen (seit 0.11.0: anheben, an der Leitstelle abstellen, nach der Jagd zurückbringen und aufbauen; mit Tempomessung, erwartet 9 Kacheln/s leer mit Raketentreibstoff), ehrliche Absage, Entladen an der Annahme (die Greifarme ersetzt der Test, er leert den angedockten Ernter), Tanken, Handbetrieb, Pause nach `/arrakis-uninstall`, Abriss der Leitstelle und (neu in 0.11.0) „Wurm lauert“: Nach einer regulären Jagd lauert der Wurm 2 bis 4 min im Sektor, der gerettete Ernter wartet an der Leitstelle, ein zweiter Ernter, der dort aufbaut, bekommt nach 5 s ein Wurmzeichen; endet das Lauern (vom Test verkürzt), bringt der Carryall den ersten zurück; eine Jagd mit getötetem Wurm hinterlässt kein Lauern. T24 ist ein Dauerlauf über 60 min Spielzeit mit zwei Carryalls, vier Erntern und einem Wurmzeichen alle 75 s und danach 4 min Nachlauf, bis alle Aufträge fertig sind; kein Ernter darf gebissen werden, länger als 2 min ohne Brennstoff stehen oder am Ende noch an der Leitstelle warten; mindestens 30 der 48 Wurmzeichen müssen fallen (ein Termin fällt aus, wenn gerade kein Ernter aufgebaut ist, seit 0.11.0 öfter, weil gerettete Ernter an der Leitstelle warten). Beide laufen mit Force `arrakis-t23` ohne Wurm. T25 zeigt dir Leitstelle, Carryall und eine Rettung vor dem sichtbaren Sandwurm im Spiel (der Wurm kommt von Osten; seit 0.11.0 bringt der Carryall den Ernter zur Leitstelle und nach der Jagd zurück, Ende nach 2,5 min) und fragt, ob der Ablauf stimmig ist; während des Tests liegt eine Leitstelle in deinem Inventar, damit du beim Bauen den Reichweitenkreis siehst.
+- **T26, T27 und T28 (Flottenleitung, neu in 0.12.0):** T26 prüft ohne Spieler in sieben Schritten (etwa 8 min Spielzeit) die Flottenleitung mit dem echten Code: Prototypen und Signale; Soll 2 aus dem Fenster setzt zwei Ernter aus dem Lager ein; Signal H = 3 setzt einen dritten; H = 1 bringt zwei eigene zurück ins Lager; ein Ernter auf leerem Feld wird umgesetzt; die Feldsuche bevorzugt eine Kartenmarkierung und meidet einen Sektor mit lauerndem Wurm; Signal R holt alle (auch einen selbst gesetzten) an die Leitstelle, R = 0 bringt sie zurück. In jedem Schritt prüft der Test die Statussignale am roten Draht. T27 ist ein Dauerlauf über 60 min Spielzeit mit 5 Erntern im Lager, H = 3, sechs Spicefeldern (drei davon leert der Test nach 8, 23 und 38 min) und einem Wurmzeichen alle 75 s, dann 5 min Nachlauf. Erwartet: kein Biss, nie mehr als 3 aktiv, nach jedem leeren Feld binnen 4 min wieder 3, mindestens 3 Umsetzen, am Ende 3 im Einsatz und alle 5 Ernter noch da. Beide laufen mit Force `arrakis-t23` ohne Wurm. T28 zeigt dir im Spiel eine Leitstelle mit Fenster (Soll-Zahl, Rückruf-Knopf) und einer Lampe am Draht, setzt drei Ernter ein und fragt nach 5 min, ob Fenster und Ablauf stimmig sind.
 - **T21 und T22 (Sandwurm, neu in 0.8.0):** T21 ohne Spieler laufen lassen, zusammen mit den Würmern aus 0.7.0 und den Testwürmern, etwa mit `python tools/pc/pruefstand.py --factorio … T21 T5 T6 T7 T18 T19` (alle sollen ohne FEHLER enden), dann T22 mit dir im Spiel (vorher `/arrakis-test tempo 1`). Sie entscheiden die Engine-Annahmen W1 bis W19 aus `docs/plan-3d2.md`, Abschnitt 4.17; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Die Läufe vom 27.10.2026 haben W1, W3, W4, W12, W17 und W18 geklärt (halten) und W19 (hält nicht); mit 0.8.2 endete T21 mit 15 von 15 Schritten ohne FEHLER. Jetzt fehlt T22 mit dir im Spiel. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8. T19 und T20 laufen ab 0.8.0 ohne Wurm (ihre Jagden beißen wie in 0.7.0 genau bei 0); den Wurm prüfen T21 und T22.
 - **T15, T16 und T17 (Ornithopter, neu in 0.6.0):** T15 und T16 ohne Spieler laufen lassen, etwa mit `python tools/pc/pruefstand.py --factorio … T15 T16` (beide sollen ohne FEHLER enden), T17 mit dir im Spiel. Sie entscheiden die noch ungeprüften Engine-Annahmen U1 bis U28 aus `docs/plan-3c.md`, Abschnitt 4.16; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8.
 
@@ -45,12 +46,12 @@ In 2.1 lässt sich der Quality-Mod abschalten. Ohne Quality entfallen in T2b die
 ## Befehle
 
 Im Chat eingeben (nur Admins; im Einzelspiel bist du Admin).
-Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, `weiter`, T9, T12, T17, T20, T22 und T25), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
+Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück`, `weiter`, T9, T12, T17, T20, T22, T25 und T28), siehe [Automatisch ohne Spieler](#automatisch-ohne-spieler-server-und-rcon).
 
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T25` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T28` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
 | `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16, T18, T19, T21. Dauer ohne Zeitraffer gut 27 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
@@ -71,7 +72,7 @@ Ein eigener Server braucht in `server-settings.json` `"auto_pause": false`, sons
 Am einfachsten macht das alles das Werkzeug [`tools/pc/pruefstand.py`](#werkzeug-toolspcpruefstandpy).
 
 **Was ohne Spieler läuft:** alle nicht-interaktiven Tests, einzeln oder mit `alle`: T1 bis T7 (T7 Teil b nur mit `T7 ja`), T11, T13, T2b, T14, T15, T16, T18, T19 und T21.
-T9, T12, T17, T20, T22 und T25 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt sie wie immer aus.
+T9, T12, T17, T20, T22, T25 und T28 brauchen dich im Spiel und gehen nur von Hand. Ohne Spieler antwortet der Prüfstand `T9 braucht einen Spieler im Spiel (interaktiv).` und startet nichts; ein laufender Test läuft weiter. `alle` lässt sie wie immer aus.
 `/arrakis-test zurück` gibt es nur für Spieler.
 Weil niemand den Chat sieht, bestätigt der Prüfstand ohne Spieler kurz: `Gestartet: T13. Stand: /arrakis-test status`, `„alle“ gestartet: …` oder `Gestoppt.` Endet ein Test schon beim Start (etwa mit Skriptfehler), steht dort `T13 gleich beim Start beendet: …`.
 
@@ -101,7 +102,7 @@ STATUS wartet <id> | Tick <n>
 - `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s Spielzeit (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo)).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
-Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25):
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28):
 
 ```
 ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
@@ -133,7 +134,7 @@ Durchgesehen für 0.5.5, wo echte Zeit eine Rolle spielt:
 
 - **T14, Dauer der Chunk-Erzeugung:** die einzige Messung in echter Zeit. Ihr Profiler läuft nur, während Factorio im selben Tick die Chunks erzeugt (`force_generate_chunk_requests`), nie zwischen zwei Ticks. Die Dauer ist also reine Rechenzeit und mit und ohne Zeitraffer vergleichbar. T11 misst keine Zeit.
 - **Pause für die FRAGE nach T2 und T4 bei `alle`** (nur mit Spieler): Das ist Zeit für dich, sie gilt deshalb in echter Zeit. Bei Tempo 10 sind es weiter 30 s, also 18 000 Ticks statt 1800. Änderst du das Tempo während der Pause, rechnet der Prüfstand die restlichen Ticks um; die restliche Zeit bleibt dieselbe. Ohne Spieler gibt es diese Pause nicht.
-- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9, T12, T17, T20, T22 und T25 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s; T17 nach 6 min, also nach 36 s; T20 nach 15 min, also nach 90 s; T22 nach 45 min, also nach 4,5 min). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
+- **Was du im Spiel tust, läuft mit:** Zuschauen (T1, T5, T6), die Fahrt von Hand in T2 („W gedrückt halten“, bei Tempo 10 etwa 7,5 s statt 75 s) und die interaktiven Tests T9, T12, T17, T20, T22, T25 und T28 (T12 endet nach 3 min Spielzeit, bei Tempo 10 also nach 18 s; T17 nach 6 min, also nach 36 s; T20 nach 15 min, also nach 90 s; T22 nach 45 min, also nach 4,5 min). Wer zuschauen, FRAGEn während des Tests beantworten oder etwas von Hand prüfen will, lässt das Tempo auf 1.
 
 **Im eigenen Spielstand:** `game.speed` bleibt im Spielstand; sonst speichert der Befehl nichts. Zurück geht es mit `/arrakis-test tempo 1`, und zwar bevor du die Einstellung **Prüfstand** ausschaltest. Danach gibt es den Befehl nicht mehr; zurückstellen ginge dann nur noch mit `/c game.speed = 1`, und `/c` schaltet in diesem Spielstand die Errungenschaften ab.
 Solange das Tempo nicht 1 ist, erinnern die Liste (`/arrakis-test`) und, wenn du `alle` gestartet hast, auch dessen Zusammenfassung daran.
@@ -164,7 +165,7 @@ python tools/pc/pruefstand.py --factorio "<Factorio-Ordner>\bin\x64\factorio.exe
 | `--zeitlimit MIN` | Minuten je Test in echter Zeit, Standard 30, bei `alle` 90 |
 | `--startzeit SEK`, `--abfrage SEK` | Sekunden bis RCON antworten muss (180) und zwischen zwei Statusabfragen (5) |
 | `--tempo N` | [Zeitraffer](#zeitraffer-arrakis-test-tempo) während der Tests, 1 bis 50, Standard 10. `--tempo 1` läuft in echter Zeit wie vor 0.5.5 und geht als Einziges auch mit einer älteren Mod |
-| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9, T12, T17, T20, T22 und T25 nicht angeben. |
+| `TEST …` | Test-IDs wie `T2b T13`, oder `alle`. `T7:ja` schickt `/arrakis-test T7 ja`, ebenso `T11:lang` und `T14:lang`. T9, T12, T17, T20, T22, T25 und T28 nicht angeben. |
 
 **Was es tut:**
 

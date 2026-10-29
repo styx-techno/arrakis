@@ -80,3 +80,11 @@ Priorität unter RÜCKKEHR (40). Ein Rückruf bei R > 0 hat Vorrang vor Tanken u
 - **T26 (automatisch):** Prototypen und Signale; Soll 2 aus dem Fenster setzt zwei Ernter aus dem Inventar ein; Signal H = 3 setzt einen dritten; H = 1 holt zwei eigene zurück ins Inventar; Umsetzen bei leerem Feld; Feldsuche meidet Sektor mit lauerndem Wurm und bevorzugt die Kartenmarkierung; R holt alle (auch einen selbst gesetzten) an die Leitstelle, R = 0 bringt sie zurück; Statussignale stimmen in jedem Schritt.
 - **T27 (Dauerlauf, 60 min Spielzeit):** 5 Ernter im Inventar, H = 3, drei Spicefelder, die leer werden; Wurmzeichen alle 75 s. Erwartet: nie mehr als 3 aktiv, nach jedem Umsetzen wieder 3, kein Biss, kein Ernter verloren.
 - **T28 (interaktiv):** Leitstelle mit Fenster und Draht zu einer Lampe; FRAGE an Max zum Fenster und zum Ablauf.
+
+## 5. Umsetzung 0.12.0 (Nachtrag)
+
+- Namen im Code weichen vom Entwurf ab, weil `tools/check/api_names.py` `signals` und `reserved` für API-Felder hält: Die Leitstelle merkt sich das Schaltungsgebäude in `signal_entity`, Reservierungen stehen in `storage.fields.claims[job_id]`.
+- `storage.fields.chunks[s][chunk_key] = {tick, dirty, spots = {{x, y, sum}, …}}`: je Chunk bis zu 4 beste Plätze (Summentabelle über den Chunk mit 6 Kacheln Rand), vor dem Einsatz wird die Menge am Platz frisch nachgezählt. `storage.fields.refill[un]` merkt, wann die Leitstelle zuletzt ihre kartierten Chunks in die Warteschlange gelegt hat (alle 10 s).
+- Das Schaltungsgebäude ist per Skript mit rotem und grünem Draht an die Leitstelle angeschlossen (`wire_origin.script`). Wer H oder R an beide Drähte legt, liest den doppelten Wert nicht: Die Leitstelle liest die Summe beider Drähte, ihre eigenen Statussignale stehen ebenfalls auf beiden. Der Prüfstand liest deshalb nur Rot.
+- Rückruf bei R betrifft nur aktive Ernter (aufgebaut, aufbauend, einpackend); stehende, eingepackte Ernter bleiben, wo sie sind.
+- Ein überzähliger Ernter mit Spice im Laderaum fliegt erst zur Annahme (Auftrag recall mit `store`), danach ins Lager.

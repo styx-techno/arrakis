@@ -43,7 +43,7 @@ local SURFACE_NAME = "arrakis-testbench"
 local HOLD_NAME = "arrakis-test-hold"
 local LOG_FILE = "arrakis-test.txt"
 local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T13", "T2b", "T14", "T15", "T16", "T17", "T18", "T19",
-               "T20", "T21", "T22", "T23", "T24", "T25"}
+               "T20", "T21", "T22", "T23", "T24", "T25", "T26", "T27", "T28"}
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60

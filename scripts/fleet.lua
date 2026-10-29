@@ -19,25 +19,39 @@
 --   abgestellt (0.11.0); ein Rückflug bringt ihn nach (x, y), sobald dort kein Wurm mehr lauert (scripts/worms.lua).
 -- Ablauf der Rettung ab 0.11.0: anheben, zur Leitstelle (über 90 % voll erst zur Annahme), dort absetzen; Rückflug,
 -- wenn der Sektor ruhig ist. Lauert dort kein Wurm mehr, fliegt ein Carryall nach dem Entladen gleich zurück.
+--
+-- Flottenleitung (Phase 3f, docs/plan-3f.md, Schema 6, nur mit der Forschung arrakis-fleet-control):
+-- storage.depots[un] zusätzlich target (Soll aus dem Fenster, 0 = aus), recall_button, signal_entity (LuaEntity
+--   arrakis-depot-signals), last_h, last_r (zuletzt gelesene Signale H und R), soll (geltende Soll-Zahl), recall (Rückruf
+--   gilt), census (Zahlen fürs Fenster und die Statussignale), signals_written.
+-- Aufträge zusätzlich kind "deploy" (EINSATZ), "move" (UMSETZEN), "recall" (RÜCKRUF) mit depot = un, target = {x, y}
+--   (Platz aus scripts/fleet-fields.lua, reserviert), store = true (ins Lager legen), wait_reason, priority.
+-- storage.harvesters[un] zusätzlich fleet_owner = depot_un (von der Leitstelle eingesetzt), fleet_wait.reason =
+--   "rescue"|"recall"|"reserve" (Reserve: kein Rückweg, x und y fehlen).
 
 local harvester = require("scripts.harvester")
 local flyer_lib = require("scripts.flyer")
 local worms_lib = require("scripts.worms")
 local vibration_lib = require("scripts.vibration")
 local terrain = require("scripts.terrain")
+local fields = require("scripts.fleet-fields")
 local speed = require("prototypes.ornithopter-speed")
 
 local lib = {}
 
 local DEPOT = "arrakis-depot"
 local CARRYALL = flyer_lib.CARRYALL
+local TECH = "arrakis-fleet-control"
+local SIGNALS = "arrakis-depot-signals"
 
 -- Reichweite der Leitstelle (Kacheln, Mod-Einstellung, Plan 1.3).
 lib.RANGE = settings.startup["arrakis-depot-range"].value
 -- Ein neu gebauter Carryall gehört zur nächsten Leitstelle in so vielen Kacheln (Plan 1.5).
 lib.ADOPT_RADIUS = 20
 -- Prioritäten (Plan 4.3).
-lib.PRIORITY = {rescue = 100, refuel = 60, unload = 50, ["return"] = 40}
+lib.PRIORITY = {rescue = 100, refuel = 60, unload = 50, ["return"] = 40, move = 30, deploy = 20, recall = 10}
+-- Rückruf über Signal R oder den Knopf geht vor Tanken und Entladen (docs/plan-3f.md 3.3).
+lib.RECALL_URGENT = 70
 -- Tempo leer mit Raketentreibstoff (Kacheln/s); mit anderem Flugtreibstoff mal g (prototypes/ornithopter-speed.lua).
 lib.SPEED_EMPTY = 8 * speed.CARRYALL_FACTOR
 lib.SPEED_LOADED = 5.6 * speed.CARRYALL_FACTOR
@@ -75,6 +89,14 @@ lib.BASE_OFFSETS =
 }
 -- Ein wartender Ernter, den jemand weiter als so weit vom Abstellplatz fährt, gilt als übernommen (Kacheln).
 lib.WAIT_LEAVE = 8
+-- Einsatz aus dem Lager: so viele Items Ernter-Treibstoff aus der Leitstelle (docs/plan-3f.md 1.7).
+lib.DEPLOY_FUEL = 5
+-- Höchste Soll-Zahl im Fenster.
+lib.TARGET_MAX = 50
+-- Statussignale in dieser Reihenfolge (docs/plan-3f.md 1.8): aktive Ernter, Reserve, freie Carryalls, laufende
+-- Rettungen, Spice-Sand in allen Laderäumen, Wurmalarm.
+lib.STATUS_SIGNALS = {"arrakis-signal-harvesters", "arrakis-signal-reserve", "arrakis-signal-carryalls",
+  "arrakis-signal-rescues", "arrakis-signal-spice", "arrakis-wormsign"}
 
 local function distance(a, b)
   local dx, dy = a.x - b.x, a.y - b.y
@@ -90,10 +112,28 @@ end
 local function depot_of(un)
   local d = un and storage.depots[un]
   if d and not (d.entity and d.entity.valid) then
+    if d.signal_entity and d.signal_entity.valid then d.signal_entity.destroy() end
     storage.depots[un] = nil
     return nil
   end
   return d
+end
+
+-- Verstecktes Schaltungsgebäude unter der Leitstelle (docs/plan-3f.md 1.8), per Skript mit rotem und grünem Draht an
+-- sie angeschlossen; gibt die Entity zurück.
+local function ensure_signals(d)
+  local cc = d.signal_entity
+  if cc and cc.valid then return cc end
+  local entity = d.entity
+  cc = entity.surface.create_entity{name = SIGNALS, position = d.position, force = entity.force, create_build_effect_smoke = false}
+  if not cc then return nil end
+  cc.destructible = false
+  for _, id in ipairs({defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green}) do
+    entity.get_wire_connector(id, true).connect_to(cc.get_wire_connector(id, true), false, defines.wire_origin.script)
+  end
+  d.signal_entity = cc
+  d.signals_written = nil
+  return cc
 end
 
 local function register_depot(entity)
@@ -102,8 +142,10 @@ local function register_depot(entity)
   if d then return d end
   local position = entity.position
   d = {un = un, entity = entity, surface_index = entity.surface.index, position = {x = position.x, y = position.y},
-    force_index = entity.force.index}
+    force_index = entity.force.index, target = 0, recall_button = false, last_h = 0, last_r = 0, soll = 0,
+    recall = false}
   storage.depots[un] = d
+  ensure_signals(d)
   storage.reg[script.register_on_object_destroyed(entity)] = {kind = "depot", un = un}
   return d
 end
@@ -308,6 +350,7 @@ end
 
 local function end_job(job, why)
   storage.jobs.list[job.id] = nil
+  fields.release(job.id)
   if storage.job_of[job.harvester] == job.id then storage.job_of[job.harvester] = nil end
   local record = job.carryall and storage.flyers[job.carryall]
   if record and record.job == job.id then
@@ -370,6 +413,8 @@ end
 -- Neue Aufträge ------------------------------------------------------------------------------------------
 
 local ACTIVE = {deployed = true, deploying = true, packing = true}
+-- Aufträge der Flottenleitung (step_transfer).
+local TRANSFER = {deploy = true, move = true, recall = true}
 
 local function scan_hunts(tick)
   local hunts = storage.hunts
@@ -430,7 +475,10 @@ local function check_wait(un, h)
     h.fleet_wait = nil
     return
   end
-  if storage.job_of[un] or not covering_depot(entity) then return end
+  if storage.job_of[un] then return end
+  local d = covering_depot(entity)
+  -- Reserve (docs/plan-3f.md 1.6) hat keinen Rückweg; solange der Rückruf gilt, bringt die Leitstelle keinen zurück.
+  if not d or fw.reason == "reserve" or not fw.x or d.recall then return end
   local pos = {surface = fw.surface, x = fw.x, y = fw.y}
   if calm(pos) then new_job("return", h, {return_pos = pos}) end
 end
@@ -479,6 +527,8 @@ local function pick(job, h, list)
     if d and d.surface_index == h.entity.surface.index and distance(d.position, target) <= lib.RANGE then
       local dist = distance(record.entity.position, target)
       local back = distance(target, d.position)
+      -- Einsatz und Umsetzen tragen ihn erst zum Platz, dann fliegt der Carryall leer heim (gerechnet wie beladen).
+      if job.target then back = distance(target, job.target) + distance(job.target, d.position) end
       if not enough_fuel(record, dist, back) then
         reason = "no_fuel"
       elseif dist < best_d then
@@ -522,7 +572,7 @@ local function dispatch(tick)
   end
   if #open == 0 then return end
   table.sort(open, function(a, b)
-    local pa, pb = lib.PRIORITY[a.kind], lib.PRIORITY[b.kind]
+    local pa, pb = a.priority or lib.PRIORITY[a.kind], b.priority or lib.PRIORITY[b.kind]
     if pa ~= pb then return pa > pb end
     return a.id < b.id
   end)
@@ -611,6 +661,31 @@ end
 -- sonst zurück aufs Feld, wenn es dort ruhig ist, sonst zur Leitstelle.
 local function after_lift(job, record, h, unloaded)
   local entity = h.entity
+  local d = depot_of(job.depot) or depot_of(record.depot)
+  local recall = d ~= nil and d.recall
+  -- Ins Lager (docs/plan-3f.md 1.3): erst zur Annahme, wenn der Laderaum nicht leer ist (nicht bei Signal R), dann zur
+  -- Leitstelle.
+  if job.store and d then
+    local trunk = entity.get_inventory(defines.inventory.car_trunk)
+    if not unloaded and not recall and trunk and not trunk.is_empty() then
+      local intake = nearest_intake(record.entity.surface.index, record.entity.position, record.entity.force.index)
+      if intake then
+        job.intake = intake
+        convert(job, "unload", "to_intake")
+        return
+      end
+    end
+    job.base_spot = base_spot(d, job)
+    convert(job, "recall", "to_base")
+    return
+  end
+  -- Rückruf (docs/plan-3f.md 1.4): gleich zur Leitstelle, ohne Umweg über die Annahme.
+  if recall then
+    job.wait_reason = "recall"
+    job.base_spot = base_spot(d, job)
+    convert(job, "recall", "to_base")
+    return
+  end
   if not unloaded and fill_of(entity) >= lib.UNLOAD_FILL then
     local intake = nearest_intake(record.entity.surface.index, record.entity.position, record.entity.force.index)
     if intake then
@@ -623,7 +698,6 @@ local function after_lift(job, record, h, unloaded)
     begin_return(job, h)
     return
   end
-  local d = depot_of(record.depot)
   if not d then
     -- Ohne Leitstelle (abgerissen): in der Luft warten wie bis 0.10.x.
     convert(job, "rescue", "hover")
@@ -644,6 +718,114 @@ local function step_coupling(job, record, h)
   return false
 end
 
+-- Flottenleitung (docs/plan-3f.md 3.3) -------------------------------------------------------------------
+
+-- Ins Lager der Leitstelle legen (Item mit Qualität und gespeicherten Werten; Ladung und Brennstoff landen mit im
+-- Lager). Gibt true zurück, wenn es geklappt hat; passt nicht alles ins Lager, bleibt er stehen.
+local function store_harvester(h, d)
+  local inventory = d.entity.get_inventory(defines.inventory.chest)
+  local entity = h.entity
+  if not (inventory and entity.valid) then return false end
+  if not inventory.can_insert({name = harvester.NAME, quality = entity.quality.name}) then return false end
+  return entity.mine{inventory = inventory, force = false, raise_destroyed = true, ignore_minable = true}
+end
+
+-- An der Leitstelle abstellen: Ins Lager (job.store) oder warten (Rückruf mit Rückweg, sonst Reserve).
+local function park_at_base(job, record, h, d, tick)
+  local entity = h.entity
+  if job.store and d and store_harvester(h, d) then
+    end_job(job, nil)
+    return
+  end
+  local p = entity.position
+  local pos = job.return_pos
+  local reason = job.wait_reason or "reserve"
+  if reason ~= "reserve" and not pos then reason = "reserve" end
+  h.fleet_wait = {surface = entity.surface.index, base = {x = p.x, y = p.y}, depot = d and d.un or record.depot,
+    since = tick, reason = reason}
+  if reason ~= "reserve" then
+    h.fleet_wait.surface, h.fleet_wait.x, h.fleet_wait.y = pos.surface, pos.x, pos.y
+  end
+  end_job(job, nil)
+end
+
+-- Einsatz, Umsetzen, Rückruf: hinfliegen, ankoppeln, dann zum Platz (to_target) oder zur Leitstelle (to_base).
+local function step_transfer(job, record, h, tick)
+  local entity = h.entity
+  local d = depot_of(job.depot) or depot_of(record.depot)
+  if job.state == "fly" then
+    if job.kind == "recall" and not job.return_pos then
+      local p = entity.position
+      job.return_pos = {surface = entity.surface.index, x = p.x, y = p.y}
+    end
+    if not arrived(record, entity.position) then
+      fly(record, entity.position)
+      return
+    end
+    stop(record)
+    job.state = "couple"
+  end
+  if job.state == "couple" then
+    if not step_coupling(job, record, h) then return end
+    h.fleet_wait = nil
+    refuel_harvester(record, entity)
+    if job.kind == "recall" then
+      after_lift(job, record, h, false)
+      if not TRANSFER[job.kind] then return end
+    else
+      job.state = "to_target"
+    end
+  end
+  if record.cargo ~= h.un then
+    end_job(job, "Last verloren")
+    return
+  end
+  if job.state == "to_target" then
+    local target = job.target
+    if target and not fields.quiet(entity.surface.index, target) and d then
+      -- Inzwischen lauert dort ein Wurm oder es läuft eine Jagd: anderer Platz, sonst zur Leitstelle.
+      fields.release(job.id)
+      target = fields.find_spot(d, lib.RANGE, h.un)
+      job.target = target
+      if target then fields.reserve(job.id, entity.surface.index, target) end
+    end
+    if not target then
+      if not d then
+        end_job(job, "keine Leitstelle")
+        return
+      end
+      job.wait_reason = "reserve"
+      job.base_spot = base_spot(d, job)
+      job.state = "to_base"
+    elseif arrived(record, target) then
+      stop(record)
+      if flyer_lib.drop(record, nil, true) then
+        refuel_harvester(record, entity)
+        if not harvester.deploy(h) then
+          entity.force.print({"arrakis-message.msg-fleet-deploy-failed", gps(entity.surface, entity.position)})
+        end
+        end_job(job, nil)
+      end
+      return
+    else
+      fly(record, target)
+      return
+    end
+  end
+  if job.state == "to_base" then
+    if not job.base_spot and d then job.base_spot = base_spot(d, job) end
+    local spot = job.base_spot
+    if not spot then
+      end_job(job, "keine Leitstelle")
+    elseif arrived(record, spot) then
+      stop(record)
+      if flyer_lib.drop(record, nil, true) then park_at_base(job, record, h, d, tick) end
+    else
+      fly(record, spot)
+    end
+  end
+end
+
 local function step(job, tick)
   local record = job.carryall and storage.flyers[job.carryall]
   if not (record and record.entity.valid) then
@@ -662,6 +844,10 @@ local function step(job, tick)
   local carried_by_us = record.cargo == h.un
   if h.state == "carried" and not carried_by_us then
     end_job(job, "fremd getragen")
+    return
+  end
+  if TRANSFER[job.kind] then
+    step_transfer(job, record, h, tick)
     return
   end
   if job.kind == "rescue" then
@@ -712,7 +898,7 @@ local function step(job, tick)
           local p = entity.position
           local pos = job.return_pos
           h.fleet_wait = {surface = pos.surface, x = pos.x, y = pos.y, base = {x = p.x, y = p.y}, depot = record.depot,
-            since = tick}
+            since = tick, reason = "rescue"}
           end_job(job, nil)
         end
       else
@@ -786,7 +972,7 @@ local function step(job, tick)
         if step_coupling(job, record, h) then after_lift(job, record, h, true) end
       end
     end
-    if job.kind == "rescue" and job.state == "to_base" then step(job, tick) end
+    if job.kind ~= "unload" then step(job, tick) end
     return
   end
   if job.kind == "return" then
@@ -911,6 +1097,298 @@ local function emergency(record)
   record.entity.force.print({"arrakis-message.msg-carryall-low-fuel", gps(record.entity.surface, record.entity.position)})
 end
 
+-- Flottenleitung: Soll, Rückruf, Signale (docs/plan-3f.md 1, 3.2) -------------------------------------------
+
+local function fleet_on(d)
+  local tech = d.entity.force.technologies[TECH]
+  return tech ~= nil and tech.researched
+end
+lib.fleet_on = fleet_on
+
+local function read_signal(d, name)
+  return d.entity.get_signal({type = "virtual", name = name}, defines.wire_connector_id.circuit_red,
+    defines.wire_connector_id.circuit_green)
+end
+
+-- Statussignale schreiben (values in der Reihenfolge von lib.STATUS_SIGNALS, nil löscht); nur bei einer Änderung.
+local function write_signals(d, values)
+  local key = values and table.concat(values, ",") or ""
+  if d.signals_written == key and d.signal_entity and d.signal_entity.valid then return end
+  local cc = ensure_signals(d)
+  if not cc then return end
+  d.signals_written = key
+  local behavior = cc.get_or_create_control_behavior()
+  local section = behavior.get_section(1) or behavior.add_section()
+  if not section then return end
+  for i, name in ipairs(lib.STATUS_SIGNALS) do
+    local n = values and values[i] or 0
+    if n ~= 0 then
+      section.set_slot(i, {value = {type = "virtual", name = name, quality = "normal"}, min = n})
+    else
+      section.clear_slot(i)
+    end
+  end
+end
+
+-- Ernter-Treibstoff aus der Leitstelle in den Ernter (zuerst, was kein Flugtreibstoff ist), höchstens n Items.
+local function fuel_from_depot(d, entity, n)
+  local depot_inv = d.entity.get_inventory(defines.inventory.chest)
+  local fuel = entity.get_fuel_inventory()
+  if not (depot_inv and fuel) then return 0 end
+  local flight = prototypes.entity[CARRYALL].burner_prototype.fuel_categories
+  local moved = 0
+  for pass = 1, 2 do
+    for i = 1, #depot_inv do
+      if moved >= n then return moved end
+      local stack = depot_inv[i]
+      if stack.valid_for_read and stack.prototype.fuel_value > 0 then
+        local is_flight = false
+        for _, category in pairs(stack.prototype.fuel_categories or {}) do
+          if flight[category] then is_flight = true end
+        end
+        if (pass == 1) ~= is_flight and fuel.can_insert(stack) then
+          local count = math.min(stack.count, n - moved)
+          local k = fuel.insert({name = stack.name, quality = stack.quality.name, count = count})
+          if k > 0 then
+            stack.count = stack.count - k
+            moved = moved + k
+          end
+        end
+      end
+    end
+  end
+  return moved
+end
+
+-- Ernter aus dem Lager auf einen Abstellplatz (docs/plan-3f.md 1.7): Item mit Qualität und gespeicherten Werten,
+-- betankt, als Reserve dieser Leitstelle. Gibt den Datensatz zurück oder nil.
+local function spawn_reserve(d, tick)
+  local depot_inv = d.entity.get_inventory(defines.inventory.chest)
+  if not depot_inv then return nil end
+  local stack
+  for i = 1, #depot_inv do
+    if depot_inv[i].valid_for_read and depot_inv[i].name == harvester.NAME then stack = depot_inv[i] break end
+  end
+  if not stack then return nil end
+  local surface = d.entity.surface
+  local spot = base_spot(d, nil)
+  local position = surface.find_non_colliding_position(harvester.NAME, spot, 6, 0.5)
+  if not position then return nil end
+  local entity = surface.create_entity{name = harvester.NAME, position = position, force = d.entity.force,
+    quality = stack.quality, item = stack, raise_built = true}
+  if not entity then return nil end
+  stack.count = stack.count - 1
+  local h = harvester.get(entity) or harvester.register(entity)
+  if not h then return nil end
+  fuel_from_depot(d, entity, lib.DEPLOY_FUEL)
+  harvester.apply_fuel_normalization(entity)
+  local p = entity.position
+  h.fleet_owner = d.un
+  h.fleet_wait = {surface = surface.index, base = {x = p.x, y = p.y}, depot = d.un, since = tick, reason = "reserve"}
+  return h
+end
+
+local function harvester_items(d)
+  local depot_inv = d.entity.get_inventory(defines.inventory.chest)
+  local n = 0
+  for _, item in pairs(depot_inv and depot_inv.get_contents() or {}) do
+    if item.name == harvester.NAME then n = n + item.count end
+  end
+  return n
+end
+
+-- Leitstelle eines Ernters: wartend an seiner Leitstelle, getragen von einem ihrer Carryalls, sonst die betreuende.
+local function home_of(h)
+  local fw = h.fleet_wait
+  local d = fw and fw.depot and depot_of(fw.depot)
+  if d then return d end
+  if h.state == "carried" then
+    local record = h.carried_by and storage.flyers[h.carried_by]
+    return record and record.kind == "carryall" and depot_of(record.depot) or nil
+  end
+  return covering_depot(h.entity)
+end
+
+-- Zählung je Leitstelle (docs/plan-3f.md 1.2, 1.8). Aktiv: aufgebaut, aufbauend, einpackend, getragen, wartend nach
+-- Rettung oder Rückruf oder in einem Auftrag; Reserve: an der Leitstelle ohne Rückweg (plus Items im Lager).
+local function census(list)
+  local hunted = {}
+  for _, hunt in pairs(storage.hunts and storage.hunts.list or {}) do
+    if not hunt.outcome and hunt.target and hunt.target.valid then hunted[hunt.target.unit_number] = true end
+  end
+  local per = {}
+  for un in pairs(storage.depots) do
+    local d = depot_of(un)
+    if d then per[un] = {active = {}, reserve = {}, idle = {}, free = 0, rescues = 0, spice = 0, alarm = 0, storing = 0} end
+  end
+  local uns = {}
+  for un in pairs(storage.harvesters) do table.insert(uns, un) end
+  table.sort(uns)
+  for _, un in ipairs(uns) do
+    local h = storage.harvesters[un]
+    local e = h.entity
+    local d = e and e.valid and home_of(h)
+    local c = d and per[d.un]
+    if c then
+      local job = job_of_harvester(un)
+      local fw = h.fleet_wait
+      if fw and fw.reason == "reserve" and not job then
+        table.insert(c.reserve, h)
+      elseif job and job.kind == "recall" and job.store then
+        c.storing = c.storing + 1
+      elseif ACTIVE[h.state] or h.state == "carried" or fw or job then
+        table.insert(c.active, h)
+      elseif h.state ~= "docked" then
+        table.insert(c.idle, h)
+      end
+      local trunk = e.get_inventory(defines.inventory.car_trunk)
+      if trunk then c.spice = c.spice + trunk.get_item_count("spice-sand") end
+      if hunted[un] then c.alarm = 1 end
+    end
+  end
+  for _, record in ipairs(list) do
+    local c = record.depot and per[record.depot]
+    if c and free_carryall(record) then c.free = c.free + 1 end
+  end
+  for _, job in pairs(storage.jobs.list) do
+    local record = job.carryall and storage.flyers[job.carryall]
+    local c = record and record.depot and per[record.depot]
+    if c and job.kind == "rescue" then c.rescues = c.rescues + 1 end
+  end
+  return per
+end
+
+local function depot_job(d, kind)
+  for _, job in pairs(storage.jobs.list) do
+    if job.kind == kind and job.depot == d.un then return job end
+  end
+  return nil
+end
+
+-- Rückruf beginnt: Einsätze, Umsetzen und Rückflüge dieser Leitstelle enden; wer schon hängt, fliegt zur Leitstelle.
+local function cancel_for_recall(d)
+  local list = {}
+  for _, job in pairs(storage.jobs.list) do table.insert(list, job) end
+  table.sort(list, function(a, b) return a.id < b.id end)
+  for _, job in ipairs(list) do
+    local h = harvester_of(job)
+    if h and (job.kind == "deploy" or job.kind == "move" or job.kind == "return") and home_of(h) == d then
+      local record = job.carryall and storage.flyers[job.carryall]
+      if record and record.cargo == h.un then
+        fields.release(job.id)
+        job.wait_reason = job.kind == "return" and "recall" or "reserve"
+        job.priority = lib.RECALL_URGENT
+        job.base_spot = base_spot(d, job)
+        convert(job, "recall", "to_base")
+      else
+        end_job(job, "Rückruf")
+      end
+    end
+  end
+end
+
+-- Ein Takt für eine Leitstelle: Signale lesen und schreiben, dann höchstens ein neuer Auftrag (Plan 3.2).
+local function control_depot(d, c, tick)
+  if not fleet_on(d) then
+    d.soll, d.recall, d.census = 0, false, nil
+    write_signals(d, nil)
+    return false
+  end
+  local h_signal, r_signal = read_signal(d, "signal-H"), read_signal(d, "signal-R")
+  d.last_h, d.last_r = h_signal, r_signal
+  local soll = h_signal > 0 and math.min(h_signal, lib.TARGET_MAX) or (d.target or 0)
+  d.soll = soll
+  local was = d.recall
+  d.recall = r_signal > 0 or d.recall_button == true
+  local items = harvester_items(d)
+  d.census = {active = #c.active, reserve = #c.reserve + items, items = items, free = c.free, rescues = c.rescues,
+    spice = c.spice, alarm = c.alarm, storing = c.storing}
+  write_signals(d, {#c.active, #c.reserve + items, c.free, c.rescues, c.spice, c.alarm})
+  if d.recall then
+    if not was then cancel_for_recall(d) end
+    for _, h in ipairs(c.active) do
+      local e = h.entity
+      if not storage.job_of[h.un] and not h.fleet_wait and h.state ~= "carried" and not driven_by_player(e) then
+        local empty = e.get_inventory(defines.inventory.car_trunk).is_empty()
+        new_job("recall", h, {depot = d.un, priority = lib.RECALL_URGENT, store = h.fleet_owner == d.un and empty or nil,
+          wait_reason = "recall"})
+        return false
+      end
+    end
+    return false
+  end
+  if soll <= 0 then return false end
+  local s = d.surface_index
+  -- Umsetzen: Feld leer, oder ein eigener Ernter steht mobil herum (Absetzen ging daneben).
+  local movers = {}
+  for _, h in ipairs(c.active) do
+    if h.state == "deployed" and h.status == "field_empty" then table.insert(movers, h) end
+  end
+  for _, h in ipairs(c.idle) do
+    if h.fleet_owner == d.un and h.state == "mobile" and h.entity.speed == 0 then table.insert(movers, h) end
+  end
+  for _, h in ipairs(movers) do
+    if not storage.job_of[h.un] and not driven_by_player(h.entity) then
+      local spot = fields.find_spot(d, lib.RANGE, h.un)
+      -- Ohne Platz erst zur Leitstelle, wenn die Feldsuche alle Chunks gezählt hat.
+      if not spot and fields.queue_length() > 0 then return true end
+      local job = new_job("move", h, {depot = d.un, target = spot})
+      if spot then fields.reserve(job.id, s, spot) end
+      return true
+    end
+  end
+  if #c.active < soll then
+    if depot_job(d, "deploy") then return true end
+    local spot = fields.find_spot(d, lib.RANGE, nil)
+    if not spot then return true end
+    local h = c.reserve[1] or spawn_reserve(d, tick)
+    if h then
+      local job = new_job("deploy", h, {depot = d.un, target = spot})
+      fields.reserve(job.id, s, spot)
+    end
+    return true
+  elseif #c.active > soll then
+    -- Überzählige: nur eigene (Plan 1.3), zuerst die an der Leitstelle wartenden, sonst der zuletzt eingesetzte.
+    local pick_h
+    for _, h in ipairs(c.active) do
+      if h.fleet_owner == d.un and not storage.job_of[h.un] and h.state ~= "carried" and not driven_by_player(h.entity) then
+        if h.fleet_wait then
+          pick_h = h
+          break
+        end
+        if not pick_h or h.un > pick_h.un then pick_h = h end
+      end
+    end
+    if pick_h then new_job("recall", pick_h, {depot = d.un, store = true, wait_reason = "reserve"}) end
+  end
+  return true
+end
+
+local function control(tick, list)
+  local per = census(list)
+  local searching = {}
+  local uns = {}
+  for un in pairs(per) do table.insert(uns, un) end
+  table.sort(uns)
+  for _, un in ipairs(uns) do
+    local d = depot_of(un)
+    if d and control_depot(d, per[un], tick) then table.insert(searching, d) end
+  end
+  fields.tick(tick, searching, lib.RANGE)
+end
+
+-- Fenster: Soll-Zahl setzen (0 = aus) und Rückruf-Knopf umschalten.
+function lib.set_target(d, n)
+  d.target = math.max(0, math.min(lib.TARGET_MAX, math.floor(n)))
+end
+
+function lib.set_recall_button(d, on)
+  d.recall_button = on and true or false
+end
+
+lib.census = census
+lib.control = control
+
 -- Takt ---------------------------------------------------------------------------------------------
 
 function lib.tick(tick)
@@ -920,8 +1398,11 @@ function lib.tick(tick)
     storage.fleet_pause_until = nil
   end
   scan_hunts(tick)
-  if tick % 60 == 0 then scan_harvesters(tick) end
   local list = carryalls()
+  if tick % 60 == 0 then
+    scan_harvesters(tick)
+    control(tick, list)
+  end
   for _, record in ipairs(list) do
     manual_check(record)
   end
@@ -957,6 +1438,8 @@ local function on_built(event)
 end
 
 local function depot_removed(un)
+  local d = storage.depots[un]
+  if d and d.signal_entity and d.signal_entity.valid then d.signal_entity.destroy() end
   storage.depots[un] = nil
   for _, record in pairs(storage.flyers) do
     if record.kind == "carryall" and record.depot == un then record.depot = nil end
@@ -1007,7 +1490,8 @@ lib.events =
   [defines.events.on_player_mined_entity] = on_removed,
   [defines.events.on_robot_mined_entity] = on_removed,
   [defines.events.script_raised_destroy] = on_removed,
-  [defines.events.on_object_destroyed] = on_object_destroyed
+  [defines.events.on_object_destroyed] = on_object_destroyed,
+  [defines.events.on_resource_depleted] = fields.on_resource_depleted
 }
 
 lib.on_nth_tick =
