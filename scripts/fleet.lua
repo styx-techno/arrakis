@@ -600,7 +600,10 @@ local function dispatch(tick)
       end_job(job, "Ernter weg")
     else
       local record, reason, dist = pick(job, h, list)
-      if record and job.kind ~= "rescue" and (total[record.depot] or 0) >= 2 and (free[record.depot] or 0) <= 1 then
+      -- Bereitschaft: Bei zwei oder mehr Carryalls bleibt einer für Rettungen frei. Nicht beim Rückruf (Signal R oder
+      -- Knopf): Der holt alle in Sicherheit, also fliegen alle mit (Max 29.10. zu T28: sonst holt nur einer nacheinander).
+      local urgent = job.kind == "rescue" or job.priority == lib.RECALL_URGENT
+      if record and not urgent and (total[record.depot] or 0) >= 2 and (free[record.depot] or 0) <= 1 then
         record = nil
       end
       if job.kind == "rescue" then
