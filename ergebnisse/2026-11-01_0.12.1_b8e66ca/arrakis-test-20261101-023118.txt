@@ -1,0 +1,10 @@
+
+=== T29 Flottenleitung 0.12.1: Forschungen | Tick 418 | Arrakis 0.12.1 | base 2.1.24 | Spieler - ===
+[T29] INFO +0.0s: Start: Flottenleitung 0.12.1: Forschungen
+[T29] INFO +0.0s: Zeitraffer: game.speed 10
+[T29] INFO +0.0s: Vier Schritte 0.12.1 mit dem echten Code (Forschungen, Frühwarnung, Ernte-Dämpfung, Bereitschaftsflug), Force arrakis-t23 ohne Wurm. Dauer etwa 2 min Spielzeit.
+[T29] OK +0.5s: 1) Forschungen 0.12.1: arrakis-escort-flight 1, arrakis-early-warning 6, arrakis-harvest-damping 10
+[T29] OK +5.8s: 2) Frühwarnung: 0→60.0 s, 3→75.0 s, 6→90.0 s, Jagd 90.0 s, Lehrjagd 90.0 s
+[T29] OK +11.2s: 3) Ernte-Dämpfung: aufgebaut 0→30.0, 4→24.0, 10→15.0, einpackend (10) 15.0
+[T29] OK +45.6s: 4) Bereitschaftsflug: Begleiter über dem Ernter 11.5 s nach der Forschung, Anheben 2.4 s nach dem Wurmzeichen
+[T29] ENDE +45.7s: 4/4 Schritte OK (OK 4, FEHLER 0, FRAGE 0, 45.7 s)
