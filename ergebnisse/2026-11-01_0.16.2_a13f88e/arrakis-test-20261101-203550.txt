@@ -1,0 +1,24 @@
+
+=== T39 Wurm unter Beschuss 0.16.2 | Tick 412 | Arrakis 0.16.2 | base 2.1.24 | Spieler - ===
+[T39] INFO +0.0s: Start: Wurm unter Beschuss 0.16.2
+[T39] INFO +0.0s: Zeitraffer: game.speed 10
+[T39] INFO +0.0s: Ein Schritt 0.16.2 (Wurm unter Beschuss entlang einer Geschützreihe). Dauer etwa eine Minute Spielzeit.
+[T39] MESSUNG +9.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -98.0 / y +0.0, Geschütze mit Ziel 7
+[T39] MESSUNG +11.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -91.0 / y +0.0, Geschütze mit Ziel 11
+[T39] MESSUNG +13.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -84.0 / y +0.0, Geschütze mit Ziel 14
+[T39] MESSUNG +15.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -77.0 / y +0.0, Geschütze mit Ziel 18
+[T39] MESSUNG +17.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -70.0 / y +0.0, Geschütze mit Ziel 21
+[T39] MESSUNG +19.1s: Wurm: Phase anfahrt, Lebenspunkte 29678, Kopf bei x -63.0 / y +0.0, Geschütze mit Ziel 25
+[T39] MESSUNG +21.1s: Wurm: Phase anfahrt, Lebenspunkte 28771, Kopf bei x -56.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +23.1s: Wurm: Phase anfahrt, Lebenspunkte 27732, Kopf bei x -49.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +25.1s: Wurm: Phase anfahrt, Lebenspunkte 26730, Kopf bei x -42.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +27.1s: Wurm: Phase angriff, Lebenspunkte 25631, Kopf bei x -36.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +29.1s: Wurm: Phase angriff, Lebenspunkte 24524, Kopf bei x -31.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +31.1s: Wurm: Phase angriff, Lebenspunkte 23449, Kopf bei x -26.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +33.1s: Wurm: Phase angriff, Lebenspunkte 22330, Kopf bei x -22.0 / y +0.0, Geschütze mit Ziel 27
+[T39] MESSUNG +35.1s: Wurm: Phase angriff, Lebenspunkte 21540, Kopf bei x -17.0 / y +0.0, Geschütze mit Ziel 24
+[T39] MESSUNG +37.1s: Wurm: Phase angriff, Lebenspunkte 21319, Kopf bei x -12.0 / y +0.0, Geschütze mit Ziel 22
+[T39] MESSUNG +39.1s: Wurm: Phase angriff, Lebenspunkte 21681, Kopf bei x -7.0 / y +0.0, Geschütze mit Ziel 19
+[T39] MESSUNG +40.6s: KI-Zustände (Takte): investigating 1900; beruhigt 0 mal
+[T39] FEHLER +40.6s: 1) Wurm unter Beschuss: Ergebnis bitten, abgetaucht ende, 0 Zähne, Kopf höchstens 0.0 Kacheln Richtung Fels, wütend 0 von 1900 Takten, beruhigt 0 mal | nicht erfüllt: Ergebnis bitten (Lebenspunkte zuletzt 22318); abgetaucht: ende; 0 Wurmzähne
+[T39] ENDE +40.8s: 0/1 Schritte OK, FEHLER in 1 (OK 0, FEHLER 1, FRAGE 0, 40.8 s)
