@@ -1,0 +1,24 @@
+SUMMARY arrakis-test-20261101-033339.txt | Tests 22 | bestanden 21 | FEHLER 1 | abgebrochen 0 | ohne ENDE 0
+T1 | Flieger: Beine, Tempo, Gelände | bestanden | 23.2 s | OK 2 FEHLER 0 FRAGE 1
+T2 | Ernter: Skriptfahrt, Tempo, Sperre, Status | bestanden | 67.5 s | OK 3 FEHLER 0 FRAGE 1
+T3 | Ernter: Teleport zur Ablage | bestanden | 4.0 s | OK 22 FEHLER 0 FRAGE 0
+T4 | Annahme und Tankstutzen | bestanden | 70.5 s | OK 7 FEHLER 0 FRAGE 1
+T5 | Wurm-KI: Zustände, Tempo, Flieger über dem Kopf | bestanden | 102.2 s | OK 0 FEHLER 0 FRAGE 1
+T6 | Wurm: Fels-Ebene und Wächter | bestanden | 64.2 s | OK 1 FEHLER 0 FRAGE 1
+T7 | Wurm: Körperprüfung und extended = false | bestanden | 0.0 s | OK 2 FEHLER 0 FRAGE 0
+T11 | Kartengenerator: Fels-Varianten im Seed-Vergleich | bestanden | 6.0 s | OK 2 FEHLER 0 FRAGE 0
+T13 | Ernter: echter Code | bestanden | 104.3 s | OK 12 FEHLER 0 FRAGE 0
+T2b | Ernter: Fahrphysik | bestanden | 275.0 s | OK 13 FEHLER 0 FRAGE 0
+T14 | Kartengenerator: Karte echt (Kacheln) | bestanden | 11.2 s | OK 14 FEHLER 0 FRAGE 0
+T15 | Ornithopter: echter Code | bestanden | 115.3 s | OK 17 FEHLER 0 FRAGE 0
+T16 | Ornithopter: Flugphysik | bestanden | 17.8 s | OK 6 FEHLER 0 FRAGE 0
+T18 | Wärme: echter Code | bestanden | 128.4 s | OK 11 FEHLER 0 FRAGE 0
+T19 | Jagd: echter Code | bestanden | 411.0 s | OK 20 FEHLER 0 FRAGE 0
+T21 | Sandwurm: echter Code | bestanden | 203.5 s | OK 15 FEHLER 0 FRAGE 0
+T23 | Carryall-Automatik: echter Code | bestanden | 309.8 s | OK 10 FEHLER 0 FRAGE 0
+T24 | Carryall-Automatik: Dauerlauf | bestanden | 3840.0 s | OK 1 FEHLER 0 FRAGE 0
+T26 | Flottenleitung: echter Code | bestanden | 308.4 s | OK 7 FEHLER 0 FRAGE 0
+T27 | Flottenleitung: Dauerlauf | bestanden | 3900.0 s | OK 1 FEHLER 0 FRAGE 0
+T29 | Flottenleitung 0.12.1: Forschungen | bestanden | 46.5 s | OK 4 FEHLER 0 FRAGE 0
+T30 | Wurm-Reviere 0.13.0 | FEHLER | 29.2 s | OK 7 FEHLER 1 FRAGE 0
+  ! [T30] FEHLER +0.5s: 1) Zuschnitt: 2304 Sektoren gleich, 361 Reviere innen, 1 bis 7 Sektoren | nicht erfüllt: Größe 1 bis 7 statt 2 bis 8 Sektoren
