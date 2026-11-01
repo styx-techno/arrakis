@@ -54,3 +54,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-11-01 16:33 | 0.16.0 | 44682ba | 1 (FEHLER in T14, T21) |
 | 2026-11-01 16:35 | 0.16.0 | ee2c712 | 1 (FEHLER in T21) |
 | 2026-11-01 18:27 | 0.16.1 | a9cb561 | 0 (kein FEHLER) |
+| 2026-11-01 20:29 | 0.16.2 | ad310ca | 1 (FEHLER in T14, T39) |
