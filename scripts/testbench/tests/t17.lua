@@ -36,9 +36,13 @@ local storage_ready = common.storage_ready
 
 local T17_END_TICKS = 360 * 60 -- „endet nach 6 min Spielzeit“ (Zeitlimit des Runners 380 s)
 local T17_CIRCLE_TICKS = 20 * 60
-local T17_CIRCLE_RADIUS = 8
-local T17_CIRCLE_STEP = 45     -- Grad je neuem Ziel (wie T9)
-local T17_CIRCLE_EVERY = 3 * 60
+-- 0.16.1 (Max in T17 am 01.11.2026: „fliegt nicht immer mit gleichbleibender Geschwindigkeit“): Bis 0.16.0 setzte der
+-- Test alle 3 s ein neues Ziel 45° weiter auf einem Kreis mit 8 Kacheln; der Ornithopter war nach knapp 1 s da und
+-- stand dann 2 s (Stop-and-go). Jetzt bekommt er alle Wegpunkte von drei Runden auf einmal (add_autopilot_destination)
+-- und fliegt sie ohne Halt ab.
+local T17_CIRCLE_RADIUS = 16
+local T17_CIRCLE_STEP = 30     -- Grad je Wegpunkt
+local T17_CIRCLE_LAPS = 3
 
 local function entity_text(entity)
   if not entity then return "nil" end
@@ -161,8 +165,15 @@ local function t17_tick(run, tb)
     tb.log(run, "INFO", string.format("Zustand: Ornithopter %s → %s, Ernter %s → %s", d.last_flyer, flyer_now, d.last_car, car_now))
     if flyer_now == "beladen" and d.last_flyer ~= "beladen" then d.lifts = d.lifts + 1 end
     if flyer_now == "beladen" and d.lifts == 2 and not d.circle and valid(d.flyer) then
-      d.circle = {center = copy_pos(d.flyer.position), radius = T17_CIRCLE_RADIUS, angle = 0, next_tick = now, until_tick = now + T17_CIRCLE_TICKS, targets = 0}
-      tb.log(run, "INFO", "2) Kreisflug 20 s um " .. pos_text(tb, d.circle.center) .. " (wie T9 C)")
+      d.circle = {center = copy_pos(d.flyer.position), radius = T17_CIRCLE_RADIUS, until_tick = now + T17_CIRCLE_TICKS, targets = 0}
+      local circle = d.circle
+      pcall(function() d.flyer.autopilot_destination = nil end)
+      for k = 1, T17_CIRCLE_LAPS * 360 / T17_CIRCLE_STEP do
+        if pcall(function() d.flyer.add_autopilot_destination(t17_circle_point(circle, k * T17_CIRCLE_STEP)) end) then
+          circle.targets = circle.targets + 1
+        end
+      end
+      tb.log(run, "INFO", "2) Kreisflug 20 s um " .. pos_text(tb, circle.center) .. " ohne Halt (" .. circle.targets .. " Wegpunkte)")
     end
     d.last_flyer, d.last_car = flyer_now, car_now
   end
@@ -173,12 +184,6 @@ local function t17_tick(run, tb)
       pcall(function() d.flyer.autopilot_destination = nil end)
       tb.log(run, "MESSUNG", string.format("2) Kreisflug fertig: %d Ziele, Ornithopter %s", circle.targets, flyer_state(d.flyer)))
       tb.log(run, "FRAGE", "2) Hängt der Ernter sichtbar unter dem Ornithopter, und liegt der Schatten passend am Boden? [U27] Bitte Screenshot.")
-    elseif now >= circle.next_tick then
-      circle.next_tick = now + T17_CIRCLE_EVERY
-      circle.angle = (circle.angle + T17_CIRCLE_STEP) % 360
-      if pcall(function() d.flyer.autopilot_destination = t17_circle_point(circle, circle.angle) end) then
-        circle.targets = circle.targets + 1
-      end
     end
   end
   if now - run.started >= T17_END_TICKS then
