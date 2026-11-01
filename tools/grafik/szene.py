@@ -175,10 +175,11 @@ def prism(name, outline, z0, z1, material, loc=(0, 0, 0), rot=(0, 0, 0), bevel=0
     return finish(o, material, bevel)
 
 
-def render(lift=0.0):
+def render(lift=0.0, frames=0, pose=None, icon_frame=0):
     """Rendert alle Richtungen im Modus MODE nach OUT/<modus>-<nn>.png. lift hebt das Modell für Schatten und Vorschau
     über den Boden (Flieger: Teile unter dem Rumpfpunkt stecken sonst im Boden); das Bild selbst bleibt auf der
-    Bildmitte."""
+    Bildmitte. Mit frames > 0 rendert es statt der Richtungen die Bilder einer Animation in einer Ansicht (Gebäude,
+    z. B. Thumper): vor Bild i ruft es pose(i); im Modus icon nur das Bild icon_frame."""
     # Boden als Schattenfänger
     bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 0, 0))
     ground = bpy.context.object
@@ -239,6 +240,16 @@ def render(lift=0.0):
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
+
+    if frames:
+        steps = [icon_frame] if MODE == "icon" else range(frames)
+        for i in steps:
+            pose(i)
+            root.rotation_euler = (0, 0, -2 * math.pi * 5 / 8 if MODE == "icon" else 0)
+            scene.render.filepath = os.path.join(OUT, f"{MODE}-{i:02d}.png")
+            bpy.ops.render.render(write_still=True)
+        print("fertig", MODE, len(steps))
+        return
 
     turns = [5] if MODE == "icon" else range(DIRS)
     for i in turns:

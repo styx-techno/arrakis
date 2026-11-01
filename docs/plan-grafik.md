@@ -46,9 +46,9 @@ Fehlende Animationen: Flügelschlag Ornithopter und Carryall, Raupenketten des E
 
 ## Technik
 
-- Neue Modelle nutzen `tools/grafik/szene.py`. Thumper: 1 Richtung, 16 Bilder Stampfzyklus, 3 Kacheln Bildbreite
-  (192 px, `scale = 0.5`), Schatten getrennt, Entity-Typ bleibt `simple-entity-with-owner` (`animations`).
-- Symbole 64 px mit Mipmaps (4 Stufen, 120 × 64 px wie Vanilla), Forschungsbilder 256 px.
+- Neue Modelle nutzen `tools/grafik/szene.py`. Thumper: 1 Richtung, 16 Bilder Stampfzyklus, 4 Kacheln Bildbreite
+  (256 px, `scale = 0.5`), Schatten getrennt, Entity-Typ bleibt `simple-entity-with-owner` (`animations`).
+- Symbole 64 px ohne Mipmaps wie die bisherigen, Forschungsbilder 256 px.
 - Flügel-Ebene: Rumpf ohne Flügel neu rendern, Flügel je Bild in 32 px/Kachel (`scale = 1`), `RotatedAnimation` mit
   `frame_count = 4`. Ernter-Raupen ebenso als eigene Ebene, der Car-Typ schaltet die Bilder mit der Fahrt weiter.
 - Grafikspeicher: neue Blätter höchstens 4096 px Kante, Animationen nur als halbe Auflösung.
@@ -57,7 +57,7 @@ Fehlende Animationen: Flügelschlag Ornithopter und Carryall, Raupenketten des E
 
 1. `tools/check/datastage.py fd2123` (checks.lua; jede `__arrakis__`-Datei muss existieren).
 2. `tools/check/base_paths.py fd2123` (Vanilla-Pfade).
-3. Neues Prüfskript `tools/check/bilder.py`: Breite/Höhe jeder eigenen Sprite-Definition passt zur PNG-Größe
+3. Prüfskript `tools/check/bilder.py` (mit Dump von datastage.py --dump): Breite/Höhe jeder eigenen Sprite-Definition passt zur PNG-Größe
    (x/y + width/height × line_length bzw. frame_count innerhalb der Datei). Der Prüfstand-Server lädt keine Bilder;
    Fehler hier sähe erst Max im Spiel.
 4. Probebilder als PNG in den Thread; nach dem Merge schaut Max im Spiel kurz drauf (keine Prüfstand-Läufe nötig,

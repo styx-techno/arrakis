@@ -250,15 +250,15 @@ data:extend({
   {
     -- docs/plan-3g.md 1.4 c (0.13.0): Danach sieht die Force die Wurm-Reviere (Grenze, Name, Stufe in der
     -- Vibrationsanzeige und im Leitstellen-Fenster), und die Leitstelle schickt Ernter zuerst in ruhige Reviere.
-    -- Eigenes Symbol folgt mit der Grafik.
+    -- Symbol: tools/grafik/revierkunde-modell.py (Grafik-Phase).
     type = "technology",
     name = "arrakis-territory-survey",
-    icon = "__arrakis__/graphics/technology/depot.png",
+    icon = "__arrakis__/graphics/technology/territory-survey.png",
     icon_size = 256,
     effects =
     {
       {type = "nothing", effect_description = {"technology-effect.arrakis-territory-survey"},
-        icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64}
+        icon = "__arrakis__/graphics/icons/territory-survey.png", icon_size = 64}
     },
     prerequisites = {"arrakis-ornithopter-depot"},
     unit =
