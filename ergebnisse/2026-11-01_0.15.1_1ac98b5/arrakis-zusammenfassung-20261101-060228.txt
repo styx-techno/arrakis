@@ -1,0 +1,5 @@
+SUMMARY arrakis-test-20261101-060228.txt | Tests 4 | bestanden 4 | FEHLER 0 | abgebrochen 0 | ohne ENDE 0
+T35 | Ernter Mk2 0.15.1 | bestanden | 36.2 s | OK 6 FEHLER 0 FRAGE 0
+T33 | Beute und Einstellungen 0.14.0 | bestanden | 1.0 s | OK 3 FEHLER 0 FRAGE 0
+T32 | Thumper 0.14.0 | bestanden | 37.5 s | OK 5 FEHLER 0 FRAGE 0
+T13 | Ernter: echter Code | bestanden | 103.9 s | OK 12 FEHLER 0 FRAGE 0
