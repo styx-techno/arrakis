@@ -170,7 +170,7 @@ data:extend({
     -- Lokaler Brennstoff. Keine Tempo-Multiplikatoren: fährt wie Kohle.
     type = "item",
     name = "arrakis-spice-briquette",
-    icons = tinted("__base__/graphics/icons/coal.png", spice_tint),
+    icons = {{icon = "__arrakis__/graphics/icons/spice-briquette.png", icon_size = 64}},
     fuel_category = "chemical",
     fuel_value = "20MJ",
     subgroup = "arrakis-spice",
