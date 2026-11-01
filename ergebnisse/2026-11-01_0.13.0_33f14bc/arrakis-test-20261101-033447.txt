@@ -1,0 +1,14 @@
+
+=== T30 Wurm-Reviere 0.13.0 | Tick 413 | Arrakis 0.13.0 | base 2.1.24 | Spieler - ===
+[T30] INFO +0.0s: Start: Wurm-Reviere 0.13.0
+[T30] INFO +0.0s: Zeitraffer: game.speed 10
+[T30] INFO +0.0s: Acht Schritte 0.13.0 (Wurm-Reviere) mit dem echten Code, Force arrakis-t23 ohne Wurm. Dauer etwa 30 s Spielzeit.
+[T30] OK +0.5s: 1) Zuschnitt: 2304 Sektoren gleich, 361 Reviere innen, 3 bis 5 Sektoren
+[T30] OK +0.7s: 2) Startrevier ruhig: 4 Seeds, je 73 Stellen, nicht ruhig 0
+[T30] OK +0.8s: 3) Stufenanteile: nah 43 (ruhig 18.6 %, wild 9.3 %), fern 1170 (ruhig 9.7 %, normal 50.7 %, wild 39.7 %)
+[T30] OK +6.2s: 4) Schwelle und Countdown: calm 1400.0/75.1 s, normal 1000.0/60.1 s, wild 700.0/50.1 s, wild + Frühwarnung 80.1 s
+[T30] OK +11.5s: 5) Ruhe fürs Revier: 4 Sektoren, Ruhe 4.6 min, lauert true
+[T30] OK +28.7s: 6) Freies Revier: Standard 60.0 min, Rang 3 → 2, Ankündigung true
+[T30] OK +28.8s: 7) Revierkunde: known false → true, Ränge 1/2/3
+[T30] OK +29.0s: 8) Speicher: Schema 7
+[T30] ENDE +29.2s: 8/8 Schritte OK (OK 8, FEHLER 0, FRAGE 0, 29.2 s)

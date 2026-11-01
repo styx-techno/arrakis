@@ -1,0 +1,2 @@
+SUMMARY arrakis-test-20261101-033447.txt | Tests 1 | bestanden 1 | FEHLER 0 | abgebrochen 0 | ohne ENDE 0
+T30 | Wurm-Reviere 0.13.0 | bestanden | 29.2 s | OK 8 FEHLER 0 FRAGE 0
