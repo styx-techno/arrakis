@@ -40,3 +40,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-10-30 00:02 | 0.12.0 | a185d10 | 0 (kein FEHLER) |
 | 2026-10-30 11:47 | 0.12.0 | 71698a7 | 0 (kein FEHLER) |
 | 2026-11-01 01:54 | 0.12.0 | 6bc5982 | 0 (kein FEHLER) |
+| 2026-11-01 02:27 | 0.12.1 | d3a4514 | 1 (FEHLER in T21, T29) |
