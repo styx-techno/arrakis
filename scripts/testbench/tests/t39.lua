@@ -1,12 +1,13 @@
--- T39 Wurm unter Beschuss 0.16.2 (Max im Spiel, T34 Schritte 3 und 4): Beschuss machte den Wurm wütend
--- (enraged_at_target), die Engine lenkte ihn zum Schützen an den Fels, dort blieb er hängen und tauchte als festgefahren
--- ab (sah aus wie Sterben, aber ohne Zähne), und bei 0 biss die Jagd ohne Wurm doch noch zu. Seit 0.16.2 setzt
--- scripts/sandworm.lua jeden Zustand außer investigating sofort zurück (Schadensereignis und Fahrtakt).
--- Aufbau: Felsinsel mit 20 Geschützen (Uranmunition), Kiste 6 Kacheln davor auf Sand, Befehlsjagd 40 s mit Spawnhaken
--- 90 Kacheln westlich; der Wurm wartet gut 10 s vor der Kiste im Feuer. Erwartet: Wurm erscheint, taucht nicht ab,
--- Ergebnis killed (oder bitten, falls die Geschütze nicht reichen). Die Kiste steht wie der Thumper in T34 6 Kacheln vor
--- dem Fels: Der Angriffspunkt hinter ihr (BEHIND_MIN) läge im Fels; seit 0.16.2 nimmt der Wurm den weitesten freien Punkt
--- davor, statt gegen den Fels zu drücken und als festgefahren abzutauchen. Abstand Kopf–Fels nur als Messung.
+-- T39 Wurm unter Beschuss 0.16.2 (Max im Spiel, T34 Schritte 3 und 4): Unter Beschuss bog der Wurm zu den Geschützen
+-- an den Fels ab, blieb dort hängen und tauchte ab (sah aus wie Sterben, aber ohne Zähne), und bei 0 biss die Jagd doch
+-- noch zu. Seit 0.16.2 setzt scripts/sandworm.lua wütende KI-Zustände (sandworm.ENRAGED) sofort auf investigating zurück
+-- (Schadensereignis und Fahrtakt), und im Angriff drückt er nicht mehr gegen Fels hinter dem Ziel.
+-- Aufbau: lange Felsleiste 6 Kacheln südlich der Fahrspur mit 45 Geschützen (Uranmunition) am Nordrand, Kiste östlich
+-- ihres Endes, Befehlsjagd 40 s mit Spawnhaken 100 Kacheln westlich. Der Wurm fährt fast 100 Kacheln an der Reihe entlang
+-- im Feuer. Erwartet: Er bleibt auf der Spur (biegt nicht zum Fels ab), taucht nicht ab, stirbt vor 0 (killed) und lässt
+-- 2 bis 4 Wurmzähne fallen. Lauf 79fb227 (alter Aufbau, Kiste vor einer kurzen Insel): Der Wurm kam pünktlich zum Biss erst
+-- 1,5 s vorher in Reichweite und blieb ohne Schaden; enraged_at_target trat dort ohne Beschuss am Ziel auf (Engine-Angriff),
+-- die Zustände stehen deshalb nur als Messung da.
 -- Gemeinsame Helfer: scripts/testbench/gemeinsam_fleet.lua (T23-Fläche, Force arrakis-t23).
 
 local common = require("scripts.testbench.gemeinsam_fleet")
@@ -27,10 +28,13 @@ local sweep = common.sweep
 local ROCK = "arrakis-rock"
 local CHEST = "steel-chest"
 local SECONDS = 40
-local HOOK_DX = -90
--- Felsinsel relativ zu d.pos.far: x 6 bis 25, y −15 bis 14; Kiste bei x 0.
-local ISLAND = {x1 = 6, y1 = -15, x2 = 25, y2 = 14}
-local TURRETS = 20
+local HOOK_DX = -100
+-- Felsleiste relativ zu d.pos.far (Kiste bei 0, 0): x −96 bis −4, y 6 bis 15; Geschütze bei y 8, alle 2 Kacheln.
+local STRIP = {x1 = -96, y1 = 6, x2 = -4, y2 = 15}
+local TURRET_Y = 8
+local TURRETS = 45
+-- Weiter als so viele Kacheln von der Spur (y der Kiste) Richtung Fels gilt als abgebogen.
+local SWERVE = 3
 
 local STATE_NAMES = {}
 for name, value in pairs(defines.segmented_unit_ai_state) do STATE_NAMES[value] = name end
@@ -42,14 +46,13 @@ function t39.s1_build(run, tb, d)
   local force = t23_force()
   local base = d.pos.far
   local bx, by = math.floor(base.x), math.floor(base.y)
-  tb.fill({{bx + ISLAND.x1, by + ISLAND.y1}, {bx + ISLAND.x2 + 1, by + ISLAND.y2 + 1}}, ROCK)
-  s.rock_x = bx + ISLAND.x1
-  s.box = {{bx - 10, by - 30}, {bx + ISLAND.x2 + 2, by + 30}}
+  tb.fill({{bx + STRIP.x1, by + STRIP.y1}, {bx + STRIP.x2 + 1, by + STRIP.y2 + 1}}, ROCK)
+  s.lane_y = by + 0.5
+  s.box = {{bx + STRIP.x1 - 2, by - 20}, {bx + 10, by + STRIP.y2 + 2}}
   s.turrets = 0
   for i = 0, TURRETS - 1 do
-    local column, row = math.floor(i / 10), i % 10
-    local turret = create(run, tb, {name = "gun-turret", position = {x = bx + ISLAND.x1 + 2 + 2 * column, y = by - 9 + 2 * row},
-      force = force}, "others")
+    local turret = create(run, tb, {name = "gun-turret", position = {x = bx + STRIP.x1 + 2 + 2 * i, y = by + TURRET_Y}, force = force},
+      "others")
     if turret then
       turret.insert{name = "uranium-rounds-magazine", count = 50}
       s.turrets = s.turrets + 1
@@ -65,7 +68,10 @@ function t39.s1_build(run, tb, d)
   if not hunt then return fail(run, tb, 1, "start_hunt: " .. tostring(reason)) end
   s.hunt = hunt
   s.calmed_before = storage.hunts.calmed or 0
-  s.samples, s.angry, s.min_gap = 0, 0, nil
+  s.teeth_before = storage.hunts.teeth or 0
+  s.factor = worms_lib.TOOTH_FACTOR
+  worms_lib.TOOTH_FACTOR = 1
+  s.samples, s.angry, s.max_swerve = 0, 0, 0
   return 1
 end
 
@@ -86,42 +92,41 @@ function t39.s1_watch(run, tb, d)
       s.states[name] = (s.states[name] or 0) + 1
     end
     local head = sandworm_lib.head_of(hunt)
-    if head then
-      local gap = s.rock_x - head.x
-      if not s.min_gap or gap < s.min_gap then s.min_gap = gap end
+    -- Abbiegen zum Fels: Kopf südlich der Spur, solange er über der Leiste ist.
+    if head and head.x < s.box[2][1] - 12 then
+      local swerve = head.y - s.lane_y
+      if swerve > s.max_swerve then s.max_swerve = swerve end
     end
-    -- Alle 2 s: Lebenspunkte, Aktivität, Abstand zum Fels, wie viele Geschütze ein Ziel haben.
     if game.tick % 120 == 0 then
       local aiming = 0
       for _, turret in pairs(tb.surface().find_entities_filtered{name = "gun-turret", area = s.box}) do
         if turret.shooting_target then aiming = aiming + 1 end
       end
-      tb.log(run, "MESSUNG", string.format("Wurm: Phase %s, Lebenspunkte %s, Aktivität %s, Kopf %s Kacheln vor dem Fels, Geschütze mit Ziel %d",
-        tostring(hunt.phase), tb.num(unit.health, 0), tostring(unit.activity_mode), head and tb.num(s.rock_x - head.x) or "–", aiming))
+      tb.log(run, "MESSUNG", string.format("Wurm: Phase %s, Lebenspunkte %s, Kopf bei %s, Geschütze mit Ziel %d", tostring(hunt.phase),
+        tb.num(unit.health, 0), head and string.format("x %+.1f / y %+.1f", head.x - s.chest.position.x, head.y - s.lane_y) or "–", aiming))
     end
   end
   if hunt.dive and not s.dive then s.dive = hunt.dive end
+  if not s.killed_tick and hunt.outcome == "killed" then s.killed_tick = game.tick end
   if game.tick < hunt.eta_tick + 30 and not hunt.outcome then return "poll" end
+  if s.killed_tick and game.tick < s.killed_tick + 30 then return "poll" end
   local failed = {}
   local calmed = (storage.hunts.calmed or 0) - s.calmed_before
+  local teeth = (storage.hunts.teeth or 0) - s.teeth_before
+  worms_lib.TOOTH_FACTOR = s.factor
   check(failed, s.seen == true, "kein Wurm erschienen (Phase " .. tostring(hunt.phase) .. ", ohne " .. tostring(hunt.no_worm) .. ")")
-  check(failed, hunt.outcome == "killed" or hunt.outcome == "bitten", "Ergebnis " .. tostring(hunt.outcome))
-  check(failed, s.dive == nil or hunt.outcome == "bitten", "abgetaucht: " .. tostring(s.dive))
-  check(failed, s.angry <= 3, "wütend in " .. s.angry .. " von " .. s.samples .. " Takten")
-  if hunt.outcome == "bitten" then
-    tb.log(run, "INFO", "Die Geschütze schafften den Wurm vor 0 nicht (Lebenspunkte zuletzt " .. tb.num(s.hp or 0, 0) .. ")")
-  end
-  for _, item in pairs(tb.surface().find_entities_filtered{type = "item-entity", position = at(d.pos.far, 0, 0), radius = 60}) do
-    item.destroy()
-  end
+  check(failed, hunt.outcome == "killed", "Ergebnis " .. tostring(hunt.outcome) .. " (Lebenspunkte zuletzt " .. tb.num(s.hp or 0, 0) .. ")")
+  check(failed, s.dive == nil, "abgetaucht: " .. tostring(s.dive))
+  check(failed, s.max_swerve <= SWERVE, "zum Fels abgebogen: Kopf " .. tb.num(s.max_swerve) .. " Kacheln südlich der Spur")
+  check(failed, teeth >= 2 and teeth <= 4, teeth .. " Wurmzähne")
   local states = {}
   for name, n in pairs(s.states or {}) do states[#states + 1] = name .. " " .. n end
   table.sort(states)
-  tb.log(run, "MESSUNG", "KI-Zustände (Takte): " .. table.concat(states, ", "))
+  tb.log(run, "MESSUNG", "KI-Zustände (Takte): " .. table.concat(states, ", ") .. "; beruhigt " .. calmed .. " mal")
+  for _, item in pairs(tb.surface().find_entities_filtered{type = "item-entity", area = s.box}) do item.destroy() end
   return verdict(run, tb, 1, "Wurm unter Beschuss", failed, string.format(
-    "Ergebnis %s, abgetaucht %s, wütend %d von %d Takten, beruhigt %d mal, Kopf bis %s Kacheln an den Fels, Lebenspunkte zuletzt %s",
-    tostring(hunt.outcome), tostring(s.dive), s.angry, s.samples, calmed, s.min_gap and tb.num(s.min_gap) or "–",
-    tb.num(s.hp or 0, 0)))
+    "Ergebnis %s, abgetaucht %s, %d Zähne, Kopf höchstens %s Kacheln Richtung Fels, wütend %d von %d Takten, beruhigt %d mal",
+    tostring(hunt.outcome), tostring(s.dive), teeth, tb.num(s.max_swerve), s.angry, s.samples, calmed))
 end
 
 local T39_STEPS =
@@ -134,8 +139,8 @@ local function t39_start(run, tb)
   local d = run.data
   for number = 1, #T39_STEPS do d["s" .. number] = {} end
   d.after_step = "sweep"
-  tb.watch(run, nil, at(d.pos.far, 0, 0))
-  tb.log(run, "INFO", "Ein Schritt 0.16.2 (Wurm unter Beschuss vor einer Felsinsel). Dauer etwa eine Minute Spielzeit.")
+  tb.watch(run, nil, at(d.pos.far, -40, 0))
+  tb.log(run, "INFO", "Ein Schritt 0.16.2 (Wurm unter Beschuss entlang einer Geschützreihe). Dauer etwa eine Minute Spielzeit.")
   d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
 end
 
@@ -144,6 +149,8 @@ local function t39_tick(run, tb)
 end
 
 local function t39_cleanup(run, tb)
+  local s = run.data.s1
+  if s and s.factor then worms_lib.TOOTH_FACTOR = s.factor end
   pcall(tidy, run)
   pcall(sweep, run, tb)
   pcall(t23_force)
