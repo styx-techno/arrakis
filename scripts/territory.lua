@@ -25,11 +25,11 @@ local MOD = 2147483647
 
 -- Zellgröße (Kacheln) und Verschiebung der Mittelpunkte (Anteil der Zelle, gesamt).
 lib.CELL = 256
-lib.JITTER = 0.6
+lib.JITTER = 0.5
 -- Forschung „Revierkunde“ (Plan 1.4 c): erst danach zeigen Anzeige und Leitstelle die Reviere.
 lib.SURVEY_TECH = "arrakis-territory-survey"
 -- Stufen (Plan 3). Mittelpunkt näher als START_RADIUS am Landeplatz (0, 0): ruhig. Das deckt das Lehrfeld (140 Kacheln
--- vom Start) sicher ab: Sektormitte ≤ 91, nächster Mittelpunkt ≤ 290 Kacheln weg, zusammen < 520.
+-- vom Start) sicher ab: Sektormitte ≤ 91, nächster Mittelpunkt ≤ 272 Kacheln weg, zusammen < 520. JITTER 0,5 statt 0,6: Mit 0,6 gab es Reviere aus nur einem Sektor (T30, Seed 4711).
 lib.START_RADIUS = 520
 lib.NEAR_RADIUS = 1100
 -- Anteile {ruhig, normal} (Rest wild) zwischen START_RADIUS und NEAR_RADIUS bzw. darüber.
