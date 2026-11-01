@@ -4,8 +4,9 @@
 -- (Schadensereignis und Fahrtakt), und im Angriff drückt er nicht mehr gegen Fels hinter dem Ziel.
 -- Aufbau: lange Felsleiste 6 Kacheln südlich der Fahrspur mit 45 Geschützen (Uranmunition) am Nordrand, Kiste östlich
 -- ihres Endes, Befehlsjagd 40 s mit Spawnhaken 100 Kacheln westlich. Der Wurm fährt fast 100 Kacheln an der Reihe entlang
--- im Feuer. Erwartet: Er bleibt auf der Spur (biegt nicht zum Fels ab), taucht nicht ab, stirbt vor 0 (killed) und lässt
--- 2 bis 4 Wurmzähne fallen. Lauf 79fb227 (alter Aufbau, Kiste vor einer kurzen Insel): Der Wurm kam pünktlich zum Biss erst
+-- im Feuer. Erwartet: Er bleibt auf der Spur (biegt nicht zum Fels ab, nie wütend), taucht vor dem Biss nicht ab und nimmt
+-- Schaden; stirbt er vor 0 (killed), 2 bis 4 Wurmzähne. Lauf a13f88e: 45 Geschütze schafften nur etwa 500 LP/s gegen
+-- 30 000 LP (Panzerung, Heilung), der Wurm biss; ein Tod ist deshalb keine Bedingung. Lauf 79fb227 (alter Aufbau, Kiste vor einer kurzen Insel): Der Wurm kam pünktlich zum Biss erst
 -- 1,5 s vorher in Reichweite und blieb ohne Schaden; enraged_at_target trat dort ohne Beschuss am Ziel auf (Engine-Angriff),
 -- die Zustände stehen deshalb nur als Messung da.
 -- Gemeinsame Helfer: scripts/testbench/gemeinsam_fleet.lua (T23-Fläche, Force arrakis-t23).
@@ -83,6 +84,7 @@ function t39.s1_watch(run, tb, d)
   if valid(unit) then
     s.seen = true
     s.hp = unit.health
+    s.hp_max = s.hp_max or unit.max_health
     local ok, state = pcall(unit.get_ai_state)
     if ok and state then
       s.samples = s.samples + 1
@@ -106,7 +108,9 @@ function t39.s1_watch(run, tb, d)
         tb.num(unit.health, 0), head and string.format("x %+.1f / y %+.1f", head.x - s.chest.position.x, head.y - s.lane_y) or "–", aiming))
     end
   end
-  if hunt.dive and not s.dive then s.dive = hunt.dive end
+  -- Abtauchen vor dem Ergebnis (nach dem Biss taucht er planmäßig ab, Grund „ende“).
+  if hunt.dive and not s.dive and not hunt.outcome then s.dive = hunt.dive end
+  if s.hp and (not s.hp_min or s.hp < s.hp_min) then s.hp_min = s.hp end
   if not s.killed_tick and hunt.outcome == "killed" then s.killed_tick = game.tick end
   if game.tick < hunt.eta_tick + 30 and not hunt.outcome then return "poll" end
   if s.killed_tick and game.tick < s.killed_tick + 30 then return "poll" end
@@ -115,18 +119,21 @@ function t39.s1_watch(run, tb, d)
   local teeth = (storage.hunts.teeth or 0) - s.teeth_before
   worms_lib.TOOTH_FACTOR = s.factor
   check(failed, s.seen == true, "kein Wurm erschienen (Phase " .. tostring(hunt.phase) .. ", ohne " .. tostring(hunt.no_worm) .. ")")
-  check(failed, hunt.outcome == "killed", "Ergebnis " .. tostring(hunt.outcome) .. " (Lebenspunkte zuletzt " .. tb.num(s.hp or 0, 0) .. ")")
-  check(failed, s.dive == nil, "abgetaucht: " .. tostring(s.dive))
+  local damage = s.hp_min and (s.hp_max - s.hp_min) or 0
+  check(failed, hunt.outcome == "killed" or hunt.outcome == "bitten", "Ergebnis " .. tostring(hunt.outcome))
+  check(failed, s.dive == nil, "vor dem Ergebnis abgetaucht: " .. tostring(s.dive))
+  check(failed, s.angry <= 3, "wütend in " .. s.angry .. " von " .. s.samples .. " Takten")
   check(failed, s.max_swerve <= SWERVE, "zum Fels abgebogen: Kopf " .. tb.num(s.max_swerve) .. " Kacheln südlich der Spur")
-  check(failed, teeth >= 2 and teeth <= 4, teeth .. " Wurmzähne")
+  check(failed, damage >= 1000, "Geschütze trafen kaum: " .. tb.num(damage, 0) .. " Schaden")
+  if hunt.outcome == "killed" then check(failed, teeth >= 2 and teeth <= 4, teeth .. " Wurmzähne") end
   local states = {}
   for name, n in pairs(s.states or {}) do states[#states + 1] = name .. " " .. n end
   table.sort(states)
   tb.log(run, "MESSUNG", "KI-Zustände (Takte): " .. table.concat(states, ", ") .. "; beruhigt " .. calmed .. " mal")
   for _, item in pairs(tb.surface().find_entities_filtered{type = "item-entity", area = s.box}) do item.destroy() end
   return verdict(run, tb, 1, "Wurm unter Beschuss", failed, string.format(
-    "Ergebnis %s, abgetaucht %s, %d Zähne, Kopf höchstens %s Kacheln Richtung Fels, wütend %d von %d Takten, beruhigt %d mal",
-    tostring(hunt.outcome), tostring(s.dive), teeth, tb.num(s.max_swerve), s.angry, s.samples, calmed))
+    "Ergebnis %s, vorher abgetaucht %s, Schaden %s (zuletzt %s LP), %d Zähne, Kopf höchstens %s Kacheln Richtung Fels, wütend %d von %d Takten, beruhigt %d mal",
+    tostring(hunt.outcome), tostring(s.dive), tb.num(damage, 0), tb.num(s.hp or 0, 0), teeth, tb.num(s.max_swerve), s.angry, s.samples, calmed))
 end
 
 local T39_STEPS =
