@@ -1,0 +1,7 @@
+SUMMARY arrakis-test-20261101-163544.txt | Tests 5 | bestanden 4 | FEHLER 1 | abgebrochen 0 | ohne ENDE 0
+T14 | Kartengenerator: Karte echt (Kacheln) | bestanden | 11.1 s | OK 14 FEHLER 0 FRAGE 0
+T21 | Sandwurm: echter Code | FEHLER | 203.0 s | OK 14 FEHLER 1 FRAGE 0
+  ! [T21] FEHLER +125.8s: 6) Ornithopter über dem Kopf [W12]: Tempo über dem Körper 67 %, Flugzeit 124.0 %, über dem Körper 188 Ticks, Abstand +-0.01, Sticker 0, Biss eta + 0 | nicht erfüllt: Tempo O6 über dem Körper 4.17 statt ≥ 80 % von O6b/O6c 6.25; Flugzeit O6 783 statt ≤ 1,05 × 631.5
+T30 | Wurm-Reviere 0.13.0 | bestanden | 29.2 s | OK 8 FEHLER 0 FRAGE 0
+T32 | Thumper 0.14.0 | bestanden | 36.7 s | OK 5 FEHLER 0 FRAGE 0
+T37 | Großer Wurm 0.16.0 | bestanden | 52.7 s | OK 4 FEHLER 0 FRAGE 0

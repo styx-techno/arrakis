@@ -52,3 +52,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-11-01 06:02 | 0.15.1 | 1ac98b5 | 0 (kein FEHLER) |
 | 2026-11-01 16:11 | 0.16.0 | d9626bd | 1 (FEHLER in T37) |
 | 2026-11-01 16:33 | 0.16.0 | 44682ba | 1 (FEHLER in T14, T21) |
+| 2026-11-01 16:35 | 0.16.0 | ee2c712 | 1 (FEHLER in T21) |
