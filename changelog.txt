@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.14.0
+Date: 2026-11-01
+  Features:
+    - Thumper: Neue Trigger-Forschung „Thumper“ nach „Spice-Ernte“, erforscht, sobald man die erste Wurmjagd übersteht (entkommen oder Wurm getötet). Rezept 5 Eisenplatte, 5 Zahnrad, 2 Kohle; Verbrauchsgut, nur auf Sand baubar.
+    - Ein Thumper pocht 60 s lang mit Vibration 60 und zerfällt dann. Im Umkreis von 160 Kacheln einer laufenden Jagd gebaut, lenkt er den Wurm auf sich um (der Countdown bleibt, der Alarm wechselt auf den Thumper). Ohne Jagd lockt er nach etwa 20 s selbst einen Wurm an, auch wenn schon drei Jagden laufen. Gilt ihm eine Jagd, pocht er weiter, bis sie endet.
+    - Jagden auf einen Thumper setzen weder Wärme noch Ruhe zurück und lassen keinen Wurm lauern: Ein Ernter, der weiter erntet, bekommt bald ein neues Wurmzeichen. Der Thumper kauft Zeit oder lockt einen Wurm vor die Geschütze.
+    - Beute: Ein getöteter Sandwurm lässt 2 bis 4 Wurmzähne am Kopf fallen (Chat nennt den Ort). Verwendet werden sie später für den Ernter Mk2.
+    - Neue Mod-Einstellungen (Karte, jederzeit änderbar): Sandwürmer aktiv, Vorwarnzeit, Wurmzeichen-Schwelle, Vibration in %, Ruhezeit nach einer Jagd in %, höchstens Jagden zugleich, Revier frei nach getötetem Wurm, Laufzeit des Thumpers, Wurmzähne je Wurm in %. Die Standardwerte entsprechen 0.13.0.
+  Bugfixes:
+    - Die Startrichtung eines Wurms liest das Tempo des Ziels nur noch bei Fahrzeugen (bei Gebäuden wäre das ein Skriptfehler).
+  Modding:
+    - storage.thumpers (scripts/thumper.lua), storage.hunts.teeth (Zähler). Jagden haben thumper, lure und diverted. Neue Funktionen worms.divert, worms.drop_loot, sandworm.retarget; scripts/config.lua überträgt die Einstellungen in die Modul-Konstanten. vibration.SCALE und THUMPER_WEIGHT.
+    - Prüfstand: T32 (Thumper, fünf Schritte) und T33 (Einstellungen und Beute, drei Schritte).
+---------------------------------------------------------------------------------------------------
 Version: 0.13.0
 Date: 2026-11-01
   Features:

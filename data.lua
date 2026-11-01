@@ -23,6 +23,8 @@ require("prototypes.worms")
 -- Phase 3d2 (docs/protokolle/plan-3d2.md 3): Sandwurm, Bohrstaub, Auf- und Abtauchen. Direkt nach worms.lua: arrakis-worm-dive kopiert
 -- die Eruption.
 require("prototypes.sandworm")
+-- Phase 3h (docs/plan-3h.md): Thumper, Wurmzahn, Forschung Thumper (nach harvester.lua wegen der Voraussetzung).
+require("prototypes.thumper")
 
 -- Prüfstand: nur mit Startup-Einstellung "arrakis-testbench".
 require("prototypes.testbench.init")
