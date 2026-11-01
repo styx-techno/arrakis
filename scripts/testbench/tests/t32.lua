@@ -89,7 +89,8 @@ function t32.s2_wait(run, tb, d)
     local key = vibration_lib.key_of(s.thumper.position)
     return fail(run, tb, 2, "kein Wurmzeichen in 45 s, Wärme 3×3 " .. tb.num(vibration_lib.sum3(surface_index(), key) or 0))
   end
-  return 30
+  -- "poll": dieselbe Phase im nächsten Tick (eine Zahl schaltet in run_steps zur nächsten Phase weiter).
+  return "poll"
 end
 
 function t32.s2_check(run, tb, d)
