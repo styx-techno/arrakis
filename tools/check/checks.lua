@@ -671,8 +671,8 @@ local plan_techs = {
   ["arrakis-territory-survey"] = "unit",
   -- 0.14.0 (docs/plan-3h.md 2.1): Trigger scripted, ausgelöst von scripts/thumper.lua
   ["arrakis-thumper"] = "scripted nil",
-  -- 0.15.0 (docs/plan-3i.md 2.2): Trigger scripted, ausgelöst von scripts/worms.lua drop_loot und scripts/harvester.lua
-  ["arrakis-harvester-mk2"] = "scripted nil",
+  -- 0.15.1 (docs/plan-3i.md 2.2, Max' Wahl 3b): normale Forschung
+  ["arrakis-harvester-mk2"] = "unit",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -751,7 +751,9 @@ do
     n3i = n3i + 1
     if not (mk2.icon or (type(mk2.icons) == "table" and #mk2.icons > 0)) then add("FEHLER 3i: Mk2 ohne Symbol") end
     if not (mk2.minable and mk2.minable.result == "spice-harvester-mk2") then add("FEHLER 3i: Mk2 minable") end
-    for _, key in ipairs({"inventory_size", "consumption", "effectivity", "weight", "max_health", "allow_remote_driving",
+    if mk2.inventory_size ~= 60 then add("FEHLER 3i: Mk2 inventory_size " .. tostring(mk2.inventory_size) .. " statt 60") end
+    if mk2.max_health ~= (mk1.max_health or 2000) * 1.5 then add("FEHLER 3i: Mk2 max_health " .. tostring(mk2.max_health)) end
+    for _, key in ipairs({"consumption", "effectivity", "weight", "allow_remote_driving",
                           "has_belt_immunity", "trash_inventory_size", "braking_force", "friction_force", "collision_mask"}) do
       if type(mk1[key]) ~= "table" and mk1[key] ~= mk2[key] then add("FEHLER 3i: Mk2 " .. key .. " ungleich Mk1") end
     end
@@ -772,13 +774,13 @@ do
   else n3i = n3i + 1 end
   local recipe = raw.recipe["spice-harvester-mk2"]
   if not (recipe and recipe.enabled == false) then add("FEHLER 3i: recipe spice-harvester-mk2 fehlt oder nicht gesperrt") else
-    local want = {["spice-harvester"] = 1, ["arrakis-worm-tooth"] = 4, ["spice-essence"] = 10}
+    local want = {["spice-harvester"] = 1, ["arrakis-worm-tooth"] = 4, ["melange"] = 10, ["processing-unit"] = 5}
     local seen = 0
     for _, ing in ipairs(recipe.ingredients or {}) do
       if want[ing.name] ~= ing.amount then add("FEHLER 3i: Mk2-Rezept Zutat " .. tostring(ing.name) .. " " .. tostring(ing.amount)) end
       seen = seen + 1
     end
-    if seen ~= 3 then add("FEHLER 3i: Mk2-Rezept hat " .. seen .. " Zutaten statt 3") end
+    if seen ~= 4 then add("FEHLER 3i: Mk2-Rezept hat " .. seen .. " Zutaten statt 4") end
     local res = recipe.results and recipe.results[1]
     if not (res and res.name == "spice-harvester-mk2" and res.amount == 1 and #recipe.results == 1) then add("FEHLER 3i: Mk2-Rezept Ergebnis") end
     n3i = n3i + 1
@@ -786,7 +788,8 @@ do
   local tech = raw.technology["arrakis-harvester-mk2"]
   if not tech then add("FEHLER 3i: Forschung arrakis-harvester-mk2 fehlt") else
     local pre = tech.prerequisites or {}
-    if #pre ~= 1 or pre[1] ~= "arrakis-spice-harvesting" then add("FEHLER 3i: arrakis-harvester-mk2 Voraussetzung") end
+    if #pre ~= 1 or pre[1] ~= "arrakis-thumper" then add("FEHLER 3i: arrakis-harvester-mk2 Voraussetzung") end
+    if not (tech.unit and tech.unit.count == 500) or tech.research_trigger then add("FEHLER 3i: arrakis-harvester-mk2 nicht 500 Einheiten") end
     local unlocks = false
     for _, e in ipairs(tech.effects or {}) do if e.type == "unlock-recipe" and e.recipe == "spice-harvester-mk2" then unlocks = true end end
     if not unlocks then add("FEHLER 3i: arrakis-harvester-mk2 schaltet das Rezept nicht frei") end
