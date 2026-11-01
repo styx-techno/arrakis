@@ -2,9 +2,20 @@
 -- für die Carryalls und Brennstoff für die Ernter auf; die Carryalls parken auf ihr (scripts/fleet.lua). Beim Bauen
 -- zeigt ein Kreis die Reichweite (Mod-Einstellung arrakis-depot-range). Grafik aus tools/grafik/leitstelle-modell.py.
 -- Phase 3f: Draht-Anschluss, verstecktes Schaltungsgebäude für die Statussignale, Forschung „Flottenleitung“.
+-- 0.12.1: Forschungen „Bereitschaftsflug“, „Frühwarnung“ (6 Stufen) und „Ernte-Dämpfung“ (10 Stufen).
 local RANGE = settings.startup["arrakis-depot-range"].value
 
 local gfx = "__arrakis__/graphics/entity/depot/"
+-- Pakete der Flotten-Forschungen (Design 6): wie Flottenleitung.
+local FLEET_PACKS =
+{
+  {"automation-science-pack", 1},
+  {"logistic-science-pack", 1},
+  {"chemical-science-pack", 1},
+  {"space-science-pack", 1},
+  {"metallurgic-science-pack", 1},
+  {"spice-science-pack", 1}
+}
 
 local depot =
 {
@@ -171,16 +182,69 @@ data:extend({
     unit =
     {
       count = 1000,
-      ingredients =
-      {
-        {"automation-science-pack", 1},
-        {"logistic-science-pack", 1},
-        {"chemical-science-pack", 1},
-        {"space-science-pack", 1},
-        {"metallurgic-science-pack", 1},
-        {"spice-science-pack", 1}
-      },
+      ingredients = FLEET_PACKS,
       time = 30
+    }
+  },
+  {
+    -- Design 6, docs/plan-3f.md 1.11 (0.12.1): Ein freier Carryall schwebt über einem aufgebauten Ernter; eine Rettung
+    -- braucht dann nur noch das Ankoppeln.
+    type = "technology",
+    name = "arrakis-escort-flight",
+    icon = "__arrakis__/graphics/technology/depot.png",
+    icon_size = 256,
+    effects =
+    {
+      {type = "nothing", effect_description = {"technology-effect.arrakis-escort-flight"},
+        icon = "__arrakis__/graphics/icons/carryall.png", icon_size = 64}
+    },
+    prerequisites = {"arrakis-fleet-control"},
+    unit =
+    {
+      count = 500,
+      ingredients = FLEET_PACKS,
+      time = 30
+    }
+  },
+  {
+    -- Design 6, docs/plan-3f.md 1.12 (0.12.1): 6 Stufen, je +5 s Countdown regulärer Jagden (60 → 90 s).
+    type = "technology",
+    name = "arrakis-early-warning",
+    icons = util.technology_icon_constant_range("__arrakis__/graphics/technology/spice-harvester.png"),
+    effects =
+    {
+      {type = "nothing", effect_description = {"technology-effect.arrakis-early-warning"},
+        icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64}
+    },
+    prerequisites = {"arrakis-fleet-control"},
+    upgrade = true,
+    max_level = 6,
+    unit =
+    {
+      count_formula = "500*L",
+      ingredients = FLEET_PACKS,
+      time = 30
+    }
+  },
+  {
+    -- Design 6, docs/plan-3f.md 1.13 (0.12.1): je Stufe −5 % Vibration aufgebauter und einpackender Ernter. Bei −50 %
+    -- ist Schluss, deshalb 10 Stufen statt endlos.
+    type = "technology",
+    name = "arrakis-harvest-damping",
+    icons = util.technology_icon_constant_braking_force("__arrakis__/graphics/technology/spice-harvester.png"),
+    effects =
+    {
+      {type = "nothing", effect_description = {"technology-effect.arrakis-harvest-damping"},
+        icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64}
+    },
+    prerequisites = {"arrakis-fleet-control"},
+    upgrade = true,
+    max_level = 10,
+    unit =
+    {
+      count_formula = "1000*1.5^(L-1)",
+      ingredients = FLEET_PACKS,
+      time = 60
     }
   }
 })
