@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.15.1
+Date: 2026-11-01
+  Changes:
+    - Ernter Mk2 nach Max' Wahl: Laderaum 60 statt 40 Plätze und 50 % mehr Lebenspunkte.
+    - Rezept jetzt 1 Spice-Ernter, 4 Wurmzähne, 10 Melange, 5 Prozessoren (nichts Verderbliches mehr).
+    - „Ernter Mk2“ ist eine normale Forschung (500 Einheiten mit Spice-Wissenschaft) hinter „Thumper“ statt Trigger-Forschung.
+  Modding:
+    - harvester.research_mk2 und der Auslöser beim Aufheben eines Wurmzahns entfallen. Prüfstand T35 angepasst.
+---------------------------------------------------------------------------------------------------
 Version: 0.15.0
 Date: 2026-11-01
   Features:
