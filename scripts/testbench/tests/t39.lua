@@ -32,6 +32,9 @@ local HOOK_DX = -90
 local ISLAND = {x1 = 6, y1 = -15, x2 = 25, y2 = 14}
 local TURRETS = 20
 
+local STATE_NAMES = {}
+for name, value in pairs(defines.segmented_unit_ai_state) do STATE_NAMES[value] = name end
+
 local t39 = {}
 
 function t39.s1_build(run, tb, d)
@@ -41,6 +44,7 @@ function t39.s1_build(run, tb, d)
   local bx, by = math.floor(base.x), math.floor(base.y)
   tb.fill({{bx + ISLAND.x1, by + ISLAND.y1}, {bx + ISLAND.x2 + 1, by + ISLAND.y2 + 1}}, ROCK)
   s.rock_x = bx + ISLAND.x1
+  s.box = {{bx - 10, by - 30}, {bx + ISLAND.x2 + 2, by + 30}}
   s.turrets = 0
   for i = 0, TURRETS - 1 do
     local column, row = math.floor(i / 10), i % 10
@@ -76,12 +80,24 @@ function t39.s1_watch(run, tb, d)
     local ok, state = pcall(unit.get_ai_state)
     if ok and state then
       s.samples = s.samples + 1
-      if state.type ~= defines.segmented_unit_ai_state.investigating then s.angry = s.angry + 1 end
+      if sandworm_lib.ENRAGED[state.type] then s.angry = s.angry + 1 end
+      local name = STATE_NAMES[state.type] or tostring(state.type)
+      s.states = s.states or {}
+      s.states[name] = (s.states[name] or 0) + 1
     end
     local head = sandworm_lib.head_of(hunt)
     if head then
       local gap = s.rock_x - head.x
       if not s.min_gap or gap < s.min_gap then s.min_gap = gap end
+    end
+    -- Alle 2 s: Lebenspunkte, Aktivität, Abstand zum Fels, wie viele Geschütze ein Ziel haben.
+    if game.tick % 120 == 0 then
+      local aiming = 0
+      for _, turret in pairs(tb.surface().find_entities_filtered{name = "gun-turret", area = s.box}) do
+        if turret.shooting_target then aiming = aiming + 1 end
+      end
+      tb.log(run, "MESSUNG", string.format("Wurm: Phase %s, Lebenspunkte %s, Aktivität %s, Kopf %s Kacheln vor dem Fels, Geschütze mit Ziel %d",
+        tostring(hunt.phase), tb.num(unit.health, 0), tostring(unit.activity_mode), head and tb.num(s.rock_x - head.x) or "–", aiming))
     end
   end
   if hunt.dive and not s.dive then s.dive = hunt.dive end
@@ -98,6 +114,10 @@ function t39.s1_watch(run, tb, d)
   for _, item in pairs(tb.surface().find_entities_filtered{type = "item-entity", position = at(d.pos.far, 0, 0), radius = 60}) do
     item.destroy()
   end
+  local states = {}
+  for name, n in pairs(s.states or {}) do states[#states + 1] = name .. " " .. n end
+  table.sort(states)
+  tb.log(run, "MESSUNG", "KI-Zustände (Takte): " .. table.concat(states, ", "))
   return verdict(run, tb, 1, "Wurm unter Beschuss", failed, string.format(
     "Ergebnis %s, abgetaucht %s, wütend %d von %d Takten, beruhigt %d mal, Kopf bis %s Kacheln an den Fels, Lebenspunkte zuletzt %s",
     tostring(hunt.outcome), tostring(s.dive), s.angry, s.samples, calmed, s.min_gap and tb.num(s.min_gap) or "–",

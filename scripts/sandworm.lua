@@ -97,6 +97,11 @@ lib.ATTACK_RANGE = 40
 lib.ATTACK_LEAVE = 50
 lib.BEHIND = 20
 lib.BEHIND_MIN = 6
+-- Wütende KI-Zustände nach Beschuss (0.16.2): werden sofort auf investigating zurückgesetzt.
+lib.ENRAGED = {
+  [defines.segmented_unit_ai_state.enraged_at_target] = true,
+  [defines.segmented_unit_ai_state.enraged_at_nothing] = true
+}
 -- Suche: abtauchen, sobald der Kopf so nah an P ist (Kacheln).
 lib.SEARCH_REACHED = 8
 -- Staubwolken je vierten Knoten beim Auf- und Abtauchen.
@@ -1106,10 +1111,10 @@ local function drive(hunt, tick, force)
   hunt.phase = phase
 
   -- 0.16.2 (Max im Spiel, T34): Beschuss macht den Wurm wütend (enraged_at_target); die Engine lenkt ihn dann zum
-  -- Schützen, auf der Felsinsel also an den Fels, wo er hängen blieb und als festgefahren abtauchte. Jeder Zustand außer
-  -- investigating wird sofort zurückgesetzt (zusätzlich gleich im Schadensereignis, lib.on_damaged).
+  -- Schützen, auf der Felsinsel also an den Fels, wo er hängen blieb und als festgefahren abtauchte. Ein wütender
+  -- Zustand (lib.ENRAGED) wird sofort auf investigating zurückgesetzt (zusätzlich gleich im Schadensereignis).
   local ok_state, state = pcall(unit.get_ai_state)
-  if ok_state and state and state.type ~= defines.segmented_unit_ai_state.investigating then force_state = true end
+  if ok_state and state and lib.ENRAGED[state.type] then force_state = true end
 
   -- Zustand (Plan 4.7): bei Zielwechsel über 2 Kacheln sofort, sonst alle 30 Ticks, immer investigating [W9].
   local set = worm.set_dest
@@ -1372,8 +1377,8 @@ function lib.tidy(tick)
   for _, id in ipairs(gone) do requests[id] = nil end
 end
 
--- 0.16.2: Schaden an einem Segment eines eigenen Wurms mit Jagd: Ist er dadurch wütend geworden (nicht mehr
--- investigating), sofort zurück auf investigating zum letzten Ziel, damit er nicht zum Schützen abbiegt.
+-- 0.16.2: Schaden an einem Segment eines eigenen Wurms mit Jagd: Ist er dadurch wütend geworden (lib.ENRAGED),
+-- sofort zurück auf investigating zum letzten Ziel, damit er nicht zum Schützen abbiegt.
 -- Das Ereignis ist auf den Typ segment gefiltert (lib.set_filters).
 local function on_damaged(event)
   local entity = event.entity
@@ -1387,7 +1392,7 @@ local function on_damaged(event)
     local worm = hunt.worm
     if worm and worm.un == un and worm.dest then
       local ok, state = pcall(unit.get_ai_state)
-      if ok and state and state.type ~= defines.segmented_unit_ai_state.investigating then
+      if ok and state and lib.ENRAGED[state.type] then
         unit.set_ai_state{type = defines.segmented_unit_ai_state.investigating, destination = {x = worm.dest.x, y = worm.dest.y}}
         worm.set_tick = game.tick
         worm.set_dest = {x = worm.dest.x, y = worm.dest.y}
