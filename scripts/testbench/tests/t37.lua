@@ -117,8 +117,8 @@ local function note_worm(s)
   local worm = s.hunt and s.hunt.worm
   local unit = worm and worm.unit
   if valid(unit) and not s.worm_name then
-    s.worm_name = unit.name
-    s.worm_hp = unit.max_health
+    s.worm_name = unit.prototype.name
+    s.worm_hp = unit.prototype.get_max_health()
   end
   return s.worm_name ~= nil
 end
