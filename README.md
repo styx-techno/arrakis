@@ -50,3 +50,4 @@ Dieser Zweig enthält nur Ergebnisse, keinen Mod-Code.
 | 2026-11-01 04:18 | 0.14.0 | 754a58e | 0 (kein FEHLER) |
 | 2026-11-01 05:48 | 0.15.0 | 4a813ef | 0 (kein FEHLER) |
 | 2026-11-01 06:02 | 0.15.1 | 1ac98b5 | 0 (kein FEHLER) |
+| 2026-11-01 16:11 | 0.16.0 | d9626bd | 1 (FEHLER in T37) |
