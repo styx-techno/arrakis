@@ -8,7 +8,7 @@ from szene import mat, box, cyl
 
 NAME = sys.argv[3]
 sys.argv = sys.argv[:3]
-szene.start(NAME, {"default": 2.2}, ())
+szene.start(NAME, {"default": 3.4}, ())
 rnd = random.Random(11)
 
 
@@ -52,7 +52,7 @@ def grains(n, rad, height, mats, size=(0.03, 0.07)):
     for i in range(n):
         a = rnd.uniform(0, 2 * math.pi)
         d = rad * math.sqrt(rnd.random())
-        z = height * max(0.0, 1 - (d / rad) ** 2) + 0.01
+        z = height * math.sqrt(max(0.0, 1 - (d / rad) ** 2)) * 0.97
         s = rnd.uniform(*size)
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=s, location=(math.cos(a) * d, math.sin(a) * d, z))
         g = bpy.context.object
@@ -62,25 +62,25 @@ def grains(n, rad, height, mats, size=(0.03, 0.07)):
         g.parent = szene.root
 
 
-SAND = mat("sand", (0.66, 0.50, 0.30), 0.95, 0.0)
-SPICE = emit(mat("spice", (0.85, 0.36, 0.08), 0.6, 0.0, False), (1.0, 0.42, 0.08), 0.6)
-MELANGE = mat("melange", (0.62, 0.27, 0.07), 0.8, 0.0, False)
+SAND = mat("sand", (0.60, 0.44, 0.25), 0.95, 0.0)
+SPICE = emit(mat("spice", (0.90, 0.38, 0.06), 0.6, 0.0, False), (1.0, 0.40, 0.06), 0.35)
+MELANGE = mat("melange", (0.45, 0.20, 0.06), 0.8, 0.0, False)
 DARK = mat("dark", (0.18, 0.12, 0.08), 0.7, 0.0, False)
 CORK = mat("cork", (0.45, 0.32, 0.18), 0.9, 0.0, False)
 METAL = mat("metal", (0.25, 0.22, 0.18), 0.4, 0.8, False)
 
 if NAME == "spice-sand":
-    heap("haufen", 0.85, 0.42, SAND, 0.08, 1)
-    grains(70, 0.8, 0.42, [SPICE, SPICE, SAND], (0.025, 0.05))
+    heap("haufen", 0.9, 0.32, SAND, 0.05, 1)
+    grains(160, 0.85, 0.32, [SPICE, SPICE, SAND], (0.03, 0.055))
 elif NAME == "melange":
-    heap("haufen", 0.8, 0.5, MELANGE, 0.05, 2)
-    grains(40, 0.75, 0.5, [SPICE, MELANGE], (0.02, 0.04))
+    heap("haufen", 0.8, 0.42, MELANGE, 0.04, 2)
+    grains(220, 0.78, 0.42, [SPICE, MELANGE, MELANGE], (0.025, 0.045))
     # Kristalle am Rand
     for i, a in enumerate((0.4, 2.1, 3.9, 5.2)):
         o = cyl(f"kristall{i}", 0.06, 0.28, (math.cos(a) * 0.62, math.sin(a) * 0.62, 0.1), SPICE,
                 rot=(rnd.uniform(-0.6, 0.6), rnd.uniform(-0.6, 0.6), 0), verts=6)
 elif NAME == "spice-essence":
-    LIQ = emit(mat("liq", (1.0, 0.35, 0.05), 0.1, 0.0, False), (1.0, 0.38, 0.06), 2.5)
+    LIQ = emit(mat("liq", (0.95, 0.30, 0.04), 0.1, 0.0, False), (1.0, 0.32, 0.04), 0.5)
     GL = glass("glas", (0.9, 0.85, 0.8))
     cyl("fluessig", 0.3, 0.7, (0, 0, 0.4), LIQ, verts=32)
     cyl("glas", 0.34, 1.0, (0, 0, 0.52), GL, verts=32)
@@ -88,12 +88,11 @@ elif NAME == "spice-essence":
     cyl("korken", 0.15, 0.2, (0, 0, 1.3), CORK, verts=24)
     szene.root.rotation_euler = (0.0, 0.0, 0.0)
 elif NAME == "spice-briquette":
-    BRICK = mat("brikett", (0.36, 0.18, 0.07), 0.85, 0.0)
+    BRICK = mat("brikett", (0.30, 0.14, 0.05), 0.85, 0.0, False)
     for i, (x, y, z, r) in enumerate(((-0.25, 0.1, 0.15, 0.2), (0.3, -0.1, 0.15, -0.15), (0.0, 0.0, 0.45, 0.6))):
         box(f"brikett{i}", (0.75, 0.42, 0.3), (x, y, z), BRICK, 0.06, rot=(0, 0, r))
-    grains(25, 0.7, 0.55, [SPICE], (0.015, 0.03))
 elif NAME == "spice-science-pack":
-    LIQ = emit(mat("liq", (0.95, 0.42, 0.10), 0.1, 0.0, False), (1.0, 0.45, 0.1), 1.6)
+    LIQ = emit(mat("liq", (0.85, 0.40, 0.10), 0.1, 0.0, False), (1.0, 0.45, 0.1), 0.3)
     GL = glass("glas", (0.9, 0.88, 0.85))
     bpy.ops.mesh.primitive_uv_sphere_add(radius=0.48, location=(0, 0, 0.5), segments=32, ring_count=16)
     g = bpy.context.object; g.name = "bauch"; g.data.materials.append(GL); bpy.ops.object.shade_smooth(); g.parent = szene.root

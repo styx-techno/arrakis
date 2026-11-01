@@ -128,3 +128,14 @@ Blätter: Rumpf wie bisher (Ornithopter 448 px, Carryall 576 px, `scale = 0.5`, 
 Flügel-Farbmaske in halber Auflösung (224 bzw. 288 px, `scale = 1`), 4 Bilder je Richtung hintereinander, 16 Bilder je
 Zeile (`frame_count = 4`, `line_length = 16`). Eine eigene Rumpf-Farbmaske gibt es nicht mehr, die Spielerfarbe sitzt nur
 an den Flügelspitzen. Der Schatten bleibt das Standbild (`repeat_count = 4`).
+
+## Symbole der Spice-Kette (Grafik-Phase)
+
+```
+python symbole-modell.py roh8-NAME icon NAME
+python pack.py roh8-NAME blaetter8 NAME
+```
+
+NAME: `spice-sand`, `melange`, `spice-essence`, `spice-briquette`, `spice-science-pack`. `NAME-icon-64.png` kommt nach
+`graphics/icons/NAME.png` (Item, beim Spice-Sand auch die Ressource). Raffinerie und Windfalle behalten ihre getönten
+Vanilla-Symbole, weil ihre Gebäude Vanilla-Grafik zeigen.

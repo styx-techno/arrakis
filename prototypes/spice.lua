@@ -53,7 +53,7 @@ data:extend({
   {
     type = "item",
     name = "melange",
-    icons = tinted("__base__/graphics/icons/sulfur.png", spice_tint),
+    icons = {{icon = "__arrakis__/graphics/icons/melange.png", icon_size = 64}},
     subgroup = "arrakis-spice",
     order = "b[melange]",
     stack_size = 100,
@@ -66,7 +66,7 @@ data:extend({
   {
     type = "item",
     name = "spice-essence",
-    icons = tinted("__base__/graphics/icons/sulfur.png", {r = 1, g = 0.25, b = 0.05}),
+    icons = {{icon = "__arrakis__/graphics/icons/spice-essence.png", icon_size = 64}},
     subgroup = "arrakis-spice",
     order = "c[spice-essence]",
     stack_size = 50,
@@ -89,7 +89,7 @@ data:extend({
     type = "tool",
     name = "spice-science-pack",
     localised_description = {"item-description.science-pack"},
-    icons = tinted("__base__/graphics/icons/production-science-pack.png", spice_tint),
+    icons = {{icon = "__arrakis__/graphics/icons/spice-science-pack.png", icon_size = 64}},
     subgroup = "science-pack",
     color_hint = {text = "S"},
     order = "h[metallurgic]-z[spice]",

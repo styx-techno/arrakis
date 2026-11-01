@@ -7,7 +7,7 @@ local spice = table.deepcopy(data.raw.resource["iron-ore"])
 spice.name = "spice-sand"
 spice.category = "arrakis-spice-harvest"
 spice.icon = nil
-spice.icons = {{icon = "__base__/graphics/icons/iron-ore.png", tint = spice_tint}}
+spice.icons = {{icon = "__arrakis__/graphics/icons/spice-sand.png", icon_size = 64}}
 spice.minable = {mining_particle = "copper-ore-particle", mining_time = 1, result = "spice-sand"}
 spice.stages.sheet.tint = spice_tint
 spice.map_color = {0.95, 0.4, 0.1}
@@ -47,7 +47,7 @@ data:extend({
   {
     type = "item",
     name = "spice-sand",
-    icons = {{icon = "__base__/graphics/icons/iron-ore.png", tint = spice_tint}},
+    icons = {{icon = "__arrakis__/graphics/icons/spice-sand.png", icon_size = 64}},
     subgroup = "raw-resource",
     order = "z[arrakis]-a[spice-sand]",
     stack_size = 50,
