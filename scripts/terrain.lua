@@ -43,6 +43,26 @@ function terrain.is_rock_area(surface, area)
   return true
 end
 
+-- Nächste Kachelmitte mit Sand (natürliche Kachel kein Fels) zu p, höchstens max_r Kacheln weit; mit avoid und gap nur
+-- Stellen mit Abstand > gap von avoid (0.16.2: Wurm und Fehlbiss-Eruption nicht unter einem Ernter auf Fels). nil, wenn
+-- es keine gibt.
+function terrain.sand_spot(surface, p, max_r, avoid, gap)
+  local px, py = math.floor(p.x), math.floor(p.y)
+  local best, best_d
+  for x = px - max_r, px + max_r do
+    for y = py - max_r, py + max_r do
+      local cx, cy = x + 0.5, y + 0.5
+      local d = (cx - p.x) ^ 2 + (cy - p.y) ^ 2
+      if (not best_d or d < best_d) and d <= (max_r + 0.5) ^ 2
+          and not (avoid and (cx - avoid.x) ^ 2 + (cy - avoid.y) ^ 2 <= gap * gap)
+          and terrain.natural_tile_name(surface, x, y) ~= ROCK then
+        best, best_d = {x = cx, y = cy}, d
+      end
+    end
+  end
+  return best
+end
+
 -- Liegt unter der Kollisionsbox (gedreht: umschließendes Rechteck) eine natürliche Kachel, die kein Fels ist?
 function terrain.has_sand_under(entity)
   local box = entity.bounding_box

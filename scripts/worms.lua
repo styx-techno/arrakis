@@ -258,12 +258,15 @@ end
 
 -- Sandwurm-Force --------------------------------------------------------------------------------
 
--- Feindschaft in beide Richtungen, ohne Waffenruhe (wie tb.worm_force).
+-- Feindschaft in beide Richtungen; der Wurm selbst hält aber Waffenruhe (0.16.2). Grund (Max im Spiel T34, Prüfstand T39
+-- Lauf 73d06d4): Sobald Geschütze in Reichweite waren, griff die Demolisher-KI sie an (enraged_at_target in 9 von 10
+-- Takten, schon bevor ein Schuss traf), bog zum Fels ab und tauchte dort als „kein Weg“ ab. Biss und Zerdrücken macht das
+-- Skript, die KI braucht keine Ziele. Die anderen Forces halten keine Waffenruhe: Geschütze schießen weiter auf den Wurm.
 local function set_hostile(worm, other)
   if other.index == worm.index or other.name == "neutral" then return end
   worm.set_friend(other, false)
   other.set_friend(worm, false)
-  worm.set_cease_fire(other, false)
+  worm.set_cease_fire(other, true)
   other.set_cease_fire(worm, false)
 end
 
@@ -850,9 +853,14 @@ local function track(hunt, tick)
 end
 
 -- Kein Biss (weg oder entkommen): harmlose Eruption, Chat, Warnungen weg (die Markierung bleibt bis zum Ende), suchen.
+-- Die Sandfontäne kommt nur aus Sand (0.16.2): liegt position auf Fels, an der nächsten Sandkachel bis 6 Kacheln weit,
+-- sonst keine.
 local function miss(hunt, outcome, position)
   local surface = game.get_surface(hunt.surface_index)
-  if surface then surface.create_entity{name = ERUPTION, position = position} end
+  if surface then
+    local spot = terrain.sand_spot(surface, position, 6)
+    if spot then surface.create_entity{name = ERUPTION, position = spot} end
+  end
   hunt.outcome = outcome
   hunt.state = "searching"
   hunt.end_tick = hunt.eta_tick + lib.SEARCH_TICKS
@@ -1005,6 +1013,20 @@ local function bite(hunt)
   end
 end
 
+-- Stelle für Wurm und Fehlbiss, wenn das Ziel ganz auf Fels steht (0.16.2, Max im Spiel T20 Schritt 6): last_pos ist die
+-- letzte Stelle mit Sand unter einer Ecke und lag damit noch unter dem Ernter; die Sandfontäne kam unter ihm aus dem
+-- Fels. Jetzt die nächste Sandkachel mit Abstand > r + 2 von der Zielmitte (bis 12 Kacheln von last_pos), sonst
+-- last_pos. Zwischengespeichert, bis sich last_pos oder die (gerundete) Zielposition ändert.
+local function rock_spot(hunt, target)
+  local p, t = hunt.last_pos, target.position
+  local tx, ty = math.floor(t.x), math.floor(t.y)
+  local c = hunt.rock_spot
+  if c and c.px == p.x and c.py == p.y and c.tx == tx and c.ty == ty then return c.spot end
+  local spot = terrain.sand_spot(target.surface, p, 12, t, (hunt.r or DEFAULT_R) + 2) or p
+  hunt.rock_spot = {px = p.x, py = p.y, tx = tx, ty = ty, spot = spot}
+  return spot
+end
+
 -- Entscheidung ohne Wirkung (Plan 4.7 Schritte 1 bis 4, in dieser Reihenfolge): nil (beißbar) oder Ergebnis und Ort der
 -- Eruption ohne Wurm.
 local function judge(hunt)
@@ -1012,7 +1034,7 @@ local function judge(hunt)
   if hunt.lost or not (target and target.valid) then return "gone", hunt.last_pos end
   local h = hunt.kind == "harvest" and harvester.get(target) or nil
   if (h and h.state == "carried") or target.surface.index ~= hunt.surface_index then return "escaped", hunt.last_pos end
-  if not terrain.has_sand_under(target) then return "escaped", hunt.last_pos end
+  if not terrain.has_sand_under(target) then return "escaped", rock_spot(hunt, target) end
   if distance(target.position, hunt.warn_pos) > hunt.reach then return "escaped", hunt.warn_pos end
   return nil
 end
@@ -1051,13 +1073,16 @@ local function bite_window(hunt, tick)
 end
 
 -- Zielpunkt P (docs/protokolle/plan-3d2.md 1 „Zielpunkt“): Zielmitte, wenn das Ziel gültig, auf der Oberfläche der Jagd, nicht
--- getragen und mit Sand darunter ist (nur im Zustand warning), sonst last_pos; am Reichweitenkreis um warn_pos geklemmt.
+-- getragen und mit Sand darunter ist (nur im Zustand warning), ganz auf Fels die Sandstelle daneben (rock_spot, 0.16.2),
+-- sonst last_pos; am Reichweitenkreis um warn_pos geklemmt.
 local function aim_point(hunt)
   local p = hunt.last_pos
   local target = hunt.target
   if hunt.state == "warning" and not hunt.lost and target and target.valid and target.surface.index == hunt.surface_index then
     local h = hunt.kind == "harvest" and harvester.get(target) or nil
-    if not (h and h.state == "carried") and terrain.has_sand_under(target) then p = target.position end
+    if not (h and h.state == "carried") then
+      if terrain.has_sand_under(target) then p = target.position else p = rock_spot(hunt, target) end
+    end
   end
   local w = hunt.warn_pos
   local dx, dy = p.x - w.x, p.y - w.y

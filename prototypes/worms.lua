@@ -6,6 +6,7 @@
 -- Dateipfade nur, wie sie in den Vanilla-Daten 2.1.23 wörtlich vorkommen: Ein falscher Sound- oder Bildpfad bricht das
 -- Laden ab. Keine eigenen Sprite-Prototypen: Fenster und Chat nutzen [virtual-signal=arrakis-wormsign].
 
+local tip_simulations = require("prototypes.tips-simulations")
 local SAND = {r = 1, g = 0.85, b = 0.6}
 local SIGNAL_TINT = {r = 1, g = 0.55, b = 0.2}
 local ALERT_ICON = "__base__/graphics/icons/signal/signal-alert.png"
@@ -125,7 +126,7 @@ data:extend({
     name = "arrakis-rumble",
     category = "environment",
     filename = "__arrakis__/sound/sand-drone.ogg",
-    volume = 0.8,
+    volume = 0.92,
     audible_distance_modifier = 2
   },
 
@@ -167,6 +168,7 @@ data:extend({
   -- Briefings (A23 prototypes.d.ts:10410–10474; Muster V23 space-age/prototypes/tips-and-tricks.lua:6–47) in der
   -- Space-Age-Kategorie hinter Aquilo (d-a). Ob Tipps erscheinen, entscheidet das Szenario; die Chatzeilen kommen immer
   -- (scripts/worms.lua). Die Locale-Kategorien der Tipps sind lokal nicht belegt, deshalb stehen die Namen ausdrücklich da.
+  -- Seit 0.16.2 mit bewegter Szene oben (prototypes/tips-simulations.lua) und kurzem Text mit Objekt-Links wie bei Vanilla.
   {
     type = "tips-and-tricks-item",
     name = "arrakis-briefing",
@@ -179,7 +181,8 @@ data:extend({
     {
       type = "research",
       technology = "planet-discovery-arrakis"
-    }
+    },
+    simulation = tip_simulations.arrakis_briefing
   },
   {
     type = "tips-and-tricks-item",
@@ -194,6 +197,7 @@ data:extend({
     {
       type = "research",
       technology = "arrakis-spice-harvesting"
-    }
+    },
+    simulation = tip_simulations.wormsign
   }
 })

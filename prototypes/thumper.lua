@@ -48,6 +48,16 @@ thumper.animations = {thumper_animation()}
 data:extend({
   thumper,
   {
+    -- 0.16.2 (Max im Spiel, T34 Frage 1: nicht zu hören): ein Schlag, scripts/thumper.lua spielt ihn jede Sekunde.
+    -- Eigener Ton aus tools/ton/thumper.py.
+    type = "sound",
+    name = "arrakis-thump",
+    category = "game-effect",
+    filename = "__arrakis__/sound/thumper.ogg",
+    volume = 0.9,
+    audible_distance_modifier = 1.5
+  },
+  {
     type = "item",
     name = THUMPER,
     icons = icons,

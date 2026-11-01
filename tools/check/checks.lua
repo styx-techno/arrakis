@@ -645,10 +645,13 @@ local plan_sounds = {
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-3.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-4.ogg",
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-5.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-6.ogg"},
   ["arrakis-rumble"] = {"__arrakis__/sound/sand-drone.ogg"},
+  -- 0.16.2 (Max T34: Thumper nicht hörbar): ein Schlag je Sekunde aus scripts/thumper.lua.
+  ["arrakis-thump"] = {"__arrakis__/sound/thumper.ogg"},
   ["arrakis-worm-eruption"] = {"__space-age__/sound/explosions/demolisher-explosion-1.ogg", "__space-age__/sound/explosions/demolisher-explosion-2.ogg"},
 }
 for n, want in pairs(plan_sounds) do
   local p = n == "arrakis-worm-eruption" and (eruption and eruption.sound) or raw.sound[n]
+  if not p then add("FEHLER: Geräusch " .. n .. " fehlt") end
   if p and not same_list(sound_files(p), want) then add("FEHLER 3d1: Geräusch " .. n .. ": " .. table.concat(sound_files(p), ", ")) end
 end
 local wormsign_sound = raw.sound["arrakis-wormsign"]
@@ -666,6 +669,14 @@ for n, tech in pairs(plan_tips) do
     if tr.type ~= "research" or tr.technology ~= tech then add("FEHLER 3d1: Tipp " .. n .. " Auslöser " .. tostring(tr.type) .. " " .. tostring(tr.technology)) end
     if not (tip.localised_name and tip.localised_description) then add("FEHLER 3d1: Tipp " .. n .. " ohne localised_name/localised_description") end
     if tip.skip_trigger ~= nil then add("FEHLER 3d1: Tipp " .. n .. " mit skip_trigger") end
+    -- 0.16.2: bewegte Szene oben wie bei Vanilla (prototypes/tips-simulations.lua); das Skript muss sich übersetzen lassen.
+    local sim = tip.simulation
+    if not (sim and sim.planet == "arrakis" and type(sim.init) == "string") then
+      add("FEHLER 0.16.2: Tipp " .. n .. " ohne Simulation auf Arrakis")
+    elseif load then
+      local fn, err = load(sim.init, "=" .. n)
+      if not fn then add("FEHLER 0.16.2: Tipp " .. n .. " Simulationsskript: " .. tostring(err)) end
+    end
   end
 end
 -- Forschungen unverändert gegenüber 0.6.1 (Zahl, Namen, Auslöser).
