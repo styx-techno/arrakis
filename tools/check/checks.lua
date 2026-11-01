@@ -371,24 +371,40 @@ for _, n in ipairs({"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}) 
   if raw.sticker[n] then add("FEHLER 3c: sticker " .. n .. " aus 0.6.0 gibt es noch") end
 end
 -- Lastbild (ab 0.8.5): 16 Richtungen aus den Blättern des Ernters, je ein Bild ohne Ebenen; Rumpf 384 px mit scale 0.5,
--- Schatten 256 px mit scale 1 (Festlegungen in tools/grafik/README.md).
+-- Schatten 256 px mit scale 1 (Festlegungen in tools/grafik/README.md). Ab 0.16.1 dazu Farbmaske (384 px, ungetönt, die
+-- Farbe setzt das Skript) und Raupen (192 px, scale 1, 16 je Zeile, Bild 0 je Richtung), für Mk1 und Mk2 aus den eigenen
+-- Blättern.
 local sprite_count = 0
 local harvester_gfx = "__arrakis__/graphics/entity/spice-harvester/"
-for i = 0, 15 do
-  for _, kind in ipairs({"image", "shadow"}) do
-    local n = kind == "image" and ("arrakis-harvester-carried-" .. i) or ("arrakis-harvester-carried-shadow-" .. i)
-    local sp = raw.sprite[n]
-    if not sp then add("FEHLER 3c: sprite " .. n .. " fehlt") else
-      sprite_count = sprite_count + 1
-      local want = kind == "image" and {"harvester-base.png", 384, 0.5} or {"harvester-shadow.png", 256, 1}
-      if sp.layers then add("FEHLER 3c: sprite " .. n .. " hat Ebenen") end
-      if sp.filename ~= harvester_gfx .. want[1] then add("FEHLER 3c: sprite " .. n .. " Datei " .. tostring(sp.filename)) end
-      if sp.width ~= want[2] or sp.height ~= want[2] then add("FEHLER 3c: sprite " .. n .. " Größe " .. tostring(sp.width)) end
-      if sp.scale ~= want[3] then add("FEHLER 3c: sprite " .. n .. " scale " .. tostring(sp.scale)) end
-      local d = 4 * i
-      if sp.x ~= (d % 8) * want[2] or sp.y ~= math.floor(d / 8) * want[2] then add("FEHLER 3c: sprite " .. n .. " Ausschnitt " .. tostring(sp.x) .. "," .. tostring(sp.y)) end
-      if (sp.draw_as_shadow == true) ~= (kind == "shadow") then add("FEHLER 3c: sprite " .. n .. " draw_as_shadow " .. tostring(sp.draw_as_shadow)) end
-      if sp.apply_runtime_tint or sp.tint then add("FEHLER 3c: sprite " .. n .. " getönt oder mit Farbmaske") end
+local carried_kinds = {
+  {"arrakis-harvester-carried-", "__arrakis__/graphics/entity/spice-harvester/harvester-"},
+  {"arrakis-harvester-mk2-carried-", "__arrakis__/graphics/entity/spice-harvester-mk2/harvester-mk2-"},
+}
+-- Teil: Namenszusatz, Datei, Größe, scale, Bilder je Zeile, Bildindex je d, Schatten
+local carried_parts = {
+  {"", "base.png", 384, 0.5, 8, 1, false},
+  {"shadow-", "shadow.png", 256, 1, 8, 1, true},
+  {"mask-", "mask.png", 384, 0.5, 8, 1, false},
+  {"tracks-", "tracks-base.png", 192, 1, 16, 4, false},
+}
+for _, kind in ipairs(carried_kinds) do
+  for i = 0, 15 do
+    for _, part in ipairs(carried_parts) do
+      local n = kind[1] .. part[1] .. i
+      local sp = raw.sprite[n]
+      if not sp then add("FEHLER 3c: sprite " .. n .. " fehlt") else
+        sprite_count = sprite_count + 1
+        if sp.layers then add("FEHLER 3c: sprite " .. n .. " hat Ebenen") end
+        if sp.filename ~= kind[2] .. part[2] then add("FEHLER 3c: sprite " .. n .. " Datei " .. tostring(sp.filename)) end
+        if sp.width ~= part[3] or sp.height ~= part[3] then add("FEHLER 3c: sprite " .. n .. " Größe " .. tostring(sp.width)) end
+        if sp.scale ~= part[4] then add("FEHLER 3c: sprite " .. n .. " scale " .. tostring(sp.scale)) end
+        local index = 4 * i * part[6]
+        if sp.x ~= (index % part[5]) * part[3] or sp.y ~= math.floor(index / part[5]) * part[3] then
+          add("FEHLER 3c: sprite " .. n .. " Ausschnitt " .. tostring(sp.x) .. "," .. tostring(sp.y))
+        end
+        if (sp.draw_as_shadow == true) ~= part[7] then add("FEHLER 3c: sprite " .. n .. " draw_as_shadow " .. tostring(sp.draw_as_shadow)) end
+        if sp.apply_runtime_tint or sp.tint then add("FEHLER 3c: sprite " .. n .. " getönt oder mit Farbmaske") end
+      end
     end
   end
 end
@@ -534,7 +550,7 @@ local give_remote = raw.shortcut["arrakis-give-remote"]
 if give_remote and (give_remote.action ~= "spawn-item" or give_remote.item_to_spawn ~= "spidertron-remote" or give_remote.associated_control_input ~= nil or give_remote.technology_to_unlock ~= "arrakis-ornithopter") then add("FEHLER 3c: shortcut arrakis-give-remote action/Item/Taste/Forschung") end
 local carry_key = raw["custom-input"]["arrakis-carry-toggle"]
 if carry_key and (carry_key.key_sequence ~= "SHIFT + C" or carry_key.consuming ~= "none") then add("FEHLER 3c: custom-input arrakis-carry-toggle " .. tostring(carry_key.key_sequence) .. " / " .. tostring(carry_key.consuming)) end
-add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Tempo-Sticker leer " .. speed_count.empty .. "/106, beladen " .. speed_count.loaded .. "/106, Lastbild " .. sprite_count .. "/32 Sprites")
+add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Tempo-Sticker leer " .. speed_count.empty .. "/106, beladen " .. speed_count.loaded .. "/106, Lastbild " .. sprite_count .. "/128 Sprites")
 
 -- Phase 3d1 (docs/protokolle/plan-3d1.md 3 und 7): Eruption, Sandstaub, Signal, Geräusche, Verknüpfung, Tipps. Pfade und Werte
 -- stehen hier fest (nicht aus prototypes/worms.lua gelesen).
@@ -628,7 +644,7 @@ local plan_sounds = {
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-1.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-2.ogg",
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-3.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-4.ogg",
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-5.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-6.ogg"},
-  ["arrakis-rumble"] = {"__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg"},
+  ["arrakis-rumble"] = {"__arrakis__/sound/sand-drone.ogg"},
   ["arrakis-worm-eruption"] = {"__space-age__/sound/explosions/demolisher-explosion-1.ogg", "__space-age__/sound/explosions/demolisher-explosion-2.ogg"},
 }
 for n, want in pairs(plan_sounds) do

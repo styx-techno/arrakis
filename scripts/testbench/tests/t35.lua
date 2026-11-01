@@ -1,5 +1,5 @@
 -- T35 Ernter Mk2 0.15.1 (docs/plan-3i.md 3, Max' Wahl 1b 2b 3b 4a): Prototypen (Laderaum 60, Leben ×1,5, Rezept mit
--- Prozessoren, Forschung 500 Einheiten), Förderung ×1,5 und Vibration ×0,8 neben einem Mk1, Beute schaltet nichts frei, Tragen mit dem Ornithopter (Lastbild getönt), Leitstelle gibt Mk2 zuerst aus und lagert ihn
+-- Prozessoren, Forschung 500 Einheiten), Förderung ×1,5 und Vibration ×0,8 neben einem Mk1, Beute schaltet nichts frei, Tragen mit dem Ornithopter (eigenes Mk2-Lastbild, ab 0.16.1), Leitstelle gibt Mk2 zuerst aus und lagert ihn
 -- ein, Biss „schwer beschädigt“ wie beim Mk1. Gemeinsame Helfer: scripts/testbench/gemeinsam_fleet.lua (T23-Fläche).
 
 local common = require("scripts.testbench.gemeinsam_fleet")
@@ -161,7 +161,7 @@ function t35.s3(run, tb, d)
   return verdict(run, tb, 3, "Beute schaltet nichts frei", failed, string.format("%d Zähne, erforscht %s", n, tostring(after)))
 end
 
--- 4) Tragen: Ornithopter koppelt den Mk2 an, hebt ihn (Lastbild getönt) und setzt ihn wieder ab.
+-- 4) Tragen: Ornithopter koppelt den Mk2 an, hebt ihn (eigenes Mk2-Lastbild) und setzt ihn wieder ab.
 function t35.s4_build(run, tb, d)
   local s = d.s4
   local force = t23_force()
@@ -194,12 +194,11 @@ function t35.s4_drop(run, tb, d)
   s.failed = failed
   local record = flyer_lib.get(s.flyer)
   check(failed, record and record.cargo == s.un, "Ladung " .. tostring(record and record.cargo))
+  -- 0.16.1: eigenes Mk2-Lastbild statt getöntem Mk1-Bild.
   local image = record and record.renders and record.renders.image
-  local color = image and image.valid and image.color
-  local tint = harvester.MK2_TINT
-  s.color = color and string.format("%s/%s/%s", tb.num(color.r), tb.num(color.g), tb.num(color.b)) or "–"
-  check(failed, color ~= nil and near(color.r, tint.r, 0.01) and near(color.g, tint.g, 0.01) and near(color.b, tint.b, 0.01),
-    "Lastbild-Farbton " .. s.color)
+  local sprite = image and image.valid and image.sprite
+  s.color = tostring(sprite)
+  check(failed, type(sprite) == "string" and sprite:find("^arrakis%-harvester%-mk2%-carried%-%d+$") ~= nil, "Lastbild-Sprite " .. s.color)
   local ok, reason = flyer_lib.drop(record, nil, true)
   s.drop = tostring(ok) .. (reason and (" " .. tostring(reason)) or "")
   s.deadline = game.tick + 10 * 60
@@ -217,7 +216,7 @@ function t35.s4_landed(run, tb, d)
   check(failed, valid(s.car) and s.car.name == MK2 and s.car.unit_number == s.un, "nach dem Absetzen kein Mk2 mehr")
   check(failed, trunk_count(s.car) == 500, "Laderaum " .. trunk_count(s.car) .. " statt 500")
   check(failed, state_of(s.car) == "mobile", "Zustand " .. state_of(s.car))
-  return verdict(run, tb, 4, "Tragen", failed, string.format("Farbton %s, Absetzen %s, danach %s mit %d Spice-Sand",
+  return verdict(run, tb, 4, "Tragen", failed, string.format("Lastbild %s, Absetzen %s, danach %s mit %d Spice-Sand",
     s.color, s.drop, state_of(s.car), trunk_count(s.car)))
 end
 

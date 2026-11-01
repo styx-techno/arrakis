@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.16.1
+Date: 2026-11-01
+  Changes:
+    - Unruhe: Der Sandstaub steht jetzt als fester Ring um den Ernter (bzw. das vibrierende Fahrzeug oder Gebäude) statt als wandernde Wolken; ab mehr Wärme kommen ein zweiter und dritter Ring weiter außen dazu.
+    - Unruhe: neuer, eigener Ton, ein tiefes Brummen (Droning) statt des hohen Knisterns; die Töne gehen im 5-s-Takt nahtlos ineinander über.
+    - Getragener Ernter: Das Bild unter Ornithopter und Carryall zeigt den Ernter jetzt wie am Boden, mit Raupenketten und in seiner Farbe; der Mk2 hat sein eigenes Bild (Klingen, helle Platten, dritter Schlot) statt eines getönten Mk1.
+    - Ornithopter und Carryall: Die unsichtbaren Beine setzen ohne Zufallsstreuung auf; der Flug soll dadurch gleichmäßiger und gerader werden.
+  Modding:
+    - Prüfstand: Die Spielabend-Tests T31 (Reviere), T34 (Thumper), T36 (Ernter Mk2) und T38 (großer Wurm) gibt es jetzt wirklich (bisher nur im Plan, im Spiel „Unbekannter Test“). T17 fliegt den Kreis ohne Halt.
+    - Lastbild-Sprites: je Ernter-Art Rumpf, Schatten, Farbmaske und Raupen (arrakis-harvester-carried-*, arrakis-harvester-mk2-carried-*), 128 statt 32. Prüfstand T35 prüft das Mk2-Sprite statt des Farbtons.
+    - scripts/vibration.lua: DUST_RINGS (Abstand zum Rand der Quelle, Wolken je Ring, Wärme ab der ein Ring dazukommt). sound/sand-drone.ogg aus tools/ton/brummen.py.
+    - Prüfstand T20 nach Max' Spieltest: erlaubt Tipps im Spiel und erforscht „Arrakis entdecken“ und „Spice-Ernte“ für die Force (sonst ist die Vibrationsanzeige gesperrt und die Tipps fehlen); Schritt 5 baut einen neuen Ernter mit frischer 60-s-Jagd, wenn der Wurm Ernter 1 schon gefressen hat oder weniger als 40 s übrig sind; Schritt 7 schaltet den Vorsichtsmodus selbst ein und setzt die Wärme 580 erst, wenn der Ernter steht.
+---------------------------------------------------------------------------------------------------
 Version: 0.16.0
 Date: 2026-11-01
   Features:

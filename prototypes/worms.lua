@@ -117,13 +117,15 @@ data:extend({
     variations = roar
   },
 
-  -- Rumpeln bei Unruhe, je Sektor höchstens alle 5 s (V23 space-age/prototypes/entity/sounds.lua:508, :628).
+  -- Brummen bei Unruhe, je Sektor höchstens alle 5 s. Seit 0.16.1 ein eigener tiefer Ton (tools/ton/brummen.py, 5,5 s,
+  -- überlappt sich zu einem durchgehenden Droning); vorher demolisher-tail-rumble, das Max im Spiel als hohes Knistern
+  -- hörte (T20 am 01.11.2026).
   {
     type = "sound",
     name = "arrakis-rumble",
     category = "environment",
-    filename = "__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg",
-    volume = 0.6,
+    filename = "__arrakis__/sound/sand-drone.ogg",
+    volume = 0.8,
     audible_distance_modifier = 2
   },
 
