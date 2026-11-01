@@ -1,8 +1,12 @@
 # Spice-Ernter aus einfachen Formen, gerendert wie Factorio-Fahrzeuge (Ortho, 45 Grad, Licht von links oben).
-# Aufruf: python ernter-modell.py ROH_DIR MODUS [richtungen]  (Python mit dem Modul bpy, pip install bpy)
+# Aufruf: python ernter-modell.py ROH_DIR MODUS [richtungen] [teil]  (Python mit dem Modul bpy, pip install bpy)
+# teil "anim": nur die Raupen (Rumpf als Aussparung), 4 Bilder je Richtung, Kettenglieder laufen (Grafik-Phase).
+# Umgebungsvariable ARRAKIS_VARIANTE=mk2: Ernter Mk2 (Wurmzahn-Klingen am Maul, hellere Panzerplatten, dritter Schlot).
 # MODUS: vorschau (mit Schatten, 7 Kacheln), base (ohne Boden), shadow (nur Schatten, 32 px je Kachel),
 #        mask (Farbmaske für die Spielerfarbe), icon (eine Schrägansicht für Symbole).
 import math, os, sys
+VARIANTE = os.environ.get("ARRAKIS_VARIANTE", "mk1")
+MK2 = VARIANTE == "mk2"
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import szene
 from szene import mat, box, cyl, slab
@@ -12,7 +16,10 @@ szene.start("harvester", {"vorschau": 7, "shadow": 8, "default": 6}, ("skirt", "
 
 
 HULL = mat("hull", (0.085, 0.08, 0.075), 0.7, 0.3)       # dunkles, warmes Metall
-HULL2 = mat("hull2", (0.14, 0.13, 0.115), 0.7, 0.3)      # hellere Panzerplatten
+HULL2 = mat("hull2", (0.25, 0.26, 0.27) if MK2 else (0.14, 0.13, 0.115), 0.6, 0.45)   # hellere Panzerplatten
+IVORY = mat("ivory", (0.80, 0.76, 0.64), 0.3, 0.0, False)   # Wurmzahn (Mk2)
+LINK = mat("link", (0.13, 0.12, 0.11), 0.6, 0.5)
+RUBBER = mat("rubber", (0.035, 0.032, 0.03), 0.95, 0.0)
 STEEL = mat("steel", (0.06, 0.06, 0.06), 0.5, 0.5)
 TRACK = mat("track", (0.06, 0.055, 0.05), 0.9, 0.3)
 GLASS = mat("glass", (0.08, 0.10, 0.10), 0.1, 0.2, False)
@@ -24,6 +31,7 @@ MAW = mat("maw", (0.02, 0.02, 0.02), 0.9, 0.0, False)
 # Maße in Kacheln (1 Kachel = 1 m). Vorne = -Y (Factorio-Norden). Breit und flach: 2,4 x 3,2.
 L, W = 3.2, 2.4
 # Vier Raupen an den Ecken, schräg gestellte Laufwerke
+TRACKS = []
 for sx in (-1, 1):
     for sy in (-1, 1):
         x = sx * (W / 2 - 0.25)
@@ -33,6 +41,7 @@ for sx in (-1, 1):
         for k in range(-2, 3):
             cyl(f"wheel{sx}{sy}{k}", 0.11, 0.52, (x, y + k * 0.24, 0.18), STEEL, rot=(0, math.pi / 2, 0), verts=12)
         box(f"fender{sx}{sy}", (0.56, 1.3, 0.06), (x, y, 0.47), HULL2, 0.02)
+        TRACKS.append((sx, sy, x, y))
 # Rumpf: breiter, flacher Keil über den Raupen, vorne lang abgeschrägt
 slab("hull", (-W / 2 + 0.05, W / 2 - 0.05, -L / 2 + 0.35, L / 2 - 0.1), (-W / 2 + 0.35, W / 2 - 0.35, -L / 2 + 0.95, L / 2 - 0.35),
      0.5, 1.15, HULL, 0.05)
@@ -67,4 +76,51 @@ for sx in (-1, 1):
     for sy in (-1, 1):
         box(f"clamp{sx}{sy}", (0.14, 0.14, 0.12), (sx * 0.58, 0.05 + sy * 0.7, 1.42), STEEL, 0.02)
 
-szene.render()
+# Details (Grafik-Phase): Leitern an den Flanken, Staubschürzen hinter den Raupen, Kühlgitter, Einfüllluke, Antenne
+for sx in (-1, 1):
+    for k in range(4):
+        box(f"rung{sx}{k}", (0.03, 0.22, 0.025), (sx * (W / 2 - 0.12), 0.55, 0.62 + k * 0.13), STEEL, 0.0)
+    for sy in (-1, 1):
+        box(f"rungrail{sx}{sy}", (0.03, 0.025, 0.5), (sx * (W / 2 - 0.12), 0.55 + sy * 0.11, 0.8), STEEL, 0.0)
+    box(f"flap{sx}", (0.5, 0.03, 0.32), (sx * (W / 2 - 0.25), L / 2 + 0.02, 0.2), RUBBER, 0.01)
+for k in range(5):
+    box(f"grill{k}", (0.5, 0.035, 0.03), (0, L / 2 - 0.95 + k * 0.08, 1.34), STEEL, 0.0)
+cyl("hatch", 0.2, 0.05, (0, -0.55, 1.35), HULL2, verts=24)
+cyl("hatchrim", 0.22, 0.03, (0, -0.55, 1.33), STEEL, verts=24)
+cyl("antenna", 0.012, 0.5, (0.32, -L / 2 + 1.2, 1.65), STEEL, verts=6)
+cyl("antennatip", 0.03, 0.04, (0.32, -L / 2 + 1.2, 1.9), LAMP, verts=8)
+if MK2:
+    # Wurmzahn-Klingen vor dem Maul, Panzer auf den Schürzen, dritter Schlot
+    for k in range(7):
+        box(f"blade{k}", (0.09, 0.3, 0.1), (-0.72 + k * 0.24, -L / 2 - 0.05, 0.14), IVORY, 0.02,
+            rot=(math.radians(-15), 0, 0))
+    for sx in (-1, 1):
+        for k in range(3):
+            box(f"skirtplate{sx}{k}", (0.05, 0.6, 0.22), (sx * (W / 2 - 0.08), -0.8 + k * 0.75, 0.78), HULL2, 0.02,
+                rot=(0, sx * math.radians(-25), 0))
+    cyl("vent0", 0.14, 0.45, (0, L / 2 - 0.5, 1.45), STEEL, verts=16)
+    cyl("ventin0", 0.1, 0.05, (0, L / 2 - 0.5, 1.68), MAW, verts=16)
+
+# Raupenketten (Grafik-Phase): Kettenglieder als Querstege an der Außenseite jeder Raupe; die obere Reihe läuft bei
+# Vorwärtsfahrt nach vorn, die untere nach hinten. Bild 0 ist die Lage des Standbilds (Rumpfblatt).
+STEP = 0.16
+links = []
+for sx, sy, x, y in TRACKS:
+    for row, (z, sign) in enumerate(((0.3, -1), (0.12, 1))):
+        for k in range(7):
+            o = box(f"link{sx}{sy}{row}{k}", (0.025, 0.06, 0.13), (x + sx * 0.258, 0, z), LINK, 0.0)
+            links.append((o, y, k, sign))
+for sx, sy, x, y in TRACKS:
+    for name in [f"track{sx}{sy}", f"fender{sx}{sy}"] + [f"wheel{sx}{sy}{k}" for k in range(-2, 3)]:
+        szene.WING_PARTS.append(next(o for o in szene.scene.objects if o.name == name))
+szene.WING_PARTS.extend(o for o, *_ in links)
+
+
+def raupen(f):
+    off = STEP * f / szene.FLAP_FRAMES
+    for o, y, k, sign in links:
+        o.location.y = y - 0.5 + ((k * STEP - sign * off) % (7 * STEP)) + 0.02
+
+
+raupen(0)
+szene.render(pose=raupen)

@@ -1,24 +1,24 @@
 -- Phase 3i (docs/plan-3i.md): Ernter Mk2, Rezept mit Wurmzähnen, Forschung „Ernter Mk2“.
 -- Kopie des Ernters (prototypes/harvester.lua). Förderung ×1,5 und Vibration ×0,8 setzt das Skript
--- (scripts/harvester.lua rate_factor/vibration_factor, scripts/vibration.lua). Eigene Grafik folgt mit der
--- Grafik-Phase; bis dahin trägt die Basis-Ebene einen Farbton (gleich wie harvester.MK2_TINT im Skript, damit das
--- Lastbild am Flieger passt). Die Farbmaske bleibt Spielerfarbe.
+-- (scripts/harvester.lua rate_factor/vibration_factor, scripts/vibration.lua). Eigene Grafik aus der Grafik-Phase
+-- (tools/grafik/ernter-modell.py mit ARRAKIS_VARIANTE=mk2: Wurmzahn-Klingen am Maul, hellere Panzerplatten, dritter
+-- Schlot), gleiche Blattmaße wie Mk1. Das Lastbild am Flieger bleibt das Mk1-Bild mit Farbton (harvester.MK2_TINT).
 local item_sounds = require("__base__.prototypes.item_sounds")
 
 local NAME = "spice-harvester-mk2"
 local TECH = "arrakis-harvester-mk2"
-local TINT = {r = 0.7, g = 0.8, b = 1, a = 1}
-local ICON = "__arrakis__/graphics/icons/spice-harvester.png"
+local GFX = "__arrakis__/graphics/"
+local ICON = GFX .. "icons/spice-harvester-mk2.png"
 
 local mk2 = table.deepcopy(data.raw.car["spice-harvester"])
 mk2.name = NAME
 mk2.icon = nil
 mk2.icon_size = nil
-mk2.icons = {{icon = ICON, icon_size = 64, tint = TINT}}
+mk2.icons = {{icon = ICON, icon_size = 64}}
 mk2.minable = {mining_time = 0.5, result = NAME}
--- Basis-Ebene tönen, Maske (apply_runtime_tint) und Schatten bleiben.
+-- Eigene Blätter: harvester-*.png → spice-harvester-mk2/harvester-mk2-*.png, Ausschnitte wie Mk1.
 for _, layer in pairs(mk2.animation.layers) do
-  if not layer.apply_runtime_tint and not layer.draw_as_shadow then layer.tint = TINT end
+  layer.filename = layer.filename:gsub("/spice%-harvester/harvester%-", "/spice-harvester-mk2/harvester-mk2-")
 end
 
 data:extend({
@@ -56,7 +56,7 @@ data:extend({
     -- beim Tod des Wurms, die Forschung „Thumper“ erst am Ende der Jagd.
     type = "technology",
     name = TECH,
-    icons = {{icon = "__arrakis__/graphics/technology/spice-harvester.png", icon_size = 256, tint = TINT}},
+    icons = {{icon = GFX .. "technology/spice-harvester-mk2.png", icon_size = 256}},
     effects =
     {
       {type = "unlock-recipe", recipe = NAME}
@@ -66,7 +66,7 @@ data:extend({
     {
       type = "scripted",
       trigger_description = {"technology-description.arrakis-harvester-mk2-trigger"},
-      icons = {{icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64, tint = TINT}}
+      icons = {{icon = ICON, icon_size = 64}}
     }
   }
 })

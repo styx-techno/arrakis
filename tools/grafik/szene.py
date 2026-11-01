@@ -12,7 +12,8 @@ OUT = None
 PX_PER_TILE = None
 FRAME_TILES = None
 MASK_PREFIXES = ()
-# Teil (4. Argument): "alles" (Vorgabe), "schlag" (alles, mit Flügelschlag; zum Ansehen), "rumpf" (ohne Flügel; sie werfen aber Schatten) oder "fluegel" (nur die Flügel,
+# Teil (4. Argument): "alles" (Vorgabe), "schlag" (alles, mit Bewegung; zum Ansehen), "anim" (wie "fluegel" für
+# die Teile in WING_PARTS, z. B. Raupenketten), "rumpf" (ohne Flügel; sie werfen aber Schatten) oder "fluegel" (nur die Flügel,
 # Rumpf als Aussparung, halbe Auflösung, FLAP_FRAMES Bilder je Richtung). Siehe fluegel_vorbereiten().
 TEIL = "alles"
 FLAP_FRAMES = 4
@@ -29,7 +30,7 @@ def start(name, frame_tiles, mask_prefixes):
     DIRS = int(sys.argv[3]) if len(sys.argv) > 3 else 8
     TEIL = sys.argv[4] if len(sys.argv) > 4 else "alles"
     PX_PER_TILE = {"shadow": 32, "icon": 128}.get(MODE, 64)   # Fahrzeug als HR-Grafik, Schatten halb so fein
-    if TEIL == "fluegel" and MODE in ("base", "mask"):
+    if TEIL in ("fluegel", "anim") and MODE in ("base", "mask"):
         PX_PER_TILE = 32                                          # Flügelschlag in halber Auflösung
     FRAME_TILES = frame_tiles.get(MODE, frame_tiles["default"])
     MASK_PREFIXES = mask_prefixes
@@ -236,7 +237,7 @@ def render(lift=0.0, frames=0, pose=None, icon_frame=0):
     if TEIL == "rumpf":
         for o in wing:
             o.visible_camera = False      # Flügel fehlen im Bild, werfen aber Schatten auf den Rumpf
-    if TEIL == "fluegel":
+    if TEIL in ("fluegel", "anim"):
         for o in parts:
             if o not in wing:
                 o.is_holdout = True       # Rumpf verdeckt die Flügel dahinter, erscheint aber selbst nicht
@@ -307,7 +308,7 @@ def render(lift=0.0, frames=0, pose=None, icon_frame=0):
         return
 
     turns = [5] if MODE == "icon" else range(DIRS)
-    flaps = FLAP_FRAMES if (TEIL in ("fluegel", "schlag") and pose and MODE != "icon") else 0
+    flaps = FLAP_FRAMES if (TEIL in ("fluegel", "anim", "schlag") and pose and MODE != "icon") else 0
     for i in turns:
         # Richtung i: 0 = Norden, im Uhrzeigersinn (Factorio-Reihenfolge der 64 Richtungen)
         root.rotation_euler = (0, 0, -2 * math.pi * i / (8 if MODE == "icon" else DIRS))
