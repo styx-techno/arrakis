@@ -18,6 +18,8 @@ local libraries =
   require("scripts.fleet-gui"),
   -- Phase 3d1 (docs/protokolle/plan-3d1.md 4.1): Vibration, Würmer (einzige Wurm-Takte), Fenster oben links.
   require("scripts.vibration"),
+  -- Phase 3g (docs/plan-3g.md): Wurm-Reviere (nur Buchhaltung, die Takte ruft worms).
+  require("scripts.territory"),
   -- Phase 3d2 (docs/protokolle/plan-3d2.md 4.1): der Sandwurm als Fahrzeug, direkt vor worms (worms ruft ihn auf).
   require("scripts.sandworm"),
   require("scripts.worms"),

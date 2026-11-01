@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.13.0
+Date: 2026-11-01
+  Features:
+    - Wurm-Reviere: Die Wüste von Arrakis ist in Reviere von etwa 256 × 256 Kacheln mit unregelmäßigen Grenzen aufgeteilt, in jedem lebt ein Wurm. Ein Revier ist ruhig, normal oder wild; je weiter vom Landeplatz, desto wilder. Das Startrevier mit dem Lehrfeld ist immer ruhig.
+    - Ruhig: Wurmzeichen erst bei 1,4-facher Vibration, 15 s mehr Countdown, 1,5-fache Ruhe nach einer Jagd. Wild: schon bei 0,7-facher Vibration, 10 s weniger Countdown (nie unter 30 s), halbe Ruhe. Die Unruhe (Staub, Rumpeln) kommt überall gleich früh.
+    - Je Revier höchstens eine Jagd zugleich, und nach einer Jagd ruht das ganze Revier.
+    - Wird der Wurm eines Reviers getötet, bleibt das Revier etwa 60 Minuten frei (kein Wurmzeichen, kein lauernder Wurm). 60 Sekunden vor dem Ende kündigt der Chat den neuen Wurm an.
+    - Neue Forschung „Revierkunde“ nach „Ornithopter-Leitstelle“ (300 × fünf Pakete): Die Vibrationsanzeige zeigt Reviergrenzen, Namen und Stufe, das Fenster der Leitstelle ihr Revier und die Reviere in Reichweite. Die Leitstelle setzt Ernter dann zuerst in ruhige, danach in normale oder freie, zuletzt in wilde Reviere.
+  Modding:
+    - storage-Schema 7: storage.territory. Neue Datei scripts/territory.lua (territory.of_sector, of_position, level, threshold, warn_ticks, rest_factor, free_until, set_free, known). Jagden haben das Feld revier. Auf anderen Oberflächen und der Prüfstand-Fläche ist jeder Sektor ein eigenes normales Revier (wie bisher); der Prüfstand kann mit territory.test_real echte Reviere einschalten.
+---------------------------------------------------------------------------------------------------
 Version: 0.12.1
 Date: 2026-11-01
   Features:

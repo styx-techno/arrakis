@@ -12,6 +12,7 @@
 local harvester = require("scripts.harvester")
 local worms_lib = require("scripts.worms")
 local vibration_lib = require("scripts.vibration")
+local territory_lib = require("scripts.territory")
 
 local lib = {}
 
@@ -63,13 +64,17 @@ function lib.amount_at(surface, position)
   return sum
 end
 
--- Ruhig für einen neuen Platz: kein lauernder Wurm, keine Ruhe des Sektors, keine Jagd im Sektor (Plan 1.5).
+-- Ruhig für einen neuen Platz: kein lauernder Wurm, keine Ruhe des Sektors, keine Jagd im Revier (Plan 1.5; Phase 3g:
+-- Revier statt Sektor, auf Oberflächen ohne echte Reviere ist beides gleich).
 function lib.quiet(s, position)
   if worms_lib.lurking_at(s, position) then return false end
   local sector = vibration_lib.sector_of_key((vibration_lib.key_of(position)))
   if vibration_lib.resting(s, sector) then return false end
+  local revier = territory_lib.of_sector(s, sector)
   local hunts = storage.hunts and storage.hunts.list
   for _, hunt in pairs(hunts or {}) do
+    if hunt.surface_index == s and not hunt.debug
+        and (hunt.revier or territory_lib.of_sector(s, hunt.sector_key)) == revier then return false end
     if hunt.surface_index == s and hunt.sector_key == sector then return false end
   end
   return true
@@ -276,6 +281,8 @@ function lib.find_spot(d, range, exclude_un)
   local busy = occupied(s, exclude_un)
   local tags = spice_tags(d, range)
   local force_index = entity.force.index
+  -- Phase 3g (Plan 1.5 a): Mit Revierkunde zuerst ruhige, dann normale und freie, zuletzt wilde Reviere.
+  local by_rank = territory_lib.known(entity.force)
   local candidates = {}
   for _, rec in pairs(chunks) do
     for _, spot in ipairs(rec.spots) do
@@ -291,13 +298,15 @@ function lib.find_spot(d, range, exclude_un)
             if distance(t, spot) <= lib.TAG_RADIUS then tagged = true break end
           end
           local score = spot.sum / (1 + dd / 100 + nearest_intake_distance(s, force_index, spot) / 100)
-          table.insert(candidates, {spot = spot, score = score, tagged = tagged})
+          local rank = by_rank and territory_lib.rank(s, territory_lib.of_position(s, spot)) or 0
+          table.insert(candidates, {spot = spot, score = score, tagged = tagged, rank = rank})
         end
       end
     end
   end
   table.sort(candidates, function(a, b)
     if a.tagged ~= b.tagged then return a.tagged end
+    if a.rank ~= b.rank then return a.rank < b.rank end
     if a.score ~= b.score then return a.score > b.score end
     if a.spot.x ~= b.spot.x then return a.spot.x < b.spot.x end
     return a.spot.y < b.spot.y
