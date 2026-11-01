@@ -1,5 +1,5 @@
--- T37 Großer Wurm 0.16.0 (docs/plan-3j.md 3): Prototyp, Lärm-Auswahl beim Wurmzeichen (zwei Ernter → groß, einer → klein,
--- Thumper zählt nicht, Einstellung aus, Lehrjagd immer klein), Jagd mit großem Wurm (Biss-Umkreis 6 statt 4), getöteter
+-- T37 Großer Wurm 0.16.0 (docs/plan-3j.md 3): Prototyp, Zufalls-Auswahl je Revierstufe (ruhig nie, normal 10 %, wild 30 %,
+-- Einstellung aus, Lehrjagd immer klein), Jagd mit großem Wurm (Biss-Umkreis 6 statt 4), getöteter
 -- großer Wurm (6–10 Zähne, Revier doppelt so lange frei). Gemeinsame Helfer: scripts/testbench/gemeinsam_fleet.lua.
 
 local common = require("scripts.testbench.gemeinsam_fleet")
@@ -12,8 +12,6 @@ local at = common.at
 local t23_force = common.t23_force
 local create = common.create
 local tidy = common.tidy
-local state_of = common.state_of
-local new_harvester = common.new_harvester
 local verdict = common.verdict
 local fail = common.fail
 local check = common.check
@@ -46,73 +44,62 @@ function t37.s1(run, tb, d)
   local L = worms_lib.LARGE
   check(failed, L.bite_radius == 6 and L.crush_radius == 4 and L.tooth_min == 6 and L.tooth_max == 10 and L.free_factor == 2,
     "worms.LARGE")
-  check(failed, worms_lib.LARGE_NOISE == 40, "LARGE_NOISE " .. tostring(worms_lib.LARGE_NOISE))
   return verdict(run, tb, 1, "Prototypen", failed, string.format("Lebenspunkte groß %s, klein %s; Biss %s, Zerdrücken %s, Zähne %s–%s",
     tostring(hp_l), tostring(hp_s), tostring(L.bite_radius), tostring(L.crush_radius), tostring(L.tooth_min), tostring(L.tooth_max)))
 end
 
--- 2) Lärm-Auswahl: zwei aufgebaute Ernter nebeneinander (echte Gewichte), ein Thumper und die Einstellung.
-function t37.s2_build(run, tb, d)
-  local s = d.s2
-  s.a = new_harvester(run, tb, d, at(d.pos.rescue, 0, 0), {coal = 50})
-  s.b = new_harvester(run, tb, d, at(d.pos.rescue, 14, 0), {coal = 50})
-  if not (s.a and s.b) then return fail(run, tb, 2, "Ernter ließen sich nicht bauen") end
-  s.deadline = game.tick + 30 * 60
-  return 1
-end
-
-function t37.s2_deployed(run, tb, d)
-  local s = d.s2
-  local r = wait_for(s, function() return state_of(s.a) == "deployed" and state_of(s.b) == "deployed" end, function()
-    return fail(run, tb, 2, "nicht aufgebaut: " .. state_of(s.a) .. ", " .. state_of(s.b))
-  end)
-  -- Zwei Vibrationstakte, damit vib_weight und vib_key stehen.
-  if r == 1 then return 150 end
-  return r
-end
-
-function t37.s2_check(run, tb, d)
-  local s = d.s2
+-- 2) Zufalls-Auswahl je Revierstufe (Max „1c 3 zufall“): ruhig nie, normal 10 %, wild 30 %; Würfe mit storage.rng
+-- (1000 je Stufe, Anteil ±5 Punkte), Einstellung aus, Lehrjagd immer klein, Befehlsjagd mit size groß.
+function t37.s2(run, tb, d)
   local failed = {}
-  local si = tb.surface().index
-  local key = vibration_lib.key_of(s.a.position)
-  local index = worms_lib.sources_by_chunk(si)
-  local both = worms_lib.noise_around(index, key)
-  local due_both = worms_lib.large_due(index, key, si)
-  -- Nur Ernter a: b aus dem Index nehmen.
-  local single = {}
-  for k, list in pairs(index) do
-    single[k] = {}
-    for _, entry in ipairs(list) do
-      if entry.entity ~= s.b then table.insert(single[k], entry) end
+  local surface = tb.surface()
+  local si = surface.index
+  territory.test_real(surface, SEED)
+  territory.test_reset(surface)
+  d.territory_real = true
+  local position = at(d.pos.rescue, 0, 0)
+  local key = vibration_lib.key_of(position)
+  local id = territory.of_key(si, key)
+  local want = {calm = 0, normal = 0.1, wild = 0.3}
+  local shares = {}
+  for _, level in ipairs({"calm", "normal", "wild"}) do
+    territory.test_level(surface, id, level)
+    local chance = worms_lib.large_chance(si, key)
+    local hits = 0
+    for _ = 1, 1000 do
+      if worms_lib.large_due(si, key) then hits = hits + 1 end
+    end
+    local share = hits / 1000
+    shares[#shares + 1] = level .. " " .. tb.num(chance) .. "/" .. tb.num(share)
+    check(failed, chance == want[level], level .. ": Chance " .. tostring(chance))
+    check(failed, math.abs(share - want[level]) <= 0.05, level .. ": Anteil " .. tb.num(share))
+    if level == "wild" then
+      check(failed, worms_lib.large_due(si, key, 0.29) and not worms_lib.large_due(si, key, 0.3), "wild: Grenze bei 0,3")
     end
   end
-  local one = worms_lib.noise_around(single, key)
-  local due_one = worms_lib.large_due(single, key, si)
-  check(failed, both >= 40 and due_both, "zwei Ernter: Lärm " .. tb.num(both) .. ", groß " .. tostring(due_both))
-  check(failed, one > 0 and one < 40 and not due_one, "ein Ernter: Lärm " .. tb.num(one) .. ", groß " .. tostring(due_one))
-  -- Thumper (Gewicht 60) zählt nicht mit.
-  local lure = {[key] = {{weight = 60, thumper = true}}}
-  local due_lure = worms_lib.large_due(lure, key, si)
-  check(failed, not due_lure and worms_lib.noise_around(lure, key) == 0, "Thumper allein: groß " .. tostring(due_lure))
-  -- Einstellung aus.
+  -- Einstellung aus (wild, Wurf 0).
   local was = worms_lib.LARGE_ENABLED
   worms_lib.LARGE_ENABLED = false
-  local due_off = worms_lib.large_due(index, key, si)
+  local due_off = worms_lib.large_due(si, key, 0)
   worms_lib.LARGE_ENABLED = was
   check(failed, not due_off, "Einstellung aus: groß " .. tostring(due_off))
-  -- Lehrjagd und Lauer-Jagd bleiben klein, sonst gilt size.
-  local h1 = worms_lib.start_hunt(s.a, {seconds = 2, debug = true, size = "large", teaching = true})
+  territory.test_reset(surface)
+  -- Lehrjagd bleibt klein, sonst gilt size.
+  local force = t23_force()
+  local a = create(run, tb, {name = CHEST, position = position, force = force}, "others")
+  local b = create(run, tb, {name = CHEST, position = at(position, 10, 0), force = force}, "others")
+  if not (a and b) then return fail(run, tb, 2, "Kisten ließen sich nicht bauen") end
+  local h1 = worms_lib.start_hunt(a, {seconds = 2, debug = true, size = "large", teaching = true})
   local teach_size = h1 and h1.size
   if h1 then worms_lib.end_hunt(h1, nil, "abort") end
-  local h2 = worms_lib.start_hunt(s.b, {seconds = 2, debug = true, size = "large"})
+  local h2 = worms_lib.start_hunt(b, {seconds = 2, debug = true, size = "large"})
   local plain_size = h2 and h2.size
   if h2 then worms_lib.end_hunt(h2, nil, "abort") end
   check(failed, h1 ~= nil and teach_size == nil, "Lehrjagd: Größe " .. tostring(teach_size))
   check(failed, h2 ~= nil and plain_size == "large", "Befehlsjagd: Größe " .. tostring(plain_size))
-  return verdict(run, tb, 2, "Lärm-Auswahl", failed, string.format(
-    "Lärm zwei Ernter %s (groß %s), einer %s (groß %s), Thumper groß %s, Einstellung aus groß %s, Lehrjagd %s",
-    tb.num(both), tostring(due_both), tb.num(one), tostring(due_one), tostring(due_lure), tostring(due_off), tostring(teach_size)))
+  return verdict(run, tb, 2, "Zufalls-Auswahl", failed, string.format(
+    "Chance/Anteil %s; Einstellung aus groß %s; Lehrjagd %s, Befehlsjagd %s", table.concat(shares, ", "), tostring(due_off),
+    tostring(teach_size), tostring(plain_size)))
 end
 
 -- Jagd mit großem Wurm auf eine Kiste bei P, Spawnhaken 90 Kacheln westlich.
@@ -226,7 +213,7 @@ end
 local T37_STEPS =
 {
   {t37.s1},
-  {t37.s2_build, t37.s2_deployed, t37.s2_check},
+  {t37.s2},
   {t37.s3_build, t37.s3_check},
   {t37.s4_build, t37.s4_kill, t37.s4_check}
 }

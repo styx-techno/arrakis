@@ -104,12 +104,12 @@ lib.TOOTH = "arrakis-worm-tooth"
 lib.TOOTH_MIN = 2
 lib.TOOTH_MAX = 4
 lib.TOOTH_FACTOR = 1
--- Großer Wurm (Phase 3j, docs/plan-3j.md 2.2). LARGE_ENABLED: Einstellung arrakis-large-worm (scripts/config.lua).
--- LARGE_NOISE: Summe der Vibrationsgewichte (ohne Thumper) in den 3×3 Chunks um den Kandidaten, ab der beim Wurmzeichen der
--- große Wurm kommt (Gleichgewichtswärme 2000 = 40 / (1 − 0,98)); mal Revierfaktor wie die Schwelle.
+-- Großer Wurm (Phase 3j, docs/plan-3j.md 2.2, Max 01.11. „1c 2a 3 zufall 4a“). LARGE_ENABLED: Einstellung
+-- arrakis-large-worm (scripts/config.lua). LARGE_CHANCE: Wahrscheinlichkeit je Revierstufe, dass ein Wurmzeichen (auch am
+-- Thumper) den großen Wurm ruft; gewürfelt mit dem gespeicherten Zufall.
 -- LARGE: Biss-Umkreis, Zerdrück-Radius, Zähne, Faktor auf die freie Zeit des Reviers.
 lib.LARGE_ENABLED = true
-lib.LARGE_NOISE = 40
+lib.LARGE_CHANCE = {calm = 0, normal = 0.1, wild = 0.3}
 lib.LARGE = {bite_radius = 6, crush_radius = 4, tooth_min = 6, tooth_max = 10, free_factor = 2}
 
 local FORCE = lib.FORCE
@@ -1206,8 +1206,6 @@ local function sources_by_chunk(s)
   end
   return index
 end
--- Für den Prüfstand (T37) und lib.large_due.
-lib.sources_by_chunk = sources_by_chunk
 
 -- Ist die Quelle berechtigt (Plan 1 „Berechtigt“)? Gewicht > 0 (also auf Sand, nicht getragen) steht schon fest.
 -- Phase 3g: höchstens eine Jagd je Revier (busy_reviere), kein Wurmzeichen in einem freien Revier.
@@ -1247,25 +1245,18 @@ local function best_target(index, d, s, busy_reviere, full)
   return best
 end
 
--- Phase 3j (docs/plan-3j.md 2.2): Lärm = Summe der Gewichte aller Quellen außer Thumpern in den 9 Chunks um d.
-function lib.noise_around(index, d)
-  local sum = 0
-  local cx, cy = vibration_lib.chunk_of_key(d)
-  for dx = -1, 1 do
-    for dy = -1, 1 do
-      for _, entry in ipairs(index[vibration_lib.chunk_key(cx + dx, cy + dy)] or {}) do
-        if not entry.thumper then sum = sum + entry.weight end
-      end
-    end
-  end
-  return sum
+-- Phase 3j (docs/plan-3j.md 2.2): Kommt der große Wurm? Zufall nach der Stufe des Reviers, in dem der Chunk key liegt.
+-- roll (0 bis < 1) nur für den Prüfstand; sonst würfelt storage.rng.
+function lib.large_chance(s, key)
+  local level = territory_lib.level(s, territory_lib.of_key(s, key))
+  return lib.LARGE_CHANCE[level] or lib.LARGE_CHANCE.normal or 0
 end
 
--- Kommt der große Wurm? Lärm ≥ LARGE_NOISE × Revierfaktor (wie die Schwelle des Wurmzeichens).
-function lib.large_due(index, d, s)
+function lib.large_due(s, key, roll)
   if not lib.LARGE_ENABLED then return false end
-  local factor = territory_lib.threshold(s, d) / vibration_lib.WORMSIGN
-  return lib.noise_around(index, d) >= lib.LARGE_NOISE * factor
+  local chance = lib.large_chance(s, key)
+  if chance <= 0 then return false end
+  return (roll or storage.rng()) < chance
 end
 
 -- 60-Tick-Takt Schritt 5: je erlaubter Oberfläche höchstens ein neues Wurmzeichen, höchstens MAX_HUNTS zugleich.
@@ -1330,7 +1321,7 @@ local function wormsign_tick(tick)
               local entity = entry.entity
               local g = storage.grace[entity.force.index]
               local teaching = entry.harvester and not g.first_hunt_done
-              local size = (not teaching and lib.large_due(index, d, s)) and "large" or nil
+              local size = (not teaching and lib.large_due(s, entry.key)) and "large" or nil
               if lib.start_hunt(entity, {teaching = teaching, size = size}) and not entry.thumper then count = count + 1 end
               break
             end

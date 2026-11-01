@@ -5,13 +5,13 @@ Stand 01.11.2026. Nachfolger von docs/plan-3i.md (Ernter Mk2). Grundlage: Design
 
 ## Ziel
 
-Wer auf einem Fleck viel Lärm macht (mehrere Ernter, Großbohrer, Panzer), ruft statt des kleinen den **großen Wurm**
+Bei einem Wurmzeichen kommt per Zufall nach der Revierstufe statt des kleinen der **große Wurm**
 (`arrakis-sandworm-large`). Er ist größer, zäher und frisst mehr um sich herum, folgt aber denselben Regeln:
 Wurmzeichen, Countdown, Rettung, Biss bei 0, Thumper-Ablenkung, Reviere. Wer ihn tötet, bekommt mehr Zähne.
 
 Nicht in 3j: eigenes Wurm-Modell (Grafik-Thread), Patrouillen, Stürme.
 
-## 1. Offene Festlegungen (Format „1a 2b …“, ohne Antwort a)
+## 1. Festlegungen (Max 01.11. 14:49: „1c 2a 3 zufall 4a“)
 
 1. **Wann kommt er?** a) nach dem Lärm beim Wurmzeichen: Summe der Vibrationsgewichte in den 3×3 Chunks um den
    Ursprung ≥ 40 (das ist Gleichgewichtswärme 2000; Revierfaktor wie bei der Schwelle: ruhig 56, wild 28). Ein Ernter
@@ -25,7 +25,7 @@ Nicht in 3j: eigenes Wurm-Modell (Grafik-Thread), Patrouillen, Stürme.
    (Gewicht 60): Ein Thumper-Köder ruft immer den großen Wurm.
 4. **Belohnung.** a) 6–10 Zähne, Revier nach dem Tod 120 statt 60 min frei. b) 6–10 Zähne, Revier 60 min wie beim kleinen.
 
-## 2. Regeln (nach Wahl a)
+## 2. Regeln (nach Max' Wahl)
 
 ### 2.1 Prototyp
 - Kopie von `medium-demolisher` (Skalierung 0,75; Wenderadius 9), sonst wie der kleine Sandwurm: 12 Segmente (erste
@@ -35,8 +35,9 @@ Nicht in 3j: eigenes Wurm-Modell (Grafik-Thread), Patrouillen, Stürme.
   graphics/entity/sandworm/ (abgesprochen).
 
 ### 2.2 Auswahl und Jagd
-- `worms.wormsign_tick` rechnet den Lärm aus dem schon gebauten Quellen-Index (3×3 Chunks um den Kandidaten, ohne
-  Thumper) und gibt `opts.size = "large"` an `start_hunt`. Lehrjagd und Lauer-Jagd: immer klein.
+- `worms.wormsign_tick` würfelt mit `storage.rng` nach der Stufe des Reviers der Quelle (`LARGE_CHANCE` ruhig 0,
+  normal 0,1, wild 0,3; Frage 1c), auch wenn die Quelle ein Thumper ist (Frage 3 „Zufall“), und gibt
+  `opts.size = "large"` an `start_hunt`. Lehrjagd und Lauer-Jagd: immer klein.
 - `hunt.size = "large"`; Meldung „Großes Wurmzeichen“, Ring größer (Biss-Umkreis 6, breiter Strich).
 - scripts/sandworm.lua: Werte je Größe in `lib.SIZES` (Name, Körperlinie 30 statt 20, Vorausschau 24 statt 18,
   Wenderadius 9 statt 6); Spawn, Fels-Wächter und Planung nehmen die Werte der Jagd.
@@ -49,8 +50,8 @@ Nicht in 3j: eigenes Wurm-Modell (Grafik-Thread), Patrouillen, Stürme.
 
 ## 3. Tests
 
-- **T37 Großer Wurm (Prüfstand):** Prototyp (Name, 100 000 LP, Segmente, Tönung); Lärm-Auswahl (ein Ernter → klein,
-  zwei Ernter nebeneinander → groß, Thumper allein → klein, Einstellung aus → klein, Lehrjagd klein); Jagd mit großem
+- **T37 Großer Wurm (Prüfstand):** Prototyp (Name, 100 000 LP, Segmente, Tönung); Zufalls-Auswahl (je Stufe 1000 Würfe,
+  Anteil 0/0,1/0,3 ± 0,05; Einstellung aus → klein; Lehrjagd klein); Jagd mit großem
   Wurm: Wurm erscheint, Biss bei 0 frisst Ziel und ein Auto 5 Kacheln neben der Box, eins 8 Kacheln daneben bleibt;
   getöteter großer Wurm wirft 6–10 Zähne und macht das Revier 2 × FREE_TICKS frei.
 - **T38 interaktiv (Spielabend):** großen Wurm mit zwei Erntern rufen, ansehen (Größe, Staub, Ton), retten oder mit
