@@ -188,6 +188,7 @@ Alle Zeitangaben des Werkzeugs (`--zeitlimit`, `--startzeit`, `--abfrage`, die 9
 **Ergebnisse:**
 
 - `<Arbeitsordner>\ergebnisse\arrakis-test-<Datum>-<Uhrzeit>.txt` (z. B. `arrakis-test-20261024-153012.txt`), nach T11 auch `arrakis-t11-karten-<Datum>-<Uhrzeit>.txt`. Diese Dateien bitte schicken, dazu die Ausgabe des Werkzeugs.
+- Daneben `arrakis-zusammenfassung-<Datum>-<Uhrzeit>.txt`: eine Zeile je Test (Nummer, Name, bestanden/FEHLER/abgebrochen/ohne ENDE, Dauer, Zähler), bei FEHLER darunter die Fehlerzeilen. Zum Prüfen eines Laufs zuerst nur diese Datei lesen. Für alte Ergebnisse von Hand: `python tools/pc/zusammenfassung.py <arrakis-test-….txt>`. `tools/pc/lauf.py` lädt sie mit hoch und nennt sie in der vorletzten Zeile (`Zusammenfassung: …`); die letzte Zeile bleibt `LAUF …`.
 - Ergebnisdateien eines früheren Laufs legt es vorher als `…-vorher-<Datum>-<Uhrzeit>.txt` dorthin, denn die Mod hängt nur an.
 - Das Log des Servers steht in `<Arbeitsordner>\factorio-current.log`, die Ausgabe des Prozesses in `server.log`, das Anlegen des Spielstands in `create.log`. Unter Windows können `server.log` und `create.log` leer bleiben (factorio.exe hängt sich an die Konsole des Aufrufers); `factorio-current.log` gibt es immer, das Werkzeug zeigt dann dessen Ende.
 - Solange der Server läuft, stehen Port und RCON-Passwort in `<Arbeitsordner>\server.json`. Damit lässt sich von Hand fragen: `python tools/pc/rcon.py --port 27115 --passwort <Passwort> arrakis-test status` (den `/` ergänzt das Werkzeug; in Git Bash würde aus `"/arrakis-test"` sonst ein Pfad).
