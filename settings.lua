@@ -107,5 +107,13 @@ data:extend({
     minimum_value = 0,
     maximum_value = 500,
     order = "a[worm]-j[tooth]"
+  },
+  -- Phase 3j (docs/plan-3j.md 2.3): großer Wurm an/aus.
+  {
+    type = "bool-setting",
+    name = "arrakis-large-worm",
+    setting_type = "runtime-global",
+    default_value = true,
+    order = "a[worm]-k[large]"
   }
 })

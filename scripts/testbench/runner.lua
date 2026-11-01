@@ -43,7 +43,7 @@ local SURFACE_NAME = "arrakis-testbench"
 local HOLD_NAME = "arrakis-test-hold"
 local LOG_FILE = "arrakis-test.txt"
 local ORDER = {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T11", "T12", "T13", "T2b", "T14", "T15", "T16", "T17", "T18", "T19",
-               "T20", "T21", "T22", "T23", "T24", "T25", "T26", "T27", "T28", "T29", "T30", "T32", "T33", "T35"}
+               "T20", "T21", "T22", "T23", "T24", "T25", "T26", "T27", "T28", "T29", "T30", "T32", "T33", "T35", "T37"}
 local AREA_SPACING = 2000
 local DEFAULT_TIMEOUT = 60 * 60
 local NEXT_TEST_DELAY = 60
@@ -71,7 +71,7 @@ for _, module_name in ipairs({"scripts.testbench.tests.t1", "scripts.testbench.t
                               "scripts.testbench.tests.t26", "scripts.testbench.tests.t27", "scripts.testbench.tests.t28",
                               "scripts.testbench.tests.t29", "scripts.testbench.tests.t30",
                               "scripts.testbench.tests.t32", "scripts.testbench.tests.t33",
-                              "scripts.testbench.tests.t35"}) do
+                              "scripts.testbench.tests.t35", "scripts.testbench.tests.t37"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end

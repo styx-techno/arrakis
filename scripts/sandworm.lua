@@ -21,6 +21,14 @@ local lib = {}
 -- Prototyp und Präfix aller eigenen Würmer (Testwürmer heißen arrakis-test-worm…).
 lib.NAME = "arrakis-sandworm-small"
 lib.PREFIX = "arrakis-sandworm-"
+-- Phase 3j (docs/plan-3j.md 2.2): Werte je Größe. body_len = Körperlinie hinter dem Spawn, lookahead = Vorausschau
+-- (2 × Wenderadius + 6), turn = Wenderadius (Kacheln; Vanilla 12 × Skalierung 0,5 bzw. 0,75). Jagden ohne size
+-- (alte Spielstände, Prüfstand) sind klein. lib.NAME, BODY_LEN, LOOKAHEAD und TURN_RADIUS bleiben die Werte des kleinen.
+lib.SIZES =
+{
+  small = {name = "arrakis-sandworm-small", body_len = 20, lookahead = 18, turn = 6},
+  large = {name = "arrakis-sandworm-large", body_len = 30, lookahead = 24, turn = 9}
+}
 -- Tempo (Kacheln/s): Fahrt in allen Zuständen, Sprint.
 lib.V = 3.5
 lib.V_SPRINT = 6
@@ -126,6 +134,14 @@ local BLOCKER_TYPES = {"character", "car", "spider-vehicle", "locomotive", "carg
 local ACTIVE = {warten = true, routing = true, anfahrt = true, angriff = true}
 
 -- Hilfen ----------------------------------------------------------------------------------------
+
+-- Werte der Wurmgröße einer Jagd (Phase 3j); ohne Angabe klein. Mit lib.SIZES.small = Laufzeitwerte BODY_LEN usw.
+function lib.size_of(hunt)
+  if hunt and hunt.size == "large" then return lib.SIZES.large end
+  local small = lib.SIZES.small
+  small.name, small.body_len, small.lookahead, small.turn = lib.NAME, lib.BODY_LEN, lib.LOOKAHEAD, lib.TURN_RADIUS
+  return small
+end
 
 local function distance(a, b)
   local dx, dy = a.x - b.x, a.y - b.y
@@ -548,9 +564,10 @@ end
 
 -- Spawnpunkt und Körperlinie (Plan 4.4 Schritt 4 a): c und die Punkte alle 4 Kacheln bis 20 hinter c (Richtung bx, by)
 -- auf Sand, dort bis 4 Kacheln kein Fahrzeug und keine Figur.
-local function body_ok(probe, cx, cy, bx, by)
+local function body_ok(probe, cx, cy, bx, by, len)
   if not sand(probe, cx, cy) then return false end
-  local ex, ey = cx + bx * lib.BODY_LEN, cy + by * lib.BODY_LEN
+  len = len or lib.BODY_LEN
+  local ex, ey = cx + bx * len, cy + by * len
   if not line_clear(probe, cx, cy, ex, ey, lib.BODY_STEP, 0) then return false end
   local m = lib.BODY_CLEAR
   local area = {{math.min(cx, ex) - m, math.min(cy, ey) - m}, {math.max(cx, ex) + m, math.max(cy, ey) + m}}
@@ -584,7 +601,7 @@ local function check_candidates(hunt, tick)
     local bx, by = dir_vector(cand.k)
     local cx, cy = P.x + cand.d * bx, P.y + cand.d * by
     cand.x, cand.y = cx, cy
-    if body_ok(probe, cx, cy, bx, by) then
+    if body_ok(probe, cx, cy, bx, by, lib.size_of(hunt).body_len) then
       local len = cand.d - lib.LINE_END
       if line_clear(probe, cx, cy, cx - bx * len, cy - by * len, lib.LINE_STEP, 0) then
         local chosen = {position = {x = cx, y = cy}, direction = (cand.k + lib.DIRECTIONS / 2) % lib.DIRECTIONS,
@@ -696,7 +713,9 @@ local function on_path(event)
   local k = round_dir(first.x - start.x, first.y - start.y)
   if k ~= (cand.k + lib.DIRECTIONS / 2) % lib.DIRECTIONS then
     local fx, fy = dir_vector(k)
-    if not body_ok(new_probe(game.get_surface(hunt.surface_index)), start.x, start.y, -fx, -fy) then return failed(hunt, tick) end
+    if not body_ok(new_probe(game.get_surface(hunt.surface_index)), start.x, start.y, -fx, -fy, lib.size_of(hunt).body_len) then
+      return failed(hunt, tick)
+    end
   end
   hunt.path = nil
   local chosen = {position = {x = start.x, y = start.y}, direction = k, route = route, length = L, box = path.box, k = cand.k}
@@ -729,7 +748,7 @@ local function spawn(hunt, tick, force)
   local surface = game.get_surface(hunt.surface_index)
   plan.spawns = plan.spawns + 1
   local ok, unit = pcall(function()
-    return surface.create_segmented_unit{name = lib.NAME, position = chosen.position, direction = chosen.direction,
+    return surface.create_segmented_unit{name = lib.size_of(hunt).name, position = chosen.position, direction = chosen.direction,
                                          extended = true, force = force}
   end)
   if not ok then
@@ -903,6 +922,7 @@ end
 -- Ein Takt mit Wurm (Phasen anfahrt, angriff, suche).
 local function drive(hunt, tick, force)
   local worm = hunt.worm
+  local size = lib.size_of(hunt)
   local unit = worm.unit
   if not (unit and unit.valid) then
     lib.forget(hunt)
@@ -1012,7 +1032,7 @@ local function drive(hunt, tick, force)
     dest, hold = detour, detour.reached
   elseif open then
     dest, hold = route[worm.wp], lib.WP_NEAR
-    if straight then dest = {x = hx + h_x * lib.LOOKAHEAD, y = hy + h_y * lib.LOOKAHEAD} end
+    if straight then dest = {x = hx + h_x * size.lookahead, y = hy + h_y * size.lookahead} end
   elseif phase == "angriff" then
     local far_x, far_y = P.x + u_x * lib.BEHIND, P.y + u_y * lib.BEHIND
     if line_clear(probe, P.x, P.y, far_x, far_y, lib.LOOK_STEP, 0) and sand(probe, P.x, P.y) then
@@ -1032,11 +1052,11 @@ local function drive(hunt, tick, force)
   if not rerouting then
     local blocked = false
     if phase == "angriff" and not detour then
-      local L = math.min(lib.LOOKAHEAD, reach_len)
+      local L = math.min(size.lookahead, reach_len)
       if L > 0 then blocked = not line_clear(probe, hx, hy, hx + u_x * L, hy + u_y * L, lib.LOOK_STEP, 0) end
     else
       local to_dest = math.sqrt((dest.x - hx) ^ 2 + (dest.y - hy) ^ 2)
-      local L = math.min(lib.LOOKAHEAD, to_dest - hold)
+      local L = math.min(size.lookahead, to_dest - hold)
       if L > 0 then
         local g_x, g_y = unit_vector(dest.x - hx, dest.y - hy)
         blocked = not line_clear(probe, hx, hy, hx + g_x * L, hy + g_y * L, lib.LOOK_STEP, lib.SIDE)
@@ -1045,7 +1065,7 @@ local function drive(hunt, tick, force)
           -- Plan 4.8 Schritt 3 (Trockenlauf 0.8.0): Nach dem Wechsel an einer Gangbiegung sähe die volle Länge die Wand
           -- gegenüber, die er nie erreicht, und der Umweg um die Kopfrichtung führte aus dem Gang.
           local a = math.acos(math.max(-1, math.min(1, h_x * g_x + h_y * g_y)))
-          local L_h = math.min(L, lib.TURN_RADIUS * a)
+          local L_h = math.min(L, size.turn * a)
           blocked = not line_clear(probe, hx, hy, hx + h_x * L_h, hy + h_y * L_h, lib.LOOK_STEP, lib.SIDE)
         end
       end

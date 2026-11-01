@@ -808,7 +808,7 @@ end
 -- Phase 3d2 (docs/protokolle/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
 -- prototypes/sandworm.lua gelesen).
 local expected_3d2 = {
-  ["segmented-unit"] = {"arrakis-sandworm-small"},
+  ["segmented-unit"] = {"arrakis-sandworm-small", "arrakis-sandworm-large"},
   ["trivial-smoke"] = {"arrakis-sandworm-smoke-front", "arrakis-sandworm-smoke-small-top", "arrakis-sandworm-smoke-small-bottom",
                        "arrakis-sandworm-smoke-big"},
   explosion = {"arrakis-worm-dive"},
@@ -853,14 +853,20 @@ for _, t in ipairs({"segmented-unit", "segment"}) do for n, p in pairs(raw[t] or
   if #corpses > 0 then add(where .. " dying_trigger_effect erzeugt " .. table.concat(corpses, ", ")) end
   if t == "segment" and p.hidden ~= true then add(where .. " nicht hidden") end
 end end end
-local head = raw["segmented-unit"]["arrakis-sandworm-small"]
+-- Phase 3j (docs/plan-3j.md 2.1): großer Wurm gleich gebaut, Lebenspunkte des mittleren Demolishers (100 000).
+local worm_sizes = {small = 30000, large = 100000}
+for size, health in pairs(worm_sizes) do
+local head = raw["segmented-unit"]["arrakis-sandworm-" .. size]
 if head then
-  local where = "FEHLER 3d2: segmented-unit arrakis-sandworm-small"
+  local where = "FEHLER 3d2: segmented-unit arrakis-sandworm-" .. size
   local segs = head.segment_engine and head.segment_engine.segments or {}
   if #segs ~= 12 then add(where .. " " .. #segs .. " Segmente statt 12") end
   for i, sg in ipairs(segs) do
-    if type(sg.segment) ~= "string" or not sg.segment:find("^arrakis%-sandworm%-small%-") then add(where .. " Segment " .. i .. " " .. tostring(sg.segment)) end
+    if type(sg.segment) ~= "string" or not sg.segment:find("^arrakis%-sandworm%-" .. size .. "%-") or not raw.segment[sg.segment] then
+      add(where .. " Segment " .. i .. " " .. tostring(sg.segment))
+    end
   end
+  if head.max_health ~= health then add(where .. " max_health " .. tostring(head.max_health) .. " statt " .. health) end
   for _, key in ipairs({"investigating_speed", "attacking_speed", "enraged_speed"}) do
     if type(head[key]) ~= "number" or math.abs(head[key] - 3.5 / 60) > 1e-9 then add(where .. " " .. key .. " " .. tostring(head[key]) .. " statt 3,5/60") end
   end
@@ -874,6 +880,7 @@ if head then
   if not (icon and type(icon.tint) == "table" and sand_tinted(icon)) then add(where .. " Symbol nicht getönt") end
   if not head.localised_name then add(where .. " ohne localised_name") end
 end
+end
 for _, n in ipairs(expected_3d2["trivial-smoke"]) do
   local smoke = raw["trivial-smoke"][n]
   if smoke then
@@ -886,7 +893,7 @@ for _, n in ipairs(expected_3d2["trivial-smoke"]) do
 end
 local dive = raw.explosion["arrakis-worm-dive"]
 if dive and dive.sound ~= nil then add("FEHLER 3d2: explosion arrakis-worm-dive mit sound") end
-add("3d2: " .. count_3d2 .. "/6 Prototypen, " .. sandworm_parts .. " Teile des Sandwurms (Kopf und Segmente)")
+add("3d2: " .. count_3d2 .. "/7 Prototypen, " .. sandworm_parts .. " Teile des Sandwurms (Kopf und Segmente)")
 
 -- Prüfstand: Test-Prototypen nur mit Einstellung, alle versteckt, ohne Rezept/Item/Forschung
 local tb_setting = settings.startup["arrakis-testbench"]

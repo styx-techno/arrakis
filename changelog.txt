@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.16.0
+Date: 2026-11-01
+  Features:
+    - Großer Sandwurm: Bei einem Wurmzeichen kommt per Zufall nach der Stufe des Reviers statt des kleinen der große Wurm (wild 30 %, normal 10 %, ruhig nie), auch beim Thumper. Lehrjagd und lauernder Wurm bleiben klein.
+    - Der große Wurm ist eine sandgetönte Kopie des mittleren Demolishers: 100 000 statt 30 000 Lebenspunkte, etwa 1,5-mal so groß, gleiches Tempo. Er frisst beim Biss alles im Umkreis von 6 statt 4 Kacheln (Ring entsprechend größer) und zerdrückt eine Spur von 4 statt 2,5 Kacheln.
+    - Beute: 6 bis 10 Wurmzähne; das Revier bleibt doppelt so lange frei (Standard 120 min).
+    - Meldung „Großes Wurmzeichen“ und neue Mod-Einstellung „Großer Wurm“ (an/aus).
+  Modding:
+    - scripts/sandworm.lua: SIZES und size_of(hunt) (Name, Körperlinie, Vorausschau, Wenderadius je Größe). scripts/worms.lua: LARGE, LARGE_CHANCE, LARGE_ENABLED, bite_radius, crush_radius, large_chance, large_due; start_hunt nimmt opts.size; Jagden ohne size sind klein.
+    - Prüfstand: T37 (großer Wurm, vier Schritte).
+---------------------------------------------------------------------------------------------------
 Version: 0.15.1
 Date: 2026-11-01
   Changes:
