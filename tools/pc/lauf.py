@@ -11,9 +11,11 @@ Aufruf (aus dem Repo-Root):
 Ablauf:
   1. git pull --ff-only origin main im Mod-Repo (dieses Repo).
   2. pruefstand.py mit --factorio, --ordner und den Tests; Ausgabe läuft durch.
-  3. Neue Ergebnisdateien (arrakis-test-*.txt, arrakis-t11-karten-*.txt, ohne *-vorher-*) aus <ordner>/ergebnisse
+  3. Neue Ergebnisdateien (arrakis-test-*.txt, arrakis-zusammenfassung-*.txt, arrakis-t11-karten-*.txt, ohne *-vorher-*) aus <ordner>/ergebnisse
      nach ergebnisse/<Datum>_<Version>_<Commit>/ im Ergebnis-Repo, Zeile in dessen README, commit, push.
-  4. Letzte Zeile: LAUF <Rückgabewert> | <Version> <Commit> | <Ordner im Zweig> | hochgeladen ja/nein
+  4. Vorletzte Zeile: Zusammenfassung: <Ordner im Zweig>/arrakis-zusammenfassung-<Stempel>.txt (eine Zeile je Test,
+     bei FEHLER die Fehlerzeilen; zuerst diese Datei lesen, das volle Log nur bei Bedarf).
+     Letzte Zeile: LAUF <Rückgabewert> | <Version> <Commit> | <Ordner im Zweig> | hochgeladen ja/nein
 
 Rückgabewert: der von pruefstand.py (0 kein FEHLER, 1 FEHLER, 2 Einrichtung); 3, wenn Holen oder Hochladen scheitert.
 """
@@ -105,7 +107,7 @@ def main():
   folder = Path(args.ordner) / "ergebnisse"
   results = sorted(p for p in folder.glob("arrakis-*.txt")
                    if p.stat().st_mtime >= start and "-vorher-" not in p.name
-                   and (p.name.startswith("arrakis-test-") or p.name.startswith("arrakis-t11-karten-")))
+                   and p.name.startswith(("arrakis-test-", "arrakis-t11-karten-", "arrakis-zusammenfassung-")))
   if not results:
     say("LAUF %d | %s %s | – | hochgeladen nein (keine Ergebnisdatei)" % (rc, version, commit))
     return rc
@@ -115,6 +117,9 @@ def main():
     say("ABBRUCH beim Hochladen: %s" % err)
     say("LAUF %d | %s %s | – | hochgeladen nein" % (rc, version, commit))
     return 3
+  summary = next((p for p in results if p.name.startswith("arrakis-zusammenfassung-")), None)
+  if summary:
+    say("Zusammenfassung: %s/%s" % (where, summary.name))
   say("LAUF %d | %s %s | %s | hochgeladen ja" % (rc, version, commit, where))
   return rc
 

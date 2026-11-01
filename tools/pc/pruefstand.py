@@ -27,7 +27,8 @@ Ablauf:
   5. Je Test: /arrakis-test <id> senden, alle 5 s /arrakis-test status abfragen, bis das
      ERGEBNIS da ist (bei „alle“: bis der Stand wieder „bereit“ ist).
   6. /quit, Server beenden (auch bei Fehlern und Strg+C), script-output/arrakis-test.txt
-     (und arrakis-t11-karten.txt) mit Zeitstempel nach <ordner>/ergebnisse/ kopieren.
+     (und arrakis-t11-karten.txt) mit Zeitstempel nach <ordner>/ergebnisse/ kopieren, dazu
+     arrakis-zusammenfassung-<Stempel>.txt (eine Zeile je Test, Fehlerzeilen; tools/pc/zusammenfassung.py).
 
 Rückgabewert: 0 = kein FEHLER, 1 = mindestens ein FEHLER oder Zeitlimit, 2 = Einrichtung oder
 Infrastruktur (Factorio startet nicht, RCON, Prüfstand-Einstellung nicht aktiv, Zeitraffer nicht
@@ -54,6 +55,7 @@ sys.dont_write_bytecode = True   # kein __pycache__ in tools/pc
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mod_settings  # noqa: E402
 import rcon  # noqa: E402
+import zusammenfassung  # noqa: E402
 
 HOST = "127.0.0.1"
 BUILTIN_MODS = ("base", "elevated-rails", "quality", "recycler", "space-age")
@@ -647,6 +649,11 @@ def collect_files(paths):
       dst = paths["results"] / ("%s-%s.txt" % (src.stem, stamp))
       shutil.copy2(src, dst)
       copied.append(dst)
+      if name == "arrakis-test.txt":
+        try:
+          copied.append(zusammenfassung.write_summary(dst))
+        except (OSError, ValueError) as err:
+          say("Zusammenfassung nicht geschrieben: %s" % err)
   return copied
 
 
