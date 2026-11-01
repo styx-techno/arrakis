@@ -45,6 +45,9 @@ local lib = {}
 local DEPOT = "arrakis-depot"
 local CARRYALL = flyer_lib.CARRYALL
 local TECH = "arrakis-fleet-control"
+-- Bereitschaftsflug (0.12.1, docs/plan-3f.md 1.11 und 6).
+local ESCORT_TECH = "arrakis-escort-flight"
+lib.ESCORT_TECH = ESCORT_TECH
 local SIGNALS = "arrakis-depot-signals"
 
 -- Reichweite der Leitstelle (Kacheln, Mod-Einstellung, Plan 1.3).
@@ -529,7 +532,7 @@ end
 -- Ernter, genug Treibstoff; der nächste gewinnt. Gibt record, Grund zurück.
 local function pick(job, h, list)
   local target = h.entity.position
-  local best, best_d = nil, math.huge
+  local best, best_d, best_key = nil, math.huge, math.huge
   local reason = "none_free"
   for _, record in ipairs(list) do
     local usable = free_carryall(record)
@@ -543,13 +546,16 @@ local function pick(job, h, list)
     local d = usable and depot_of(record.depot)
     if d and d.surface_index == h.entity.surface.index and distance(d.position, target) <= lib.RANGE then
       local dist = distance(record.entity.position, target)
+      -- Begleiter eines anderen Ernters nur, wenn kein anderer Carryall passt (außer bei Rettungen: da zählt nur der Weg).
+      local key = dist
+      if record.escort and record.escort ~= h.un and job.kind ~= "rescue" then key = dist + 1e6 end
       local back = distance(target, d.position)
       -- Einsatz und Umsetzen tragen ihn erst zum Platz, dann fliegt der Carryall leer heim (gerechnet wie beladen).
       if job.target then back = distance(target, job.target) + distance(job.target, d.position) end
       if not enough_fuel(record, dist, back) then
         reason = "no_fuel"
-      elseif dist < best_d then
-        best, best_d = record, dist
+      elseif key < best_key then
+        best, best_d, best_key = record, dist, key
       end
     end
   end
@@ -565,6 +571,7 @@ local function assign(job, record)
     end
   end
   record.job = job.id
+  record.escort = nil
   job.carryall = record.un
   job.state = "fly"
 end
@@ -627,6 +634,70 @@ local function dispatch(tick)
       if record then
         if free_carryall(record) then free[record.depot] = (free[record.depot] or 0) - 1 end
         assign(job, record)
+      end
+    end
+  end
+end
+
+-- Bereitschaftsflug (docs/plan-3f.md 1.11 und 6) --------------------------------------------------------
+
+local function escort_on(force)
+  local tech = force.technologies[ESCORT_TECH]
+  return tech ~= nil and tech.researched
+end
+
+-- Ernter, über dem ein Begleiter schweben darf: aufgebaut, ohne Auftrag, ohne Spieler am Steuer.
+local function escort_target(un)
+  local h = un and storage.harvesters[un]
+  if not (h and h.entity and h.entity.valid and h.state == "deployed") then return nil end
+  if storage.job_of[un] or driven_by_player(h.entity) then return nil end
+  return h
+end
+
+-- Kein Auftrag, sondern ein Merker record.escort = un des Ernters. Begleiter bleiben für die Verteilung frei; pick
+-- nimmt für den eigenen Ernter (Rettung, Tanken, Entladen) den Begleiter, weil er am nächsten ist. Je Leitstelle
+-- höchstens Carryalls − 1 Begleiter (bei zwei oder mehr), damit einer an der Leitstelle bereitsteht.
+local function assign_escorts(list)
+  local escorted, count, spare, total = {}, {}, {}, {}
+  for _, record in ipairs(list) do
+    if record.escort and not (free_carryall(record) and escort_target(record.escort) and escort_on(record.entity.force)) then
+      record.escort = nil
+    end
+    if record.depot and record.fleet_mode == "auto" then
+      total[record.depot] = (total[record.depot] or 0) + 1
+      if record.escort then
+        escorted[record.escort] = true
+        count[record.depot] = (count[record.depot] or 0) + 1
+      elseif free_carryall(record) then
+        spare[record.depot] = spare[record.depot] or {}
+        table.insert(spare[record.depot], record)
+      end
+    end
+  end
+  if next(spare) == nil then return end
+  local wanted = {}
+  for un in pairs(storage.harvesters) do
+    if not escorted[un] and escort_target(un) then table.insert(wanted, un) end
+  end
+  table.sort(wanted)
+  for _, un in ipairs(wanted) do
+    local entity = storage.harvesters[un].entity
+    local d = escort_on(entity.force) and covering_depot(entity)
+    local free = d and spare[d.un]
+    local n = d and total[d.un] or 0
+    local cap = n >= 2 and n - 1 or n
+    if free and #free > 0 and (count[d.un] or 0) < cap then
+      local target = entity.position
+      local back = distance(target, d.position)
+      local best_i, best_d = nil, math.huge
+      for i, record in ipairs(free) do
+        local dist = distance(record.entity.position, target)
+        if dist < best_d and enough_fuel(record, dist, back) then best_i, best_d = i, dist end
+      end
+      if best_i then
+        local record = table.remove(free, best_i)
+        record.escort = un
+        count[d.un] = (count[d.un] or 0) + 1
       end
     end
   end
@@ -1078,6 +1149,7 @@ local function manual_check(record)
   if driver or foreign then
     record.fleet_mode = "manual"
     record.fleet_goal = nil
+    record.escort = nil
     local job = record.job and storage.jobs.list[record.job]
     if job then
       job.carryall = nil
@@ -1109,6 +1181,19 @@ local function idle(record, tick)
     end
   end
   if record.job then return end
+  if record.escort and not record.cargo then
+    -- Begleiter: über dem Ernter schweben, solange der Treibstoff für den Heimweg mit ihm reicht.
+    local h = escort_target(record.escort)
+    if h and h.entity.surface == entity.surface and enough_fuel(record, 0, distance(h.entity.position, d.position)) then
+      local pos = h.entity.position
+      if not arrived(record, pos) and not (record.fleet_goal and distance(record.fleet_goal, pos) < 0.01
+          and entity.autopilot_destination ~= nil) then
+        fly(record, pos)
+      end
+      return
+    end
+    record.escort = nil
+  end
   if record.cargo then
     -- Last ohne Auftrag (zum Beispiel nach einem Ladefehler): auf dem Felsplatz der Leitstelle absetzen.
     if parked then
@@ -1454,6 +1539,7 @@ function lib.tick(tick)
     manual_check(record)
   end
   dispatch(tick)
+  if tick % 60 == 0 then assign_escorts(list) end
   local jobs = {}
   for _, job in pairs(storage.jobs.list) do table.insert(jobs, job) end
   table.sort(jobs, function(a, b) return a.id < b.id end)
