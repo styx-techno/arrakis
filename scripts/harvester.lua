@@ -36,7 +36,6 @@ local NAME = "spice-harvester"
 local MK2 = "spice-harvester-mk2"
 local NAMES = {[NAME] = true, [MK2] = true}
 local SPICE = "spice-sand"
-local TOOTH = "arrakis-worm-tooth"
 local TOGGLE_INPUT = "arrakis-harvester-toggle"
 
 -- Tempo-Deckel (Kacheln/s), läuft jeden Tick für gefahrene Ernter (Plan 1, 4.4).
@@ -56,8 +55,6 @@ lib.MK2_RATE = 1.5
 lib.MK2_VIBRATION = 0.8
 -- Mk2: Farbton des Lastbilds am Flieger, wie die Basis-Ebene im Prototyp (prototypes/harvester-mk2.lua).
 lib.MK2_TINT = {r = 0.7, g = 0.8, b = 1, a = 1}
--- Forschung, die das Mk2-Rezept freischaltet (prototypes/harvester-mk2.lua).
-lib.MK2_TECH = "arrakis-harvester-mk2"
 -- Dauer Aufbauen (Ticks).
 lib.DEPLOY_TICKS = 5 * 60
 -- Dauer Einpacken (Ticks).
@@ -1002,25 +999,6 @@ local function on_marked_for_deconstruction(event)
   end
 end
 
--- Forschung „Ernter Mk2“ (docs/plan-3i.md 2.2): Trigger per Skript, sobald die Force Wurmzähne erbeutet
--- (scripts/worms.lua drop_loot) oder ein Spieler einen Wurmzahn aufhebt (auch für Spielstände aus 0.14.0).
--- Gibt true zurück, wenn die Forschung jetzt erforscht wurde.
-function lib.research_mk2(force)
-  if not (force and force.valid) then return false end
-  local tech = force.technologies[lib.MK2_TECH]
-  if not tech or tech.researched then return false end
-  force.script_trigger_research(lib.MK2_TECH)
-  if not tech.researched then tech.researched = true end
-  return true
-end
-
-local function on_picked_up_item(event)
-  local stack = event.item_stack
-  if not (stack and stack.name == TOOTH) then return end
-  local player = game.get_player(event.player_index)
-  if player then lib.research_mk2(player.force) end
-end
-
 -- Taste: zuerst das Fahrzeug, in dem der Spieler sitzt, sonst die Auswahl (auch aus der Kartenansicht).
 local function on_toggle_key(event)
   local player = game.get_player(event.player_index)
@@ -1052,7 +1030,6 @@ lib.events =
   [defines.events.on_object_destroyed] = on_object_destroyed,
   [defines.events.on_player_driving_changed_state] = on_driving_changed,
   [defines.events.on_marked_for_deconstruction] = on_marked_for_deconstruction,
-  [defines.events.on_picked_up_item] = on_picked_up_item,
   [TOGGLE_INPUT] = on_toggle_key
 }
 

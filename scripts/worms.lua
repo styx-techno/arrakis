@@ -1770,8 +1770,6 @@ function lib.drop_loot(unit, hunt, force)
     enable_looted = true, allow_belts = false}
   if force and force.valid and force.name ~= FORCE then
     force.print({"arrakis-message.msg-worm-loot", n, gps(surface, position)})
-    -- Phase 3i (docs/plan-3i.md 2.2): die ersten Zähne schalten den Ernter Mk2 frei.
-    harvester.research_mk2(force)
   end
   storage.hunts.teeth = (storage.hunts.teeth or 0) + n
   return n

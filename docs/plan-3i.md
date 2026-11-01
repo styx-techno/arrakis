@@ -10,7 +10,7 @@ Leitstelle, Jagdziel). Eigene Grafik kommt mit der Grafik-Phase; bis dahin ist e
 
 Nicht in 3i: großer Wurm, neue Grafiken/Animationen, Umrüsten im Feld.
 
-## 1. Offene Festlegungen (Format „1a 2b …“, ohne Antwort a)
+## 1. Festlegungen (Max 01.11. 04:59: „1b 2b 3b 4a“, umgesetzt in 0.15.1; 0.15.0 hatte überall a)
 
 1. **Werte.** a) +50 % Abbau (7,5 statt 5 Spice-Sand/s), −20 % Vibration, sonst wie Mk1. b) wie a, dazu Laderaum
    60 statt 40 und +50 % Lebenspunkte. c) +100 % Abbau, Vibration wie Mk1.
@@ -20,7 +20,7 @@ Nicht in 3i: großer Wurm, neue Grafiken/Animationen, Umrüsten im Feld.
    getötet). b) normale Forschung, 500 Einheiten mit Spice-Wissenschaft, Voraussetzung Thumper.
 4. **Leitstelle.** a) setzt aus ihrem Lager zuerst Mk2 ein. b) keine Bevorzugung (erster im Lager).
 
-## 2. Regeln (nach Wahl a)
+## 2. Regeln (nach Wahl 1b 2b 3b 4a)
 
 ### 2.1 Fahrzeug
 - Kopie des Ernters (`car`), Name `spice-harvester-mk2`, Item gleichen Namens (Stapel 1), Basis-Ebene und Symbol mit
@@ -30,13 +30,12 @@ Nicht in 3i: großer Wurm, neue Grafiken/Animationen, Umrüsten im Feld.
   600 kW statt 400 kW (gleicher Brennstoff je Spice-Sand).
 - Vibration ×0,8 in jedem Zustand (fahrend, aufbauend, aufgebaut, einpackend); wirkt zusätzlich zur Ernte-Dämpfung
   (Stufe 10: 0,5 × 0,8 = 0,4).
-- Laderaum 40, Brennstoff 3 Plätze, Lebenspunkte wie Mk1.
+- Laderaum 60, Brennstoff 3 Plätze, Lebenspunkte ×1,5.
 
 ### 2.2 Rezept und Forschung
-- Rezept `spice-harvester-mk2`: 1 Ernter + 4 Wurmzähne + 10 Spice-Essenz, 20 s, Handwerk/Montage.
-- Forschung `arrakis-harvester-mk2`, Voraussetzung „Spice-Ernte“ (die Zähne fallen beim Tod des Wurms, „Thumper“
-  kommt erst am Jagdende), `research_trigger` scripted. Auslöser: `worms.drop_loot` verteilt ≥ 1 Zahn für eine Force
-  → `force.script_trigger_research`; außerdem `on_picked_up_item` mit Wurmzahn (deckt Spielstände aus 0.14.0 ab).
+- Rezept `spice-harvester-mk2`: 1 Ernter + 4 Wurmzähne + 10 Melange + 5 Prozessoren, 20 s, Handwerk/Montage.
+- Forschung `arrakis-harvester-mk2`: 500 Einheiten (Automatisierung, Logistik, Chemie, Weltraum, Spice), 30 s,
+  Voraussetzung „Thumper“. (0.15.0 hatte eine Trigger-Forschung beim ersten Wurmzahn.)
 
 ### 2.3 Gemeinsamer Code
 - `scripts/harvester.lua`: `lib.NAMES` (Mk1, Mk2), `lib.is_name(name)`, `lib.MK2`, `lib.rate_factor(entity)`,
@@ -48,7 +47,7 @@ Nicht in 3i: großer Wurm, neue Grafiken/Animationen, Umrüsten im Feld.
 ## 3. Tests
 
 - **T35 Ernter Mk2 (Prüfstand):** Prototyp-Werte (Laderaum, Farbton, Rezept, Forschung); Abbau in 20 s ≈ 1,5 × Mk1
-  nebeneinander auf gleichem Feld; Vibrationsgewicht aufgebaut = 0,8 × Mk1; Wurm-Beute löst die Forschung aus;
+  nebeneinander auf gleichem Feld; Vibrationsgewicht aufgebaut = 0,8 × Mk1; Wurm-Beute schaltet die Forschung nicht frei (seit 0.15.1);
   Carryall hebt Mk2 an und setzt ihn ab (Name und Laderaum bleiben); Leitstelle lagert Mk2 ein und gibt ihn vor Mk1
   wieder aus; Jagd auf Mk2 gilt als Ernter-Jagd (Rettung wie Mk1).
 - **T36 interaktiv (Spielabend):** Mk2 herstellen, Farbton und Fenster ansehen, mit Ornithopter tragen.

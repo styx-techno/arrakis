@@ -1,5 +1,5 @@
--- T35 Ernter Mk2 0.15.0 (docs/plan-3i.md 3): Prototypen, Förderung ×1,5 und Vibration ×0,8 neben einem Mk1,
--- Forschung durch Beute, Tragen mit dem Ornithopter (Lastbild getönt), Leitstelle gibt Mk2 zuerst aus und lagert ihn
+-- T35 Ernter Mk2 0.15.1 (docs/plan-3i.md 3, Max' Wahl 1b 2b 3b 4a): Prototypen (Laderaum 60, Leben ×1,5, Rezept mit
+-- Prozessoren, Forschung 500 Einheiten), Förderung ×1,5 und Vibration ×0,8 neben einem Mk1, Beute schaltet nichts frei, Tragen mit dem Ornithopter (Lastbild getönt), Leitstelle gibt Mk2 zuerst aus und lagert ihn
 -- ein, Biss „schwer beschädigt“ wie beim Mk1. Gemeinsame Helfer: scripts/testbench/gemeinsam_fleet.lua (T23-Fläche).
 
 local common = require("scripts.testbench.gemeinsam_fleet")
@@ -45,31 +45,37 @@ end
 
 local t35 = {}
 
--- 1) Prototypen: Fahrzeug wie Mk1 (Laderaum), Rezept mit Wurmzähnen, Trigger-Forschung, Faktoren im Skript.
+-- 1) Prototypen: Laderaum 60, Leben ×1,5, Rezept mit Wurmzähnen und Prozessoren, Forschung 500 Einheiten hinter Thumper,
+-- Faktoren im Skript.
 function t35.s1(run, tb, d)
   local failed = {}
   local mk1, mk2 = prototypes.entity[NAME], prototypes.entity[MK2]
   check(failed, mk2 ~= nil and mk2.type == "car", "Fahrzeug " .. MK2 .. " fehlt")
   local size1 = mk1 and mk1.get_inventory_size(defines.inventory.car_trunk)
   local size2 = mk2 and mk2.get_inventory_size(defines.inventory.car_trunk)
-  check(failed, size1 ~= nil and size1 == size2, "Laderaum " .. tostring(size2) .. " statt " .. tostring(size1))
-  check(failed, mk2 ~= nil and mk1 ~= nil and mk2.get_max_health() == mk1.get_max_health(), "Lebenspunkte ungleich Mk1")
+  check(failed, size1 == 40 and size2 == 60, "Laderaum " .. tostring(size2) .. " (Mk1 " .. tostring(size1) .. ")")
+  local hp1 = mk1 and mk1.get_max_health()
+  local hp2 = mk2 and mk2.get_max_health()
+  check(failed, hp1 ~= nil and hp2 ~= nil and near(hp2, hp1 * 1.5, 0.01), "Lebenspunkte " .. tostring(hp2) .. " (Mk1 "
+    .. tostring(hp1) .. ")")
   local recipe = prototypes.recipe[MK2]
-  local want = {[NAME] = 1, [worms_lib.TOOTH] = 4, ["spice-essence"] = 10}
+  local want = {[NAME] = 1, [worms_lib.TOOTH] = 4, ["melange"] = 10, ["processing-unit"] = 5}
   local got = {}
   for _, ing in ipairs(recipe and recipe.ingredients or {}) do
     got[#got + 1] = ing.name .. "×" .. ing.amount
     check(failed, want[ing.name] == ing.amount, "Zutat " .. ing.name .. " " .. ing.amount)
   end
-  check(failed, #got == 3, "Rezept hat " .. #got .. " Zutaten")
+  check(failed, #got == 4, "Rezept hat " .. #got .. " Zutaten")
   local tech = prototypes.technology[TECH]
-  local trigger = tech and tech.research_trigger
-  check(failed, trigger ~= nil and trigger.type == "scripted", "Forschung " .. TECH .. " ohne Skript-Auslöser")
+  local units = tech and tech.research_unit_count
+  local pre = tech and tech.prerequisites or {}
+  check(failed, tech ~= nil and units == 500 and tech.research_trigger == nil and pre["arrakis-thumper"] ~= nil,
+    "Forschung " .. TECH .. ": " .. tostring(units) .. " Einheiten, Voraussetzung Thumper " .. tostring(pre["arrakis-thumper"] ~= nil))
   check(failed, harvester.is_name(NAME) and harvester.is_name(MK2) and not harvester.is_name(FLYER), "harvester.is_name")
   check(failed, harvester.MK2_RATE == 1.5 and harvester.MK2_VIBRATION == 0.8, "Faktoren " .. tostring(harvester.MK2_RATE)
     .. "/" .. tostring(harvester.MK2_VIBRATION))
-  return verdict(run, tb, 1, "Prototypen", failed, string.format("Laderaum %s, Rezept %s, Auslöser %s", tostring(size2),
-    table.concat(got, " + "), tostring(trigger and trigger.type)))
+  return verdict(run, tb, 1, "Prototypen", failed, string.format("Laderaum %s, Leben %s, Rezept %s, Forschung %s Einheiten",
+    tostring(size2), tostring(hp2), table.concat(got, " + "), tostring(units)))
 end
 
 -- 2) Förderung und Vibration: Mk1 und Mk2 nebeneinander auf gleichen Feldern, 20 s nach dem Aufbau.
@@ -115,7 +121,8 @@ function t35.s2_check(run, tb, d)
     tb.num(ratio), tb.num(w1), tb.num(w2), tb.num(wr)))
 end
 
--- 3) Forschung durch Beute: Wurm ohne Zähne (Faktor 0) schaltet nichts frei, mit Zähnen erforscht.
+-- 3) Beute schaltet nichts frei (seit 0.15.1 normale Forschung): ein getöteter Wurm lässt Zähne fallen, die Forschung
+-- bleibt offen.
 local function teeth_clear(surface, position)
   for _, item in pairs(surface.find_entities_filtered{type = "item-entity", position = position, radius = 12}) do
     item.destroy()
@@ -144,26 +151,14 @@ function t35.s3(run, tb, d)
   if not tech then return fail(run, tb, 3, "Forschung " .. TECH .. " fehlt") end
   s.was = tech.researched
   d.tech_was = s.was
-  d.factor = worms_lib.TOOTH_FACTOR
   tech.researched = false
-  worms_lib.TOOTH_FACTOR = 0
-  local n0, err = kill_worm(run, tb, at(d.pos.rescue, 0, 20), force)
-  worms_lib.TOOTH_FACTOR = d.factor
-  if not n0 then return fail(run, tb, 3, "Sandwurm ließ sich nicht erzeugen: " .. tostring(err)) end
-  local after0 = tech.researched
-  check(failed, n0 == 0 and not after0, "ohne Zähne: " .. n0 .. " Zähne, erforscht " .. tostring(after0))
-  local n1
-  n1, err = kill_worm(run, tb, at(d.pos.rescue, 40, 20), force)
-  if not n1 then return fail(run, tb, 3, "Sandwurm ließ sich nicht erzeugen: " .. tostring(err)) end
-  local after1 = tech.researched
-  check(failed, n1 > 0 and after1, "mit Zähnen: " .. n1 .. " Zähne, erforscht " .. tostring(after1))
-  local enabled = force.recipes[MK2] and force.recipes[MK2].enabled
-  check(failed, enabled == true, "Rezept nicht freigeschaltet")
+  local n, err = kill_worm(run, tb, at(d.pos.rescue, 40, 20), force)
+  if not n then return fail(run, tb, 3, "Sandwurm ließ sich nicht erzeugen: " .. tostring(err)) end
+  local after = tech.researched
+  check(failed, n > 0 and not after, n .. " Zähne, erforscht " .. tostring(after))
   tech.researched = s.was
   d.tech_was = nil
-  return verdict(run, tb, 3, "Forschung durch Beute", failed, string.format(
-    "Faktor 0: %d Zähne, erforscht %s; danach %d Zähne, erforscht %s, Rezept %s", n0, tostring(after0), n1,
-    tostring(after1), tostring(enabled)))
+  return verdict(run, tb, 3, "Beute schaltet nichts frei", failed, string.format("%d Zähne, erforscht %s", n, tostring(after)))
 end
 
 -- 4) Tragen: Ornithopter koppelt den Mk2 an, hebt ihn (Lastbild getönt) und setzt ihn wieder ab.
@@ -314,7 +309,7 @@ local function t35_start(run, tb)
   for number = 1, #T35_STEPS do d["s" .. number] = {} end
   d.after_step = "sweep"
   tb.watch(run, nil, d.pos.watch)
-  tb.log(run, "INFO", "Sechs Schritte 0.15.0 (Ernter Mk2). Dauer etwa eine Minute Spielzeit.")
+  tb.log(run, "INFO", "Sechs Schritte 0.15.1 (Ernter Mk2). Dauer etwa eine Minute Spielzeit.")
   d.step, d.phase, d.wait_until = 1, 1, game.tick + 30
 end
 
@@ -333,7 +328,7 @@ return
 {
   T35 =
   {
-    title = "Ernter Mk2 0.15.0",
+    title = "Ernter Mk2 0.15.1",
     timeout = 5 * 60 * 60,
     interactive = false,
     confirm = nil,
