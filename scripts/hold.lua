@@ -1,4 +1,4 @@
--- Ablage-Oberfläche arrakis-hold (Phase 3c, docs/plan-3c.md 4.11): Hier stehen getragene Spice-Ernter,
+-- Ablage-Oberfläche arrakis-hold (Phase 3c, docs/protokolle/plan-3c.md 4.11): Hier stehen getragene Spice-Ernter,
 -- während am Ornithopter nur ihr Bild hängt (scripts/flyer.lua). Bibliothek für __core__/lualib/event_handler.
 -- Daten: storage.hold = {surface = LuaSurface|nil} (Schema 2, siehe scripts/migrate.lua).
 --

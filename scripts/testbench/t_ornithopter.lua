@@ -1,4 +1,4 @@
--- Prüfstand: Ornithopter mit echtem Laufzeitcode (Phase 3c, docs/plan-3c.md 6; Vertrag siehe runner.lua).
+-- Prüfstand: Ornithopter mit echtem Laufzeitcode (Phase 3c, docs/protokolle/plan-3c.md 6; Vertrag siehe runner.lua).
 --   T15: scripts/flyer.lua, scripts/hold.lua, scripts/harvester.lua, scripts/intake.lua und scripts/migrate.lua auf der
 --        Prüfstand-Fläche (terrain.harvest_allowed erlaubt sie mit der Startup-Einstellung) und auf der echten Ablage
 --        arrakis-hold. Siebzehn Schritte, je eine OK/FEHLER-Zeile mit Werten; Einzelwerte als MESSUNG nur in der Datei.
@@ -979,12 +979,12 @@ function t15_steps.s2_check(run, tb, d)
     else
       tb.log(run, "MESSUNG", "2) a) Das Item von Hand zählt die Produktionsstatistik nicht, und nichts erforscht „Ornithopter“:"
         .. " Grenze ohne Spieler. Mit Spieler greifen der Auslöser der Engine oder on_player_crafted_item; das prüfst du bei der"
-        .. " Abnahme von Hand (docs/plan-3c.md 8)")
+        .. " Abnahme von Hand (docs/protokolle/plan-3c.md 8)")
     end
   end
   if #failed == 0 and not (a.research_ticks or b.research_ticks) then
     tb.log(run, "MESSUNG", "2) Forschung „Ornithopter“ beim ersten Ernter [U11]: " .. values
-      .. "; die Forschung prüfst du von Hand (Abnahme, docs/plan-3c.md 8)")
+      .. "; die Forschung prüfst du von Hand (Abnahme, docs/protokolle/plan-3c.md 8)")
     run.data.results[2] = "MESSUNG"
     return "end"
   end
@@ -3088,7 +3088,7 @@ local function t16_evaluate(run, tb, d)
       tb.num(hover.from.energy and hover.from.energy / 1000, 0), tb.num(hover.to.energy and hover.to.energy / 1000, 0),
       hover.from.items or 0, hover.to.items or 0, tb.num(hv.kw, 1), tb.num(hv.used and hv.used / 1000, 0), tb.num(hv.distance, 2)))
     if hv.used and hv.used > 1000 then
-      tb.log(run, "INFO", "U10 hält nicht: Schweben kostet " .. tb.num(hv.kw, 1) .. " kW (docs/plan-3c.md 4.16 nimmt das hin)")
+      tb.log(run, "INFO", "U10 hält nicht: Schweben kostet " .. tb.num(hv.kw, 1) .. " kW (docs/protokolle/plan-3c.md 4.16 nimmt das hin)")
     end
   end
   -- Raketentreibstoff: r = t = 1,15, sein Sticker BASE / 1,15 ergibt BASE · Rohtempo bei t = 1 (prototypes/ornithopter-speed.lua).

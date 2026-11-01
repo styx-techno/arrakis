@@ -1,4 +1,4 @@
--- Vibration (Phase 3d1, docs/plan-3d1.md 4.3, 4.4, 4.11, 4.12): Quellen und Gewichte, Wärme je Chunk mit Zerfall,
+-- Vibration (Phase 3d1, docs/protokolle/plan-3d1.md 4.3, 4.4, 4.11, 4.12): Quellen und Gewichte, Wärme je Chunk mit Zerfall,
 -- 3×3-Summen, Sektoren und Ruhe, Vorsichtsmodus, Unruhe (Status, Staub, Rumpeln) und Vibrationsanzeige.
 -- Bibliothek für __core__/lualib/event_handler. Daten nur in storage (Schema 3, siehe scripts/migrate.lua). Die Takte
 -- (tick, careful_tick, unrest_tick, overlay_tick) ruft nur scripts/worms.lua in fester Reihenfolge aus seinem

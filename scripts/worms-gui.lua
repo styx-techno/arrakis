@@ -1,4 +1,4 @@
--- Fenster oben links (Phase 3d1, docs/plan-3d1.md 4.6 und 4.10): Schonfrist und Jagden der eigenen Force.
+-- Fenster oben links (Phase 3d1, docs/protokolle/plan-3d1.md 4.6 und 4.10): Schonfrist und Jagden der eigenen Force.
 -- Bibliothek für __core__/lualib/event_handler. Liest nur storage (storage.grace, storage.hunts), schreibt nichts
 -- dorthin. scripts/worms.lua ruft refresh_force bei Start, Entscheidung und Ende einer Jagd; sonst frischt der
 -- 30-Tick-Takt auf. Leer → Rahmen weg. Solange storage.hunts.paused_until in der Zukunft liegt (nach

@@ -71,8 +71,9 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `prototypes/compat.lua` | Versionsweiche: Prototypen in 2.0-Syntax, unter 2.1 umgeschrieben (bleibt, falls der Zweig `factorio-2.0` noch einmal aus diesem Code gebaut wird) |
 | `data-updates.lua` | Spice-Wissenschaft in die Labore eintragen |
 | `data-final-fixes.lua` | Spice von Hand: Kategorie `arrakis-spice-harvest` an alle Spielfiguren und God-Controller |
-| `docs/design-ernter-ornithopter.md` | Design v0.3: Spice-Ernter, Ornithopter, Sandwürmer, Automatik |
-| `docs/plan-3b.md`, `docs/plan-3c.md`, `docs/plan-3d1.md`, `docs/plan-3d2.md` | Baupläne der Phasen 3b (Ernter, 0.5.0), 3c (Ornithopter, 0.6.0), 3d1 (Vibration und Biss, 0.7.0) und 3d2 (Sandwurm, 0.8.0); wo sie vom Design abweichen, gilt der Plan |
+| `docs/design-ernter-ornithopter.md` | Design v0.3 (Kurzfassung): Max' Grundentscheidungen, feste Regeln, Zahlen, Forschungsbaum, Roadmap mit Stand |
+| `docs/plan-3b.md`, `docs/plan-3c.md`, `docs/plan-3d1.md`, `docs/plan-3d2.md`, `docs/plan-3e.md`, `docs/plan-3f.md` | Je Phase eine kurze Übergabe (Entscheidungen, Standards, Zahlen, Offenes): 3b Ernter (0.5), 3c Ornithopter (0.6), 3d1 Vibration und Biss (0.7), 3d2 Sandwurm (0.8), 3e Carryall-Automatik (0.10–0.11), 3f Flottenleitung (0.12). Zuerst diese lesen |
+| `docs/protokolle/` | Volle Baupläne und das volle Design (je 90–135 KB). Abschnittsnummern in Code-Kommentaren und im changelog („plan-3d1 4.9“, „DOC 2.4“) zeigen hierhin. Nur gezielt in Ausschnitten lesen |
 | `prototypes/surface-property.lua` | Luftfeuchtigkeit (`humidity`) |
 | `prototypes/technology.lua` | Entdeckungs-Technologie |
 | `control.lua` | Lädt die Laufzeit-Bibliotheken (`event_handler`) |
@@ -95,10 +96,10 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll) und die Tests T1–T25 und T2b (`t_ernter.lua`: echter Ernter-Code, `t_karte.lua`: T14 Karte echt, `t_ornithopter.lua`: T15–T17 Ornithopter, `t_jagd.lua`: T18–T20 Wärme, Jagd und Bedienung der Würmer, `t_sandwurm.lua`: T21 und T22 echter Sandwurm, Optik und Laden, `t_fleet.lua`: T23–T25 Leitstelle und Carryalls) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
 | `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
-| `tools/pc/` | Prüfstand ohne Spieler: `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |
+| `tools/pc/` | Prüfstand ohne Spieler: `lauf.py` (holen, Prüfstand, Ergebnisse in den Zweig `pruefstand-ergebnisse`), `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `zusammenfassung.py` (eine Zeile je Test aus dem vollen Log, `arrakis-zusammenfassung-*.txt`), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |
 
 ## Roadmap
 
 Siehe Konzept: Phase 1 Gelände und Wasser, Phase 2 Spice-Kette und Spice-Wissenschaft, Phase 3 Sandwürmer, Phase 4 Stürme und Plast-Stahl, Phase 5 Endgame, Phase 6 Balancing und Release.
 
-Phase 3 im Einzelnen steht in [`docs/design-ernter-ornithopter.md`](docs/design-ernter-ornithopter.md), Abschnitt 7: gebaut sind der Spice-Ernter (3b, 0.5.x), der Ornithopter (3c, 0.6.x), Vibration, Wurmzeichen und Biss (3d1, 0.7.0) der Sandwurm selbst (3d2, 0.8.0) und die Automatik mit Leitstelle und Carryalls (3e, 0.10.0); offen sind Thumper, Beute, großer Wurm und Balancing (3d3).
+Phase 3 im Einzelnen steht in [`docs/design-ernter-ornithopter.md`](docs/design-ernter-ornithopter.md) (Kurzfassung mit Roadmap; voll in [`docs/protokolle/`](docs/protokolle/), Abschnitt 7): gebaut sind der Spice-Ernter (3b, 0.5.x), der Ornithopter (3c, 0.6.x), Vibration, Wurmzeichen und Biss (3d1, 0.7.0) der Sandwurm selbst (3d2, 0.8.0) und die Automatik mit Leitstelle und Carryalls (3e, 0.10.0); offen sind Thumper, Beute, großer Wurm und Balancing (3d3).

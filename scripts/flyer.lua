@@ -1,4 +1,4 @@
--- Ornithopter (Phase 3c, docs/plan-3c.md 4.1 bis 4.12 und 4.15): Datensätze, Bedienung (Taste, Shortcut, Knopf),
+-- Ornithopter (Phase 3c, docs/protokolle/plan-3c.md 4.1 bis 4.12 und 4.15): Datensätze, Bedienung (Taste, Shortcut, Knopf),
 -- Ankoppeln, Anheben mit Notstart, Sitze, Absetzen, Tempo-Sticker, Lastbild, Absturz, Landesuche mit Warteliste,
 -- Pflege und /arrakis-uninstall (seit 0.7.0 räumt der Befehl auch die Würmer, scripts/worms.lua). Bibliothek für
 -- __core__/lualib/event_handler. Daten nur in storage (Schema 3, siehe scripts/migrate.lua), Schlüssel ist
@@ -1241,8 +1241,8 @@ local function uninstall_command(command)
   else
     reply(player, {"arrakis-message.uninstall-stuck", n, rest})
   end
-  -- Danach die Würmer (docs/plan-3d1.md 4.16): Jagden ohne Biss, Markierungen, Fenster, Anzeigen, 10 min Pause; dazu
-  -- alle Sandwürmer (docs/plan-3d2.md 4.14), die zweite Zahl.
+  -- Danach die Würmer (docs/protokolle/plan-3d1.md 4.16): Jagden ohne Biss, Markierungen, Fenster, Anzeigen, 10 min Pause; dazu
+  -- alle Sandwürmer (docs/protokolle/plan-3d2.md 4.14), die zweite Zahl.
   local hunts, worms = worms_lib.uninstall()
   reply(player, {"arrakis-message.uninstall-worms", hunts, worms})
   if lib.before_uninstall then reply(player, {"arrakis-message.uninstall-fleet"}) end

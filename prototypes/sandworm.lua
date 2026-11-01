@@ -1,4 +1,4 @@
--- Phase 3d2 (docs/plan-3d2.md 3): Sandwurm arrakis-sandworm-small samt Segmenten, vier Bohrstaub-Kopien und der Effekt
+-- Phase 3d2 (docs/protokolle/plan-3d2.md 3): Sandwurm arrakis-sandworm-small samt Segmenten, vier Bohrstaub-Kopien und der Effekt
 -- arrakis-worm-dive fürs Auf- und Abtauchen. Steuern, Zerdrücken und Biss macht das Skript (scripts/sandworm.lua,
 -- scripts/worms.lua). Kommt direkt nach prototypes/worms.lua: arrakis-worm-dive kopiert die Eruption, die Sterbewolke
 -- nimmt arrakis-sand-dust.

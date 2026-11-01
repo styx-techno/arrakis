@@ -9,18 +9,18 @@
 --   timer_start, timer_end, resources = {LuaEntity…}, res_index, progress, drain_rest, prod_rest,
 --   last_tick, deploy_pos = {x, y}, deploy_surface, status = nil|"harvesting"|"trunk_full"|"field_empty"|"no_fuel",
 --   renders = {ring, frame}, dock, undocked_from, still_since, fuel_key, last_toggle_tick, minable_pos,
---   carried_by = flyer_un|nil, lift_pos = {surface = surface_index, x, y}|nil (Phase 3c, docs/plan-3c.md 4.2)
---   Phase 3d1 (docs/plan-3d1.md 4.2): careful = false, careful_wait = true|nil, careful_pos = {surface, x, y}|nil,
+--   carried_by = flyer_un|nil, lift_pos = {surface = surface_index, x, y}|nil (Phase 3c, docs/protokolle/plan-3c.md 4.2)
+--   Phase 3d1 (docs/protokolle/plan-3d1.md 4.2): careful = false, careful_wait = true|nil, careful_pos = {surface, x, y}|nil,
 --   careful_packing = true|nil (Vorsichtsmodus, scripts/vibration.lua), vib_weight, vib_key, vib_sand (Stand des letzten
 --   60-Tick-Takts), alarm_unrest, alarm_hunt_eta, alarm_hunt_safe (set_alarm), status_written (zuletzt geschriebener
 --   custom_status, Schlüssel wie "hunt:37").
 --
--- Status am Ernter (docs/plan-3d1.md 1 „Status Ernter“): getragen immer „Wird getragen“; sonst Vorrang Wurmzeichen (rot,
+-- Status am Ernter (docs/protokolle/plan-3d1.md 1 „Status Ernter“): getragen immer „Wird getragen“; sonst Vorrang Wurmzeichen (rot,
 -- sicher grün) vor „Vorsichtsmodus: wartet auf Ruhe“ (gelb) vor „Der Sand bebt“ (gelb) vor dem Zustand aus 3b/3c, auch im
 -- Zustand mobil. Die Werte setzen scripts/vibration.lua und scripts/worms.lua über set_alarm und refresh_status; dieses
 -- Modul kennt beide nicht.
 --
--- Zustand carried (Phase 3c, docs/plan-3c.md 4.1 und 4.3): Der Ernter steht gesperrt auf der Ablage arrakis-hold,
+-- Zustand carried (Phase 3c, docs/protokolle/plan-3c.md 4.1 und 4.3): Der Ernter steht gesperrt auf der Ablage arrakis-hold,
 -- am Ornithopter hängt sein Bild. Anheben (lift) und Absetzen (land) ruft scripts/flyer.lua; dieses Modul kennt
 -- flyer.lua nicht. carried gilt als gesperrt (LOCKED: nicht abbaubar, kein Tempo-Deckel), hat aber keine Uhr (TIMED).
 -- Wartet ein Ernter ohne Träger auf einen Landeplatz (storage.stranded, flyer.lua), ist carried_by nil.
@@ -63,7 +63,7 @@ lib.DEBOUNCE = 15
 lib.STILL_SPEED = 0.001
 
 local LOCKED = {deploying = true, deployed = true, packing = true, carried = true}
--- Zustände mit Aufbau-/Einpack-Uhr (timer_end); carried ist gesperrt, hat aber keine (docs/plan-3c.md 4.1).
+-- Zustände mit Aufbau-/Einpack-Uhr (timer_end); carried ist gesperrt, hat aber keine (docs/protokolle/plan-3c.md 4.1).
 local TIMED = {deploying = true, packing = true}
 local ALERT = {trunk_full = true, field_empty = true, no_fuel = true}
 local STATUS_KEY =
@@ -173,7 +173,7 @@ local function draw_frame(h, area)
 end
 
 -- custom_status nach Vorrang (Kopfkommentar), Zustand und Status. Geschrieben wird nur, wenn sich Text oder Sekunde
--- ändern (Schlüssel in h.status_written, docs/plan-3d1.md 4.1); aufrufen bei jedem Zustands-, Status- oder Alarmwechsel.
+-- ändern (Schlüssel in h.status_written, docs/protokolle/plan-3d1.md 4.1); aufrufen bei jedem Zustands-, Status- oder Alarmwechsel.
 local function write_custom_status(h)
   local entity = h.entity
   if not entity.valid then return end
@@ -218,7 +218,7 @@ local function write_custom_status(h)
 end
 
 -- Nur die eigenen Alarme (Symbol Spice-Sand, AlertFilter mit icon, A23 concepts.d.ts:130–138); sonst löschte
--- „Laderaum voll ist vorbei“ auch das Wurmzeichen (docs/plan-3d1.md 4.1).
+-- „Laderaum voll ist vorbei“ auch das Wurmzeichen (docs/protokolle/plan-3d1.md 4.1).
 local function remove_alerts(entity)
   for _, player in pairs(entity.force.connected_players) do
     player.remove_alert{entity = entity, type = defines.alert_type.custom, icon = {type = "item", name = SPICE}}
@@ -244,7 +244,7 @@ local function set_status(h, status)
   if h.state == "deployed" then write_custom_status(h) end
 end
 
--- Alarm am Ernter (docs/plan-3d1.md 4.1): kind "hunt" mit value = eta_tick oder nil und safe = true oder nil
+-- Alarm am Ernter (docs/protokolle/plan-3d1.md 4.1): kind "hunt" mit value = eta_tick oder nil und safe = true oder nil
 -- (Wurmzeichen, scripts/worms.lua), kind "unrest" mit value = true oder nil (Der Sand bebt, scripts/vibration.lua).
 -- Schreibt über write_custom_status, also nur bei einer Änderung von Text oder Sekunde.
 function lib.set_alarm(h, kind, value, safe)
@@ -451,7 +451,7 @@ function lib.register(entity)
     last_tick = game.tick,
     renders = {},
     last_toggle_tick = 0,
-    -- Phase 3d1 (docs/plan-3d1.md 4.2)
+    -- Phase 3d1 (docs/protokolle/plan-3d1.md 4.2)
     careful = false,
     vib_weight = 0,
     vib_sand = false
@@ -592,7 +592,7 @@ function lib.toggle(entity, player)
   local tick = game.tick
   if h.last_toggle_tick ~= 0 and tick - h.last_toggle_tick < lib.DEBOUNCE then return false end
   h.last_toggle_tick = tick
-  -- Der Spieler übernimmt: Ein wartender Vorsichtsmodus baut nicht mehr selbst auf (docs/plan-3d1.md 4.11).
+  -- Der Spieler übernimmt: Ein wartender Vorsichtsmodus baut nicht mehr selbst auf (docs/protokolle/plan-3d1.md 4.11).
   if h.careful_wait then
     h.careful_wait = nil
     write_custom_status(h)
@@ -619,7 +619,7 @@ function lib.toggle(entity, player)
   return false
 end
 
--- Anheben (docs/plan-3c.md 4.1, 4.6 Schritt 4): Notstart nach mobile (angedockt → abdocken), dann carried und
+-- Anheben (docs/protokolle/plan-3c.md 4.1, 4.6 Schritt 4): Notstart nach mobile (angedockt → abdocken), dann carried und
 -- gesperrt. carrier_un ist der Flieger (nil: wartet ohne Träger), lift_pos der Abhebepunkt
 -- {surface = surface_index, x, y} (nil: unbekannt, dann gilt bei der Landesuche nur der Startpunkt der Force).
 -- speed = 0 setzt lock(): Ein angekoppelt fahrender Ernter rollte nach dem Absetzen sonst weiter.
@@ -644,7 +644,7 @@ function lib.lift(h, carrier_un, lift_pos)
   return true
 end
 
--- Absetzen (docs/plan-3c.md 4.1, 4.8 Schritt 3): Träger und Abhebepunkt vergessen, dann wie jeder Weg nach
+-- Absetzen (docs/protokolle/plan-3c.md 4.1, 4.8 Schritt 3): Träger und Abhebepunkt vergessen, dann wie jeder Weg nach
 -- mobile (entsperrt, Abbausperre und Tempo-Ausgleich am neuen Ort, last_tick). undocked_from = nil: Steht er an
 -- einer freien Annahme, dockt er nach 2 s Stillstand an (scripts/intake.lua, dock_check).
 function lib.land(h)
@@ -914,7 +914,7 @@ local function on_teleported(event)
     lib.register(entity)
   elseif h.state == "carried" then
     -- Getragen: nichts tun, sonst risse to_mobile ihn los. Landet ein fremdes Skript ihn außerhalb der Ablage,
-    -- holt scripts/flyer.lua ihn herunter (docs/plan-3c.md 4.4, care Fall b).
+    -- holt scripts/flyer.lua ihn herunter (docs/protokolle/plan-3c.md 4.4, care Fall b).
     return
   elseif h.state == "mobile" then
     lib.refresh_minable(h)

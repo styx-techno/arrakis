@@ -1,4 +1,4 @@
--- Prüfstand: Sandwurm mit echtem Laufzeitcode (Phase 3d2, docs/plan-3d2.md 6; Vertrag siehe runner.lua).
+-- Prüfstand: Sandwurm mit echtem Laufzeitcode (Phase 3d2, docs/protokolle/plan-3d2.md 6; Vertrag siehe runner.lua).
 --   T21: scripts/sandworm.lua und scripts/worms.lua mit dem echten Wurm auf der Prüfstand-Fläche, ohne Spieler: Prototypen und
 --        storage, Zeitlinie einer regulären Jagd, Felsinsel, Sandtasche mit Knick (ROUTING), Ernter vor Fels, Ornithopter über
 --        dem Kopf, Rettung, Zerdrücken, Ersatzbiss, Wurm getötet, Wurm verloren, Flucht per Fahrt, Grenzen, Migration und

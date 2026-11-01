@@ -1,4 +1,4 @@
--- Relatives Fenster am Fahrzeugfenster des Ornithopters und (ab 0.10.0) des Carryalls (Phase 3c, docs/plan-3c.md 4.13): Zustand, Hauptknopf
+-- Relatives Fenster am Fahrzeugfenster des Ornithopters und (ab 0.10.0) des Carryalls (Phase 3c, docs/protokolle/plan-3c.md 4.13): Zustand, Hauptknopf
 -- Anheben/Abbrechen/Absetzen (gleichwertig zur Taste Umschalt+C und zur Verknüpfung), Fernbedienung und
 -- „In den Ernter steigen“. Bibliothek für __core__/lualib/event_handler. Offene Fenster stehen in
 -- storage.flyer_gui_open[player_index] = flyer_un. Muster wie scripts/harvester-gui.lua.
