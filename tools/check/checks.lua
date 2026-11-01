@@ -396,13 +396,15 @@ end
 do
   local car = raw.car["spice-harvester"]
   local layers = car and car.animation and car.animation.layers or {}
-  local want = {{"harvester-base.png", 384, 0.5}, {"harvester-mask.png", 384, 0.5, "apply_runtime_tint"},
-                {"harvester-shadow.png", 256, 1, "draw_as_shadow"}}
-  if #layers ~= 3 then add("FEHLER 0.8.5: Ernter hat " .. #layers .. " Bildebenen statt 3") end
+  -- Grafik-Phase: dazu die Raupenketten als 4. Ebene (4 Bilder je Richtung, 16 je Zeile, halbe Auflösung).
+  local want = {{"harvester-base.png", 384, 0.5, 1, 8}, {"harvester-mask.png", 384, 0.5, 1, 8, "apply_runtime_tint"},
+                {"harvester-shadow.png", 256, 1, 1, 8, "draw_as_shadow"}, {"harvester-tracks-base.png", 192, 1, 4, 16}}
+  if #layers ~= 4 then add("FEHLER 0.8.5: Ernter hat " .. #layers .. " Bildebenen statt 4") end
   for j, w in ipairs(want) do
     local l = layers[j] or {}
     if l.filename ~= harvester_gfx .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3]
-        or l.direction_count ~= 64 or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) or l.tint then
+        or l.direction_count ~= 64 or (l.frame_count or 1) ~= w[4] or l.line_length ~= w[5]
+        or (w[4] == 1 and l.repeat_count ~= 4) or (w[6] and l[w[6]] ~= true) or l.tint then
       add("FEHLER 0.8.5: Ernter Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
     end
   end
@@ -746,7 +748,6 @@ do
   local n3i = 0
   local mk1 = raw.car["spice-harvester"]
   local mk2 = raw.car["spice-harvester-mk2"]
-  local tint = {r = 0.7, g = 0.8, b = 1}
   if not (mk1 and mk2) then add("FEHLER 3i: car spice-harvester-mk2 fehlt") else
     n3i = n3i + 1
     if not (mk2.icon or (type(mk2.icons) == "table" and #mk2.icons > 0)) then add("FEHLER 3i: Mk2 ohne Symbol") end
@@ -759,11 +760,16 @@ do
     end
     if mk2.guns or mk2.equipment_grid or mk2.turret_animation then add("FEHLER 3i: Mk2 hat Waffen, Gitter oder Turm") end
     local layers = mk2.animation and mk2.animation.layers or {}
-    if #layers ~= 3 then add("FEHLER 3i: Mk2 hat " .. #layers .. " Bildebenen statt 3") end
-    local base = layers[1] or {}
-    local bt = base.tint or {}
-    if base.filename ~= harvester_gfx .. "harvester-base.png" or bt.r ~= tint.r or bt.g ~= tint.g or bt.b ~= tint.b then
-      add("FEHLER 3i: Mk2 Basis-Ebene ohne Farbton {0.7, 0.8, 1} (gleich harvester.MK2_TINT)")
+    -- Grafik-Phase: eigene Blätter (spice-harvester-mk2/harvester-mk2-*.png), Ebenen und Ausschnitte wie Mk1, ohne Tönung.
+    if #layers ~= 4 then add("FEHLER 3i: Mk2 hat " .. #layers .. " Bildebenen statt 4") end
+    local mk1_layers = mk1.animation and mk1.animation.layers or {}
+    for j, l in ipairs(layers) do
+      local m = mk1_layers[j] or {}
+      local want_file = (m.filename or ""):gsub("/spice%-harvester/harvester%-", "/spice-harvester-mk2/harvester-mk2-")
+      if l.filename ~= want_file or l.width ~= m.width or l.frame_count ~= m.frame_count or l.line_length ~= m.line_length
+          or l.tint then
+        add("FEHLER 3i: Mk2 Ebene " .. j .. " (" .. tostring(l.filename) .. ") passt nicht zu Mk1")
+      end
     end
     if (layers[2] or {}).apply_runtime_tint ~= true or (layers[2] or {}).tint then add("FEHLER 3i: Mk2 Farbmaske") end
     if (layers[3] or {}).draw_as_shadow ~= true or (layers[3] or {}).tint then add("FEHLER 3i: Mk2 Schatten") end

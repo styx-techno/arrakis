@@ -59,9 +59,12 @@ harvester.trash_inventory_size = 0
 harvester.equipment_grid = nil
 harvester.has_belt_immunity = true
 harvester.factoriopedia_simulation = nil
--- 64 Richtungen je Blatt (8 × 8, 0 = Norden, im Uhrzeigersinn), ein Bild je Richtung: Die Ketten laufen nicht sichtbar.
--- Rumpf und Farbmaske als HR-Bild (384 px = 6 Kacheln, scale 0,5), Schatten mit 32 px je Kachel (256 px = 8 Kacheln,
--- scale 1). Der Bodenpunkt unter der Fahrzeugmitte liegt in jeder Bildmitte, deshalb ohne shift.
+-- 64 Richtungen je Blatt (8 × 8, 0 = Norden, im Uhrzeigersinn). Rumpf und Farbmaske als HR-Bild (384 px = 6 Kacheln,
+-- scale 0,5), Schatten mit 32 px je Kachel (256 px = 8 Kacheln, scale 1), alle als Standbild (repeat_count 4). Die
+-- Raupenketten laufen als eigene Ebene darüber (Grafik-Phase): 4 Bilder je Richtung in halber Auflösung (192 px,
+-- scale 1, 16 Bilder je Zeile); das Fahrzeug schaltet sie mit der Fahrt weiter. Der Bodenpunkt unter der Fahrzeugmitte
+-- liegt in jeder Bildmitte, deshalb ohne shift. prototypes/harvester-mk2.lua tauscht nur die Dateinamen.
+local TRACK_FRAMES = 4
 local function harvester_layer(file, size, scale, extra)
   local layer =
   {
@@ -81,9 +84,10 @@ harvester.animation =
 {
   layers =
   {
-    harvester_layer("harvester-base.png", 384, 0.5),
-    harvester_layer("harvester-mask.png", 384, 0.5, {apply_runtime_tint = true}),
-    harvester_layer("harvester-shadow.png", 256, 1, {draw_as_shadow = true})
+    harvester_layer("harvester-base.png", 384, 0.5, {repeat_count = TRACK_FRAMES}),
+    harvester_layer("harvester-mask.png", 384, 0.5, {apply_runtime_tint = true, repeat_count = TRACK_FRAMES}),
+    harvester_layer("harvester-shadow.png", 256, 1, {draw_as_shadow = true, repeat_count = TRACK_FRAMES}),
+    harvester_layer("harvester-tracks-base.png", 192, 1, {frame_count = TRACK_FRAMES, line_length = 16})
   }
 }
 harvester.turret_animation = nil

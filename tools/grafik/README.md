@@ -139,3 +139,22 @@ python pack.py roh8-NAME blaetter8 NAME
 NAME: `spice-sand`, `melange`, `spice-essence`, `spice-briquette`, `spice-science-pack`. `NAME-icon-64.png` kommt nach
 `graphics/icons/NAME.png` (Item, beim Spice-Sand auch die Ressource). Raffinerie und Windfalle behalten ihre getönten
 Vanilla-Symbole, weil ihre Gebäude Vanilla-Grafik zeigen.
+
+## Ernter mit Raupenketten und Mk2 (Grafik-Phase)
+
+```
+python ernter-modell.py roh base 64          # ebenso mask, shadow, icon
+python ernter-modell.py roh9 base 64 anim    # Raupenketten, 4 Bilder je Richtung
+python pack.py roh blaetter harvester
+python pack.py roh9 blaetter harvester-tracks 16
+```
+
+Mit `ARRAKIS_VARIANTE=mk2` entsteht der Ernter Mk2 (Wurmzahn-Klingen am Maul, hellere Panzerplatten, Panzer auf den
+Schürzen, dritter Schlot); Name in `pack.py` dann `harvester-mk2` bzw. `harvester-mk2-tracks`, Ziel
+`graphics/entity/spice-harvester-mk2/`, Symbole `graphics/icons|technology/spice-harvester-mk2.png`.
+
+Das Rumpfblatt enthält die Raupen in Bild 0 (das Lastbild am Flieger nimmt seine Ausschnitte daraus). Die Raupen-Ebene
+(`anim`, Rumpf als Aussparung, halbe Auflösung 192 px, `scale = 1`, 16 Bilder je Zeile) liegt darüber; ihre
+Kettenglieder an den Außenseiten laufen oben nach vorn und unten nach hinten. Rumpf, Farbmaske und Schatten bekommen
+`repeat_count = 4`. Achtung: `szene.box` backt Lage und Drehung ins Netz (`transform_apply`); Teile, die eine Pose
+bewegt, deshalb am Ursprung anlegen und erst danach verschieben.
