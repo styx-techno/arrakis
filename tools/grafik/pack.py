@@ -1,9 +1,11 @@
 # Rohbilder strecken (Höhe x sqrt(2)) und zu Spritesheets zusammensetzen.
-# Aufruf: python pack.py ROH_DIR ZIEL_DIR [NAME]  (braucht pillow; NAME ist der Dateianfang, Vorgabe harvester)
+# Aufruf: python pack.py ROH_DIR ZIEL_DIR [NAME] [SPALTEN]  (braucht pillow; NAME ist der Dateianfang, Vorgabe
+# harvester; SPALTEN Bilder je Zeile, Vorgabe 8, Flügelschlag 16 = 4 Richtungen zu 4 Bildern)
 import sys, glob, os
 from PIL import Image
 src, dst = sys.argv[1], sys.argv[2]
 name = sys.argv[3] if len(sys.argv) > 3 else "harvester"
+COLS = int(sys.argv[4]) if len(sys.argv) > 4 else 8
 os.makedirs(dst, exist_ok=True)
 
 
@@ -13,7 +15,7 @@ def load(path):
     return im.resize((w, w), Image.LANCZOS)
 
 
-def sheet(mode, cols=8, shadow=False):
+def sheet(mode, cols=COLS, shadow=False):
     files = sorted(glob.glob(f"{src}/{mode}-*.png"))
     frames = [load(f) for f in files]
     w = frames[0].width

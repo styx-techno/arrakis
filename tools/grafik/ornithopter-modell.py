@@ -72,4 +72,4 @@ for sy in (-1, 1):
 for sx in (-1, 1):
     box(f"tip{sx}", (0.06, 0.06, 0.04), (sx * (ROOT_X + 2.2), -0.7, 0.5), GLOW, 0.0)
 
-szene.render(lift=LIFT)
+szene.render(lift=LIFT, pose=szene.fluegel_vorbereiten())

@@ -76,4 +76,4 @@ box("crossbar", k(1.2, 0.08, 0.07), k(0, -0.2, -0.3), STEEL, 0.01)
 for sx in (-1, 1):
     box(f"tip{sx}", k(0.06, 0.06, 0.04), k(sx * (ROOT_X + 2.2), -0.75, 0.5), GLOW, 0.0)
 
-szene.render(lift=LIFT)
+szene.render(lift=LIFT, pose=szene.fluegel_vorbereiten())
