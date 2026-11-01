@@ -104,6 +104,13 @@ lib.TOOTH = "arrakis-worm-tooth"
 lib.TOOTH_MIN = 2
 lib.TOOTH_MAX = 4
 lib.TOOTH_FACTOR = 1
+-- Großer Wurm (Phase 3j, docs/plan-3j.md 2.2). LARGE_ENABLED: Einstellung arrakis-large-worm (scripts/config.lua).
+-- LARGE_NOISE: Summe der Vibrationsgewichte (ohne Thumper) in den 3×3 Chunks um den Kandidaten, ab der beim Wurmzeichen der
+-- große Wurm kommt (Gleichgewichtswärme 2000 = 40 / (1 − 0,98)); mal Revierfaktor wie die Schwelle.
+-- LARGE: Biss-Umkreis, Zerdrück-Radius, Zähne, Faktor auf die freie Zeit des Reviers.
+lib.LARGE_ENABLED = true
+lib.LARGE_NOISE = 40
+lib.LARGE = {bite_radius = 6, crush_radius = 4, tooth_min = 6, tooth_max = 10, free_factor = 2}
 
 local FORCE = lib.FORCE
 local ICON = lib.ICON
@@ -377,6 +384,15 @@ end
 
 -- Warnungen (Plan 4.10) ---------------------------------------------------------------------------
 
+-- Biss-Umkreis und Zerdrück-Radius der Jagd (Phase 3j); ohne size klein.
+function lib.bite_radius(hunt)
+  return (hunt and hunt.size == "large") and lib.LARGE.bite_radius or lib.BITE_RADIUS
+end
+
+function lib.crush_radius(hunt)
+  return (hunt and hunt.size == "large") and lib.LARGE.crush_radius or lib.CRUSH_RADIUS
+end
+
 local function destroy_marks(hunt)
   local renders = hunt.renders
   for name, object in pairs(renders) do
@@ -399,8 +415,8 @@ local function draw_marks(hunt, force)
   local surface = target.surface
   hunt.renders.ring = rendering.draw_circle{
     color = ring_color,
-    radius = lib.BITE_RADIUS,
-    width = 3,
+    radius = lib.bite_radius(hunt),
+    width = hunt.size == "large" and 5 or 3,
     filled = false,
     target = target,
     surface = surface,
@@ -537,6 +553,8 @@ function lib.start_hunt(entity, opts)
     debug = opts.debug == true,
     teaching = opts.teaching == true,
     lurk = opts.lurk == true,
+    -- Phase 3j: Wurmgröße ("large" oder nil = klein); nie bei Lehr- und Lauer-Jagd.
+    size = (opts.size == "large" and not opts.teaching and not opts.lurk) and "large" or nil,
     -- Phase 3h: Ziel ist ein Thumper (Köder oder umgelenkt); lure = Köder-Jagd (zählt nicht zu MAX_HUNTS, sperrt ihr
     -- Revier nicht).
     thumper = entity.name == lib.THUMPER or nil,
@@ -576,7 +594,8 @@ function lib.start_hunt(entity, opts)
   end
   place_tag(hunt, force)
   draw_marks(hunt, force)
-  local message = (hunt.thumper and "msg-wormsign-thumper") or (hunt.lurk and "msg-wormsign-lurk") or "msg-wormsign"
+  local message = (hunt.thumper and "msg-wormsign-thumper") or (hunt.lurk and "msg-wormsign-lurk")
+    or (hunt.size == "large" and "msg-wormsign-large") or "msg-wormsign"
   force.print({"arrakis-message." .. message, gps(surface, position), hunt.target_name, hunt.second})
   harvester_alarm(hunt, eta, nil)
   worms_gui.refresh_force(force)
@@ -970,7 +989,7 @@ local function bite(hunt)
   local mode = hunt.bite or settings.global[BITE_SETTING].value
   surface.create_entity{name = ERUPTION, position = center}
   local cx, cy = center.x, center.y
-  local R = lib.BITE_RADIUS
+  local R = lib.bite_radius(hunt)
   local victims = new_victims({[target.unit_number] = true})
   for _, entity in pairs(surface.find_entities_filtered{area = {{cx - R, cy - R}, {cx + R, cy + R}}}) do
     if victim_ok(entity) and box_distance(entity, cx, cy) <= R and terrain.has_sand_under(entity) then
@@ -1051,7 +1070,7 @@ local function aim_point(hunt)
 end
 
 -- Darf der Wurm die Entity am Punkt (hx, hy) zerdrücken (docs/protokolle/plan-3d2.md 4.10 Schritt 2)? ctx = {zones, targets}.
-local function crushable(entity, hx, hy, surface_index, ctx)
+local function crushable(entity, hx, hy, surface_index, ctx, r)
   if not victim_ok(entity) then return false end
   local typ = entity.type
   if NO_CRUSH[typ] then return false end
@@ -1059,7 +1078,7 @@ local function crushable(entity, hx, hy, surface_index, ctx)
   if ROLLING_STOCK[typ] and entity.draw_data.height > 0 then return false end
   local g = storage.grace[entity.force.index]
   if g and not g.awake then return false end
-  if box_distance(entity, hx, hy) > lib.CRUSH_RADIUS then return false end
+  if box_distance(entity, hx, hy) > (r or lib.CRUSH_RADIUS) then return false end
   if not terrain.has_sand_under(entity) then return false end
   local un = entity.unit_number
   if un and ctx.targets[un] then return false end
@@ -1084,11 +1103,11 @@ local function crush(hunt, tick, ctx, worm_force)
     for i = 1, #(nodes or {}), sandworm_lib.BODY_STEP do points[#points + 1] = nodes[i] end
   end
   local victims = new_victims()
-  local r = lib.CRUSH_RADIUS
+  local r = lib.crush_radius(hunt)
   for _, p in ipairs(points) do
     local hx, hy = p.x, p.y
     for _, entity in pairs(surface.find_entities_filtered{area = {{hx - r, hy - r}, {hx + r, hy + r}}}) do
-      if crushable(entity, hx, hy, hunt.surface_index, ctx) then sort_victim(victims, entity) end
+      if crushable(entity, hx, hy, hunt.surface_index, ctx, r) then sort_victim(victims, entity) end
     end
   end
   if #victims.characters + #victims.vehicles + #victims.others == 0 then return end
@@ -1187,6 +1206,8 @@ local function sources_by_chunk(s)
   end
   return index
 end
+-- Für den Prüfstand (T37) und lib.large_due.
+lib.sources_by_chunk = sources_by_chunk
 
 -- Ist die Quelle berechtigt (Plan 1 „Berechtigt“)? Gewicht > 0 (also auf Sand, nicht getragen) steht schon fest.
 -- Phase 3g: höchstens eine Jagd je Revier (busy_reviere), kein Wurmzeichen in einem freien Revier.
@@ -1224,6 +1245,27 @@ local function best_target(index, d, s, busy_reviere, full)
     end
   end
   return best
+end
+
+-- Phase 3j (docs/plan-3j.md 2.2): Lärm = Summe der Gewichte aller Quellen außer Thumpern in den 9 Chunks um d.
+function lib.noise_around(index, d)
+  local sum = 0
+  local cx, cy = vibration_lib.chunk_of_key(d)
+  for dx = -1, 1 do
+    for dy = -1, 1 do
+      for _, entry in ipairs(index[vibration_lib.chunk_key(cx + dx, cy + dy)] or {}) do
+        if not entry.thumper then sum = sum + entry.weight end
+      end
+    end
+  end
+  return sum
+end
+
+-- Kommt der große Wurm? Lärm ≥ LARGE_NOISE × Revierfaktor (wie die Schwelle des Wurmzeichens).
+function lib.large_due(index, d, s)
+  if not lib.LARGE_ENABLED then return false end
+  local factor = territory_lib.threshold(s, d) / vibration_lib.WORMSIGN
+  return lib.noise_around(index, d) >= lib.LARGE_NOISE * factor
 end
 
 -- 60-Tick-Takt Schritt 5: je erlaubter Oberfläche höchstens ein neues Wurmzeichen, höchstens MAX_HUNTS zugleich.
@@ -1288,7 +1330,8 @@ local function wormsign_tick(tick)
               local entity = entry.entity
               local g = storage.grace[entity.force.index]
               local teaching = entry.harvester and not g.first_hunt_done
-              if lib.start_hunt(entity, {teaching = teaching}) and not entry.thumper then count = count + 1 end
+              local size = (not teaching and lib.large_due(index, d, s)) and "large" or nil
+              if lib.start_hunt(entity, {teaching = teaching, size = size}) and not entry.thumper then count = count + 1 end
               break
             end
           end
@@ -1749,12 +1792,14 @@ end
 -- gerettet, KILL_RESCUES), in der Suche Ende mit dem schon gesetzten Ergebnis und killed + 1 dazu.
 -- Beute (Phase 3h, docs/plan-3h.md 2.2): Wurmzähne am Kopf jedes eigenen Wurms (Präfix arrakis-sandworm-, also nicht die
 -- Testwürmer), auch nach Jagdende beim Abtauchen. Ist die Einheit im Ereignis schon ungültig, gelten Ort und Oberfläche
--- der Jagd (hunt.worm.head; Jagdwürmer sind immer sandworm.NAME). Gibt die Zahl der Zähne zurück.
+-- der Jagd (hunt.worm.head). Großer Wurm (Phase 3j): LARGE.tooth_min bis tooth_max. Gibt die Zahl der Zähne zurück.
 function lib.drop_loot(unit, hunt, force)
   local surface, position
+  local large = hunt and hunt.size == "large"
   if unit and unit.valid then
     local name = unit.prototype.name
     if name:sub(1, #sandworm_lib.PREFIX) ~= sandworm_lib.PREFIX then return 0 end
+    large = name == sandworm_lib.SIZES.large.name
     surface = unit.surface
     local ok, nodes = pcall(unit.get_body_nodes)
     if ok and nodes and nodes[1] then position = nodes[1] end
@@ -1764,7 +1809,9 @@ function lib.drop_loot(unit, hunt, force)
     position = position or hunt.worm.head
   end
   if not (surface and position) then return 0 end
-  local n = math.floor(storage.rng(lib.TOOTH_MIN, lib.TOOTH_MAX) * lib.TOOTH_FACTOR + 0.5)
+  local lo, hi = lib.TOOTH_MIN, lib.TOOTH_MAX
+  if large then lo, hi = lib.LARGE.tooth_min, lib.LARGE.tooth_max end
+  local n = math.floor(storage.rng(lo, hi) * lib.TOOTH_FACTOR + 0.5)
   if n <= 0 then return 0 end
   surface.spill_item_stack{position = {x = position.x, y = position.y}, stack = {name = lib.TOOTH, count = n},
     enable_looted = true, allow_belts = false}
@@ -1785,7 +1832,9 @@ local function on_segmented_unit_died(event)
   -- Phase 3g (Plan 1.3 b): Das Revier ist frei, ein lauernder Wurm im Sektor der Jagd ist mit tot.
   -- Nur auf Oberflächen mit echten Revieren (Arrakis, Prüfstand nach test_real); sonst wie 0.12.x.
   if not hunt.debug and territory_lib.real(hunt.surface_index) and territory_lib.FREE_TICKS > 0 then
-    territory_lib.set_free(hunt.surface_index, revier_of(hunt))
+    -- Phase 3j: ein großer Wurm macht das Revier länger frei.
+    local free = hunt.size == "large" and territory_lib.FREE_TICKS * lib.LARGE.free_factor or nil
+    territory_lib.set_free(hunt.surface_index, revier_of(hunt), free)
     local lurk = storage.hunts.lurk and storage.hunts.lurk[hunt.surface_index]
     if lurk then lurk[hunt.sector_key] = nil end
   end

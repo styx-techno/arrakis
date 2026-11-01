@@ -41,6 +41,7 @@ function lib.apply()
   territory_lib.FREE_TICKS = value("arrakis-free-minutes", 60) * 3600
   thumper_lib.TICKS = value("arrakis-thumper-seconds", 60) * 60
   worms_lib.TOOTH_FACTOR = value("arrakis-tooth-percent", 100) / 100
+  worms_lib.LARGE_ENABLED = value("arrakis-large-worm", true) == true
 end
 
 local function on_setting_changed(event)

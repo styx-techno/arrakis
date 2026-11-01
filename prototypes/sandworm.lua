@@ -1,4 +1,4 @@
--- Phase 3d2 (docs/protokolle/plan-3d2.md 3): Sandwurm arrakis-sandworm-small samt Segmenten, vier Bohrstaub-Kopien und der Effekt
+-- Phase 3d2 (docs/protokolle/plan-3d2.md 3): Sandwürmer arrakis-sandworm-small und (3j) -large samt Segmenten, vier Bohrstaub-Kopien und der Effekt
 -- arrakis-worm-dive fürs Auf- und Abtauchen. Steuern, Zerdrücken und Biss macht das Skript (scripts/sandworm.lua,
 -- scripts/worms.lua). Kommt direkt nach prototypes/worms.lua: arrakis-worm-dive kopiert die Eruption, die Sterbewolke
 -- nimmt arrakis-sand-dust.
@@ -8,8 +8,12 @@
 -- Testwurm (prototypes/testbench/worms.lua), sind aber eine eigene Kopie: Der Testwurm bleibt, wie er ist (T5 bis T7).
 
 local SAND = {r = 1, g = 0.85, b = 0.6}
-local BASE = "small-demolisher"
-local NAME = "arrakis-sandworm-small"
+-- Größen (Phase 3j, docs/plan-3j.md 2.1): Vorlage, Name, Sortierung.
+local SIZES =
+{
+  {base = "small-demolisher", name = "arrakis-sandworm-small", order = "s-z[arrakis]-a[sandworm-small]"},
+  {base = "medium-demolisher", name = "arrakis-sandworm-large", order = "s-z[arrakis]-b[sandworm-large]"}
+}
 -- Die ersten 11 Segmente der Vanilla-Liste und der Schwanz (Plan 1 „Prototyp“; T7: 22 Knoten, 21 Kacheln).
 local SEGMENTS = 12
 
@@ -124,9 +128,9 @@ local function tint_layers(animation)
 end
 
 -- "small-demolisher-segment-x0_545" → "arrakis-sandworm-small-segment-x0_545" (V23 enemies.lua:408, :1753).
-local function rename(old_name)
-  if old_name:sub(1, #BASE) == BASE then return NAME .. old_name:sub(#BASE + 1) end
-  return NAME .. "-" .. old_name
+local function rename(base, name, old_name)
+  if old_name:sub(1, #base) == base then return name .. old_name:sub(#base + 1) end
+  return name .. "-" .. old_name
 end
 
 -- Eine Sound-Tabelle (filename oder variations) lauter und weiter hörbar machen.
@@ -150,57 +154,65 @@ local function prepare(prototype)
   if type(prototype.working_sound) == "table" then louder(prototype.working_sound.sound or prototype.working_sound) end
 end
 
--- Kopf (A23 prototypes.d.ts:8751; V23 space-age/prototypes/entity/enemies.lua:468, :6500) ---------------------------
-local source = data.raw["segmented-unit"][BASE]
-local head = table.deepcopy(source)
-head.name = NAME
-head.localised_name = {"entity-name." .. NAME}
-head.localised_description = {"entity-description." .. NAME}
-local icon = head.icon or (head.icons and head.icons[1] and head.icons[1].icon)
-local icon_size = head.icon_size or (head.icons and head.icons[1] and head.icons[1].icon_size) or 64
-head.icons = {{icon = icon, icon_size = icon_size, tint = SAND}}
-head.icon = nil
-head.icon_size = nil
-head.order = "s-z[arrakis]-a[sandworm-small]"
-head.hidden = nil
-head.autoplace = nil
-head.investigating_speed = SPEED
-head.attacking_speed = SPEED
-head.enraged_speed = SPEED
-head.patrolling_speed = PATROL_SPEED
-head.enraged_duration = ENRAGED_TICKS
--- Kein Blick und kein Revier: Das Skript führt ihn (Plan 4.6, 4.7); Erdspalten gibt es nicht.
-head.vision_distance = 0
-head.territory_radius = 1
-head.revenge_attack_parameters = nil
-prepare(head)
-
--- Segmente: die ersten 11 und der Schwanz, einmal je Name (Plan 3 „Segmente“) ------------------------------------
-local old_segments = source.segment_engine.segments
-local chosen = {}
-for i = 1, math.min(SEGMENTS - 1, #old_segments - 1) do
-  table.insert(chosen, old_segments[i].segment)
-end
-table.insert(chosen, old_segments[#old_segments].segment)
-
-local prototypes = {head}
+-- Kopf und Segmente je Größe (A23 prototypes.d.ts:8751; V23 space-age/prototypes/entity/enemies.lua:468, :6500) -------
+-- Phase 3j (docs/plan-3j.md 2.1): Der große Wurm ist eine Kopie von medium-demolisher (Skalierung 0,75, 100 000 LP,
+-- Wenderadius 9), sonst gleich gebaut wie der kleine. order trennt die beiden in der Factoriopedia.
+local prototypes = {}
 local copied = {}
-local segments = {}
-for _, old_name in ipairs(chosen) do
-  local new_name = rename(old_name)
-  if not copied[new_name] then
-    copied[new_name] = true
-    local segment = table.deepcopy(data.raw["segment"][old_name])
-    segment.name = new_name
-    segment.localised_name = {"entity-name." .. NAME}
-    segment.localised_description = nil
-    segment.hidden = true
-    prepare(segment)
-    table.insert(prototypes, segment)
+
+local function build(base, name, order)
+  local source = data.raw["segmented-unit"][base]
+  local head = table.deepcopy(source)
+  head.name = name
+  head.localised_name = {"entity-name." .. name}
+  head.localised_description = {"entity-description." .. name}
+  local icon = head.icon or (head.icons and head.icons[1] and head.icons[1].icon)
+  local icon_size = head.icon_size or (head.icons and head.icons[1] and head.icons[1].icon_size) or 64
+  head.icons = {{icon = icon, icon_size = icon_size, tint = SAND}}
+  head.icon = nil
+  head.icon_size = nil
+  head.order = order
+  head.hidden = nil
+  head.autoplace = nil
+  head.investigating_speed = SPEED
+  head.attacking_speed = SPEED
+  head.enraged_speed = SPEED
+  head.patrolling_speed = PATROL_SPEED
+  head.enraged_duration = ENRAGED_TICKS
+  -- Kein Blick und kein Revier: Das Skript führt ihn (Plan 4.6, 4.7); Erdspalten gibt es nicht.
+  head.vision_distance = 0
+  head.territory_radius = 1
+  head.revenge_attack_parameters = nil
+  prepare(head)
+  table.insert(prototypes, head)
+
+  -- Segmente: die ersten 11 und der Schwanz, einmal je Name (Plan 3 „Segmente“).
+  local old_segments = source.segment_engine.segments
+  local chosen = {}
+  for i = 1, math.min(SEGMENTS - 1, #old_segments - 1) do
+    table.insert(chosen, old_segments[i].segment)
   end
-  table.insert(segments, {segment = new_name})
+  table.insert(chosen, old_segments[#old_segments].segment)
+
+  local segments = {}
+  for _, old_name in ipairs(chosen) do
+    local new_name = rename(base, name, old_name)
+    if not copied[new_name] then
+      copied[new_name] = true
+      local segment = table.deepcopy(data.raw["segment"][old_name])
+      segment.name = new_name
+      segment.localised_name = {"entity-name." .. name}
+      segment.localised_description = nil
+      segment.hidden = true
+      prepare(segment)
+      table.insert(prototypes, segment)
+    end
+    table.insert(segments, {segment = new_name})
+  end
+  head.segment_engine.segments = segments
 end
-head.segment_engine.segments = segments
+
+for _, size in ipairs(SIZES) do build(size.base, size.name, size.order) end
 
 -- Bohrstaub (A23 prototypes.d.ts:10651; V23 space-age/prototypes/entity/smoke.lua:227, :241, :255, :269) -----------
 for size, color in pairs(SMOKES) do
