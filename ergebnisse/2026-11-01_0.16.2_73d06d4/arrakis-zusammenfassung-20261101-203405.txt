@@ -1,0 +1,3 @@
+SUMMARY arrakis-test-20261101-203405.txt | Tests 1 | bestanden 0 | FEHLER 1 | abgebrochen 0 | ohne ENDE 0
+T39 | Wurm unter Beschuss 0.16.2 | FEHLER | 40.8 s | OK 0 FEHLER 1 FRAGE 0
+  ! [T39] FEHLER +40.6s: 1) Wurm unter Beschuss: Ergebnis bitten, abgetaucht kein-weg, 0 Zähne, Kopf höchstens 5.3 Kacheln Richtung Fels, wütend 162 von 180 Takten, beruhigt 0 mal | nicht erfüllt: Ergebnis bitten (Lebenspunkte zuletzt 30000); abgetaucht: kein-weg; zum Fels abgebogen: Kopf 5.3 Kacheln südlich der Spur; 0 Wurmzähne

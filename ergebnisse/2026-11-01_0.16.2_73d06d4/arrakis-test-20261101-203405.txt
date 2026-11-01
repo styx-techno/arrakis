@@ -1,0 +1,10 @@
+
+=== T39 Wurm unter Beschuss 0.16.2 | Tick 412 | Arrakis 0.16.2 | base 2.1.24 | Spieler - ===
+[T39] INFO +0.0s: Start: Wurm unter Beschuss 0.16.2
+[T39] INFO +0.0s: Zeitraffer: game.speed 10
+[T39] INFO +0.0s: Ein Schritt 0.16.2 (Wurm unter Beschuss entlang einer Geschützreihe). Dauer etwa eine Minute Spielzeit.
+[T39] MESSUNG +9.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -98.0 / y +0.0, Geschütze mit Ziel 7
+[T39] MESSUNG +11.1s: Wurm: Phase anfahrt, Lebenspunkte 30000, Kopf bei x -91.9 / y +2.7, Geschütze mit Ziel 11
+[T39] MESSUNG +40.6s: KI-Zustände (Takte): enraged_at_target 162, investigating 18; beruhigt 0 mal
+[T39] FEHLER +40.6s: 1) Wurm unter Beschuss: Ergebnis bitten, abgetaucht kein-weg, 0 Zähne, Kopf höchstens 5.3 Kacheln Richtung Fels, wütend 162 von 180 Takten, beruhigt 0 mal | nicht erfüllt: Ergebnis bitten (Lebenspunkte zuletzt 30000); abgetaucht: kein-weg; zum Fels abgebogen: Kopf 5.3 Kacheln südlich der Spur; 0 Wurmzähne
+[T39] ENDE +40.8s: 0/1 Schritte OK, FEHLER in 1 (OK 0, FEHLER 1, FRAGE 0, 40.8 s)
