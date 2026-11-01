@@ -33,7 +33,9 @@ local NAME = "arrakis-ornithopter"
 -- Carryall (0.10.0, docs/plan-3e.md): unbemannter Flieger der Leitstelle, sonst wie der Ornithopter (kind = "carryall").
 local CARRYALL = "arrakis-carryall"
 local KIND = {[NAME] = "ornithopter", [CARRYALL] = "carryall"}
-local HARVESTER = harvester.NAME
+-- Alle Ernter-Namen (Mk1, Mk2; docs/plan-3i.md 2.3).
+local HARVESTERS = harvester.NAME_LIST
+local IS_HARVESTER = harvester.NAMES
 local PROBE = "arrakis-harvester-probe"
 local CARRY_INPUT = "arrakis-carry-toggle"
 local CARRY_SHORTCUT = "arrakis-carry"
@@ -107,7 +109,7 @@ local function is_flyer(entity)
 end
 
 local function is_harvester(entity)
-  return entity and entity.valid and entity.name == HARVESTER
+  return entity and entity.valid and IS_HARVESTER[entity.name] == true
 end
 
 local function distance(a, b)
@@ -188,10 +190,14 @@ local function draw_cargo(record)
     }
   end
   if not render_valid(record, "image") then
+    -- Ernter Mk2: Lastbild mit dem Farbton seiner Basis-Ebene (docs/plan-3i.md 2.1).
+    local h = record.cargo and storage.harvesters[record.cargo]
+    local tint = h and h.entity.valid and harvester.tint_of(h.entity.name) or nil
     record.renders.image = rendering.draw_sprite{
       sprite = IMAGE_SPRITE .. index,
       target = {entity = flyer, offset = lib.IMAGE_OFFSET},
       surface = flyer.surface,
+      tint = tint,
       render_layer = "smoke"
     }
   end
@@ -919,7 +925,7 @@ function lib.resolve_harvester(flyer, player)
     if found then return found end
   end
   local position = flyer.position
-  local list = flyer.surface.find_entities_filtered{name = HARVESTER, position = position, radius = lib.COUPLE_RANGE,
+  local list = flyer.surface.find_entities_filtered{name = HARVESTERS, position = position, radius = lib.COUPLE_RANGE,
     force = flyer.force}
   table.sort(list, function(a, b) return distance(a.position, position) < distance(b.position, position) end)
   for _, entity in ipairs(list) do
@@ -1151,7 +1157,7 @@ end
 -- Ablage leeren (Plan 4.10, 4.15) ---------------------------------------------------------------------
 
 local function hold_harvesters(surface)
-  return surface.find_entities_filtered{name = HARVESTER}
+  return surface.find_entities_filtered{name = HARVESTERS}
 end
 
 -- Einen Ernter von der Ablage holen: mit Träger an ihm absetzen (ohne Hinweis), sonst und bei „kein Platz“ die
@@ -1202,7 +1208,7 @@ function lib.uninstall()
   for _, entity in pairs(hold_harvesters(surface)) do
     if entity.valid and unload(entity, false) then n = n + 1 end
   end
-  local rest = surface.count_entities_filtered{name = HARVESTER}
+  local rest = surface.count_entities_filtered{name = HARVESTERS}
   if rest == 0 then
     game.delete_surface(surface)
     hold.forget()
@@ -1230,7 +1236,7 @@ local function uninstall_command(command)
   local word = string.lower(string.match(command.parameter or "", "^%s*(.-)%s*$"))
   if word ~= "ja" and word ~= "yes" then
     local surface = hold.surface() or game.get_surface(hold.NAME)
-    local count = surface and surface.count_entities_filtered{name = HARVESTER} or 0
+    local count = surface and surface.count_entities_filtered{name = HARVESTERS} or 0
     reply(player, {"arrakis-message.uninstall-warn", count})
     reply(player, {"arrakis-message.uninstall-worms-warn", table_size(storage.hunts.list)})
     return
@@ -1277,7 +1283,7 @@ local function on_died(event)
   if KIND[entity.name] then
     local record = lib.get(entity)
     if record then lib.crash(record) end
-  elseif entity.name == HARVESTER then
+  elseif IS_HARVESTER[entity.name] then
     harvester_gone(entity.unit_number)
   end
 end
@@ -1289,7 +1295,7 @@ local function on_removed(event)
   if KIND[entity.name] then
     local record = lib.get(entity)
     if record then flyer_removed(record, "entfernt") end
-  elseif entity.name == HARVESTER then
+  elseif IS_HARVESTER[entity.name] then
     harvester_gone(entity.unit_number)
   end
 end
@@ -1325,7 +1331,7 @@ local function on_teleported(event)
     local record = lib.get(entity) or lib.register(entity)
     care(record)
     if record.coupling and storage.flyers[record.un] then update_coupling(record, event.tick) end
-  elseif entity.name == HARVESTER then
+  elseif IS_HARVESTER[entity.name] then
     local h = harvester.get(entity)
     if h and h.state == "carried" and not on_hold(entity) then land_here(h) end
   end
