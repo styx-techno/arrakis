@@ -675,6 +675,12 @@ function t5_tick.a(run, tb, d, s, p, now)
       p.safe_tick = now
       p.green = is_green(hunt.renders.ring)
     end
+    -- 0.16.2 (Max im Spiel, T20 Schritt 6): Fehlbiss-Eruption nicht unter dem Ernter auf Fels, sondern im Sand daneben.
+    if hunt and hunt.outcome and not p.eruption_under then
+      local surface = tb.surface()
+      p.eruption_under = eruptions_at(surface, car.position, 2.5)
+      p.eruption_near = eruptions_at(surface, car.position, 16)
+    end
   end
 end
 
@@ -684,6 +690,8 @@ function t5_check.a(run, tb, d, s, p)
   check(f, p.rock_tick ~= nil and p.safe_tick ~= nil and p.safe_tick - p.rock_tick <= 10,
     "safe \"rock\" " .. (p.safe_tick and p.rock_tick and ((p.safe_tick - p.rock_tick) .. " Ticks nach dem Fels") or "nie"))
   check(f, p.green == true, "Ring nicht grün")
+  check(f, p.eruption_under == 0, "Eruption unter dem Ernter auf Fels: " .. tostring(p.eruption_under))
+  tb.log(run, "MESSUNG", "5a) Eruptionen bis 16 Kacheln um den Ernter " .. tostring(p.eruption_near) .. ", davon unter ihm " .. tostring(p.eruption_under))
   t5_outcome(p, hunt, "escaped")
   local deaths = deaths_since(d, s.mark, p.box)
   check(f, #deaths == 0, "gestorben: " .. table.concat(deaths, ", "))

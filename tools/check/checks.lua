@@ -666,6 +666,14 @@ for n, tech in pairs(plan_tips) do
     if tr.type ~= "research" or tr.technology ~= tech then add("FEHLER 3d1: Tipp " .. n .. " Auslöser " .. tostring(tr.type) .. " " .. tostring(tr.technology)) end
     if not (tip.localised_name and tip.localised_description) then add("FEHLER 3d1: Tipp " .. n .. " ohne localised_name/localised_description") end
     if tip.skip_trigger ~= nil then add("FEHLER 3d1: Tipp " .. n .. " mit skip_trigger") end
+    -- 0.16.2: bewegte Szene oben wie bei Vanilla (prototypes/tips-simulations.lua); das Skript muss sich übersetzen lassen.
+    local sim = tip.simulation
+    if not (sim and sim.planet == "arrakis" and type(sim.init) == "string") then
+      add("FEHLER 0.16.2: Tipp " .. n .. " ohne Simulation auf Arrakis")
+    elseif load then
+      local fn, err = load(sim.init, "=" .. n)
+      if not fn then add("FEHLER 0.16.2: Tipp " .. n .. " Simulationsskript: " .. tostring(err)) end
+    end
   end
 end
 -- Forschungen unverändert gegenüber 0.6.1 (Zahl, Namen, Auslöser).

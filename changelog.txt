@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.16.2
+Date: 2026-11-01
+  Changes:
+    - Unruhe: Das tiefe Brummen ist etwa 15 % lauter.
+    - Wurmzeichen: Steht der Ernter ganz auf Fels, bricht die Sandfontäne nicht mehr unter ihm aus dem Fels, sondern an der nächsten Sandstelle daneben; dorthin zielt auch der Wurm. Eine Fontäne kommt nie mehr aus Fels.
+    - Tipps und Tricks: „Arrakis“ und „Wurmzeichen“ zeigen oben eine bewegte Szene wie die Vanilla-Planeten (Felsplateau mit Leitstelle, Ernter mit Staubring, kreisender Ornithopter; Countdown-Ring, Rettung per Ornithopter, leere Sandfontäne bei 0) und einen kürzeren Text mit Objekt-Links.
+  Modding:
+    - terrain.sand_spot sucht die nächste Sandkachel (optional mit Abstand zu einem Punkt). Prüfstand T19 Schritt 5a prüft, dass bei der Flucht auf Fels keine Eruption unter dem Ernter liegt. tools/check/checks.lua prüft, dass beide Tipps eine Simulation auf Arrakis haben und ihr Skript sich übersetzen lässt.
+---------------------------------------------------------------------------------------------------
 Version: 0.16.1
 Date: 2026-11-01
   Changes:
