@@ -7,8 +7,8 @@
 -- (TEMPO …). Die Tests zählen Ticks; ihre Ergebnisse hängen nicht vom Tempo ab (docs/pruefstand.md, „Zeitraffer“).
 -- Gespeichert wird dafür nichts außer game.speed selbst; zurück auf echte Zeit mit /arrakis-test tempo 1.
 --
--- Vertrag mit den Testmodulen (t_flyer, t_harvester, t_worm, t_map, t_ernter, t_karte, t_ornithopter, t_jagd, t_sandwurm,
--- t_fleet):
+-- Vertrag mit den Testmodulen (scripts/testbench/tests/t<nr>.lua, eine Datei je Test; gemeinsame Helfer einer Familie in
+-- scripts/testbench/gemeinsam_<familie>.lua; dazu noch t_fleet.lua mit T23–T29):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
 --   Optional: hint (Text für die Testliste), steps (true: der Test schaltet mit /arrakis-test weiter wie mit ALT+O,
@@ -60,10 +60,14 @@ local COLORS =
 }
 
 local tests = {}
-for _, module_name in ipairs({"scripts.testbench.t_flyer", "scripts.testbench.t_harvester",
-                              "scripts.testbench.t_worm", "scripts.testbench.t_map",
-                              "scripts.testbench.t_ernter", "scripts.testbench.t_karte", "scripts.testbench.t_ornithopter",
-                              "scripts.testbench.t_jagd", "scripts.testbench.t_sandwurm", "scripts.testbench.t_fleet"}) do
+for _, module_name in ipairs({"scripts.testbench.tests.t1", "scripts.testbench.tests.t9", "scripts.testbench.tests.t12",
+                              "scripts.testbench.tests.t2", "scripts.testbench.tests.t3", "scripts.testbench.tests.t4",
+                              "scripts.testbench.tests.t5", "scripts.testbench.tests.t6", "scripts.testbench.tests.t7",
+                              "scripts.testbench.tests.t11", "scripts.testbench.tests.t13", "scripts.testbench.tests.t2b",
+                              "scripts.testbench.tests.t14", "scripts.testbench.tests.t15", "scripts.testbench.tests.t16",
+                              "scripts.testbench.tests.t17", "scripts.testbench.tests.t18", "scripts.testbench.tests.t19",
+                              "scripts.testbench.tests.t20", "scripts.testbench.tests.t21", "scripts.testbench.tests.t22",
+                              "scripts.testbench.t_fleet"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end

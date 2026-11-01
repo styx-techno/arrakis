@@ -793,10 +793,17 @@ if tb_on then
   -- Namen "arrakis-test-…" in den Laufzeitdateien müssen Prototypen sein (Tippfehler fallen sonst erst im Spiel auf).
   -- Keine Prototypen (z. B. Oberflächen) hier eintragen:
   local not_prototypes = {["arrakis-test-hold"] = true}
-  local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua", "scripts/testbench/t_flyer.lua",
-    "scripts/testbench/t_harvester.lua", "scripts/testbench/t_worm.lua", "scripts/testbench/t_map.lua",
-    "scripts/testbench/t_ornithopter.lua", "scripts/vibration.lua", "scripts/worms.lua", "scripts/worms-gui.lua",
-    "scripts/testbench/t_jagd.lua", "scripts/sandworm.lua", "scripts/testbench/t_sandwurm.lua"}
+  local files = {"control.lua", "scripts/arrakis-surface.lua", "scripts/testbench/runner.lua",
+    "scripts/testbench/gemeinsam_flyer.lua", "scripts/testbench/tests/t1.lua", "scripts/testbench/tests/t12.lua",
+    "scripts/testbench/tests/t9.lua", "scripts/testbench/gemeinsam_harvester.lua", "scripts/testbench/tests/t2.lua",
+    "scripts/testbench/tests/t3.lua", "scripts/testbench/tests/t4.lua", "scripts/testbench/gemeinsam_worm.lua",
+    "scripts/testbench/tests/t5.lua", "scripts/testbench/tests/t6.lua", "scripts/testbench/tests/t7.lua",
+    "scripts/testbench/gemeinsam_map.lua", "scripts/testbench/tests/t11.lua", "scripts/testbench/gemeinsam_ornithopter.lua",
+    "scripts/testbench/tests/t15.lua", "scripts/testbench/tests/t16.lua", "scripts/testbench/tests/t17.lua",
+    "scripts/testbench/gemeinsam_jagd.lua", "scripts/testbench/tests/t18.lua", "scripts/testbench/tests/t19.lua",
+    "scripts/testbench/tests/t20.lua", "scripts/testbench/gemeinsam_sandwurm.lua", "scripts/testbench/tests/t21.lua",
+    "scripts/testbench/tests/t22.lua", "scripts/vibration.lua", "scripts/worms.lua", "scripts/worms-gui.lua",
+    "scripts/sandworm.lua"}
   local read = 0
   for _, file in ipairs(files) do
     local f = io.open(file, "r")
@@ -822,8 +829,11 @@ do
   local code_files = {"control.lua"}
   for _, n in ipairs({"arrakis-surface", "flyer-gui", "flyer", "harvester-gui", "harvester", "hold", "intake", "migrate", "sandworm",
                       "terrain", "vibration", "worms-gui", "worms"}) do code_files[#code_files+1] = "scripts/" .. n .. ".lua" end
-  for _, n in ipairs({"runner", "t_ernter", "t_flyer", "t_harvester", "t_jagd", "t_karte", "t_map", "t_ornithopter", "t_sandwurm", "t_worm"}) do
+  for _, n in ipairs({"runner", "gemeinsam_ernter", "gemeinsam_flyer", "gemeinsam_harvester", "gemeinsam_jagd", "gemeinsam_map", "gemeinsam_ornithopter", "gemeinsam_sandwurm", "gemeinsam_worm"}) do
     code_files[#code_files+1] = "scripts/testbench/" .. n .. ".lua"
+  end
+  for _, n in ipairs({"t1", "t11", "t12", "t13", "t14", "t15", "t16", "t17", "t18", "t19", "t2", "t20", "t21", "t22", "t2b", "t3", "t4", "t5", "t6", "t7", "t9"}) do
+    code_files[#code_files+1] = "scripts/testbench/tests/" .. n .. ".lua"
   end
   local function read_file(name)
     local f = io.open(name, "r")
