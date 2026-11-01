@@ -638,15 +638,32 @@ end
 
 -- Unruhe (Plan 4.12) ------------------------------------------------------------------------------------
 
--- Staubwolken an festen Stellen aus Tick und unit_number (verbraucht keine Zufallszahlen).
-local function dust(surface, source, t)
-  local n = math.min(3, 1 + math.floor((source.W - lib.UNREST) / 200))
+-- Staub (0.16.1, Max im Spiel 01.11.2026: „fester Kreis, der vom Ernter ausgeht“ statt wandernder Wolken): je Takt ein
+-- Ring aus Staubwolken an festen Winkeln um die Quelle, Halbmesser aus ihrer Größe; ab mehr Wärme ein zweiter und dritter
+-- Ring weiter außen. Die Wolken leben 300 Ticks und ziehen nicht mit dem Wind, die Ringe bleiben also stehen.
+-- Verbraucht keine Zufallszahlen.
+lib.DUST_RINGS = {{gap = 1.5, puffs = 10}, {gap = 3.5, puffs = 14, W = 800}, {gap = 5.5, puffs = 18, W = 1000}}
+
+local function dust_radius(entity)
+  local box = entity.valid and entity.selection_box
+  if not box then return 1.5 end
+  local w = box.right_bottom.x - box.left_top.x
+  local h = box.right_bottom.y - box.left_top.y
+  return math.max(w, h) / 2
+end
+
+local function dust(surface, source)
   local x, y = source.position.x, source.position.y
-  local un = source.un
-  for k = 1, n do
-    local angle = math.rad((un * 37 + t * 11 + k * 97) % 360)
-    local d = 3 + (un * 13 + t * 7 + k * 29) % 8
-    surface.create_trivial_smoke{name = DUST, position = {x = x + d * math.cos(angle), y = y + d * math.sin(angle)}}
+  local r0 = source.radius or 1.5
+  for i, ring in ipairs(lib.DUST_RINGS) do
+    if i == 1 or source.W >= ring.W then
+      local r = r0 + ring.gap
+      local shift = (i % 2 == 0) and 0.5 or 0
+      for k = 1, ring.puffs do
+        local angle = 2 * math.pi * (k - 1 + shift) / ring.puffs
+        surface.create_trivial_smoke{name = DUST, position = {x = x + r * math.cos(angle), y = y + r * math.sin(angle)}}
+      end
+    end
   end
 end
 
@@ -670,7 +687,9 @@ function lib.unrest_tick(tick)
       local W = near_key(heat[s], h.vib_key)
       local unrest = (h.vib_sand and W >= lib.UNREST) or nil
       if (h.alarm_unrest or nil) ~= unrest then harvester.set_alarm(h, "unrest", unrest) end
-      if unrest and h.vib_weight > 0 then add(s, {un = un, W = W, key = h.vib_key, position = entity.position}) end
+      if unrest and h.vib_weight > 0 then
+        add(s, {un = un, W = W, key = h.vib_key, position = entity.position, radius = dust_radius(entity)})
+      end
     elseif h.alarm_unrest then
       harvester.set_alarm(h, "unrest", nil)
     end
@@ -678,10 +697,11 @@ function lib.unrest_tick(tick)
   for un, record in pairs(vib.sources) do
     if record.weight > 0 and record.key and record.entity.valid then
       local W = near_key(heat[record.surface], record.key)
-      if W >= lib.UNREST then add(record.surface, {un = un, W = W, key = record.key, position = record.entity.position}) end
+      if W >= lib.UNREST then
+        add(record.surface, {un = un, W = W, key = record.key, position = record.entity.position, radius = dust_radius(record.entity)})
+      end
     end
   end
-  local t = math.floor(tick / 60)
   for s, list in pairs(shaking) do
     local surface = game.get_surface(s)
     if surface then
@@ -689,7 +709,7 @@ function lib.unrest_tick(tick)
         if a.W ~= b.W then return a.W > b.W end
         return a.un < b.un
       end)
-      for i = 1, math.min(#list, lib.DUST_MAX) do dust(surface, list[i], t) end
+      for i = 1, math.min(#list, lib.DUST_MAX) do dust(surface, list[i]) end
       -- Rumpeln am Ort der heißesten Quelle je Sektor (die Liste ist nach W sortiert).
       local rumble = vib.rumble[s] or {}
       local seen = {}

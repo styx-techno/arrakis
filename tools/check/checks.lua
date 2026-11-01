@@ -628,7 +628,7 @@ local plan_sounds = {
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-1.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-2.ogg",
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-3.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-4.ogg",
     "__space-age__/sound/enemies/demolisher/demolisher-roar-big-5.ogg", "__space-age__/sound/enemies/demolisher/demolisher-roar-big-6.ogg"},
-  ["arrakis-rumble"] = {"__space-age__/sound/enemies/demolisher/demolisher-tail-rumble.ogg"},
+  ["arrakis-rumble"] = {"__arrakis__/sound/sand-drone.ogg"},
   ["arrakis-worm-eruption"] = {"__space-age__/sound/explosions/demolisher-explosion-1.ogg", "__space-age__/sound/explosions/demolisher-explosion-2.ogg"},
 }
 for n, want in pairs(plan_sounds) do

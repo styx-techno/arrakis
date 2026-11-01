@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.16.1
+Date: 2026-11-01
+  Changes:
+    - Unruhe: Der Sandstaub steht jetzt als fester Ring um den Ernter (bzw. das vibrierende Fahrzeug oder Gebäude) statt als wandernde Wolken; ab mehr Wärme kommen ein zweiter und dritter Ring weiter außen dazu.
+    - Unruhe: neuer, eigener Ton, ein tiefes Brummen (Droning) statt des hohen Knisterns; die Töne gehen im 5-s-Takt nahtlos ineinander über.
+  Modding:
+    - scripts/vibration.lua: DUST_RINGS (Abstand zum Rand der Quelle, Wolken je Ring, Wärme ab der ein Ring dazukommt). sound/sand-drone.ogg aus tools/ton/brummen.py.
+    - Prüfstand T20 nach Max' Spieltest: erlaubt Tipps im Spiel und erforscht „Arrakis entdecken“ und „Spice-Ernte“ für die Force (sonst ist die Vibrationsanzeige gesperrt und die Tipps fehlen); Schritt 5 baut einen neuen Ernter mit frischer 60-s-Jagd, wenn der Wurm Ernter 1 schon gefressen hat oder weniger als 40 s übrig sind; Schritt 7 schaltet den Vorsichtsmodus selbst ein und setzt die Wärme 580 erst, wenn der Ernter steht.
+---------------------------------------------------------------------------------------------------
 Version: 0.16.0
 Date: 2026-11-01
   Features:

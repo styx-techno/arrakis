@@ -39,6 +39,13 @@ local T20_HALF = 200
 local T20_END_TICKS = 900 * 60
 local T20_LAST = 9
 local T20_NOT_REMOTE = {["arrakis-testbench"] = true, ["arrakis-test-hold"] = true, ["arrakis-hold"] = true}
+-- 0.16.1 (Max im Spiel 01.11.2026): Ohne diese Forschungen ist die Verknüpfung „Vibrationsanzeige“ gesperrt (Schritt 3)
+-- und die Tipps fehlen (Schritt 8, Trigger „research“). Der Test erlaubt Tipps im Szenario (game.allow_tip_activation,
+-- im Prüfstand-Spiel sonst false) und erforscht danach beide wie T17 den Ornithopter.
+local T20_TECHS = {"planet-discovery-arrakis", "arrakis-spice-harvesting"}
+-- Schritt 5: Hat die Jagd weniger als so viele Sekunden übrig, beginnt eine neue mit T20_RESCUE_SECONDS.
+local T20_RESCUE_MIN = 40
+local T20_RESCUE_SECONDS = 60
 
 -- Kachelmitte neben Max (dx, dy Kacheln), frei für name; ohne Max auf der Fläche: neben dem Ursprung.
 local function t20_spot(run, tb, d, dx, dy, name)
@@ -121,14 +128,43 @@ t20_enter[4] = function(run, tb, d, player)
   d.flyer = new_flyer(run, tb, d.made, t20_spot(run, tb, d, -6, 4, FLYER), {force = d.force, rocket = 4})
   tb.log(run, "FRAGE", "4) Je Zeichen ja/nein: Alarm unten rechts mit Wurmzeichen-Symbol, Kartenmarkierung, Warnton, roter Ring mit Sekunden,"
     .. " Zeile oben links, Status „Wurmzeichen! Biss in … s“? [V5, V8]")
-  tb.log(run, "INFO", "4) Der Ornithopter für Schritt 5 steht neben dir. ALT+O oder /arrakis-test weiter für Schritt 5, solange der Countdown läuft.")
+  tb.log(run, "INFO", "4) Der Ornithopter für Schritt 5 steht neben dir. Lass dir Zeit mit dem Prüfen: Läuft der Countdown ab, frisst der"
+    .. " Wurm Ernter 1, und Schritt 5 stellt einen neuen Ernter mit frischen 60 s hin. Dann ALT+O oder /arrakis-test weiter.")
 end
 
--- 5) Rettung [V16]; läuft keine Jagd mehr, startet der Test eine Befehlsjagd mit 60 s.
+-- 5) Rettung [V16]. 0.16.1 (Max 01.11.2026: der Wurm hatte Ernter 1 schon gefressen, Schritt 5 war nicht prüfbar):
+-- Fehlt Ernter 1, baut der Test einen neuen (eingepackt, damit kein lauernder Wurm ihn sofort jagt); hat die Jagd
+-- weniger als 40 s übrig oder läuft keine, beginnt eine Befehlsjagd mit 60 s. Fehlt der Ornithopter, kommt ein neuer.
 t20_enter[5] = function(run, tb, d, player)
-  if valid(d.main) and not worms_lib.hunt_of(d.main) then
-    local hunt = worms_lib.start_hunt(d.main, {seconds = 60, debug = true})
-    tb.log(run, "INFO", "5) Die Jagd aus Schritt 4 ist vorbei: " .. (hunt and "Befehlsjagd mit 60 s auf Ernter 1" or "keine neue Jagd möglich"))
+  local now = game.tick
+  if not valid(d.main) then
+    local position = t20_spot(run, tb, d, 8, 0)
+    d.main = t20_harvester(run, tb, d, "Ernter 1b", position, {coal = 20})
+    if d.main then
+      d.main_label = "Ernter 1b"
+      tb.log(run, "INFO", "5) Ernter 1 ist gefressen: neuer Ernter 1b neben dir")
+    end
+  end
+  if not valid(d.main) then
+    tb.log(run, "FEHLER", "5) Kein Ernter für die Rettung")
+    return
+  end
+  local hunt = worms_lib.hunt_of(d.main)
+  if hunt and hunt.eta_tick - now < T20_RESCUE_MIN * 60 then
+    worms_lib.end_hunt(hunt, nil, "abort")
+    tb.log(run, "INFO", "5) Die Jagd aus Schritt 4 hatte nur noch " .. tb.num((hunt.eta_tick - now) / 60, 0) .. " s: abgebrochen")
+    hunt = nil
+  end
+  if not hunt then
+    local started, reason = worms_lib.start_hunt(d.main, {seconds = T20_RESCUE_SECONDS, debug = true})
+    if started then
+      tb.log(run, "INFO", "5) Befehlsjagd mit " .. T20_RESCUE_SECONDS .. " s auf " .. (d.main_label or "Ernter 1"))
+    else
+      tb.log(run, "FEHLER", "5) Befehlsjagd ging nicht: " .. tostring(reason))
+    end
+  end
+  if not valid(d.flyer) then
+    d.flyer = new_flyer(run, tb, d.made, t20_spot(run, tb, d, -6, 4, FLYER), {force = d.force, rocket = 4})
   end
   tb.log(run, "INFO", "5) In den Ornithopter steigen, über den Ernter fliegen, Umschalt+C.")
   tb.log(run, "FRAGE", "5) Verschwinden Alarm und Ring, steht oben links „wird getragen: erst nach … s auf Sand absetzen“, und kommt bei 0 eine"
@@ -163,22 +199,28 @@ t20_enter[6] = function(run, tb, d, player)
     .. " wenn du zurück in den Sand fährst?")
 end
 
--- 7) Vorsichtsmodus: eigener Ernter 120 Kacheln östlich (anderer Sektor); sobald careful an ist, set_heat 580.
+-- 7) Vorsichtsmodus: eigener Ernter 120 Kacheln östlich (anderer Sektor). 0.16.1 (Max 01.11.2026: „er hat einfach weiter
+-- geerntet“, im Lauf 0 Kontrollkästchen): Der Test schaltet den Vorsichtsmodus selbst ein, sobald der Ernter aufgebaut
+-- ist, und setzt dann die Wärme auf 580 (t20_tick). Max prüft nur, ob das Kästchen angehakt ist und was der Ernter tut.
 t20_enter[7] = function(run, tb, d, player)
   local position = {x = d.origin.x + 120.5, y = d.origin.y + 0.5}
   local car = t20_harvester(run, tb, d, "Ernter 4", position, {coal = 50, field = 1000})
   if not car then return end
   deploy(car)
   d.careful_car = car
+  local h = harvester.get(car)
+  if not (h and vibration_lib.set_careful(h, true)) then tb.log(run, "FEHLER", "7) Vorsichtsmodus ließ sich nicht einschalten") end
   tb.watch(run, player, {x = position.x - 6, y = position.y + 3})
-  tb.log(run, "INFO", "7) Der Test hat dich zu Ernter 4 gebracht " .. gps_text(tb.surface(), position) .. ". Fenster öffnen, Vorsichtsmodus"
-    .. " einschalten; der Test setzt dann die Wärme auf 580.")
-  tb.log(run, "FRAGE", "7) Packt der Ernter nach wenigen Sekunden selbst ein (im zweiten Takt), und baut er gut eine halbe Minute später"
-    .. " (etwa 36 s nach dem Einpacken) wieder auf?")
+  tb.log(run, "INFO", "7) Der Test hat dich zu Ernter 4 gebracht " .. gps_text(tb.surface(), position) .. " und den Vorsichtsmodus"
+    .. " eingeschaltet. Sobald der Ernter steht, setzt er die Wärme auf 580. Ernterfenster öffnen und zusehen.")
+  tb.log(run, "FRAGE", "7) Ist im Ernterfenster „Vorsichtsmodus“ angehakt? Packt der Ernter nach wenigen Sekunden selbst ein (im zweiten"
+    .. " Takt), und baut er gut eine halbe Minute später (etwa 36 s nach dem Einpacken) wieder auf?")
 end
 
 -- 8) Tipps [V4].
 t20_enter[8] = function(run, tb, d, player)
+  tb.log(run, "MESSUNG", "8) game.allow_tip_activation " .. tostring(game.allow_tip_activation) .. ", erforscht: "
+    .. table.concat(d.tech_state or {}, ", "))
   tb.log(run, "FRAGE", "8) Stehen unter Tipps und Tricks (Space Age) die Einträge „Arrakis“ und „Wurmzeichen“? [V4]")
 end
 
@@ -248,6 +290,22 @@ local function t20_start(run, tb)
   worms_lib.set_worm_off(force, true)
   tb.log(run, "INFO", "T20 prüft die Warnungen ohne Wurm; den Wurm zeigt T22.")
   vibration_lib.testbench_enable(force)
+  d.saved_tips = game.allow_tip_activation
+  if not d.saved_tips then
+    game.allow_tip_activation = true
+    tb.log(run, "INFO", "Tipps im Spiel erlaubt (game.allow_tip_activation war false; am Ende wieder false)")
+  end
+  d.tech_state = {}
+  for _, name in ipairs(T20_TECHS) do
+    local tech = force.technologies[name]
+    if not tech then
+      tb.log(run, "FEHLER", "Forschung " .. name .. " fehlt")
+    elseif not tech.researched then
+      tech.researched = true
+      tb.log(run, "INFO", "Forschung " .. name .. " für deine Force erforscht (Verknüpfung „Vibrationsanzeige“ und Tipps)")
+    end
+    if tech then table.insert(d.tech_state, name .. " " .. tostring(tech.researched)) end
+  end
   tb.protect(run, player)
   tb.watch(run, player, d.origin)
   tb.log(run, "INFO", "Während T20 vibrieren auch deine übrigen Bauten auf der Prüfstand-Fläche (Force " .. force.name .. ").")
@@ -278,11 +336,6 @@ local function t20_watch(run, tb, d)
       entry.careful = careful
       tb.log(run, "MESSUNG", string.format("Kontrollkästchen Vorsichtsmodus an %s: %s (Zustand %s, W %s)", entry.label, careful and "an" or "aus",
         state, valid(entry.entity) and tb.num(vibration_lib.near_heat(entry.entity.surface, entry.entity.position)) or "–"))
-      if careful and valid(d.careful_car) and entry.un == d.careful_car.unit_number and not d.careful_set then
-        d.careful_set = game.tick
-        heat_chunk(entry.entity.surface, entry.entity.position, 580)
-        tb.log(run, "INFO", "7) Vorsichtsmodus an: Wärme auf 580 gesetzt")
-      end
     end
   end
   local seen = {}
@@ -321,6 +374,15 @@ local function t20_tick(run, tb)
     end
   end
   if d.hold620 and valid(d.main) and now % 60 == 30 then heat_chunk(d.main.surface, d.main.position, 620) end
+  -- 7) Wärme 580, sobald Ernter 4 mit Vorsichtsmodus aufgebaut ist (vorher hätte er nur das Aufbauen abgebrochen).
+  if valid(d.careful_car) and not d.careful_set then
+    local h = harvester.get(d.careful_car)
+    if h and h.careful == true and h.state == "deployed" then
+      d.careful_set = now
+      heat_chunk(d.careful_car.surface, d.careful_car.position, 580)
+      tb.log(run, "INFO", "7) Ernter 4 steht mit Vorsichtsmodus: Wärme auf 580 gesetzt")
+    end
+  end
   if d.car_check and now >= d.car_check then
     d.car_check = nil
     tb.log(run, "MESSUNG", "9) Nach dem Einsteigen: source_of " .. (valid(d.raw_car) and vibration_lib.source_of(d.raw_car) and "eingetragen (V12 hält)"
@@ -362,6 +424,7 @@ local function t20_cleanup(run, tb)
   if d.box then pcall(clear_area, tb.surface(), d.box) end
   worms_lib.set_worm_off(force, false)
   vibration_lib.testbench_disable(force)
+  if d.saved_tips == false then game.allow_tip_activation = false end
   if d.saved then
     worms_lib.grace_restore(force, d.saved.grace)
     worms_lib.set_paused(d.saved.paused)
