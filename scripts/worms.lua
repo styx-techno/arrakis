@@ -1245,7 +1245,8 @@ local function best_target(index, d, s, busy_reviere, full)
   return best
 end
 
--- Phase 3j (docs/plan-3j.md 2.2): Kommt der große Wurm? Zufall nach der Stufe des Reviers, in dem der Chunk key liegt.
+-- Phase 3j (docs/plan-3j.md 2.2): Kommt der große Wurm? Zufall nach der Stufe des Reviers, in dem der Chunk key liegt;
+-- nur auf Oberflächen mit echten Revieren.
 -- roll (0 bis < 1) nur für den Prüfstand; sonst würfelt storage.rng.
 function lib.large_chance(s, key)
   local level = territory_lib.level(s, territory_lib.of_key(s, key))
@@ -1253,7 +1254,8 @@ function lib.large_chance(s, key)
 end
 
 function lib.large_due(s, key, roll)
-  if not lib.LARGE_ENABLED then return false end
+  -- Nur in echten Revieren (Arrakis; Prüfstand nach territory.test_real): Testjagden bleiben vorhersagbar klein.
+  if not (lib.LARGE_ENABLED and territory_lib.real(s)) then return false end
   local chance = lib.large_chance(s, key)
   if chance <= 0 then return false end
   return (roll or storage.rng()) < chance

@@ -37,7 +37,8 @@ Nicht in 3j: eigenes Wurm-Modell (Grafik-Thread), Patrouillen, Stürme.
 ### 2.2 Auswahl und Jagd
 - `worms.wormsign_tick` würfelt mit `storage.rng` nach der Stufe des Reviers der Quelle (`LARGE_CHANCE` ruhig 0,
   normal 0,1, wild 0,3; Frage 1c), auch wenn die Quelle ein Thumper ist (Frage 3 „Zufall“), und gibt
-  `opts.size = "large"` an `start_hunt`. Lehrjagd und Lauer-Jagd: immer klein.
+  `opts.size = "large"` an `start_hunt`. Lehrjagd und Lauer-Jagd: immer klein. Nur auf Oberflächen mit echten
+  Revieren (Arrakis, Prüfstand nach `territory.test_real`), damit die übrigen Testjagden klein bleiben.
 - `hunt.size = "large"`; Meldung „Großes Wurmzeichen“, Ring größer (Biss-Umkreis 6, breiter Strich).
 - scripts/sandworm.lua: Werte je Größe in `lib.SIZES` (Name, Körperlinie 30 statt 20, Vorausschau 24 statt 18,
   Wenderadius 9 statt 6); Spawn, Fels-Wächter und Planung nehmen die Werte der Jagd.
