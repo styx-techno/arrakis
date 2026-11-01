@@ -107,3 +107,24 @@ und `-64.png` werden `graphics/technology/territory-survey.png` und `graphics/ic
 
 Prüfen nach jedem Einbau: `tools/check/bilder.py` mit dem Dump von `datastage.py --dump` (Ausschnitte passen in die
 Dateien, Symbolgrößen stimmen) und `tools/check/base_paths.py`.
+
+## Flügelschlag Ornithopter und Carryall (Grafik-Phase)
+
+```
+python ornithopter-modell.py roh6 base 64 rumpf
+python ornithopter-modell.py roh7 base 64 fluegel
+python ornithopter-modell.py roh7 mask 64 fluegel
+python pack.py roh6 blaetter6 ornithopter
+python pack.py roh7 blaetter6 ornithopter-wings 16
+```
+
+(Carryall gleich, Name `carryall`.) Das 4. Argument wählt den Teil: `rumpf` rendert den Rumpf ohne Flügel (die Flügel
+werfen weiter Schatten auf ihn), `fluegel` nur Flügel samt Holm, Rippen, Streifen und Positionslicht, der Rumpf ist
+Aussparung (verdeckt die Flügel dahinter). `szene.fluegel_vorbereiten()` hängt jeden Flügel an ein Gelenk an der Stelle
+von `hinge<paar><seite>`; Bild f von 4 schlägt um 22° · sin(2πf/4), vorderes und hinteres Paar gegenläufig, Bild 0 ist
+die Ruhelage. `schlag` mit Modus `vorschau` zeigt alles mit Flügelschlag.
+
+Blätter: Rumpf wie bisher (Ornithopter 448 px, Carryall 576 px, `scale = 0.5`, 8 je Zeile, `repeat_count = 4`), Flügel und
+Flügel-Farbmaske in halber Auflösung (224 bzw. 288 px, `scale = 1`), 4 Bilder je Richtung hintereinander, 16 Bilder je
+Zeile (`frame_count = 4`, `line_length = 16`). Eine eigene Rumpf-Farbmaske gibt es nicht mehr, die Spielerfarbe sitzt nur
+an den Flügelspitzen. Der Schatten bleibt das Standbild (`repeat_count = 4`).

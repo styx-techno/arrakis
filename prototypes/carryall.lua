@@ -23,6 +23,16 @@ local function carryall_layer(file, size, scale, shift, extra)
   return layer
 end
 
+-- Flügelschlag wie beim Ornithopter (prototypes/ornithopter.lua wing_layer): 4 Bilder je Richtung, halbe Auflösung.
+local FLAP_FRAMES = 4
+local function wing_layer(file, size, shift, extra)
+  local layer = carryall_layer(file, size, 1, shift, extra)
+  layer.line_length = 16
+  layer.frame_count = FLAP_FRAMES
+  layer.animation_speed = 0.32
+  return layer
+end
+
 local carryall = table.deepcopy(data.raw["spider-vehicle"]["arrakis-ornithopter"])
 carryall.name = "arrakis-carryall"
 carryall.icon = "__arrakis__/graphics/icons/carryall.png"
@@ -35,7 +45,7 @@ carryall.max_health = 4000
 carryall.inventory_size = 20
 -- Sitze wie beim Ornithopter für den Handbetrieb (Plan 1.9); die Automatik startet nie mit Insasse
 -- (scripts/fleet.lua manual_check).
--- Rumpf und Farbmaske 576 px mit scale 0,5 (9 Kacheln), Schatten 320 px mit scale 1 (10 Kacheln); Rumpfpunkt und
+-- Rumpf 576 px mit scale 0,5 (9 Kacheln), Flügel mit Farbmaske 288 px mit scale 1 (Flügelschlag, halbe Auflösung), Schatten 320 px mit scale 1 (10 Kacheln); Rumpfpunkt und
 -- Schatten-shift wie beim Ornithopter (prototypes/ornithopter.lua). Das Modell ist 1,25-mal so groß, der Schwerpunkt
 -- des Schattens liegt deshalb 1,25-mal so weit weg.
 local SHADOW_SHIFT = {26 / 32 - 0.41, 0.5 / 32 - 0.41}
@@ -43,12 +53,13 @@ carryall.graphics_set.animation =
 {
   layers =
   {
-    carryall_layer("carryall-base.png", 576, 0.5, {0, -19 / 32}),
-    carryall_layer("carryall-mask.png", 576, 0.5, {0, -19 / 32}, {apply_runtime_tint = true})
+    carryall_layer("carryall-base.png", 576, 0.5, {0, -19 / 32}, {repeat_count = FLAP_FRAMES}),
+    wing_layer("carryall-wings-base.png", 288, {0, -19 / 32}),
+    wing_layer("carryall-wings-mask.png", 288, {0, -19 / 32}, {apply_runtime_tint = true})
   }
 }
 carryall.graphics_set.shadow_animation = carryall_layer("carryall-shadow.png", 320, 1, SHADOW_SHIFT,
-  {draw_as_shadow = true})
+  {draw_as_shadow = true, repeat_count = FLAP_FRAMES})
 carryall.drawing_box_vertical_extension = 5
 
 local item = table.deepcopy(data.raw["item-with-entity-data"]["arrakis-ornithopter"])

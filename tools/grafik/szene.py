@@ -12,16 +12,25 @@ OUT = None
 PX_PER_TILE = None
 FRAME_TILES = None
 MASK_PREFIXES = ()
+# Teil (4. Argument): "alles" (Vorgabe), "schlag" (alles, mit Flügelschlag; zum Ansehen), "rumpf" (ohne Flügel; sie werfen aber Schatten) oder "fluegel" (nur die Flügel,
+# Rumpf als Aussparung, halbe Auflösung, FLAP_FRAMES Bilder je Richtung). Siehe fluegel_vorbereiten().
+TEIL = "alles"
+FLAP_FRAMES = 4
+WING_PARTS = []
+PIVOTS = []
 
 
 def start(name, frame_tiles, mask_prefixes):
     """Liest OUT_DIR MODUS [richtungen] aus sys.argv und legt eine leere Szene mit dem Wurzelobjekt an.
     frame_tiles: Bildbreite in Kacheln je Modus (Schlüssel vorschau, shadow, sonst default)."""
-    global scene, root, MODE, DIRS, OUT, PX_PER_TILE, FRAME_TILES, MASK_PREFIXES
+    global scene, root, MODE, DIRS, OUT, PX_PER_TILE, FRAME_TILES, MASK_PREFIXES, TEIL
     OUT = sys.argv[1]
     MODE = sys.argv[2] if len(sys.argv) > 2 else "vorschau"
     DIRS = int(sys.argv[3]) if len(sys.argv) > 3 else 8
+    TEIL = sys.argv[4] if len(sys.argv) > 4 else "alles"
     PX_PER_TILE = {"shadow": 32, "icon": 128}.get(MODE, 64)   # Fahrzeug als HR-Grafik, Schatten halb so fein
+    if TEIL == "fluegel" and MODE in ("base", "mask"):
+        PX_PER_TILE = 32                                          # Flügelschlag in halber Auflösung
     FRAME_TILES = frame_tiles.get(MODE, frame_tiles["default"])
     MASK_PREFIXES = mask_prefixes
     os.makedirs(OUT, exist_ok=True)
@@ -175,6 +184,44 @@ def prism(name, outline, z0, z1, material, loc=(0, 0, 0), rot=(0, 0, 0), bevel=0
     return finish(o, material, bevel)
 
 
+def fluegel_vorbereiten(amplitude_deg=22.0):
+    """Flieger (Ornithopter, Carryall): hängt jeden Flügel samt Holm, Rippen, Streifen (und das Positionslicht tip<sx>
+    am vorderen Paar) an ein Gelenk an der Stelle von hinge<paar><sx>. Gibt pose(f) zurück: Bild f von FLAP_FRAMES,
+    Bild 0 ist die Ruhelage (wie das Standbild), vorderes und hinteres Paar schlagen gegenläufig wie bei einer Libelle."""
+    import re
+    objs = {o.name: o for o in scene.objects if o.parent == root}
+    groups = {}
+    for name, o in objs.items():
+        m = re.match(r"^(wing|spar|rib|stripe)(\d)(-?1)", name)
+        t = re.match(r"^tip(-?1)$", name)
+        key = (int(m.group(2)), int(m.group(3))) if m else (0, int(t.group(1))) if t else None
+        if key:
+            groups.setdefault(key, []).append(o)
+    bpy.context.view_layer.update()
+    for (pair, sx), parts in sorted(groups.items()):
+        hinge = objs[f"hinge{pair}{sx}"]
+        pivot = bpy.data.objects.new(f"gelenk{pair}{sx}", None)
+        scene.collection.objects.link(pivot)
+        pivot.parent = root
+        pivot.location = hinge.location.copy()
+        bpy.context.view_layer.update()
+        for o in parts:
+            mw = o.matrix_world.copy()
+            o.parent = pivot
+            o.matrix_parent_inverse = pivot.matrix_world.inverted()
+            o.matrix_world = mw
+            WING_PARTS.append(o)
+        PIVOTS.append((pivot, pair, sx))
+    amp = math.radians(amplitude_deg)
+
+    def pose(f):
+        phase = math.sin(2 * math.pi * f / FLAP_FRAMES)
+        for pivot, pair, sx in PIVOTS:
+            flap = amp * phase * (1 if pair == 0 else -1)
+            pivot.rotation_euler = (0, -sx * flap, 0)
+    return pose
+
+
 def render(lift=0.0, frames=0, pose=None, icon_frame=0):
     """Rendert alle Richtungen im Modus MODE nach OUT/<modus>-<nn>.png. lift hebt das Modell für Schatten und Vorschau
     über den Boden (Flieger: Teile unter dem Rumpfpunkt stecken sonst im Boden); das Bild selbst bleibt auf der
@@ -184,7 +231,15 @@ def render(lift=0.0, frames=0, pose=None, icon_frame=0):
     bpy.ops.mesh.primitive_plane_add(size=30, location=(0, 0, 0))
     ground = bpy.context.object
     ground.is_shadow_catcher = True
-    parts = [o for o in scene.objects if o.parent == root]
+    wing = set(WING_PARTS)
+    parts = [o for o in scene.objects if o.type in ("MESH", "CURVE") and o != ground and (o.parent == root or o in wing)]
+    if TEIL == "rumpf":
+        for o in wing:
+            o.visible_camera = False      # Flügel fehlen im Bild, werfen aber Schatten auf den Rumpf
+    if TEIL == "fluegel":
+        for o in parts:
+            if o not in wing:
+                o.is_holdout = True       # Rumpf verdeckt die Flügel dahinter, erscheint aber selbst nicht
     if MODE in ("shadow", "vorschau"):
         root.location.z = lift
     if MODE in ("base", "mask", "icon"):
@@ -252,9 +307,17 @@ def render(lift=0.0, frames=0, pose=None, icon_frame=0):
         return
 
     turns = [5] if MODE == "icon" else range(DIRS)
+    flaps = FLAP_FRAMES if (TEIL in ("fluegel", "schlag") and pose and MODE != "icon") else 0
     for i in turns:
         # Richtung i: 0 = Norden, im Uhrzeigersinn (Factorio-Reihenfolge der 64 Richtungen)
         root.rotation_euler = (0, 0, -2 * math.pi * i / (8 if MODE == "icon" else DIRS))
+        if flaps:
+            # Flügelschlag: Bilder einer Richtung hintereinander (RotatedAnimation), Datei <modus>-<rr>-<f>.png
+            for f in range(flaps):
+                pose(f)
+                scene.render.filepath = os.path.join(OUT, f"{MODE}-{i:02d}-{f}.png")
+                bpy.ops.render.render(write_still=True)
+            continue
         scene.render.filepath = os.path.join(OUT, f"{MODE}-{i:02d}.png")
         bpy.ops.render.render(write_still=True)
     print("fertig", MODE, len(turns))

@@ -433,13 +433,17 @@ do
   local gs = orni and orni.graphics_set or {}
   local layers = gs.animation and gs.animation.layers or {}
   local gfx = "__arrakis__/graphics/entity/ornithopter/"
-  local want = {{"ornithopter-base.png", 448, 0.5}, {"ornithopter-mask.png", 448, 0.5, "apply_runtime_tint"},
-                {"ornithopter-shadow.png", 256, 1, "draw_as_shadow"}}
-  if #layers ~= 2 then add("FEHLER 0.8.9: Ornithopter hat " .. #layers .. " Bildebenen statt 2") end
+  -- Grafik-Phase: Rumpf als Standbild, Flügel mit Farbmaske als Flügelschlag (4 Bilder, 16 je Zeile, halbe Auflösung).
+  -- {Datei, Größe, scale, Bilder, Bilder je Zeile, Pflichtschalter}
+  local want = {{"ornithopter-base.png", 448, 0.5, 1, 8}, {"ornithopter-wings-base.png", 224, 1, 4, 16},
+                {"ornithopter-wings-mask.png", 224, 1, 4, 16, "apply_runtime_tint"},
+                {"ornithopter-shadow.png", 256, 1, 1, 8, "draw_as_shadow"}}
+  if #layers ~= 3 then add("FEHLER 0.8.9: Ornithopter hat " .. #layers .. " Bildebenen statt 3") end
   for j, w in ipairs(want) do
-    local l = (j == 3 and gs.shadow_animation or layers[j]) or {}
+    local l = (j == 4 and gs.shadow_animation or layers[j]) or {}
     if l.filename ~= gfx .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3] or not l.shift
-        or l.direction_count ~= 64 or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) or l.tint then
+        or l.direction_count ~= 64 or (l.frame_count or 1) ~= w[4] or l.line_length ~= w[5]
+        or (w[4] == 1 and l.repeat_count ~= 4) or (w[6] and l[w[6]] ~= true) or l.tint then
       add("FEHLER 0.8.9: Ornithopter Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
     end
   end
@@ -978,15 +982,18 @@ do
     local gs = car.graphics_set or {}
     local layers = gs.animation and gs.animation.layers or {}
     local gfx3e = "__arrakis__/graphics/entity/carryall/"
-    local want3e = {{"carryall-base.png", 576, 0.5}, {"carryall-mask.png", 576, 0.5, "apply_runtime_tint"}, {"carryall-shadow.png", 320, 1, "draw_as_shadow"}}
+    local want3e = {{"carryall-base.png", 576, 0.5, 1, 8}, {"carryall-wings-base.png", 288, 1, 4, 16},
+                    {"carryall-wings-mask.png", 288, 1, 4, 16, "apply_runtime_tint"},
+                    {"carryall-shadow.png", 320, 1, 1, 8, "draw_as_shadow"}}
     for j, w in ipairs(want3e) do
-      local l = (j == 3 and gs.shadow_animation or layers[j]) or {}
+      local l = (j == 4 and gs.shadow_animation or layers[j]) or {}
       if l.filename ~= gfx3e .. w[1] or l.width ~= w[2] or l.height ~= w[2] or l.scale ~= w[3] or l.direction_count ~= 64
-          or l.line_length ~= 8 or (w[4] and l[w[4]] ~= true) then
+          or (l.frame_count or 1) ~= w[4] or l.line_length ~= w[5] or (w[4] == 1 and l.repeat_count ~= 4)
+          or (w[6] and l[w[6]] ~= true) then
         add("FEHLER 3e: Carryall Ebene " .. j .. " (" .. w[1] .. ") passt nicht zu tools/grafik/README.md")
       end
     end
-    if #layers ~= 2 then add("FEHLER 3e: Carryall hat " .. #layers .. " Ebenen statt 2") end
+    if #layers ~= 3 then add("FEHLER 3e: Carryall hat " .. #layers .. " Ebenen statt 3") end
   end
   local car_item = raw["item-with-entity-data"]["arrakis-carryall"]
   if not (car_item and car_item.place_result == "arrakis-carryall") then add("FEHLER 3e: item arrakis-carryall fehlt oder place_result falsch") else n3e = n3e + 1 end

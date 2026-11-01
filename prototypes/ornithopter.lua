@@ -29,6 +29,26 @@ local function ornithopter_layer(file, size, scale, shift, extra)
   return layer
 end
 
+-- Flügelschlag: FLAP_FRAMES Bilder je Richtung, Bilder einer Richtung hintereinander (tools/grafik/README.md).
+local FLAP_FRAMES = 4
+local FLAP_SPEED = 0.4
+local function wing_layer(file, size, shift, extra)
+  local layer =
+  {
+    filename = ornithopter_gfx .. file,
+    width = size,
+    height = size,
+    line_length = 16,
+    direction_count = 64,
+    frame_count = FLAP_FRAMES,
+    animation_speed = FLAP_SPEED,
+    scale = 1,
+    shift = shift
+  }
+  for key, value in pairs(extra or {}) do layer[key] = value end
+  return layer
+end
+
 -- Bein: Kopie eines Spidertron-Beins ohne Grafik (graphics_set ist optional), ohne Geräusche, ohne Kollision.
 -- Bewusst eine Kopie von make_leg(name, 1) aus prototypes/testbench/flyers.lua:19–33 (Plan 3): Die Test-Prototypen
 -- gibt es nur mit Prüfstand, und T1 misst weiter die alten Prüflinge. Faktor 1 heißt: Bewegungswerte wie Vanilla
@@ -118,16 +138,20 @@ ornithopter.graphics_set.render_layer = "air-object"
 local SHADOW_SHIFT = {26 / 32 - 0.33, 0.5 / 32 - 0.33}
 ornithopter.graphics_set.base_animation = nil
 ornithopter.graphics_set.shadow_base_animation = nil
+-- Flügelschlag (Grafik-Phase, docs/plan-grafik.md): Rumpf ohne Flügel als Standbild (repeat_count), die Flügel samt
+-- Farbmaske (Streifen an den Spitzen) als eigene Ebene mit FLAP_FRAMES Bildern je Richtung in halber Auflösung
+-- (224 px, scale 1), 16 Bilder je Zeile = 4 Richtungen hintereinander. Bild 0 ist die Ruhelage.
 ornithopter.graphics_set.animation =
 {
   layers =
   {
-    ornithopter_layer("ornithopter-base.png", 448, 0.5, {0, -19 / 32}),
-    ornithopter_layer("ornithopter-mask.png", 448, 0.5, {0, -19 / 32}, {apply_runtime_tint = true})
+    ornithopter_layer("ornithopter-base.png", 448, 0.5, {0, -19 / 32}, {repeat_count = FLAP_FRAMES}),
+    wing_layer("ornithopter-wings-base.png", 224, {0, -19 / 32}),
+    wing_layer("ornithopter-wings-mask.png", 224, {0, -19 / 32}, {apply_runtime_tint = true})
   }
 }
 ornithopter.graphics_set.shadow_animation = ornithopter_layer("ornithopter-shadow.png", 256, 1, SHADOW_SHIFT,
-  {draw_as_shadow = true})
+  {draw_as_shadow = true, repeat_count = FLAP_FRAMES})
 ornithopter.graphics_set.water_reflection = nil
 ornithopter.graphics_set.light_positions = nil
 ornithopter.graphics_set.eye_light = nil
