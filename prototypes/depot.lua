@@ -246,5 +246,33 @@ data:extend({
       ingredients = FLEET_PACKS,
       time = 60
     }
+  },
+  {
+    -- docs/plan-3g.md 1.4 c (0.13.0): Danach sieht die Force die Wurm-Reviere (Grenze, Name, Stufe in der
+    -- Vibrationsanzeige und im Leitstellen-Fenster), und die Leitstelle schickt Ernter zuerst in ruhige Reviere.
+    -- Eigenes Symbol folgt mit der Grafik.
+    type = "technology",
+    name = "arrakis-territory-survey",
+    icon = "__arrakis__/graphics/technology/depot.png",
+    icon_size = 256,
+    effects =
+    {
+      {type = "nothing", effect_description = {"technology-effect.arrakis-territory-survey"},
+        icon = "__arrakis__/graphics/icons/spice-harvester.png", icon_size = 64}
+    },
+    prerequisites = {"arrakis-ornithopter-depot"},
+    unit =
+    {
+      count = 300,
+      ingredients =
+      {
+        {"automation-science-pack", 1},
+        {"logistic-science-pack", 1},
+        {"chemical-science-pack", 1},
+        {"space-science-pack", 1},
+        {"spice-science-pack", 1}
+      },
+      time = 30
+    }
   }
 })

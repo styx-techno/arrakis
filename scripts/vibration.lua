@@ -694,11 +694,94 @@ local function destroy_cell(cell)
   if cell.text and cell.text.valid then cell.text.destroy() end
 end
 
+-- Phase 3g: Reviergrenzen und -namen der Anzeige (entry.revier = {stamp, objs}).
+local function clear_revier(entry)
+  local r = entry.revier
+  if not r then return end
+  for _, obj in ipairs(r.objs) do
+    if obj.valid then obj.destroy() end
+  end
+  entry.revier = nil
+end
+
 local function clear_cells(entry)
   for key, cell in pairs(entry.cells) do
     destroy_cell(cell)
     entry.cells[key] = nil
   end
+  clear_revier(entry)
+end
+
+local BORDER_COLOR = {r = 0.95, g = 0.8, b = 0.35, a = 0.9}
+local LEVEL_COLOR =
+{
+  calm = {r = 0.55, g = 0.95, b = 0.55},
+  normal = {r = 1, g = 0.9, b = 0.5},
+  wild = {r = 1, g = 0.45, b = 0.35}
+}
+
+-- Phase 3g (docs/plan-3g.md, Revierkunde): Grenzen zwischen Chunks verschiedener Reviere im 7×7-Ausschnitt und je
+-- Revier ein Name mit Stufe (und „frei“) in der Mitte seines sichtbaren Teils. Neu gezeichnet, wenn der Spieler den
+-- Chunk wechselt, alle 10 s oder wenn die Revierkunde dazukommt. lib.territory setzt scripts/territory.lua.
+local function draw_revier(player, entry, surface, ccx, ccy, tick)
+  local t = lib.territory
+  local s = surface.index
+  if not (t and t.real(s) and t.known(player.force)) then
+    clear_revier(entry)
+    return
+  end
+  local stamp = ccx .. "/" .. ccy .. "/" .. math.floor(tick / 600)
+  if entry.revier and entry.revier.stamp == stamp then return end
+  clear_revier(entry)
+  local objs = {}
+  local R = lib.OVERLAY_RADIUS
+  local ids = {}
+  local function id_at(cx, cy)
+    local key = cx .. "/" .. cy
+    local id = ids[key]
+    if not id then
+      id = t.of_sector(s, lib.sector_key(cx, cy))
+      ids[key] = id
+    end
+    return id
+  end
+  local sums = {}
+  local order = {}
+  for cx = ccx - R, ccx + R do
+    for cy = ccy - R, ccy + R do
+      local id = id_at(cx, cy)
+      local sum = sums[id]
+      if not sum then
+        sum = {x = 0, y = 0, n = 0}
+        sums[id] = sum
+        order[#order + 1] = id
+      end
+      sum.x = sum.x + (cx + 0.5) * CHUNK
+      sum.y = sum.y + (cy + 0.5) * CHUNK
+      sum.n = sum.n + 1
+      if cx < ccx + R and id_at(cx + 1, cy) ~= id then
+        local x = (cx + 1) * CHUNK
+        objs[#objs + 1] = rendering.draw_line{color = BORDER_COLOR, width = 4, from = {x, cy * CHUNK},
+          to = {x, (cy + 1) * CHUNK}, surface = surface, players = {player}, draw_on_ground = true}
+      end
+      if cy < ccy + R and id_at(cx, cy + 1) ~= id then
+        local y = (cy + 1) * CHUNK
+        objs[#objs + 1] = rendering.draw_line{color = BORDER_COLOR, width = 4, from = {cx * CHUNK, y},
+          to = {(cx + 1) * CHUNK, y}, surface = surface, players = {player}, draw_on_ground = true}
+      end
+    end
+  end
+  for _, id in ipairs(order) do
+    local sum = sums[id]
+    local level = t.level(s, id)
+    local free = t.free_until(s, id)
+    local text = free and {"arrakis-message.overlay-territory-free", t.name(s, id), t.level_name(s, id), mmss(free - tick)}
+      or {"arrakis-message.overlay-territory", t.name(s, id), t.level_name(s, id)}
+    objs[#objs + 1] = rendering.draw_text{text = text, target = {sum.x / sum.n, sum.y / sum.n + 10}, surface = surface,
+      players = {player}, color = LEVEL_COLOR[level] or LEVEL_COLOR.normal, scale = 4, alignment = "center",
+      vertical_alignment = "middle", draw_on_ground = true}
+  end
+  entry.revier = {stamp = stamp, objs = objs}
 end
 
 -- Verknüpfung setzen; pcall, falls die Engine den Zustand einer noch gesperrten Verknüpfung nicht annimmt.
@@ -737,6 +820,7 @@ local function draw_overlay(player, entry, tick)
   local R = lib.OVERLAY_RADIUS
   local cells = entry.cells
   local keep = {}
+  draw_revier(player, entry, surface, ccx, ccy, tick)
   for cx = ccx - R, ccx + R do
     for cy = ccy - R, ccy + R do
       local key = lib.chunk_key(cx, cy)

@@ -86,7 +86,7 @@ local planet_map_gen = require("prototypes.planet.planet-map-gen")
 
 local migrate = {}
 
-local SCHEMA = 6
+local SCHEMA = 7
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local HARVESTER = "spice-harvester"
@@ -163,6 +163,8 @@ function migrate.init()
     d.soll = d.soll or 0
     if d.recall == nil then d.recall = false end
   end
+  -- Schema 7 (Phase 3g): Wurm-Reviere; die Untertabellen legt scripts/territory.lua an.
+  storage.territory = storage.territory or {}
 end
 
 -- Hat die Force einen Spice-Ernter (Datensatz in storage.harvesters) oder je einen hergestellt

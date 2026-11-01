@@ -23,6 +23,8 @@ local harvester = require("scripts.harvester")
 local vibration_lib = require("scripts.vibration")
 local worms_gui = require("scripts.worms-gui")
 local sandworm_lib = require("scripts.sandworm")
+-- Phase 3g (docs/plan-3g.md): Wurm-Reviere.
+local territory_lib = require("scripts.territory")
 
 local lib = {}
 
@@ -344,6 +346,12 @@ local function teaching_running(g)
   return g.first_hunt ~= nil and storage.hunts.list[g.first_hunt] ~= nil
 end
 
+-- Revier einer Jagd (Phase 3g; Jagden aus älteren Ständen haben noch kein Feld revier).
+local function revier_of(hunt)
+  if not hunt.revier then hunt.revier = territory_lib.of_sector(hunt.surface_index, hunt.sector_key) end
+  return hunt.revier
+end
+
 -- Statistik --------------------------------------------------------------------------------------
 
 local function stats_for(force_index)
@@ -500,10 +508,13 @@ function lib.start_hunt(entity, opts)
   if entity.name == FLYER or entity.name == CARRYALL then return nil, "flyer" end
   if lib.hunt_of(entity) then return nil, "busy" end
   local tick = game.tick
-  local seconds = opts.seconds or (opts.teaching and lib.TEACH_TICKS / 60) or (lib.warn_ticks(entity.force) / 60)
-  local eta = math.ceil((tick + 60 * seconds) / 10) * 10
   local position = entity.position
   local key, sector = vibration_lib.key_of(position)
+  local revier = territory_lib.of_sector(surface.index, sector)
+  -- Phase 3g: Countdown regulärer Jagden nach der Stufe des Reviers (nach der Frühwarnung, nie unter 30 s).
+  local seconds = opts.seconds or (opts.teaching and lib.TEACH_TICKS / 60)
+    or (territory_lib.warn_ticks(surface.index, revier, lib.warn_ticks(entity.force)) / 60)
+  local eta = math.ceil((tick + 60 * seconds) / 10) * 10
   local force = entity.force
   local hunts = storage.hunts
   local id = hunts.next_id
@@ -523,6 +534,7 @@ function lib.start_hunt(entity, opts)
     target_name = entity.localised_name,
     origin_key = key,
     sector_key = sector,
+    revier = revier,
     state = "warning",
     warn_tick = tick,
     eta_tick = eta,
@@ -609,10 +621,15 @@ function lib.end_hunt(hunt, outcome, mode)
   if not hunt.debug then
     if mode ~= "abort" then
       vibration_lib.reset_around(hunt.surface_index, hunt.origin_key)
-      local ticks = storage.rng(lib.REST_MIN, lib.REST_MAX)
-      vibration_lib.rest(hunt.surface_index, hunt.sector_key, ticks)
-      -- Der Wurm lauert (0.11.0, Max 29.10.2026): Lebt er noch, bleibt er so lange im Sektor (siehe lurk_tick).
-      if hunt.outcome ~= "killed" then lib.lurk(hunt.surface_index, hunt.sector_key, game.tick + ticks) end
+      -- Phase 3g: Ruhe fürs ganze Revier, mal Faktor der Stufe.
+      local s, revier = hunt.surface_index, revier_of(hunt)
+      local ticks = math.floor(storage.rng(lib.REST_MIN, lib.REST_MAX) * territory_lib.rest_factor(s, revier))
+      territory_lib.rest(s, revier, ticks)
+      -- Der Wurm lauert (0.11.0, Max 29.10.2026): Lebt er noch, bleibt er so lange im Sektor (siehe lurk_tick). In
+      -- einem freien Revier (Wurm getötet, Phase 3g) lauert keiner.
+      if hunt.outcome ~= "killed" and not territory_lib.free_until(s, revier) then
+        lib.lurk(s, hunt.sector_key, game.tick + ticks)
+      end
     end
     -- Lehrjagd-Merker: jeder Datensatz, der auf diese Jagd zeigt (nach einem Force-Wechsel der der alten Force).
     for _, g in pairs(storage.grace) do
@@ -1087,19 +1104,22 @@ local function sources_by_chunk(s)
 end
 
 -- Ist die Quelle berechtigt (Plan 1 „Berechtigt“)? Gewicht > 0 (also auf Sand, nicht getragen) steht schon fest.
-local function eligible(entry, s, busy_sectors)
+-- Phase 3g: höchstens eine Jagd je Revier (busy_reviere), kein Wurmzeichen in einem freien Revier.
+local function eligible(entry, s, busy_reviere)
   local entity = entry.entity
   local g = storage.grace[entity.force.index]
   if not (g and g.awake) or teaching_running(g) then return false end
   if lib.hunt_of(entity) then return false end
   local sector = vibration_lib.sector_of_key(entry.key)
-  if busy_sectors[sector] then return false end
+  local revier = territory_lib.of_sector(s, sector)
+  if busy_reviere[revier] then return false end
+  if territory_lib.free_until(s, revier) then return false end
   if vibration_lib.resting(s, sector) then return false end
   return true
 end
 
 -- Stärkste berechtigte Quelle in den 9 Chunks um d; gleich stark: Ernter vor anderen, dann kleinste unit_number.
-local function best_target(index, d, s, busy_sectors)
+local function best_target(index, d, s, busy_reviere)
   local best
   local cx, cy = vibration_lib.chunk_of_key(d)
   for dx = -1, 1 do
@@ -1110,7 +1130,7 @@ local function best_target(index, d, s, busy_sectors)
           if not best or entry.weight > best.weight
               or (entry.weight == best.weight and ((entry.harvester and not best.harvester)
                 or (entry.harvester == best.harvester and entry.un < best.un))) then
-            if eligible(entry, s, busy_sectors) then best = entry end
+            if eligible(entry, s, busy_reviere) then best = entry end
           end
         end
       end
@@ -1131,7 +1151,7 @@ local function wormsign_tick(tick)
       count = count + 1
       local s = hunt.surface_index
       busy[s] = busy[s] or {}
-      busy[s][hunt.sector_key] = true
+      busy[s][revier_of(hunt)] = true
       origins[s] = origins[s] or {}
       table.insert(origins[s], hunt.origin_key)
     end
@@ -1149,7 +1169,8 @@ local function wormsign_tick(tick)
       local sum3, prev3 = e.sum3, e.prev3
       local candidates = {}
       for key, v in pairs(sum3) do
-        if v >= vibration_lib.WORMSIGN and (prev3[key] or 0) >= vibration_lib.UNREST then
+        -- Phase 3g: Schwelle nach der Stufe des Reviers (Unruhe bleibt überall gleich).
+        if v >= territory_lib.threshold(s, key) and (prev3[key] or 0) >= vibration_lib.UNREST then
           candidates[#candidates + 1] = key
         end
       end
@@ -1159,7 +1180,7 @@ local function wormsign_tick(tick)
           return a < b
         end)
         local index = sources_by_chunk(s)
-        local busy_sectors = busy[s] or {}
+        local busy_reviere = busy[s] or {}
         for _, d in ipairs(candidates) do
           -- Die Wärme um den Ursprung einer laufenden Jagd gehört zu ihr.
           local near = false
@@ -1172,7 +1193,7 @@ local function wormsign_tick(tick)
             end
           end
           if not near then
-            local entry = best_target(index, d, s, busy_sectors)
+            local entry = best_target(index, d, s, busy_reviere)
             if entry then
               local entity = entry.entity
               local g = storage.grace[entity.force.index]
@@ -1231,7 +1252,7 @@ local function lurk_tick(tick)
   for _, hunt in pairs(hunts.list) do
     if not hunt.debug then
       count = count + 1
-      busy[hunt.surface_index .. "/" .. hunt.sector_key] = true
+      busy[hunt.surface_index .. "/" .. revier_of(hunt)] = true
     end
   end
   local uns = {}
@@ -1244,7 +1265,9 @@ local function lurk_tick(tick)
     if entity and entity.valid and LURK_STATES[h.state] and h.vib_key and (h.vib_weight or 0) > 0 then
       local s = entity.surface.index
       local sector = vibration_lib.sector_of_key(h.vib_key)
-      if lurk[s] and lurk[s][sector] and not busy[s .. "/" .. sector] and not lib.hunt_of(entity) then
+      local revier = territory_lib.of_sector(s, sector)
+      if lurk[s] and lurk[s][sector] and not busy[s .. "/" .. revier] and not territory_lib.free_until(s, revier)
+          and not lib.hunt_of(entity) then
         local g = storage.grace[entity.force.index]
         if g and g.awake and not teaching_running(g) then
           h.lurk_since = h.lurk_since or tick
@@ -1252,7 +1275,7 @@ local function lurk_tick(tick)
             h.lurk_since = nil
             if lib.start_hunt(entity, {teaching = not g.first_hunt_done, lurk = true}) then
               count = count + 1
-              busy[s .. "/" .. sector] = true
+              busy[s .. "/" .. revier] = true
             end
           end
         end
@@ -1271,6 +1294,7 @@ local function on_nth_tick_60(event)
   vibration_lib.tick(tick)
   vibration_lib.careful_tick(tick)
   grace_tick(tick)
+  territory_lib.tick(tick)
   vibration_lib.unrest_tick(tick)
   wormsign_tick(tick)
   lurk_tick(tick)
@@ -1637,6 +1661,13 @@ local function on_segmented_unit_died(event)
   if not hunt then return end
   local where = hunt.worm.head
   sandworm_lib.forget(hunt)
+  -- Phase 3g (Plan 1.3 b): Das Revier ist frei, ein lauernder Wurm im Sektor der Jagd ist mit tot.
+  -- Nur auf Oberflächen mit echten Revieren (Arrakis, Prüfstand nach test_real); sonst wie 0.12.x.
+  if not hunt.debug and territory_lib.real(hunt.surface_index) then
+    territory_lib.set_free(hunt.surface_index, revier_of(hunt))
+    local lurk = storage.hunts.lurk and storage.hunts.lurk[hunt.surface_index]
+    if lurk then lurk[hunt.sector_key] = nil end
+  end
   local target = hunt.target
   local warning = hunt.state == "warning"
   local rescued = lib.KILL_RESCUES and warning and not hunt.lost and target and target.valid

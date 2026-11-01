@@ -663,6 +663,8 @@ local plan_techs = {
   ["arrakis-escort-flight"] = "unit",
   ["arrakis-early-warning"] = "unit",
   ["arrakis-harvest-damping"] = "unit",
+  -- 0.13.0 (docs/plan-3g.md 1.4 c)
+  ["arrakis-territory-survey"] = "unit",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -678,7 +680,20 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 12 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 12") end
+if tech_count ~= 13 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 13") end
+-- Phase 3g (docs/plan-3g.md 2): Revierkunde nach der Leitstelle, 300 Einheiten.
+do
+  local tech = raw.technology["arrakis-territory-survey"]
+  if not tech then add("FEHLER 3g: Forschung arrakis-territory-survey fehlt") else
+    local pre = tech.prerequisites or {}
+    if #pre ~= 1 or pre[1] ~= "arrakis-ornithopter-depot" then
+      add("FEHLER 3g: arrakis-territory-survey Voraussetzung nicht arrakis-ornithopter-depot")
+    end
+    if not (tech.unit and tech.unit.count == 300) then add("FEHLER 3g: arrakis-territory-survey nicht 300 Einheiten") end
+    if not (tech.icon or tech.icons) then add("FEHLER 3g: arrakis-territory-survey ohne Symbol") end
+    add("3g: Revierkunde ok")
+  end
+end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
 -- Phase 3d2 (docs/protokolle/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus

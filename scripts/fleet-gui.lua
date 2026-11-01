@@ -7,11 +7,37 @@
 
 local fleet = require("scripts.fleet")
 local fields = require("scripts.fleet-fields")
+local territory_lib = require("scripts.territory")
 
 local gui = {}
 
 local FRAME = "arrakis_depot_frame"
 local DEPOT = "arrakis-depot"
+
+-- Phase 3g (docs/plan-3g.md, Revierkunde): Reviere, die die Reichweite der Leitstelle berührt (Sektormitte in Reichweite
+-- plus halbe Sektordiagonale), gezählt nach Stufe; frei zählt extra.
+local function territory_counts(entity, range)
+  local s = entity.surface.index
+  local p = entity.position
+  local n = {calm = 0, normal = 0, wild = 0, free = 0}
+  local seen = {}
+  local r = range + 91
+  for sx = math.floor((p.x - r) / 128), math.floor((p.x + r) / 128) do
+    for sy = math.floor((p.y - r) / 128), math.floor((p.y + r) / 128) do
+      local dx, dy = (sx + 0.5) * 128 - p.x, (sy + 0.5) * 128 - p.y
+      if dx * dx + dy * dy <= r * r then
+        local id = territory_lib.of_position(s, {x = (sx + 0.5) * 128, y = (sy + 0.5) * 128})
+        if not seen[id] then
+          seen[id] = true
+          local level = territory_lib.level(s, id)
+          n[level] = (n[level] or 0) + 1
+          if territory_lib.free_until(s, id) then n.free = n.free + 1 end
+        end
+      end
+    end
+  end
+  return n
+end
 
 local function destroy(player)
   local frame = player.gui.relative[FRAME]
@@ -68,6 +94,18 @@ local function update(player, d)
     if record and record.depot == d.un then jobs = jobs + 1 end
   end
   frame.arrakis_depot_jobs.caption = {"arrakis-message.gui-depot-jobs", jobs}
+  local label = frame.arrakis_depot_territory
+  if label then
+    local known = entity.valid and territory_lib.known(entity.force)
+    label.visible = known
+    if known then
+      local s = entity.surface.index
+      local id = territory_lib.of_position(s, entity.position)
+      local n = territory_counts(entity, fleet.RANGE)
+      label.caption = {"arrakis-message.gui-depot-territory", territory_lib.name(s, id), territory_lib.level_name(s, id),
+        n.calm, n.normal, n.wild, n.free}
+    end
+  end
   local box = frame.arrakis_depot_fleet
   local on = entity.valid and fleet.fleet_on(d)
   box.visible = on
@@ -111,6 +149,7 @@ local function build(player, d)
   frame.add{type = "flow", name = "arrakis_depot_list", direction = "vertical"}
   frame.add{type = "label", name = "arrakis_depot_harvesters"}
   frame.add{type = "label", name = "arrakis_depot_jobs"}
+  frame.add{type = "label", name = "arrakis_depot_territory"}
   local box = frame.add{type = "flow", name = "arrakis_depot_fleet", direction = "vertical"}
   box.add{type = "line"}
   box.add{type = "label", caption = {"technology-name.arrakis-fleet-control"}, style = "caption_label"}
