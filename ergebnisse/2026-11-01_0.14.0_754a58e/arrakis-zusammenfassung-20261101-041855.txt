@@ -1,0 +1,4 @@
+SUMMARY arrakis-test-20261101-041855.txt | Tests 3 | bestanden 3 | FEHLER 0 | abgebrochen 0 | ohne ENDE 0
+T23 | Carryall-Automatik: echter Code | bestanden | 311.8 s | OK 10 FEHLER 0 FRAGE 0
+T24 | Carryall-Automatik: Dauerlauf | bestanden | 3840.0 s | OK 1 FEHLER 0 FRAGE 0
+T32 | Thumper 0.14.0 | bestanden | 36.9 s | OK 5 FEHLER 0 FRAGE 0
