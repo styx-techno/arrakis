@@ -1,6 +1,6 @@
 -- Phase 3c (docs/protokolle/plan-3c.md 3): Ornithopter mit Bein, Item, Rezept und Forschung „Ornithopter“, Tempo-Sticker (seit
--- 0.6.1 je Zustand und Brennstoff-Stufe, prototypes/ornithopter-speed.lua), 32 Sprites des Lastbilds (getragener
--- Spice-Ernter und Schatten), Absetz-Probe, Taste und zwei Verknüpfungen.
+-- 0.6.1 je Zustand und Brennstoff-Stufe, prototypes/ornithopter-speed.lua), 128 Sprites des Lastbilds (getragener
+-- Spice-Ernter Mk1 und Mk2 mit Schatten, Farbmaske und Raupen), Absetz-Probe, Taste und zwei Verknüpfungen.
 -- Anheben, Tragen und Absetzen steuert das Skript (scripts/flyer.lua, scripts/hold.lua).
 -- 2.0-Schreibweise wie überall; compat.finish (prototypes/compat.lua) schreibt unter 2.1 um. Hier braucht nichts eine
 -- Umschreibung: Das Rezept hat keine Kategorie, die Forschung einen craft-item-Trigger, kein Item ist Brennstoff.
@@ -64,6 +64,10 @@ local function make_leg(name)
   leg.upper_leg_dying_trigger_effects = nil
   leg.lower_leg_dying_trigger_effects = nil
   leg.collision_mask = {layers = {}}
+  -- 0.16.1 (Max in T17 am 01.11.2026: „fliegt nicht immer mit gleichbleibender Geschwindigkeit in einer Linie“): Vanilla
+  -- streut jedes Beinziel um bis zu 0,25 Kacheln. Bei vier Beinen zieht das den Rumpf mal vor, mal zur Seite; ohne
+  -- Streuung setzen die Beine gleichmäßig auf. Ob das reicht, zeigt T17 im Spiel und die Querabweichung in T21 Schritt 6.
+  leg.target_position_randomisation_distance = 0
   return leg
 end
 
@@ -218,36 +222,42 @@ end
 -- Lastbild: 16 Richtungen aus den Blättern des Ernters (prototypes/harvester.lua, ab 0.8.5). i = 0 … 15 nimmt d = 4 · i
 -- der 64 Richtungen (0 = Nord, im Uhrzeigersinn); die Blätter haben 8 Bilder je Zeile, also x = (d mod 8) · Größe,
 -- y = floor(d/8) · Größe. Rumpf 384 px mit scale 0,5, Schatten 256 px mit scale 1, beide ohne shift (Bodenpunkt in der
--- Bildmitte). Die Farbmaske (apply_runtime_tint) fehlt bewusst: Ein Sprite kennt die Farbe des Ernters nicht. Die
--- Richtung wählt das Skript beim Anheben (Plan 4.12).
-local harvester_gfx = "__arrakis__/graphics/entity/spice-harvester/"
+-- Bildmitte). Die Richtung wählt das Skript beim Anheben (Plan 4.12).
+-- 0.16.1 (Max in T17 am 01.11.2026: „das Modell wechselt am Ornithopter auf ein anderes“): Das Lastbild zeigt jetzt den
+-- Ernter wie am Boden, mit Farbmaske (Farbe setzt das Skript beim Zeichnen) und Raupenketten (Bild 0 des Blatts mit 16
+-- Bildern je Zeile, 4 je Richtung, 192 px, scale 1), und für den Mk2 aus dessen eigenen Blättern. Namen:
+-- <Präfix><i>, <Präfix>shadow-<i>, <Präfix>mask-<i>, <Präfix>tracks-<i> mit Präfix arrakis-harvester-carried- (Mk1)
+-- bzw. arrakis-harvester-mk2-carried- (Mk2).
+local CARRIED_KINDS =
+{
+  {prefix = "arrakis-harvester-carried-", gfx = "__arrakis__/graphics/entity/spice-harvester/harvester-"},
+  {prefix = "arrakis-harvester-mk2-carried-", gfx = "__arrakis__/graphics/entity/spice-harvester-mk2/harvester-mk2-"}
+}
 
-local function carried_sprites(i)
+local function carried_sprites(i, kind)
   local d = 4 * i
-  local image =
+  local function cut(name, file, size, per_row, index, scale, extra)
+    local sprite =
+    {
+      type = "sprite",
+      name = name,
+      filename = kind.gfx .. file,
+      x = (index % per_row) * size,
+      y = math.floor(index / per_row) * size,
+      width = size,
+      height = size,
+      scale = scale
+    }
+    for key, value in pairs(extra or {}) do sprite[key] = value end
+    return sprite
+  end
+  return
   {
-    type = "sprite",
-    name = "arrakis-harvester-carried-" .. i,
-    filename = harvester_gfx .. "harvester-base.png",
-    x = (d % 8) * 384,
-    y = math.floor(d / 8) * 384,
-    width = 384,
-    height = 384,
-    scale = 0.5
+    cut(kind.prefix .. i, "base.png", 384, 8, d, 0.5),
+    cut(kind.prefix .. "shadow-" .. i, "shadow.png", 256, 8, d, 1, {draw_as_shadow = true}),
+    cut(kind.prefix .. "mask-" .. i, "mask.png", 384, 8, d, 0.5),
+    cut(kind.prefix .. "tracks-" .. i, "tracks-base.png", 192, 16, 4 * d, 1)
   }
-  local shadow =
-  {
-    type = "sprite",
-    name = "arrakis-harvester-carried-shadow-" .. i,
-    filename = harvester_gfx .. "harvester-shadow.png",
-    x = (d % 8) * 256,
-    y = math.floor(d / 8) * 256,
-    width = 256,
-    height = 256,
-    scale = 1,
-    draw_as_shadow = true
-  }
-  return image, shadow
 end
 
 -- Absetz-Probe: wird nie gebaut, nur mit can_place_entity und find_non_colliding_position abgefragt (Plan 4.8, 4.10).
@@ -317,10 +327,10 @@ data:extend({
 })
 
 local sprites = {}
-for i = 0, 15 do
-  local image, shadow = carried_sprites(i)
-  table.insert(sprites, image)
-  table.insert(sprites, shadow)
+for _, kind in ipairs(CARRIED_KINDS) do
+  for i = 0, 15 do
+    for _, sprite in ipairs(carried_sprites(i, kind)) do table.insert(sprites, sprite) end
+  end
 end
 data:extend(sprites)
 

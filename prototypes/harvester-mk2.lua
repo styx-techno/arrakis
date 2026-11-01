@@ -2,7 +2,7 @@
 -- Kopie des Ernters (prototypes/harvester.lua), dazu Laderaum 60 und +50 % Lebenspunkte. Förderung ×1,5 und Vibration ×0,8 setzt das Skript
 -- (scripts/harvester.lua rate_factor/vibration_factor, scripts/vibration.lua). Eigene Grafik aus der Grafik-Phase
 -- (tools/grafik/ernter-modell.py mit ARRAKIS_VARIANTE=mk2: Wurmzahn-Klingen am Maul, hellere Panzerplatten, dritter
--- Schlot), gleiche Blattmaße wie Mk1. Das Lastbild am Flieger bleibt das Mk1-Bild mit Farbton (harvester.MK2_TINT).
+-- Schlot), gleiche Blattmaße wie Mk1. Das Lastbild am Flieger kommt seit 0.16.1 aus denselben Blättern (prototypes/ornithopter.lua).
 local item_sounds = require("__base__.prototypes.item_sounds")
 
 local NAME = "spice-harvester-mk2"

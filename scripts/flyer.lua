@@ -14,7 +14,7 @@
 -- Datensatz storage.flyers[un] (Plan 4.2):
 --   un, entity, kind = "ornithopter"|"carryall", cargo = harvester_un|nil,
 --   coupling = {harvester = harvester_un, start_tick, done_tick, player_index|nil}|nil,
---   renders = {image, shadow, ring}, sticker = LuaEntity|nil, image_index = 0..15|nil,
+--   renders = {image, mask, tracks, shadow, ring}, sticker = LuaEntity|nil, image_index = 0..15|nil,
 --   last_cargo = LuaEntity|nil, last_toggle_tick
 -- storage.couplings[flyer_un] = true (laufende Kopplungen, 10-Tick-Takt)
 -- storage.stranded[harvester_un] = {crash_pos = {surface, x, y}|nil, damage = true|nil, reason = "crash"|"returned"}
@@ -43,8 +43,11 @@ local REMOTE_ITEM = "spidertron-remote"
 local SPICE = "spice-sand"
 local ARRAKIS = "arrakis"
 local NAUVIS = "nauvis"
-local IMAGE_SPRITE = "arrakis-harvester-carried-"
-local SHADOW_SPRITE = "arrakis-harvester-carried-shadow-"
+-- Lastbild-Sprites (prototypes/ornithopter.lua): <Präfix><i>, <Präfix>shadow-<i>, <Präfix>mask-<i>, <Präfix>tracks-<i>.
+local CARRIED_PREFIX = {["spice-harvester-mk2"] = "arrakis-harvester-mk2-carried-"}
+local CARRIED_DEFAULT = "arrakis-harvester-carried-"
+-- Bildteile in Zeichenreihenfolge (wie die Ebenen des Ernters: Rumpf, Farbmaske, Raupen obenauf).
+local CARGO_PARTS = {"image", "mask", "tracks"}
 
 -- Name des Ornithopter-Prototyps.
 lib.NAME = NAME
@@ -178,29 +181,45 @@ end
 
 -- Lastbild und Schatten am Flieger; zeichnet nur fehlende neu [U16]. Kein forces: alle sehen sie (Plan 1).
 -- smoke liegt unter dem Rumpf (air-object) und über allem am Boden; der Schatten auf floor (Ebenen wie T9).
+-- 0.16.1: Lastbild wie der Ernter am Boden (Rumpf, Farbmaske in seiner Farbe, Raupen), Mk2 aus eigenen Blättern. Fehlt
+-- ein Teil, kommen alle drei neu, damit die Reihenfolge stimmt.
 local function draw_cargo(record)
   local flyer = record.entity
   local index = record.image_index or 0
+  local h = record.cargo and storage.harvesters[record.cargo]
+  local entity = h and h.entity.valid and h.entity or nil
+  local prefix = entity and CARRIED_PREFIX[entity.name] or CARRIED_DEFAULT
   if not render_valid(record, "shadow") then
     record.renders.shadow = rendering.draw_sprite{
-      sprite = SHADOW_SPRITE .. index,
+      sprite = prefix .. "shadow-" .. index,
       target = {entity = flyer, offset = lib.SHADOW_OFFSET},
       surface = flyer.surface,
       render_layer = "floor"
     }
   end
-  if not render_valid(record, "image") then
-    -- Ernter Mk2: Lastbild mit dem Farbton seiner Basis-Ebene (docs/plan-3i.md 2.1).
-    local h = record.cargo and storage.harvesters[record.cargo]
-    local tint = h and h.entity.valid and harvester.tint_of(h.entity.name) or nil
-    record.renders.image = rendering.draw_sprite{
-      sprite = IMAGE_SPRITE .. index,
+  local complete = true
+  for _, key in ipairs(CARGO_PARTS) do
+    if not render_valid(record, key) then complete = false end
+  end
+  if complete then return end
+  for _, key in ipairs(CARGO_PARTS) do destroy_render(record, key) end
+  local color = entity and (entity.color or entity.force.color) or nil
+  local sprites = {image = prefix .. index, mask = prefix .. "mask-" .. index, tracks = prefix .. "tracks-" .. index}
+  for _, key in ipairs(CARGO_PARTS) do
+    record.renders[key] = rendering.draw_sprite{
+      sprite = sprites[key],
       target = {entity = flyer, offset = lib.IMAGE_OFFSET},
       surface = flyer.surface,
-      tint = tint,
+      tint = key == "mask" and color or nil,
       render_layer = "smoke"
     }
   end
+end
+
+-- Lastbild samt Schatten weg.
+local function destroy_cargo(record)
+  for _, key in ipairs(CARGO_PARTS) do destroy_render(record, key) end
+  destroy_render(record, "shadow")
 end
 
 -- Ankoppelring um den Ernter, Fortschritt 0 → 1; sieht nur die Force des Fliegers.
@@ -403,8 +422,7 @@ end
 local function release_cargo(record)
   record.cargo = nil
   record.image_index = nil
-  destroy_render(record, "image")
-  destroy_render(record, "shadow")
+  destroy_cargo(record)
 end
 
 -- Flieger leeren: Last lösen, abbaubar, Sticker leer.
@@ -421,8 +439,7 @@ end
 local function forget_flyer(record)
   storage.flyers[record.un] = nil
   end_coupling(record)
-  destroy_render(record, "image")
-  destroy_render(record, "shadow")
+  destroy_cargo(record)
   local sticker = record.sticker
   if sticker and sticker.valid then sticker.destroy() end
   record.sticker = nil
@@ -1134,8 +1151,7 @@ care = function(record)
   if record.cargo then
     draw_cargo(record)
   else
-    destroy_render(record, "image")
-    destroy_render(record, "shadow")
+    destroy_cargo(record)
   end
   if not record.coupling then destroy_render(record, "ring") end
 end
