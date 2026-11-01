@@ -50,6 +50,10 @@ lib.WEIGHTS =
   by_name = {tank = 8, ["big-mining-drill"] = 8, pumpjack = 2},
   by_type = {car = 4, ["spider-vehicle"] = 6, locomotive = 6, ["mining-drill"] = 3, ["assembling-machine"] = 1, furnace = 1}
 }
+-- Ernte-Dämpfung (0.12.1): je Stufe 5 % weniger, höchstens 10 Stufen.
+lib.DAMPING_TECH = "arrakis-harvest-damping"
+lib.DAMPING_STEP = 0.05
+lib.DAMPING_MAX = 10
 -- Höchstens so viele Quellen je Oberfläche und Takt zeigen Staub.
 lib.DUST_MAX = 24
 -- Rumpeln je Sektor höchstens alle so viele Ticks.
@@ -241,12 +245,26 @@ local function base_weight(entity)
   return lib.WEIGHTS.by_name[entity.name] or lib.WEIGHTS.by_type[entity.type] or 0
 end
 
+-- Erforschte Stufen einer Forschung mit Stufen (0.12.1): level ist die nächste Stufe, außer die letzte ist erforscht.
+function lib.tech_level(force, name)
+  local tech = force.technologies[name]
+  if not tech then return 0 end
+  if tech.researched then return tech.level end
+  return tech.level - 1
+end
+
+-- Ernte-Dämpfung (docs/plan-3f.md 1.13): Faktor auf das Gewicht aufgebauter und einpackender Ernter der Force.
+function lib.damping(force)
+  local level = math.min(lib.tech_level(force, lib.DAMPING_TECH), lib.DAMPING_MAX)
+  return 1 - lib.DAMPING_STEP * level
+end
+
 -- Gewicht eines Ernters aus seinem Zustand (ohne Sand).
 local function harvester_weight(h, entity)
   local W = lib.WEIGHTS.by_state
   local state = h.state
-  if state == "deployed" then return W.deployed end
-  if state == "packing" then return h.careful_packing and W.careful_packing or W.packing end
+  if state == "deployed" then return W.deployed * lib.damping(entity.force) end
+  if state == "packing" then return h.careful_packing and W.careful_packing or W.packing * lib.damping(entity.force) end
   if state == "deploying" then return W.deploying end
   if state == "mobile" and moving(entity) then return W.moving end
   return 0

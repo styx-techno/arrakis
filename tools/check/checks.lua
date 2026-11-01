@@ -659,6 +659,10 @@ local plan_techs = {
   ["arrakis-ornithopter-depot"] = "unit",
   -- 0.12.0 (docs/plan-3f.md 1.10)
   ["arrakis-fleet-control"] = "unit",
+  -- 0.12.1 (docs/plan-3f.md 1.11 bis 1.13)
+  ["arrakis-escort-flight"] = "unit",
+  ["arrakis-early-warning"] = "unit",
+  ["arrakis-harvest-damping"] = "unit",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -674,7 +678,7 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 9 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 9") end
+if tech_count ~= 12 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 12") end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
 -- Phase 3d2 (docs/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
@@ -1019,7 +1023,23 @@ do
     end
     if not (tech.unit and tech.unit.count == 1000) then add("FEHLER 3f: tech arrakis-fleet-control count") end
   end
-  add("3f: " .. n3f .. "/9 Prototypen")
+  -- 0.12.1: Stufen und Formeln (Plan 1.11 bis 1.13); scripts/vibration.lua tech_level liest die Stufe.
+  for n, want in pairs({["arrakis-escort-flight"] = {count = 500},
+      ["arrakis-early-warning"] = {max_level = 6, formula = "500*L"},
+      ["arrakis-harvest-damping"] = {max_level = 10, formula = "1000*1.5^(L-1)"}}) do
+    local t = raw.technology[n]
+    if not t then add("FEHLER 3f: tech " .. n .. " fehlt") else
+      n3f = n3f + 1
+      if not has_value(t.prerequisites, "arrakis-fleet-control") then add("FEHLER 3f: tech " .. n .. " ohne Flottenleitung") end
+      local u = t.unit or {}
+      if want.count and u.count ~= want.count then add("FEHLER 3f: tech " .. n .. " count " .. tostring(u.count)) end
+      if want.max_level and (t.max_level ~= want.max_level or u.count_formula ~= want.formula or not t.upgrade) then
+        add("FEHLER 3f: tech " .. n .. " Stufen " .. tostring(t.max_level) .. " / " .. tostring(u.count_formula))
+      end
+      if #(u.ingredients or {}) ~= 6 then add("FEHLER 3f: tech " .. n .. " " .. #(u.ingredients or {}) .. " Pakete statt 6") end
+    end
+  end
+  add("3f: " .. n3f .. "/12 Prototypen")
 end
 
 -- planet

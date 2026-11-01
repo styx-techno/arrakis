@@ -30,6 +30,10 @@ local lib = {}
 lib.WARN_TICKS = 3600
 -- Countdown der Lehrjagd (erste Jagd jeder Force auf einen Spice-Ernter).
 lib.TEACH_TICKS = 5400
+-- Frühwarnung (0.12.1, docs/plan-3f.md 1.12): je erforschter Stufe so viele Ticks mehr Countdown, höchstens 6 Stufen.
+lib.EARLY_TECH = "arrakis-early-warning"
+lib.EARLY_STEP = 300
+lib.EARLY_MAX = 6
 -- So lange sucht der Wurm nach einem Fehlschlag (Ticks), dann Ende.
 lib.SEARCH_TICKS = 600
 -- Bissradius (Kacheln, Abstand zur Box).
@@ -479,6 +483,11 @@ local function half_diagonal(entity)
   return math.sqrt(w * w + h * h) / 2
 end
 
+-- Countdown regulärer Jagden der Force (Ticks): 60 s plus Frühwarnung. Die Lehrjagd bleibt bei TEACH_TICKS.
+function lib.warn_ticks(force)
+  return lib.WARN_TICKS + lib.EARLY_STEP * math.min(vibration_lib.tech_level(force, lib.EARLY_TECH), lib.EARLY_MAX)
+end
+
 -- Jagd starten (Plan 4.8). opts = {seconds, teaching, debug, bite}, dazu nur Prüfstand (docs/plan-3d2.md 4.18)
 -- spawn = {position, direction, tick|nil} und spawn_dir = k. Gibt die Jagd zurück oder nil plus Grund
 -- "no-target"|"not-allowed"|"flyer"|"busy". Der Biss fällt im 10-Tick-Takt, deshalb ist eta_tick ein Vielfaches von 10
@@ -491,7 +500,7 @@ function lib.start_hunt(entity, opts)
   if entity.name == FLYER or entity.name == CARRYALL then return nil, "flyer" end
   if lib.hunt_of(entity) then return nil, "busy" end
   local tick = game.tick
-  local seconds = opts.seconds or (opts.teaching and lib.TEACH_TICKS / 60) or (lib.WARN_TICKS / 60)
+  local seconds = opts.seconds or (opts.teaching and lib.TEACH_TICKS / 60) or (lib.warn_ticks(entity.force) / 60)
   local eta = math.ceil((tick + 60 * seconds) / 10) * 10
   local position = entity.position
   local key, sector = vibration_lib.key_of(position)
