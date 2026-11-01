@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.12.1
+Date: 2026-11-01
+  Features:
+    - Neue Forschung „Bereitschaftsflug“ nach „Flottenleitung“ (500 × sechs Pakete): Freie Carryalls der Leitstelle schweben über aufgebauten Spice-Erntern in ihrer Reichweite. Kommt ein Wurmzeichen, koppelt der Begleiter sofort an, statt erst von der Leitstelle loszufliegen. Hat die Leitstelle zwei oder mehr Carryalls, bleibt einer an der Leitstelle. Begleiter übernehmen auch Tanken und Entladen ihres Ernters; für andere Aufträge nimmt die Leitstelle zuerst Carryalls ohne Begleitung. Wird der Treibstoff für den Heimweg mit dem Ernter knapp, fliegt der Begleiter zum Nachfüllen heim.
+    - Neue Forschung „Frühwarnung“ (6 Stufen, je 500 × Stufe): Jede Stufe verlängert den Countdown regulärer Wurmzeichen um 5 Sekunden, nach 6 Stufen auf 90 Sekunden. Die Lehrjagd bleibt bei 90 Sekunden.
+    - Neue Forschung „Ernte-Dämpfung“ (10 Stufen): Jede Stufe senkt die Vibration aufgebauter und einpackender Spice-Ernter um 5 %, nach 10 Stufen auf die Hälfte. Statt endlos sind es 10 Stufen, weil bei −50 % Schluss ist.
+  Modding:
+    - Carryall-Datensatz mit escort (unit_number des begleiteten Ernters, kein Auftrag; ohne neues Schema). worms.warn_ticks(force), vibration.tech_level(force, name), vibration.damping(force).
+    - Prüfstand: T29 (vier Schritte: Forschungen, Frühwarnung, Ernte-Dämpfung, Bereitschaftsflug).
+---------------------------------------------------------------------------------------------------
 Version: 0.12.0
 Date: 2026-10-29
   Features:

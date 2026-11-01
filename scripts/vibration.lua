@@ -264,7 +264,7 @@ local function harvester_weight(h, entity)
   local W = lib.WEIGHTS.by_state
   local state = h.state
   if state == "deployed" then return W.deployed * lib.damping(entity.force) end
-  if state == "packing" then return h.careful_packing and W.careful_packing or W.packing * lib.damping(entity.force) end
+  if state == "packing" then return (h.careful_packing and W.careful_packing or W.packing) * lib.damping(entity.force) end
   if state == "deploying" then return W.deploying end
   if state == "mobile" and moving(entity) then return W.moving end
   return 0
