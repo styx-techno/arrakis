@@ -93,7 +93,7 @@ Der Prüfstand baut im Spiel Testaufbauten für Ernter, Ornithopter, Sandwürmer
 | `settings.lua` | Startup-Einstellung „Prüfstand“, Mod-Einstellung „Wurmbiss“ |
 | `locale/*/messages.cfg` | Laufzeittexte (Status, Alarme, Hinweise, Fenster) |
 | `prototypes/testbench/` | Test-Prototypen (nur mit Prüfstand) |
-| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll); je Test eine Datei `tests/t<nr>.lua` (T1–T22 und T2b; z. B. `tests/t21.lua` echter Sandwurm), gemeinsame Helfer einer Testfamilie in `gemeinsam_<familie>.lua` (ernter, flyer, harvester, jagd, map, ornithopter, sandwurm, worm); `t_fleet.lua`: T23 ff. Leitstelle, Carryalls, Flottenleitung (wird noch aufgeteilt) |
+| `scripts/testbench/` | Prüfstand: `runner.lua` (Befehl, Ablauf, Protokoll); je Test eine Datei `tests/t<nr>.lua` (T1–T29 und T2b; z. B. `tests/t21.lua` echter Sandwurm, `tests/t26.lua` Flottenleitung), gemeinsame Helfer einer Testfamilie in `gemeinsam_<familie>.lua` (ernter, fleet, flyer, harvester, jagd, map, ornithopter, sandwurm, worm) |
 | `docs/pruefstand.md` | Anleitung zum Prüfstand |
 | `tools/check/` | Datenstufen-Test mit echten Vanilla-Prototypen, API-Namen im Laufzeitcode, Feldnamen der Prototypen (`proto_fields.py`) |
 | `tools/pc/` | Prüfstand ohne Spieler: `lauf.py` (holen, Prüfstand, Ergebnisse in den Zweig `pruefstand-ergebnisse`), `pruefstand.py` (eigener Factorio-Server, Tests über RCON), `zusammenfassung.py` (eine Zeile je Test aus dem vollen Log, `arrakis-zusammenfassung-*.txt`), `rcon.py` (RCON-Client), `mod_settings.py` (`mod-settings.dat` lesen und schreiben) |

@@ -1,4 +1,4 @@
--- Sandwurm (Phase 3d2, docs/plan-3d2.md 4.1 bis 4.11, 4.14, 4.18): der Wurm als Fahrzeug. Spawnplanung in 16 Richtungen,
+-- Sandwurm (Phase 3d2, docs/protokolle/plan-3d2.md 4.1 bis 4.11, 4.14, 4.18): der Wurm als Fahrzeug. Spawnplanung in 16 Richtungen,
 -- ROUTING per request_path samt on_script_path_request_finished, Erzeugen und Körperprüfung, Steuern, Fels-Wächter,
 -- Tempo (Drosseln, Halten, Sprint), Abtauchen, Waisen und Prüfstand-Haken. Bibliothek für __core__/lualib/event_handler;
 -- die Modultabelle heißt lib, andere Dateien binden sie als sandworm_lib.

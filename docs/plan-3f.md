@@ -1,6 +1,6 @@
 # Bauplan Phase 3f: Flottenleitung (0.12.0 und 0.12.1)
 
-Stand: Entwurf vom 29.10.2026. Grundlage ist das Design (docs/design-ernter-ornithopter.md), Abschnitte 2.3 (Stufe 3), 4.4 und 6, dazu docs/plan-3e.md mit dem Nachtrag 0.11.0. Abschnitt 1 sammelt die Festlegungen, bei denen Max widersprechen kann; ohne Widerspruch gilt die Standardwahl. Max hat am 29.10.2026 „alle 3“ gewählt: erst die Flottenleitung, danach Wurm-Reviere, danach Thumper, Beute und Mod-Einstellungen.
+Stand: Entwurf vom 29.10.2026. Grundlage ist das Design (docs/protokolle/design-ernter-ornithopter.md), Abschnitte 2.3 (Stufe 3), 4.4 und 6, dazu docs/plan-3e.md mit dem Nachtrag 0.11.0. Abschnitt 1 sammelt die Festlegungen, bei denen Max widersprechen kann; ohne Widerspruch gilt die Standardwahl. Max hat am 29.10.2026 „alle 3“ gewählt: erst die Flottenleitung, danach Wurm-Reviere, danach Thumper, Beute und Mod-Einstellungen.
 
 Ziel aus dem Fahrplan (Design 7, Zeile 3f): **Mit 5 Erntern im Inventar der Leitstelle und Signal H = 3 laufen drei Ernter. R holt alle zurück. Die Statussignale stimmen.**
 

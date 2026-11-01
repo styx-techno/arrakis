@@ -8,7 +8,7 @@
 -- Gespeichert wird dafür nichts außer game.speed selbst; zurück auf echte Zeit mit /arrakis-test tempo 1.
 --
 -- Vertrag mit den Testmodulen (scripts/testbench/tests/t<nr>.lua, eine Datei je Test; gemeinsame Helfer einer Familie in
--- scripts/testbench/gemeinsam_<familie>.lua; dazu noch t_fleet.lua mit T23–T29):
+-- scripts/testbench/gemeinsam_<familie>.lua):
 --   Ein Modul gibt {T1 = {title, timeout, interactive, confirm, start, tick, on_event, cleanup}, …} zurück.
 --   start(run, tb), tick(run, tb), on_event(run, tb, name, event), cleanup(run, tb).
 --   Optional: hint (Text für die Testliste), steps (true: der Test schaltet mit /arrakis-test weiter wie mit ALT+O,
@@ -67,7 +67,9 @@ for _, module_name in ipairs({"scripts.testbench.tests.t1", "scripts.testbench.t
                               "scripts.testbench.tests.t14", "scripts.testbench.tests.t15", "scripts.testbench.tests.t16",
                               "scripts.testbench.tests.t17", "scripts.testbench.tests.t18", "scripts.testbench.tests.t19",
                               "scripts.testbench.tests.t20", "scripts.testbench.tests.t21", "scripts.testbench.tests.t22",
-                              "scripts.testbench.t_fleet"}) do
+                              "scripts.testbench.tests.t23", "scripts.testbench.tests.t24", "scripts.testbench.tests.t25",
+                              "scripts.testbench.tests.t26", "scripts.testbench.tests.t27", "scripts.testbench.tests.t28",
+                              "scripts.testbench.tests.t29"}) do
   for id, test in pairs(require(module_name)) do
     tests[id] = test
   end
