@@ -1,53 +1,27 @@
 -- Phase 3h (docs/plan-3h.md 2.1, 2.2): Thumper (Ablenkung und Köder) und Wurmzahn (Beute).
--- Grafik ohne feste Bildpfade für die Entity: eine verkleinerte Kopie der Pumpjack-Grafik aus data.raw (Sockel als
--- stehende Ebene, Pferdekopf als Animation). Fehlt etwas davon (andere Mods), bleibt das Pumpjack-Icon als Bild.
+-- Grafik (Grafik-Phase, docs/plan-grafik.md): eigenes Blender-Modell (tools/grafik/thumper-modell.py), 16 Bilder
+-- Stampfzyklus in einer Ansicht, Bildmitte = Bodenpunkt (kein shift). Ein Schlag je Sekunde.
 
 local THUMPER = "arrakis-thumper"
 local TOOTH = "arrakis-worm-tooth"
--- Verkleinerung gegenüber der Pumpjack (3×3 → etwa 2×2).
-local SCALE = 0.6
-local TINT = {r = 1, g = 0.85, b = 0.6}
-
-local function scaled(layer, frames)
-  local copy = table.deepcopy(layer)
-  copy.scale = (copy.scale or 1) * SCALE
-  local shift = copy.shift
-  if shift then
-    local x = shift.x or shift[1] or 0
-    local y = shift.y or shift[2] or 0
-    copy.shift = {x * SCALE, y * SCALE}
-  end
-  copy.priority = nil
-  if frames then
-    -- Stehender Sockel: ein Bild, so oft wiederholt, wie der Pferdekopf Bilder hat.
-    copy.frame_count = 1
-    copy.repeat_count = frames
-    copy.animation_speed = copy.animation_speed or 0.5
-  end
-  if not copy.draw_as_shadow then copy.tint = TINT end
-  return copy
-end
+local GFX = "__arrakis__/graphics/"
+local FRAMES = 16
+local SPEED = FRAMES / 60
 
 local function thumper_animation()
-  local pumpjack = data.raw["mining-drill"] and data.raw["mining-drill"]["pumpjack"]
-  local set = pumpjack and pumpjack.graphics_set
-  local head = set and set.animation and set.animation.north and set.animation.north.layers
-  local visual = set and set.working_visualisations and set.working_visualisations[1]
-  local base = visual and visual.north_animation and visual.north_animation.layers
-  if not (head and base and head[1] and head[1].frame_count) then return nil end
-  local frames = head[1].frame_count
-  local layers = {}
-  for _, layer in ipairs(base) do
-    if layer.filename then layers[#layers + 1] = scaled(layer, frames) end
-  end
-  for _, layer in ipairs(head) do
-    if layer.filename and layer.frame_count == frames then layers[#layers + 1] = scaled(layer, nil) end
-  end
-  if #layers == 0 then return nil end
-  return {layers = layers}
+  return
+  {
+    layers =
+    {
+      {filename = GFX .. "entity/thumper/thumper-base.png", width = 256, height = 256, frame_count = FRAMES,
+       line_length = 8, scale = 0.5, animation_speed = SPEED},
+      {filename = GFX .. "entity/thumper/thumper-shadow.png", width = 160, height = 160, frame_count = FRAMES,
+       line_length = 8, scale = 1, animation_speed = SPEED, draw_as_shadow = true}
+    }
+  }
 end
 
-local icons = {{icon = "__base__/graphics/icons/pumpjack.png", icon_size = 64, tint = TINT}}
+local icons = {{icon = GFX .. "icons/thumper.png", icon_size = 64}}
 
 local thumper =
 {
@@ -69,12 +43,7 @@ local thumper =
   render_layer = "object",
   random_animation_offset = false
 }
-local animation = thumper_animation()
-if animation then
-  thumper.animations = {animation}
-else
-  thumper.picture = {filename = "__base__/graphics/icons/pumpjack.png", size = 64, scale = 0.5, tint = TINT}
-end
+thumper.animations = {thumper_animation()}
 
 data:extend({
   thumper,
@@ -104,7 +73,7 @@ data:extend({
     -- Beute (Plan 2.2): verwendet erst mit dem Ernter Mk2 (spätere Phase).
     type = "item",
     name = TOOTH,
-    icons = {{icon = "__base__/graphics/icons/stone.png", icon_size = 64, tint = {r = 1, g = 0.96, b = 0.82}}},
+    icons = {{icon = GFX .. "icons/worm-tooth.png", icon_size = 64}},
     subgroup = "raw-material",
     order = "z[arrakis]-t[worm-tooth]",
     stack_size = 50
@@ -114,7 +83,7 @@ data:extend({
     -- getötet). Das Skript löst sie aus (scripts/thumper.lua), auch für alte Spielstände.
     type = "technology",
     name = THUMPER,
-    icons = {{icon = "__base__/graphics/technology/oil-gathering.png", icon_size = 256, tint = TINT}},
+    icons = {{icon = GFX .. "technology/thumper.png", icon_size = 256}},
     effects =
     {
       {type = "unlock-recipe", recipe = THUMPER}

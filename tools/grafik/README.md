@@ -1,7 +1,7 @@
 # Grafik
 
 Die Fahrzeuggrafiken entstehen aus Skripten: Blender baut das Modell aus einfachen Formen und rendert es, `pack.py`
-setzt die Bilder zu Spritesheets zusammen. Es braucht kein Blender-Programm, nur Python 3.11 mit den Modulen `bpy`
+setzt die Bilder zu Spritesheets zusammen. Es braucht kein Blender-Programm, nur Python 3.11 (bpy 4.x) oder 3.13 (bpy 5.x) mit den Modulen `bpy`
 (Blender als Python-Modul, `pip install bpy`) und `pillow`.
 
 `szene.py` enthält, was alle Modelle teilen: Materialien, Grundformen (`box`, `cyl`, `slab`), Licht, Kamera und das
@@ -82,3 +82,28 @@ Die Leitstelle (4×4 Kacheln) hat eine Ansicht: Rumpf 7 Kacheln (448 px, `scale 
 `scale = 1`); `pack.py` legt bei einem Bild ein Blatt ohne leere Spalten an. `depot-base.png` und `depot-shadow.png`
 kommen nach `graphics/entity/depot/`, `depot-icon-64.png` nach `graphics/icons/depot.png`, `depot-icon-256.png` nach
 `graphics/technology/depot.png`.
+
+## Thumper, Wurmzahn, Revierkunde (Grafik-Phase, docs/plan-grafik.md)
+
+```
+python thumper-modell.py roh3 base
+python thumper-modell.py roh3 shadow
+python thumper-modell.py roh3 icon
+python pack.py roh3 blaetter3 thumper
+python zahn-modell.py roh4 icon
+python pack.py roh4 blaetter4 zahn
+python revierkunde-modell.py roh5 icon
+python pack.py roh5 blaetter5 revierkunde
+```
+
+Gebäude mit Animation nutzen `szene.render(frames=…, pose=…)`: eine Ansicht, vor jedem Bild stellt `pose(i)` die
+beweglichen Teile, die Dateien heißen wie bei den Richtungen `<modus>-<nn>.png`. Der Thumper hat 16 Bilder
+(13 Bilder Gewicht hochziehen, 2 Bilder Fall, Sandring in den Bildern 15, 0, 1), Rumpf 4 Kacheln (256 px,
+`scale = 0.5`), Schatten 5 Kacheln (160 px, `scale = 1`), Bildmitte = Bodenpunkt, 8 Bilder je Zeile. Der Sandring
+wirft keinen Schatten (`visible_shadow = False`). `thumper-base.png` und `thumper-shadow.png` kommen nach
+`graphics/entity/thumper/`, `thumper-icon-64.png` nach `graphics/icons/thumper.png`, `thumper-icon-256.png` nach
+`graphics/technology/thumper.png`. `zahn-icon-64.png` wird `graphics/icons/worm-tooth.png`; `revierkunde-icon-256.png`
+und `-64.png` werden `graphics/technology/territory-survey.png` und `graphics/icons/territory-survey.png`.
+
+Prüfen nach jedem Einbau: `tools/check/bilder.py` mit dem Dump von `datastage.py --dump` (Ausschnitte passen in die
+Dateien, Symbolgrößen stimmen) und `tools/check/base_paths.py`.
