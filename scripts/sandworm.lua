@@ -490,10 +490,22 @@ function lib.begin(hunt, opts)
 end
 
 -- Startrichtung k0 (Plan 4.4 Schritt 3): Haken, sonst Fahrtrichtung des Ziels (der Wurm kommt von vorn), sonst Zufall.
+-- Nur diese Typen haben LuaEntity.speed (bei anderen, z. B. Gebäuden und dem Thumper, wäre das Lesen ein Fehler).
+local SPEED_TYPES =
+{
+  car = true,
+  ["spider-vehicle"] = true,
+  locomotive = true,
+  ["cargo-wagon"] = true,
+  ["fluid-wagon"] = true,
+  ["artillery-wagon"] = true,
+  unit = true
+}
+
 local function start_dir(hunt)
   if hunt.spawn_dir then return hunt.spawn_dir end
   local target = hunt.target
-  local v = target and target.valid and target.speed
+  local v = target and target.valid and SPEED_TYPES[target.type] and target.speed
   if v ~= nil and v ~= false and math.abs(v) >= 0.001 then
     local o = target.orientation
     if v < 0 then o = o + 0.5 end
@@ -1238,6 +1250,32 @@ function lib.step(hunt, tick, worm_force)
   if phase == "routing" then return routing(hunt, tick, worm_force) end
   if hunt.worm then return drive(hunt, tick, worm_force) end
   if phase == "anfahrt" or phase == "angriff" then return lib.to_none(hunt, "verloren") end
+end
+
+-- Phase 3h (docs/plan-3h.md 2.1): Das Ziel der Jagd hat gewechselt (Thumper). worms.lua hat hunt.zone schon auf das neue
+-- Ziel gesetzt. Ein fahrender Wurm verwirft Route, Umweg und offene Neuplanung und fährt zum neuen Ziel (Umweg und
+-- Neuplanung greifen wie sonst); eine gewählte Spawnstelle bleibt, aber ohne Route; eine Planung ohne Wahl beginnt neu.
+function lib.retarget(hunt)
+  local worm = hunt.worm
+  if worm then
+    if hunt.path then lib.drop_requests(hunt) end
+    worm.route = {}
+    worm.wp = 1
+    worm.passing = nil
+    worm.detour = nil
+    worm.hold_since = nil
+    if hunt.phase == "angriff" then hunt.phase = "anfahrt" end
+    return "route"
+  end
+  if hunt.phase ~= "routing" then return hunt.phase end
+  local plan = hunt.plan
+  if plan and plan.chosen then
+    plan.chosen.route = {}
+    return "spawn"
+  end
+  lib.drop_requests(hunt)
+  hunt.plan = {spawns = plan and plan.spawns or 0, paths = plan and plan.paths or 0, checked = 0}
+  return "neu"
 end
 
 -- Abfragen, Waisen, Aufräumen (Plan 4.13, 4.14, 4.5) -------------------------------------------------

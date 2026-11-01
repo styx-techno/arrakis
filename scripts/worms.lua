@@ -93,6 +93,18 @@ lib.KILL_RESCUES = true
 -- false: Die Jagd entfällt still (Ende "quiet": Rücksetzen und Ruhe, keine Statistik, kein Biss).
 lib.NO_ROUTE_BITE = true
 
+-- Phase 3h (docs/plan-3h.md 2.1 bis 2.3). ENABLED aus der Einstellung arrakis-worms-enabled (scripts/config.lua): false
+-- heißt keine neuen Wurmzeichen (auch kein Lauern), laufende Jagden enden normal.
+lib.ENABLED = true
+-- Thumper: Ablenkung im Umkreis von so vielen Kacheln um das Ziel einer laufenden Jagd.
+lib.THUMPER = "arrakis-thumper"
+lib.DIVERT_RADIUS = 160
+-- Beute: so viele Wurmzähne (gleichverteilt, Grenzen einschließlich) mal TOOTH_FACTOR (Einstellung), gerundet.
+lib.TOOTH = "arrakis-worm-tooth"
+lib.TOOTH_MIN = 2
+lib.TOOTH_MAX = 4
+lib.TOOTH_FACTOR = 1
+
 local FORCE = lib.FORCE
 local ICON = lib.ICON
 local ERUPTION = "arrakis-worm-eruption"
@@ -526,6 +538,10 @@ function lib.start_hunt(entity, opts)
     debug = opts.debug == true,
     teaching = opts.teaching == true,
     lurk = opts.lurk == true,
+    -- Phase 3h: Ziel ist ein Thumper (Köder oder umgelenkt); lure = Köder-Jagd (zählt nicht zu MAX_HUNTS, sperrt ihr
+    -- Revier nicht).
+    thumper = entity.name == lib.THUMPER or nil,
+    lure = (entity.name == lib.THUMPER and not opts.debug) or nil,
     bite = opts.bite,
     target = entity,
     target_un = entity.unit_number,
@@ -561,12 +577,73 @@ function lib.start_hunt(entity, opts)
   end
   place_tag(hunt, force)
   draw_marks(hunt, force)
-  force.print({"arrakis-message." .. (hunt.lurk and "msg-wormsign-lurk" or "msg-wormsign"), gps(surface, position),
-    hunt.target_name, hunt.second})
+  local message = (hunt.thumper and "msg-wormsign-thumper") or (hunt.lurk and "msg-wormsign-lurk") or "msg-wormsign"
+  force.print({"arrakis-message." .. message, gps(surface, position), hunt.target_name, hunt.second})
   harvester_alarm(hunt, eta, nil)
   worms_gui.refresh_force(force)
   -- Wurm oder nicht (docs/protokolle/plan-3d2.md 4.4 Schritt 1): Phase warten oder ohne mit Grund.
   sandworm_lib.begin(hunt, {spawn = opts.spawn, spawn_dir = opts.spawn_dir, max_debug = lib.MAX_DEBUG_WORMS})
+  return hunt
+end
+
+-- Thumper-Ablenkung (Phase 3h, docs/plan-3h.md 2.1): Die nächste laufende Jagd der Force des Thumpers auf seiner
+-- Oberfläche im Zustand Warnung, deren Ziel (bzw. letzter Ort auf Sand) höchstens radius Kacheln entfernt ist und die
+-- nicht schon einem Thumper gilt, wechselt ihr Ziel auf den Thumper. Der Countdown bleibt; warn_pos rückt auf den
+-- Thumper (er steht still, also nie „außer Reichweite“). Gibt die Jagd zurück oder nil.
+function lib.divert(entity, radius)
+  if not (entity and entity.valid and entity.unit_number) then return nil end
+  if lib.hunt_of(entity) then return nil end
+  local surface = entity.surface
+  if not terrain.harvest_allowed(surface) then return nil end
+  radius = radius or lib.DIVERT_RADIUS
+  local position = entity.position
+  local force = entity.force
+  local best, best_d
+  local list = storage.hunts.list
+  local ids = {}
+  for id in pairs(list) do ids[#ids + 1] = id end
+  table.sort(ids)
+  for _, id in ipairs(ids) do
+    local hunt = list[id]
+    if hunt.state == "warning" and not hunt.thumper and hunt.surface_index == surface.index
+        and hunt.force_index == force.index and game.tick < hunt.eta_tick then
+      local target = hunt.target
+      local p = hunt.last_pos
+      if not hunt.lost and target and target.valid and target.surface.index == surface.index then p = target.position end
+      local d = distance(p, position)
+      if d <= radius and (not best_d or d < best_d) then
+        best, best_d = hunt, d
+      end
+    end
+  end
+  if not best then return nil end
+  local hunt = best
+  local old_name = hunt.target_name
+  clear_alerts(hunt)
+  destroy_marks(hunt)
+  drop_tag(hunt)
+  local h = storage.harvesters[hunt.target_un]
+  if h and (h.alarm_hunt_eta or h.alarm_hunt_safe) then harvester.set_alarm(h, "hunt", nil) end
+  hunt.target = entity
+  hunt.target_un = entity.unit_number
+  hunt.target_name = entity.localised_name
+  hunt.kind = kind_of(entity)
+  hunt.thumper = true
+  hunt.diverted = true
+  hunt.r = half_diagonal(entity)
+  hunt.warn_pos = {x = position.x, y = position.y}
+  hunt.last_pos = {x = position.x, y = position.y}
+  hunt.zone = {x = position.x, y = position.y}
+  hunt.safe = false
+  hunt.lost = false
+  hunt.hidden = false
+  hunt.second = seconds_left(hunt.eta_tick, game.tick)
+  for _, player in pairs(force.connected_players) do alert_player(hunt, player) end
+  place_tag(hunt, force)
+  draw_marks(hunt, force)
+  sandworm_lib.retarget(hunt)
+  force.print({"arrakis-message.msg-thumper-divert", gps(surface, position), old_name, hunt.second})
+  refresh_forces(force)
   return hunt
 end
 
@@ -619,7 +696,8 @@ function lib.end_hunt(hunt, outcome, mode)
   if h and (h.alarm_hunt_eta or h.alarm_hunt_safe) then harvester.set_alarm(h, "hunt", nil) end
   list[hunt.id] = nil
   if not hunt.debug then
-    if mode ~= "abort" then
+    -- Phase 3h (Plan 2.1): Jagden auf einen Thumper setzen weder Wärme noch Ruhe zurück, und kein Wurm lauert.
+    if mode ~= "abort" and not hunt.thumper then
       vibration_lib.reset_around(hunt.surface_index, hunt.origin_key)
       -- Phase 3g: Ruhe fürs ganze Revier, mal Faktor der Stufe.
       local s, revier = hunt.surface_index, revier_of(hunt)
@@ -641,6 +719,8 @@ function lib.end_hunt(hunt, outcome, mode)
     local result = hunt.outcome
     if mode == nil and result then
       local stats = stats_for(hunt.force_index)
+      -- Phase 3h: Thumper-Jagden zählen eigens (getötete Würmer weiter als killed).
+      if hunt.thumper and result ~= "killed" then result = "thumper" end
       stats[result] = (stats[result] or 0) + 1
       -- killed (docs/protokolle/plan-3d2.md 4.11): Die Jagd ist überstanden wie bei escaped.
       if (result == "escaped" or result == "killed") and not stats.first_escape_tick then stats.first_escape_tick = game.tick end
@@ -1100,26 +1180,34 @@ local function sources_by_chunk(s)
       put(record.key, {un = un, entity = record.entity, weight = record.weight, key = record.key, harvester = false})
     end
   end
+  -- Phase 3h: laufende Thumper (Gewicht aus scripts/vibration.lua).
+  for un, t in pairs(storage.thumpers or {}) do
+    if t.key and t.weight > 0 and t.surface == s and t.entity.valid then
+      put(t.key, {un = un, entity = t.entity, weight = t.weight, key = t.key, harvester = false, thumper = true})
+    end
+  end
   return index
 end
 
 -- Ist die Quelle berechtigt (Plan 1 „Berechtigt“)? Gewicht > 0 (also auf Sand, nicht getragen) steht schon fest.
 -- Phase 3g: höchstens eine Jagd je Revier (busy_reviere), kein Wurmzeichen in einem freien Revier.
-local function eligible(entry, s, busy_reviere)
+-- Phase 3h: Ein Thumper (Köder) zählt nicht zu MAX_HUNTS (full) und wird von einer Jagd im Revier nicht gesperrt.
+local function eligible(entry, s, busy_reviere, full)
+  if full and not entry.thumper then return false end
   local entity = entry.entity
   local g = storage.grace[entity.force.index]
   if not (g and g.awake) or teaching_running(g) then return false end
   if lib.hunt_of(entity) then return false end
   local sector = vibration_lib.sector_of_key(entry.key)
   local revier = territory_lib.of_sector(s, sector)
-  if busy_reviere[revier] then return false end
+  if busy_reviere[revier] and not entry.thumper then return false end
   if territory_lib.free_until(s, revier) then return false end
   if vibration_lib.resting(s, sector) then return false end
   return true
 end
 
 -- Stärkste berechtigte Quelle in den 9 Chunks um d; gleich stark: Ernter vor anderen, dann kleinste unit_number.
-local function best_target(index, d, s, busy_reviere)
+local function best_target(index, d, s, busy_reviere, full)
   local best
   local cx, cy = vibration_lib.chunk_of_key(d)
   for dx = -1, 1 do
@@ -1130,7 +1218,7 @@ local function best_target(index, d, s, busy_reviere)
           if not best or entry.weight > best.weight
               or (entry.weight == best.weight and ((entry.harvester and not best.harvester)
                 or (entry.harvester == best.harvester and entry.un < best.un))) then
-            if eligible(entry, s, busy_reviere) then best = entry end
+            if eligible(entry, s, busy_reviere, full) then best = entry end
           end
         end
       end
@@ -1143,26 +1231,29 @@ end
 local function wormsign_tick(tick)
   local hunts = storage.hunts
   if hunts.paused_until and hunts.paused_until > tick then return end
+  if not lib.ENABLED then return end
   local count = 0
   local busy = {}
   local origins = {}
   for _, hunt in pairs(hunts.list) do
     if not hunt.debug then
-      count = count + 1
       local s = hunt.surface_index
-      busy[s] = busy[s] or {}
-      busy[s][revier_of(hunt)] = true
+      -- Phase 3h: Köder-Jagden zählen nicht mit und sperren ihr Revier nicht; ihr Ursprung gehört aber zu ihnen.
+      if not hunt.lure then
+        count = count + 1
+        busy[s] = busy[s] or {}
+        busy[s][revier_of(hunt)] = true
+      end
       origins[s] = origins[s] or {}
       table.insert(origins[s], hunt.origin_key)
     end
   end
-  if count >= lib.MAX_HUNTS then return end
   local heat = storage.vib.heat
   local surfaces = {}
   for s in pairs(heat) do surfaces[#surfaces + 1] = s end
   table.sort(surfaces)
   for _, s in ipairs(surfaces) do
-    if count >= lib.MAX_HUNTS then return end
+    local full = count >= lib.MAX_HUNTS
     local e = heat[s]
     local surface = game.get_surface(s)
     if e and surface and terrain.harvest_allowed(surface) then
@@ -1193,12 +1284,12 @@ local function wormsign_tick(tick)
             end
           end
           if not near then
-            local entry = best_target(index, d, s, busy_reviere)
+            local entry = best_target(index, d, s, busy_reviere, full)
             if entry then
               local entity = entry.entity
               local g = storage.grace[entity.force.index]
               local teaching = entry.harvester and not g.first_hunt_done
-              if lib.start_hunt(entity, {teaching = teaching}) then count = count + 1 end
+              if lib.start_hunt(entity, {teaching = teaching}) and not entry.thumper then count = count + 1 end
               break
             end
           end
@@ -1247,10 +1338,11 @@ local function lurk_tick(tick)
   end
   if next(lurk) == nil then return end
   if hunts.paused_until and hunts.paused_until > tick then return end
+  if not lib.ENABLED then return end
   local count = 0
   local busy = {}
   for _, hunt in pairs(hunts.list) do
-    if not hunt.debug then
+    if not hunt.debug and not hunt.lure then
       count = count + 1
       busy[hunt.surface_index .. "/" .. revier_of(hunt)] = true
     end
@@ -1656,14 +1748,44 @@ end
 
 -- Wurm getötet (docs/protokolle/plan-3d2.md 4.11) [W8]: Wurm und Anfragen vergessen, Chat mit Ort; vor 0 Ende killed (das Ziel ist
 -- gerettet, KILL_RESCUES), in der Suche Ende mit dem schon gesetzten Ergebnis und killed + 1 dazu.
+-- Beute (Phase 3h, docs/plan-3h.md 2.2): Wurmzähne am Kopf jedes eigenen Wurms (Präfix arrakis-sandworm-, also nicht die
+-- Testwürmer), auch nach Jagdende beim Abtauchen. Ist die Einheit im Ereignis schon ungültig, gelten Ort und Oberfläche
+-- der Jagd (hunt.worm.head; Jagdwürmer sind immer sandworm.NAME). Gibt die Zahl der Zähne zurück.
+function lib.drop_loot(unit, hunt, force)
+  local surface, position
+  if unit and unit.valid then
+    local name = unit.prototype.name
+    if name:sub(1, #sandworm_lib.PREFIX) ~= sandworm_lib.PREFIX then return 0 end
+    surface = unit.surface
+    local ok, nodes = pcall(unit.get_body_nodes)
+    if ok and nodes and nodes[1] then position = nodes[1] end
+  end
+  if hunt and hunt.worm then
+    surface = surface or game.get_surface(hunt.surface_index)
+    position = position or hunt.worm.head
+  end
+  if not (surface and position) then return 0 end
+  local n = math.floor(storage.rng(lib.TOOTH_MIN, lib.TOOTH_MAX) * lib.TOOTH_FACTOR + 0.5)
+  if n <= 0 then return 0 end
+  surface.spill_item_stack{position = {x = position.x, y = position.y}, stack = {name = lib.TOOTH, count = n},
+    enable_looted = true, allow_belts = false}
+  if force and force.valid and force.name ~= FORCE then
+    force.print({"arrakis-message.msg-worm-loot", n, gps(surface, position)})
+  end
+  storage.hunts.teeth = (storage.hunts.teeth or 0) + n
+  return n
+end
+
 local function on_segmented_unit_died(event)
-  local hunt = hunt_of_worm(event.segmented_unit)
+  local unit = event.segmented_unit
+  local hunt = hunt_of_worm(unit)
+  lib.drop_loot(unit, hunt, (hunt and force_of(hunt.force_index)) or event.force)
   if not hunt then return end
   local where = hunt.worm.head
   sandworm_lib.forget(hunt)
   -- Phase 3g (Plan 1.3 b): Das Revier ist frei, ein lauernder Wurm im Sektor der Jagd ist mit tot.
   -- Nur auf Oberflächen mit echten Revieren (Arrakis, Prüfstand nach test_real); sonst wie 0.12.x.
-  if not hunt.debug and territory_lib.real(hunt.surface_index) then
+  if not hunt.debug and territory_lib.real(hunt.surface_index) and territory_lib.FREE_TICKS > 0 then
     territory_lib.set_free(hunt.surface_index, revier_of(hunt))
     local lurk = storage.hunts.lurk and storage.hunts.lurk[hunt.surface_index]
     if lurk then lurk[hunt.sector_key] = nil end

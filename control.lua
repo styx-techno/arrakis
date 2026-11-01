@@ -23,7 +23,10 @@ local libraries =
   -- Phase 3d2 (docs/protokolle/plan-3d2.md 4.1): der Sandwurm als Fahrzeug, direkt vor worms (worms ruft ihn auf).
   require("scripts.sandworm"),
   require("scripts.worms"),
-  require("scripts.worms-gui")
+  require("scripts.worms-gui"),
+  -- Phase 3h (docs/plan-3h.md): Thumper (nach worms, ruft divert) und Mod-Einstellungen (schreibt Modul-Konstanten).
+  require("scripts.thumper"),
+  require("scripts.config")
 }
 
 -- Prüfstand (/arrakis-test) nur mit Startup-Einstellung; sonst bleibt das Spiel unberührt. Immer zuletzt.

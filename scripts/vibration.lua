@@ -54,6 +54,10 @@ lib.WEIGHTS =
 lib.DAMPING_TECH = "arrakis-harvest-damping"
 lib.DAMPING_STEP = 0.05
 lib.DAMPING_MAX = 10
+-- Phase 3h (docs/plan-3h.md 2.1, 2.3): Faktor auf alle Gewichte außer dem Thumper (Einstellung arrakis-vibration-percent,
+-- scripts/config.lua) und Gewicht eines laufenden Thumpers auf Sand (storage.thumpers, scripts/thumper.lua).
+lib.SCALE = 1
+lib.THUMPER_WEIGHT = 60
 -- Höchstens so viele Quellen je Oberfläche und Takt zeigen Staub.
 lib.DUST_MAX = 24
 -- Rumpeln je Sektor höchstens alle so viele Ticks.
@@ -476,7 +480,7 @@ function lib.tick(tick)
         h.vib_key = key
         h.vib_sand = sand
         active[s] = true
-        if w > 0 and not is_resting(cooldown[s], sector, tick) then feed(contrib, s, key, w) end
+        if w > 0 and not is_resting(cooldown[s], sector, tick) then feed(contrib, s, key, w * lib.SCALE) end
       end
     end
     if not done and (h.vib_key or h.vib_weight ~= 0 or h.vib_sand or h.careful_wait or h.careful_pos or h.alarm_unrest) then
@@ -509,10 +513,30 @@ function lib.tick(tick)
           end
           record.weight = w
           record.key = key
-          if w > 0 and not is_resting(cooldown[s], sector, tick) then feed(contrib, s, key, w) end
+          if w > 0 and not is_resting(cooldown[s], sector, tick) then feed(contrib, s, key, w * lib.SCALE) end
         else
           record.weight = 0
           record.key = nil
+        end
+      end
+    end
+  end
+  -- Phase 3h: Thumper (ungedämpft, ohne SCALE). Ablauf und Austragen macht scripts/thumper.lua.
+  for _, record in pairs(storage.thumpers or {}) do
+    local entity = record.entity
+    record.weight = 0
+    record.key = nil
+    if entity.valid then
+      local surface = entity.surface
+      if terrain.harvest_allowed(surface) and counted(surface, entity.force.index) then
+        local s = surface.index
+        local key, sector = lib.key_of(entity.position)
+        record.surface = s
+        record.key = key
+        active[s] = true
+        if record.sand then
+          record.weight = lib.THUMPER_WEIGHT
+          if not is_resting(cooldown[s], sector, tick) then feed(contrib, s, key, record.weight) end
         end
       end
     end

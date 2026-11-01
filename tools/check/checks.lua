@@ -665,6 +665,8 @@ local plan_techs = {
   ["arrakis-harvest-damping"] = "unit",
   -- 0.13.0 (docs/plan-3g.md 1.4 c)
   ["arrakis-territory-survey"] = "unit",
+  -- 0.14.0 (docs/plan-3h.md 2.1): Trigger scripted, ausgelöst von scripts/thumper.lua
+  ["arrakis-thumper"] = "scripted nil",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -680,7 +682,7 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 13 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 13") end
+if tech_count ~= 14 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 14") end
 -- Phase 3g (docs/plan-3g.md 2): Revierkunde nach der Leitstelle, 300 Einheiten.
 do
   local tech = raw.technology["arrakis-territory-survey"]
@@ -695,6 +697,43 @@ do
   end
 end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
+-- Phase 3h (docs/plan-3h.md 2.1, 2.2): Thumper, Wurmzahn, Forschung. Werte stehen hier fest.
+do
+  local n3h = 0
+  local th = raw["simple-entity-with-owner"] and raw["simple-entity-with-owner"]["arrakis-thumper"]
+  if not th then add("FEHLER 3h: Entity arrakis-thumper fehlt") else
+    n3h = n3h + 1
+    if not (th.icon or th.icons) then add("FEHLER 3h: arrakis-thumper ohne Symbol") end
+    if not (th.animations or th.picture or th.pictures) then add("FEHLER 3h: arrakis-thumper ohne Bild") end
+    local rule = th.tile_buildability_rules and th.tile_buildability_rules[1]
+    local rock = rule and rule.colliding_tiles and rule.colliding_tiles.layers
+    if not (rock and rock.arrakis_rock) then add("FEHLER 3h: arrakis-thumper nicht nur auf Sand") end
+    if th.minable and th.minable.result then add("FEHLER 3h: arrakis-thumper gibt beim Abbauen etwas zurück") end
+  end
+  local item = raw.item["arrakis-thumper"]
+  if not (item and item.place_result == "arrakis-thumper" and (item.icon or item.icons)) then add("FEHLER 3h: item arrakis-thumper") else n3h = n3h + 1 end
+  local recipe = raw.recipe["arrakis-thumper"]
+  if not (recipe and recipe.enabled == false) then add("FEHLER 3h: recipe arrakis-thumper fehlt oder nicht gesperrt") else n3h = n3h + 1 end
+  local tooth = raw.item["arrakis-worm-tooth"]
+  if not (tooth and (tooth.icon or tooth.icons) and tooth.stack_size == 50) then add("FEHLER 3h: item arrakis-worm-tooth") else n3h = n3h + 1 end
+  local tech = raw.technology["arrakis-thumper"]
+  if not tech then add("FEHLER 3h: Forschung arrakis-thumper fehlt") else
+    local pre = tech.prerequisites or {}
+    if #pre ~= 1 or pre[1] ~= "arrakis-spice-harvesting" then add("FEHLER 3h: arrakis-thumper Voraussetzung") end
+    local unlocks = false
+    for _, e in ipairs(tech.effects or {}) do if e.type == "unlock-recipe" and e.recipe == "arrakis-thumper" then unlocks = true end end
+    if not unlocks then add("FEHLER 3h: arrakis-thumper schaltet das Rezept nicht frei") end
+    if not (tech.icon or tech.icons) then add("FEHLER 3h: Forschung arrakis-thumper ohne Symbol") end
+    n3h = n3h + 1
+  end
+  for _, name in ipairs({"arrakis-worms-enabled", "arrakis-warn-seconds", "arrakis-wormsign-threshold", "arrakis-vibration-percent",
+                         "arrakis-rest-percent", "arrakis-max-hunts", "arrakis-free-minutes", "arrakis-thumper-seconds",
+                         "arrakis-tooth-percent"}) do
+    local setting = settings["runtime-global"] and settings["runtime-global"][name]
+    if settings["runtime-global"] and not setting then add("FEHLER 3h: Einstellung " .. name .. " fehlt") end
+  end
+  add("3h: " .. n3h .. "/5 Prototypen")
+end
 
 -- Phase 3d2 (docs/protokolle/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
 -- prototypes/sandworm.lua gelesen).
@@ -843,7 +882,7 @@ add("Prüfstand " .. (tb_on and "an" or "aus") .. ": " .. tb_count .. " Test-Pro
 do
   local code_files = {"control.lua"}
   for _, n in ipairs({"arrakis-surface", "flyer-gui", "flyer", "harvester-gui", "harvester", "hold", "intake", "migrate", "sandworm",
-                      "terrain", "vibration", "worms-gui", "worms"}) do code_files[#code_files+1] = "scripts/" .. n .. ".lua" end
+                      "terrain", "vibration", "worms-gui", "worms", "thumper", "config"}) do code_files[#code_files+1] = "scripts/" .. n .. ".lua" end
   for _, n in ipairs({"runner", "gemeinsam_ernter", "gemeinsam_flyer", "gemeinsam_harvester", "gemeinsam_jagd", "gemeinsam_map", "gemeinsam_ornithopter", "gemeinsam_sandwurm", "gemeinsam_worm"}) do
     code_files[#code_files+1] = "scripts/testbench/" .. n .. ".lua"
   end
