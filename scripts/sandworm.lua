@@ -1035,12 +1035,22 @@ local function drive(hunt, tick, force)
     if straight then dest = {x = hx + h_x * size.lookahead, y = hy + h_y * size.lookahead} end
   elseif phase == "angriff" then
     local far_x, far_y = P.x + u_x * lib.BEHIND, P.y + u_y * lib.BEHIND
+    hold = nil
     if line_clear(probe, P.x, P.y, far_x, far_y, lib.LOOK_STEP, 0) and sand(probe, P.x, P.y) then
       dest = {x = far_x, y = far_y}
     else
-      dest = {x = P.x + u_x * lib.BEHIND_MIN, y = P.y + u_y * lib.BEHIND_MIN}
+      -- 0.16.2 (Max im Spiel, T34: Thumper 6 Kacheln vor einer Felsinsel): Lag P + BEHIND_MIN · u im Fels, drückte der
+      -- Wurm gegen den Fels, galt nach STALL_TICKS als festgefahren und tauchte ab (ohne Zähne, Biss bei 0 trotzdem).
+      -- Jetzt der weiteste freie Punkt hinter P bis BEHIND_MIN; ist keiner frei, P selbst mit Halteabstand 1.
+      for k = lib.BEHIND_MIN, 1, -1 do
+        local x, y = P.x + u_x * k, P.y + u_y * k
+        if line_clear(probe, P.x, P.y, x, y, lib.LOOK_STEP, 0) then
+          dest = {x = x, y = y}
+          break
+        end
+      end
+      if not dest then dest, hold = {x = P.x, y = P.y}, 1 end
     end
-    hold = nil
   elseif phase == "suche" then
     dest, hold = P, lib.SEARCH_REACHED
   else
@@ -1094,6 +1104,12 @@ local function drive(hunt, tick, force)
     end
   end
   hunt.phase = phase
+
+  -- 0.16.2 (Max im Spiel, T34): Beschuss macht den Wurm wütend (enraged_at_target); die Engine lenkt ihn dann zum
+  -- Schützen, auf der Felsinsel also an den Fels, wo er hängen blieb und als festgefahren abtauchte. Jeder Zustand außer
+  -- investigating wird sofort zurückgesetzt (zusätzlich gleich im Schadensereignis, lib.on_damaged).
+  local ok_state, state = pcall(unit.get_ai_state)
+  if ok_state and state and state.type ~= defines.segmented_unit_ai_state.investigating then force_state = true end
 
   -- Zustand (Plan 4.7): bei Zielwechsel über 2 Kacheln sofort, sonst alle 30 Ticks, immer investigating [W9].
   local set = worm.set_dest
@@ -1356,9 +1372,45 @@ function lib.tidy(tick)
   for _, id in ipairs(gone) do requests[id] = nil end
 end
 
+-- 0.16.2: Schaden an einem Segment eines eigenen Wurms mit Jagd: Ist er dadurch wütend geworden (nicht mehr
+-- investigating), sofort zurück auf investigating zum letzten Ziel, damit er nicht zum Schützen abbiegt.
+-- Das Ereignis ist auf den Typ segment gefiltert (lib.set_filters).
+local function on_damaged(event)
+  local entity = event.entity
+  if not (entity and entity.valid and entity.type == "segment") then return end
+  local unit = entity.segmented_unit
+  if not (unit and unit.valid) then return end
+  local un = unit.unit_number
+  local list = storage.hunts and storage.hunts.list
+  if not list then return end
+  for _, hunt in pairs(list) do
+    local worm = hunt.worm
+    if worm and worm.un == un and worm.dest then
+      local ok, state = pcall(unit.get_ai_state)
+      if ok and state and state.type ~= defines.segmented_unit_ai_state.investigating then
+        unit.set_ai_state{type = defines.segmented_unit_ai_state.investigating, destination = {x = worm.dest.x, y = worm.dest.y}}
+        worm.set_tick = game.tick
+        worm.set_dest = {x = worm.dest.x, y = worm.dest.y}
+        storage.hunts.calmed = (storage.hunts.calmed or 0) + 1
+      end
+      return
+    end
+  end
+end
+
+-- Filter für on_entity_damaged (nur Segmente); Filter gelten nur nach der Anmeldung und werden nicht gespeichert,
+-- deshalb in on_init und on_load.
+function lib.set_filters()
+  script.set_event_filter(defines.events.on_entity_damaged, {{filter = "type", type = "segment"}})
+end
+
 lib.events =
 {
-  [defines.events.on_script_path_request_finished] = on_path
+  [defines.events.on_script_path_request_finished] = on_path,
+  [defines.events.on_entity_damaged] = on_damaged
 }
+
+lib.on_init = lib.set_filters
+lib.on_load = lib.set_filters
 
 return lib

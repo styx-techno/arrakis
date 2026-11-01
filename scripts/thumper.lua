@@ -22,6 +22,8 @@ lib.TICKS = 3600
 lib.DUST_TICKS = 120
 
 local DUST = "arrakis-sand-dust"
+-- Schlag je Sekunde (0.16.2, prototypes/thumper.lua).
+local THUMP = "arrakis-thump"
 
 local function data()
   storage.thumpers = storage.thumpers or {}
@@ -80,8 +82,11 @@ local function on_nth_tick_60(event)
         entity.surface.create_trivial_smoke{name = DUST, position = entity.position}
         entity.destroy()
         gone[#gone + 1] = un
-      elseif record.sand and tick % lib.DUST_TICKS < 60 then
-        entity.surface.create_trivial_smoke{name = DUST, position = entity.position}
+      else
+        entity.surface.play_sound{path = THUMP, position = entity.position}
+        if record.sand and tick % lib.DUST_TICKS < 60 then
+          entity.surface.create_trivial_smoke{name = DUST, position = entity.position}
+        end
       end
     end
     for _, un in ipairs(gone) do list[un] = nil end

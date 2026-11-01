@@ -35,6 +35,7 @@ Seit 0.5.1 läuft die Mod nur noch in Factorio 2.1 (ab 2.1.23). Fast alle bisher
 - **T33 (0.14.0, neu):** Einstellungen und Beute in drei Schritten: Standardwerte = Konstanten von 0.13.0, Testwerte landen in den Konstanten und wieder zurück, ein sterbender Sandwurm lässt 2–4 Wurmzähne fallen (Faktor 0: keine, Faktor 2: 4–8).
 - **T35 (0.15.0, seit 0.15.1 nach Max' Wahl 1b 2b 3b):** Ernter Mk2 in sechs Schritten (etwa 1 min Spielzeit): Prototypen (Laderaum 60, Lebenspunkte ×1,5, Rezept Ernter + 4 Wurmzähne + 10 Melange + 5 Prozessoren, Forschung 500 Einheiten hinter Thumper); Mk1 und Mk2 nebeneinander 20 s aufgebaut (Mk2 fördert ×1,5, vibriert ×0,8); Beute schaltet die Forschung nicht frei; Ornithopter hebt den Mk2 an (Lastbild aus den Mk2-Blättern, ab 0.16.1) und setzt ihn mit Ladung wieder ab; Leitstelle gibt aus dem Lager den Mk2 vor dem Mk1 aus und lagert ihn wieder ein; Biss „schwer beschädigt“ (Ernter-Jagd, Mk2 überlebt mobil, Laderaum leer). Force `arrakis-t23` ohne Wurm.
 - **T37 (0.16.0):** Großer Wurm in vier Schritten (etwa 1 min Spielzeit): Prototypen (100 000 gegen 30 000 Lebenspunkte, Werte in sandworm.SIZES und worms.LARGE); Zufalls-Auswahl je Revierstufe (ruhig 0, normal 0,1, wild 0,3; je 1000 Würfe, Anteil ±0,05), Einstellung aus, Lehrjagd immer klein; Befehlsjagd mit großem Wurm per Spawnhaken auf eine Kiste (Ring 6, Auto 5 Kacheln neben der Box gefressen, Auto 8 Kacheln daneben bleibt); reguläre Jagd mit echten Revieren, Wurm getötet: 6–10 Zähne, Revier 2 × FREE_TICKS frei. Force `arrakis-t23`, Wurm nur für die beiden Jagden an.
+- **T39 (0.16.2):** Wurm unter Beschuss in einem Schritt (etwa 1 min Spielzeit): Felsinsel mit 20 Geschützen (Uranmunition), Kiste 6 Kacheln davor auf Sand, Befehlsjagd 40 s mit Spawnhaken 90 Kacheln westlich. Der Wurm darf unter Feuer nicht wütend zum Schützen abbiegen (höchstens 3 Takte nicht investigating), nicht abtauchen (auch nicht als festgefahren am Fels: der Punkt hinter der Kiste läge im Fels); Ergebnis killed oder bitten, Abstand Kopf–Fels als Messung. Force `arrakis-t23`.
 - **T36 (interaktiv, im Spiel bei Max, ab 0.16.1 als Test):** Mk2 von Hand herstellen, neben dem Mk1 ansehen, mit dem Ornithopter tragen. Siehe [Spielabend-Tests](#spielabend-tests-t31-t34-t36-t38-interaktiv-ab-0161).
 - **T34 (interaktiv, im Spiel bei Max, ab 0.16.1 als Test):** Thumper bauen, Animation und Staub ansehen, eine Jagd umlenken, einen Wurm vor Geschütze locken und die Zähne aufheben. Siehe [Spielabend-Tests](#spielabend-tests-t31-t34-t36-t38-interaktiv-ab-0161).
 - **T21 und T22 (Sandwurm, neu in 0.8.0):** T21 ohne Spieler laufen lassen, zusammen mit den Würmern aus 0.7.0 und den Testwürmern, etwa mit `python tools/pc/pruefstand.py --factorio … T21 T5 T6 T7 T18 T19` (alle sollen ohne FEHLER enden), dann T22 mit dir im Spiel (vorher `/arrakis-test tempo 1`). Sie entscheiden die Engine-Annahmen W1 bis W19 aus `docs/protokolle/plan-3d2.md`, Abschnitt 4.17; in eckigen Klammern steht bei jedem Schritt, welche er klärt. Die Läufe vom 27.10.2026 haben W1, W3, W4, W12, W17 und W18 geklärt (halten) und W19 (hält nicht); mit 0.8.2 endete T21 mit 15 von 15 Schritten ohne FEHLER. Jetzt fehlt T22 mit dir im Spiel. Was dazu von Hand zu prüfen ist, steht dort in Abschnitt 8. T19 und T20 laufen ab 0.8.0 ohne Wurm (ihre Jagden beißen wie in 0.7.0 genau bei 0); den Wurm prüfen T21 und T22.
@@ -59,7 +60,7 @@ Ohne Spieler gehen sie auch an der Serverkonsole und über RCON (außer `zurück
 | Befehl | Wirkung |
 |---|---|
 | `/arrakis-test` | Liste aller Tests mit Dauer, Hinweisen und letztem Ergebnis |
-| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T37` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
+| `/arrakis-test T1` | Test T1 starten (ebenso `T2` … `T39` und `T2b`, groß oder klein geschrieben); ein laufender Test wird abgebrochen |
 | `/arrakis-test T11 lang`, `/arrakis-test T14 lang` | T11 bzw. T14 mit 30 statt 9 Seeds |
 | `/arrakis-test alle` | alle nicht-interaktiven Tests nacheinander: T1–T7 (T7 nur Teil a), T11, T13, T2b, T14, T15, T16, T18, T19, T21. Dauer ohne Zeitraffer gut 27 min ([„alle“](#alle)) |
 | `/arrakis-test stop` | laufenden Test bzw. „alle“ abbrechen |
@@ -110,7 +111,7 @@ STATUS wartet <id> | Tick <n>
 - `wartet`: bei `alle` zwischen zwei Tests. `<id>` kommt als Nächstes, nach 1 s Spielzeit (mit Spieler nach einer FRAGE von T2 oder T4 nach 30 s in echter Zeit, auch mit [Zeitraffer](#zeitraffer-arrakis-test-tempo)).
 - Solange `alle` läuft, hängt an Zeile 1 noch ` | alle, danach noch <k>`. `<k>` zählt die Tests, die nach dem laufenden bzw. wartenden noch kommen.
 
-Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T32, T33, T35, T37):
+Danach kommt je Test mit gespeichertem Ergebnis eine Zeile, in fester Reihenfolge (T1 bis T7, T9, T11, T12, T13, T2b, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T32, T33, T35, T37, T39):
 
 ```
 ERGEBNIS <id> | Tick <tick> | OK <a> FEHLER <b> FRAGE <c> | <Zusammenfassung>
