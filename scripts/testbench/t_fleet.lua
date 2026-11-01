@@ -2092,7 +2092,7 @@ end
 -- 4) Bereitschaftsflug mit zwei Carryalls: ohne Forschung kein Begleiter; mit Forschung schwebt einer über dem
 -- Ernter 100 Kacheln weit, der zweite bleibt an der Leitstelle (auch bei einem zweiten Ernter). Wurmzeichen: Der
 -- Begleiter übernimmt die Rettung und hebt den Ernter binnen 5 s an.
-t29.s4_base = base_phase(4, {carryalls = 2})
+t29.s4_base = base_phase(4, {carryalls = 2, rocket = 60, coal = 300})
 t29.s4_parked = parked_phase(4)
 
 function t29.s4_build(run, tb, d)
