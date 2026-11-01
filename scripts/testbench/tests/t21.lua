@@ -1,52 +1,45 @@
--- Prüfstand: Sandwurm mit echtem Laufzeitcode (Phase 3d2, docs/protokolle/plan-3d2.md 6; Vertrag siehe runner.lua).
---   T21: scripts/sandworm.lua und scripts/worms.lua mit dem echten Wurm auf der Prüfstand-Fläche, ohne Spieler: Prototypen und
---        storage, Zeitlinie einer regulären Jagd, Felsinsel, Sandtasche mit Knick (ROUTING), Ernter vor Fels, Ornithopter über
---        dem Kopf, Rettung, Zerdrücken, Ersatzbiss, Wurm getötet, Wurm verloren, Flucht per Fahrt, Grenzen, Migration und
---        Waisen, Entfernen. Fünfzehn Schritte in zwölf Feldern zu 400 × 400 Kacheln; die Schritte 2 bis 12 laufen in drei
---        Wellen (nie mehr als 3 Befehlsjagden mit Wurm, nie mehr als 6 Würmer), danach 13 bis 15 nacheinander in Feld 12.
---   T22: Optik und Laden (interaktiv, nur mit Spieler und seiner Force): Auftauchen, Halten, Biss und Abtauchen, Fels,
---        Zerdrücken, Ornithopter, Rettung, Tod des Wurms, Factoriopedia, Speichern und Laden. ALT+O (ab 0.8.3 auch
---        /arrakis-test weiter) schaltet weiter; jede FRAGE wartet auf Max.
--- Gebaut wird mit raise_built = true (die Laufzeitmodule tragen ein); Fahrer sind Puppen ohne Spieler (tb.dummy_driver),
--- gefahren wird über riding_state an Fahrzeug und Puppe jeden Tick (wie T13 und T19).
--- Die Tests zählen Ticks. Der Kopf wird je 10 Ticks in der Mitte zwischen zwei Takten gelesen (tick % 10 == 5) über
--- sandworm.head_of; Phasenwechsel erkennt der Test jeden Tick und rundet den Tick auf den Takt ab (Vielfaches von 10):
--- Die Reihenfolge zwischen dem 10-Tick-Takt von worms.lua und dem Prüfstand-Tick ist nicht zugesichert.
--- Knoten 1 springt im Kachelraster (W18, Prüfstand 2026-10-27): Er bleibt bis zu 1 Kachel hinter dem wahren Kopf, je 10 Ticks
--- kommt er 0, 1 oder 2 Kacheln weit. Ein Takt allein misst also kein Tempo; Tempo und Weg zählen nur über Fenster, deren Fehler
--- unter 1 Kachel bleibt (je Lauf ohne Unterbrechung), und die Texte nennen das Fenster.
--- Sollwerte stehen hier als Zahlen aus dem Plan (1, 4.4 bis 4.11, 6), bewusst nicht aus den Modulen gelesen. Ausnahme sind
--- die Standardwahlen aus Plan 1, die Max am 27.10. entschieden hat und die eine Konstante im Modul bleiben (Zerdrücken auch
--- von Fahrzeugen und Figuren: worms.CRUSH_SPARES_VEHICLES; Wurm getötet rettet: worms.KILL_RESCUES; Sprint:
--- sandworm.SPRINT): Die liest der Test aus den Modulen, damit ein Wechsel nur eine Stelle braucht.
--- Zustand nur in run.data (Zahlen, Texte, Positionen, LuaEntity-, LuaSegmentedUnit- und LuaForce-Referenzen; vor jeder
--- Benutzung prüfen). Abläufe und Messhaken stehen als Funktionslisten in diesem Modul, run.data hält nur Nummern.
---
--- Isolation (Plan 4.18): T21 benutzt die eigene Force arrakis-t21 (einmal anlegen, wiederverwenden), wach, mit
--- first_hunt_done, eingeschaltet für die Prüfstand-Fläche und mit der Startrichtung k0 = 2 (Nordost) für jede Jagd ohne
--- eigenen Haken. T22 benutzt Max' Force und schreibt Schonfrist, Pause und Statistik zurück (wie T20). cleanup beendet jede
--- Jagd der Force mit "abort" (die Würmer tauchen still ab), setzt set_worm_off und set_spawn_dir zurück, räumt Waisen auf der
--- Prüfstand-Fläche (sandworm.sweep) und Würmer, die der Test selbst erzeugt hat, und prüft, dass kein arrakis-sandworm-* im
--- Bereich bleibt. Jeder Schritt beendet seine Jagden, bevor er seine Entities entfernt: Kein Wurm überlebt einen Schritt.
--- Die Modultabellen heißen hier vibration_lib, worms_lib, sandworm_lib und flyer_lib (tools/check/api_names.py).
+-- T21 Sandwurm: echter Code: Prüfstand-Test (aus t_sandwurm.lua aufgeteilt, Verhalten unverändert).
+-- Gemeinsame Helfer der Familie: scripts/testbench/gemeinsam_sandwurm.lua.
 
+local common = require("scripts.testbench.gemeinsam_sandwurm")
 local harvester = require("scripts.harvester")
-local flyer_lib = require("scripts.flyer")
 local terrain = require("scripts.terrain")
 local vibration_lib = require("scripts.vibration")
 local sandworm_lib = require("scripts.sandworm")
 local worms_lib = require("scripts.worms")
-local speed = require("prototypes.ornithopter-speed")
+local SPICE = common.SPICE
+local ROCK = common.ROCK
+local CHEST = common.CHEST
+local PREFIX = common.PREFIX
+local KILL_AFTER = common.KILL_AFTER
+local valid = common.valid
+local copy_pos = common.copy_pos
+local at = common.at
+local pos_text = common.pos_text
+local read = common.read
+local copy = common.copy
+local dist = common.dist
+local box_of = common.box_of
+local inside = common.inside
+local sand_at = common.sand_at
+local storage_ready = common.storage_ready
+local tiles = common.tiles
+local clear_area = common.clear_area
+local abort_hunts = common.abort_hunts
+local end_if_running = common.end_if_running
+local sandworms_in = common.sandworms_in
+local new_made = common.new_made
+local make = common.make
+local new_harvester = common.new_harvester
+local new_car = common.new_car
+local new_flyer = common.new_flyer
+local deploy = common.deploy
 
-local HARVESTER = "spice-harvester"
-local FLYER = "arrakis-ornithopter"
-local SPICE = "spice-sand"
-local ROCK = "arrakis-rock"
-local CHEST = "wooden-chest"
+local flyer_lib = require("scripts.flyer")
+local speed = require("prototypes.ornithopter-speed")
 local ERUPTION = "arrakis-worm-eruption"
 local DIVE = "arrakis-worm-dive"
 local WORM = "arrakis-sandworm-small"
-local PREFIX = "arrakis-sandworm-"
 local TEST_WORM = "arrakis-test-worm"
 local WORM_FORCE = "arrakis-sandworm"
 local SMOKES = {"arrakis-sandworm-smoke-front", "arrakis-sandworm-smoke-small-top", "arrakis-sandworm-smoke-small-bottom",
@@ -119,7 +112,6 @@ local ERSATZ_SPAWN = 840
 -- Schritt 10: Schaden und Tod.
 local KILL_DAMAGE_AFTER = 300
 local KILL_DAMAGE = 1000
-local KILL_AFTER = 600
 local KILL_STATE_MAX = 40
 local REST_MIN = 7200
 -- Schritt 11: Verlust 300 Ticks nach dem Spawn.
@@ -143,48 +135,9 @@ local WAVE_DEBUG = {A = {3, 4, 5}, B = {6, 7, 8}}
 local REGULAR_ORDER = {2, 10, 12}
 local STEP_COUNT = 15
 
--- Allgemeine Helfer ---------------------------------------------------------------------------
-
-local function valid(object)
-  return object ~= nil and object.valid
-end
-
-local function copy_pos(position)
-  return {x = position.x or position[1], y = position.y or position[2]}
-end
-
-local function at(origin, dx, dy)
-  return {x = origin.x + dx, y = origin.y + dy}
-end
-
-local function pos_text(tb, position)
-  if not position then return "–" end
-  local p = copy_pos(position)
-  return "(" .. tb.num(p.x) .. ", " .. tb.num(p.y) .. ")"
-end
-
--- Liest einen Wert; Fehler werden zu nil.
-local function read(fn)
-  local ok, value = pcall(fn)
-  if ok then return value end
-  return nil
-end
-
 local function check(failed, ok, label)
   if not ok then table.insert(failed, label) end
   return ok
-end
-
-local function copy(record)
-  if record == nil then return nil end
-  local out = {}
-  for key, value in pairs(record) do out[key] = value end
-  return out
-end
-
-local function dist(a, b)
-  local dx, dy = a.x - b.x, a.y - b.y
-  return math.sqrt(dx * dx + dy * dy)
 end
 
 -- Tick auf den Takt abgerundet (Vielfaches von 10).
@@ -217,24 +170,6 @@ local function to_sample(target)
   local t = math.max(target, game.tick + 1)
   local n = (5 - t % 10) % 10
   return t + n - game.tick
-end
-
-local function box_of(center, half)
-  return
-  {
-    left_top = {x = math.floor(center.x - half.x), y = math.floor(center.y - half.y)},
-    right_bottom = {x = math.ceil(center.x + half.x), y = math.ceil(center.y + half.y)}
-  }
-end
-
-local function inside(box, position)
-  local x, y = position.x or position[1], position.y or position[2]
-  return x >= box.left_top.x and x <= box.right_bottom.x and y >= box.left_top.y and y <= box.right_bottom.y
-end
-
-local function overlaps(a, b)
-  return a.left_top.x < b.right_bottom.x and b.left_top.x < a.right_bottom.x
-    and a.left_top.y < b.right_bottom.y and b.left_top.y < a.right_bottom.y
 end
 
 -- Abstand von (x, y) zur Box (gedreht: umschließendes Rechteck, wie scripts/worms.lua).
@@ -280,12 +215,6 @@ local function unit_vector(dx, dy)
   return {x = dx / len, y = dy / len}
 end
 
--- Natürlicher Sand an (x, y): erzeugter Chunk und natürliche Kachel kein Fels (wie scripts/sandworm.lua).
-local function sand_at(surface, x, y)
-  if not surface.is_chunk_generated{math.floor(x / 32), math.floor(y / 32)} then return false end
-  return terrain.natural_tile_name(surface, x, y) ~= ROCK
-end
-
 -- Strecke a → b alle step Kacheln (ohne a, mit b) auf Sand, Mittellinie und Parallelen ±side.
 local function line_sand(surface, a, b, step, side)
   local u = unit_vector(b.x - a.x, b.y - a.y)
@@ -304,39 +233,12 @@ local function line_sand(surface, a, b, step, side)
   return true
 end
 
-local function storage_ready()
-  return storage.harvesters and storage.flyers and storage.vib and storage.vib.heat and storage.hunts and storage.hunts.list
-    and storage.grace and storage.worm_stats and storage.sector_cooldown and storage.path_requests
-end
-
 local function force_named(name)
   return game.forces[name] or game.create_force(name)
 end
 
 local function worm_force()
   return game.forces[WORM_FORCE] or worms_lib.ensure_force()
-end
-
--- Kacheln x1..x2 × y1..y2 (Kachelnummern, beide eingeschlossen) mit einer Kachel belegen. Entities bleiben stehen.
-local function tiles(surface, x1, y1, x2, y2, name)
-  local list = {}
-  for x = x1, x2 do
-    for y = y1, y2 do list[#list + 1] = {name = name, position = {x, y}} end
-  end
-  surface.set_tiles(list, true, false, true, false)
-  return #list
-end
-
--- 13×13-Spice-Teppich um die Kachel unter position (das Erntefeld des Ernters, wie T19).
-local function carpet(surface, position, amount)
-  local x, y = math.floor(position.x), math.floor(position.y)
-  local placed = 0
-  for i = x - 6, x + 6 do
-    for j = y - 6, y + 6 do
-      if surface.create_entity{name = SPICE, position = {i + 0.5, j + 0.5}, amount = amount or 1000} then placed = placed + 1 end
-    end
-  end
-  return placed
 end
 
 -- Gas geben oder loslassen: riding_state am Fahrzeug und am Dummy-Fahrer (wie T2, T13).
@@ -387,57 +289,6 @@ local function nine_zero(surface, key)
   return true
 end
 
--- Wärme und Ruhe auf der Fläche box löschen (Chunks mit Mitte in box, Sektoren, die box berühren).
-local function clear_area(surface, box)
-  local s = surface.index
-  local e = storage.vib.heat[s]
-  if e then
-    local keys = {}
-    for key in pairs(e.chunks) do keys[#keys + 1] = key end
-    for _, key in ipairs(keys) do
-      local cx, cy = vibration_lib.chunk_of_key(key)
-      if inside(box, {x = cx * 32 + 16, y = cy * 32 + 16}) then vibration_lib.set_heat(surface, cx, cy, 0) end
-    end
-  end
-  local cool = storage.sector_cooldown[s]
-  if cool then
-    local sectors = {}
-    for sector in pairs(cool) do sectors[#sectors + 1] = sector end
-    for _, sector in ipairs(sectors) do
-      local sx, sy = vibration_lib.chunk_of_key(sector)
-      local area = {left_top = {x = sx * 128, y = sy * 128}, right_bottom = {x = sx * 128 + 128, y = sy * 128 + 128}}
-      if overlaps(box, area) then vibration_lib.rest(s, sector, 0) end
-    end
-  end
-end
-
--- Jagden ----------------------------------------------------------------------------------------
-
-local function hunt_list(filter)
-  local ids = {}
-  for id, hunt in pairs(storage.hunts.list) do
-    if not filter or filter(hunt) then ids[#ids + 1] = id end
-  end
-  table.sort(ids)
-  local list = {}
-  for _, id in ipairs(ids) do list[#list + 1] = storage.hunts.list[id] end
-  return list
-end
-
--- Jede Jagd der Forces (Indizes als Schlüssel) mit "abort" beenden; gibt die Zahl zurück.
-local function abort_hunts(force_indices)
-  local n = 0
-  for _, hunt in ipairs(hunt_list(function(h) return force_indices[h.force_index] end)) do
-    worms_lib.end_hunt(hunt, nil, "abort")
-    n = n + 1
-  end
-  return n
-end
-
-local function end_if_running(hunt)
-  if hunt and storage.hunts.list[hunt.id] == hunt then worms_lib.end_hunt(hunt, nil, "abort") end
-end
-
 -- Zahl der regulären Jagden (ohne Befehlsjagden), optional nur anderer Forces.
 local function regular_count(own)
   local n = 0
@@ -477,23 +328,6 @@ local function dived_after(ev, un, tick)
   return false
 end
 
--- Würmer unseres Prototyps (arrakis-sandworm-*) mit einem Knoten in box; abtauchende (ab 0.8.4, noch höchstens
--- sandworm.DIVE_TICKS sichtbar) zählen nicht.
-local function sandworms_in(surface, box)
-  local n = 0
-  for _, unit in pairs(surface.get_segmented_units()) do
-    if unit.valid and unit.prototype.name:sub(1, #PREFIX) == PREFIX and not sandworm_lib.diving(unit) then
-      for _, node in pairs(unit.get_body_nodes()) do
-        if inside(box, node) then
-          n = n + 1
-          break
-        end
-      end
-    end
-  end
-  return n
-end
-
 -- Würmer unseres Prototyps auf der Oberfläche, ohne abtauchende.
 local function sandworms_on(surface)
   local n = 0
@@ -520,77 +354,6 @@ local function spawn_unit(run, tb, d, name, position, direction, force)
   return unit
 end
 
--- Entities und Aufräumen ------------------------------------------------------------------------
-
-local function new_made()
-  return {cars = {}, flyers = {}, others = {}}
-end
-
--- Erzeugt eine Entity auf der Prüfstand-Fläche mit raise_built und merkt sie im Schritt s für das Aufräumen (kind: cars,
--- flyers, others); nil, wenn es nicht ging (Grund in der Datei).
-local function make(run, tb, s, params, kind)
-  if params.raise_built == nil then params.raise_built = true end
-  local ok, entity = pcall(function() return tb.surface().create_entity(params) end)
-  if ok and entity then
-    table.insert(s.made[kind or "others"], entity)
-    return entity
-  end
-  tb.trace(run, params.name .. " bei " .. pos_text(tb, params.position) .. " ging nicht" .. (ok and "" or (": " .. tostring(entity))))
-  return nil
-end
-
-local function remember(s, entity, kind)
-  if valid(entity) then table.insert(s.made[kind or "others"], entity) end
-  return entity
-end
-
--- Echter Ernter (eingetragen über raise_built). opts: orientation, coal, spice (Laderaum), driver, field (Teppich).
-local function new_harvester(run, tb, d, s, position, opts)
-  opts = opts or {}
-  local surface = tb.surface()
-  local force = opts.force or d.force
-  if opts.field then carpet(surface, position, opts.field) end
-  local car = make(run, tb, s, {name = HARVESTER, position = position, force = force, orientation = opts.orientation or 0.25}, "cars")
-  if not car then return nil end
-  if opts.coal then tb.fuel(car, "coal", opts.coal) end
-  if opts.spice then car.get_inventory(defines.inventory.car_trunk).insert{name = SPICE, count = opts.spice} end
-  if opts.driver then
-    local driver = tb.dummy_driver(car, force)
-    remember(s, driver)
-    s.drivers = s.drivers or {}
-    s.drivers[car.unit_number] = driver
-  end
-  s.keys = s.keys or {}
-  s.keys[vibration_lib.key_of(position)] = true
-  return car
-end
-
--- Auto mit Kohle und optional Puppe als Fahrer.
-local function new_car(run, tb, d, s, position, opts)
-  opts = opts or {}
-  local car = make(run, tb, s, {name = "car", position = position, force = opts.force or d.force, orientation = opts.orientation or 0})
-  if not car then return nil end
-  tb.fuel(car, "coal", 5)
-  if opts.driver then
-    local driver = tb.dummy_driver(car, opts.force or d.force)
-    remember(s, driver)
-    s.drivers = s.drivers or {}
-    s.drivers[car.unit_number] = driver
-  end
-  return car
-end
-
--- Echter Ornithopter mit Raketentreibstoff (ab 0.9.0 nur Flugtreibstoff, opts.rocket Stück); opts.pilot setzt eine
--- Puppe als Pilot.
-local function new_flyer(run, tb, d, s, position, opts)
-  opts = opts or {}
-  local flyer = make(run, tb, s, {name = FLYER, position = position, force = opts.force or d.force, create_build_effect_smoke = false}, "flyers")
-  if not flyer then return nil end
-  tb.fuel(flyer, "rocket-fuel", opts.rocket or 2)
-  if opts.pilot then remember(s, tb.dummy_driver(flyer, opts.force or d.force)) end
-  return flyer
-end
-
 local function driver_of(s, vehicle)
   return valid(vehicle) and s.drivers and s.drivers[vehicle.unit_number] or nil
 end
@@ -599,12 +362,6 @@ local function pilot_of(flyer)
   local pilot = valid(flyer) and read(function() return flyer.get_driver() end)
   if pilot and pilot.object_name == "LuaEntity" then return pilot end
   return nil
-end
-
-local function deploy(car)
-  local h = valid(car) and harvester.get(car)
-  if not h then return false, "kein Datensatz" end
-  return harvester.deploy(h)
 end
 
 -- Entfernt, was ein Schritt gebaut hat: zuerst seine Jagden ("abort", der Wurm taucht still ab), dann Ernter
@@ -2692,390 +2449,6 @@ local function t21_cleanup(run, tb)
   worms_lib.ensure_force()
 end
 
--- T22 Sandwurm: Optik und Laden (interaktiv) ----------------------------------------------------------
--- Mit Max im Spiel und seiner Force auf der Fläche ±250 mit einer Felsinsel (40 × 40, Mitte 60 östlich des Ursprungs).
--- ALT+O (ab 0.8.3 auch /arrakis-test weiter) schaltet zum nächsten Schritt; ein Schritt beendet beim Weiterschalten seine
--- laufenden Jagden ("abort"), damit kein Wurm überlebt. Die FRAGEn kommen, sobald es etwas zu sehen gab (Auftauchen,
--- Ende der Jagd). Entities bleiben am Ende zum Ansehen stehen (wie T20); Jagden, Wärme, Ruhe, Schonfrist, Pause und
--- Statistik räumt cleanup.
-
-local T22_HALF = 250
-local T22_LAST = 9
--- 0.8.4: 45 statt 20 min Spielzeit (am 28.10.2026 lief T22 mit Erklärungen in Schritt 8 ab).
-local T22_END_TICKS = 45 * 60 * 60 - 60
-local T22_ISLAND = {dx1 = 40, dx2 = 79, dy1 = -20, dy2 = 19}
-
-local t22_enter = {}
-local t22_watch = {}
-
-local function t22_hunt(run, tb, d, entity, opts, label)
-  local hunt, reason = worms_lib.start_hunt(entity, opts)
-  if not hunt then
-    tb.log(run, "FEHLER", d.step .. ") " .. label .. ": Befehlsjagd ging nicht (" .. tostring(reason) .. ")")
-    return nil
-  end
-  table.insert(d.hunts, hunt)
-  d.cur = {hunt = hunt, label = label, start = game.tick}
-  tb.log(run, "INFO", string.format("%d) %s: Jagd %d, Biss bei 0 in %s s", d.step, label, hunt.id, tb.num((hunt.eta_tick - game.tick) / 60, 0)))
-  return hunt
-end
-
-local function t22_make(run, tb, d, params)
-  return make(run, tb, d.made, params)
-end
-
-local function t22_base(d)
-  return d.max_pos or d.origin
-end
-
-local function t22_ask(run, tb, d, text)
-  tb.log(run, "FRAGE", d.step .. ") " .. text)
-end
-
-t22_enter[1] = function(run, tb, d)
-  local base = t22_base(d)
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(base, 0, -20), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "1) Kiste ließ sich nicht bauen") end
-  local tick = math.ceil((game.tick + 120) / 10) * 10
-  t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(base, 60, 0), direction = defines.direction.west, tick = tick}},
-    "Auftauchen 60 Kacheln östlich von dir in 2 s")
-end
-
-t22_watch[1] = function(run, tb, d)
-  local hunt = d.cur and d.cur.hunt
-  if not hunt then return end
-  if hunt.worm and not d.cur.asked then
-    d.cur.asked = true
-    t22_ask(run, tb, d, "Hörst du gut 3 s vorher ein Rumpeln, und siehst du den Wurm mit Brüllen und Staub auftauchen? Ist er sandfarben, ohne Ascheschwaden, ohne dunkle Rauchspur, ohne orange Partikel?")
-  end
-  if storage.hunts.list[hunt.id] ~= hunt and not d.cur.done then
-    d.cur.done = true
-    d.step = 2
-    tb.log(run, "INFO", "Schritt 2 von " .. T22_LAST)
-    t22_ask(run, tb, d, "Wartet der Wurm vor der Kiste fast still bis 0? Kam der Biss genau bei 0 mit Sandfontäne, und tauchte er danach in 1 s vom Kopf bis zum Schwanz im Staub ab, statt auf einmal zu verschwinden?")
-  end
-end
-
-t22_enter[2] = function(run, tb, d)
-  tb.log(run, "INFO", "2) Warte auf den Biss der Jagd aus Schritt 1; die FRAGE kommt danach.")
-end
-t22_watch[2] = t22_watch[1]
-
-t22_enter[3] = function(run, tb, d)
-  local o = d.origin
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 110, 0), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "3) Kiste ließ sich nicht bauen") end
-  d.cur3 = "a"
-  t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -50, 0), direction = defines.direction.east}},
-    "Felsinsel zwischen Wurm und Kiste (Insel östlich des Ursprungs)")
-end
-
-t22_watch[3] = function(run, tb, d)
-  local hunt = d.cur and d.cur.hunt
-  if not hunt or storage.hunts.list[hunt.id] == hunt or d.cur.done then return end
-  d.cur.done = true
-  if d.cur3 == "a" then
-    t22_ask(run, tb, d, "Biegt er glatt vor der Insel ab, ohne den Fels zu berühren?")
-    local o = d.origin
-    local car = new_harvester(run, tb, d, d.made, at(o, T22_ISLAND.dx1 - 10, 0), {force = d.force, coal = 20})
-    if not car then return tb.log(run, "FEHLER", "3) Ernter ließ sich nicht bauen") end
-    d.cur3 = "b"
-    t22_hunt(run, tb, d, car, {seconds = 60, debug = true, spawn = {position = at(o, T22_ISLAND.dx1 - 170, 0), direction = defines.direction.east}},
-      "Ernter 10 Kacheln vor dem Inselrand, Wurm frontal auf den Fels dahinter")
-  else
-    t22_ask(run, tb, d, "Wird der Ernter trotzdem gebissen, und bleibt der Wurm dabei auf dem Sand?")
-  end
-end
-
-t22_enter[4] = function(run, tb, d)
-  local o = d.origin
-  local y = -120
-  local surface = tb.surface()
-  for i = -2, 2 do
-    t22_make(run, tb, d, {name = "transport-belt", position = at(o, -20, y + i), direction = defines.direction.north, force = d.force})
-  end
-  t22_make(run, tb, d, {name = CHEST, position = at(o, 0, y), force = d.force})
-  t22_make(run, tb, d, {name = CHEST, position = at(o, 10, y), force = d.force})
-  new_car(run, tb, d, d.made, at(o, 30, y), {force = d.force})
-  new_car(run, tb, d, d.made, at(o, 30, y - 6), {force = d.force})
-  -- Felskiste im Zerdrückradius, nur durch die Sandregel geschützt; 16 Kacheln vor dem Ziel, also im Angriff (wie T21
-  -- Schritt 8, Gegenprüfung 0.8.0).
-  local n, m = math.floor(o.x), math.floor(o.y) + y
-  tiles(surface, n + 84, m + 2, n + 85, m + 3, ROCK)
-  t22_make(run, tb, d, {name = CHEST, position = {x = n + 84 + 0.5, y = m + 2 + 0.5}, force = d.force})
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, y), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "4) Kiste ließ sich nicht bauen") end
-  t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, y), direction = defines.direction.east}},
-    "Zerdrücken: Band, Kisten und ein Auto auf der Linie, ein Auto 6 Kacheln daneben, eine Kiste auf Fels")
-  -- 0.8.4: Max fragte am 28.10.2026, ob der Wurm dem Felsfleck auswich; das muss er hier nicht.
-  tb.log(run, "INFO", "4) Der kleine Felsfleck liegt 2 Kacheln neben der Spur: Ausweichen muss der Wurm nicht. Die Kiste darauf liegt im"
-    .. " Zerdrückradius und bleibt nur heil, weil der Wurm auf Fels nichts zerstört. Das Ausweichen zeigt Schritt 3.")
-end
-
-t22_watch[4] = function(run, tb, d)
-  local hunt = d.cur and d.cur.hunt
-  if not hunt or storage.hunts.list[hunt.id] == hunt or d.cur.done then return end
-  d.cur.done = true
-  if worms_lib.CRUSH_SPARES_VEHICLES then
-    t22_ask(run, tb, d, "Verschwinden Band und Kisten am Kopf (Wracks), bleiben die Autos und die Kiste auf dem Fels heil, und fährt der Wurm am Auto vorbei oder hindurch, ohne hängen zu bleiben?")
-  else
-    t22_ask(run, tb, d, "Verschwinden Band, Kisten und das Auto auf der Linie am Kopf (Wracks), bleiben das Auto neben der Spur und die Kiste auf dem Fels heil, und fährt der Wurm durch, ohne hängen zu bleiben?")
-  end
-end
-
-t22_enter[5] = function(run, tb, d)
-  local o = d.origin
-  local base = t22_base(d)
-  d.flyer = valid(d.flyer) and d.flyer or new_flyer(run, tb, d, d.made, at(base, 4, 0), {force = d.force, rocket = 10})
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, 120), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "5) Kiste ließ sich nicht bauen") end
-  -- 0.8.4 (T22 am 28.10.2026): Aufgabe klarer, 90 statt 60 s; die Kiste ist nur Köder.
-  tb.log(run, "INFO", "5) Die Kiste ist nur der Köder, sie wird gebissen. Getestet wird der Ornithopter neben dir: Steig sofort ein"
-    .. " und flieg zum Wurm (er taucht 160 Kacheln westlich der Kiste auf und fährt nach Osten), schwebe über dem fahrenden"
-    .. " Kopf, halt an, dann flieg voll nach Westen über den Körper weg. Du hast 90 s bis zum Biss.")
-  t22_hunt(run, tb, d, chest, {seconds = 90, debug = true, spawn = {position = at(o, -60, 120), direction = defines.direction.east}},
-    "Ornithopter über dem Kopf [W12]")
-end
-
-t22_watch[5] = function(run, tb, d)
-  local hunt = d.cur and d.cur.hunt
-  if not hunt then return end
-  local player = tb.player(run)
-  if game.tick % 60 == 0 and storage.hunts.list[hunt.id] == hunt then
-    local vehicle = player and player.vehicle
-    local head = sandworm_lib.head_of(hunt)
-    if valid(vehicle) and vehicle.name == FLYER then
-      -- Abstand zum Kopf (Knoten 1, bis 1 Kachel hinter dem wahren Kopf, W18) und zum nächsten Körperknoten
-      local near
-      local unit = hunt.worm and hunt.worm.unit
-      if valid(unit) then
-        for _, node in ipairs(unit.get_body_nodes()) do
-          local gap = dist(vehicle.position, node)
-          if not near or gap < near then near = gap end
-        end
-      end
-      tb.trace(run, string.format("5) Ornithopter Tempo %s Kacheln/s, Gesundheit %s, Abstand zum Kopf %s, zum nächsten Körperknoten %s",
-        tb.num(tb.speed_tps(vehicle), 2), tb.num(vehicle.health, 0), head and tb.num(dist(vehicle.position, head)) or "–", tb.num(near)))
-    end
-  end
-  if storage.hunts.list[hunt.id] ~= hunt and not d.cur.done then
-    d.cur.done = true
-    t22_ask(run, tb, d, "Merkst du ein Bremsen, Ruckeln oder Schaden?")
-  end
-end
-
-t22_enter[6] = function(run, tb, d)
-  local base = t22_base(d)
-  local player = tb.player(run)
-  if player and player.physical_surface.index == tb.surface().index then base = player.physical_position end
-  -- Platz für Ernter und Spice-Teppich (13 × 13) ganz auf Sand nahe base (0.8.4: am 28.10.2026 lag er neben der
-  -- Felsinsel auf Fels).
-  local surface = tb.surface()
-  local spot
-  for _, offset in ipairs({{10, 0}, {-10, 0}, {0, 10}, {0, -10}, {20, 0}, {-20, 0}, {0, 20}, {0, -20}, {30, 0}, {-30, 0}}) do
-    local c = at(base, offset[1], offset[2])
-    local ok = true
-    for dx = -8, 8, 2 do
-      for dy = -8, 8, 2 do
-        if ok and not sand_at(surface, c.x + dx, c.y + dy) then ok = false end
-      end
-    end
-    if ok then
-      spot = c
-      break
-    end
-  end
-  if not spot then return tb.log(run, "FEHLER", "6) Kein freier Sand neben dir für den Ernter; geh ein Stück weg von der Felsinsel") end
-  local car = new_harvester(run, tb, d, d.made, spot, {force = d.force, coal = 20, field = 1000})
-  if not car then return tb.log(run, "FEHLER", "6) Ernter ließ sich nicht bauen") end
-  deploy(car)
-  tb.log(run, "INFO", "6) Heb den Ernter neben dir vor 0 mit dem Ornithopter an und schwebe über der Stelle.")
-  t22_hunt(run, tb, d, car, {seconds = 60, debug = true}, "Rettung")
-end
-
-t22_watch[6] = function(run, tb, d)
-  local hunt = d.cur and d.cur.hunt
-  if not hunt or d.cur.done then return end
-  if hunt.state == "searching" or storage.hunts.list[hunt.id] ~= hunt then
-    d.cur.done = true
-    t22_ask(run, tb, d, "Hält der Wurm neben dir, beißt ins Leere und taucht ab?")
-  end
-end
-
-t22_enter[7] = function(run, tb, d)
-  local o = d.origin
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(o, 100, 200), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "7) Kiste ließ sich nicht bauen") end
-  t22_hunt(run, tb, d, chest, {seconds = 60, debug = true, spawn = {position = at(o, -60, 200), direction = defines.direction.east}},
-    "Wurm getötet (10 s nach dem Auftauchen)")
-end
-
-t22_watch[7] = function(run, tb, d)
-  local cur = d.cur
-  local hunt = cur and cur.hunt
-  if not hunt then return end
-  if hunt.worm and not cur.spawn then cur.spawn = game.tick end
-  if cur.spawn and not cur.killed and game.tick >= cur.spawn + KILL_AFTER then
-    cur.killed = game.tick
-    local unit = hunt.worm and hunt.worm.unit
-    local player = tb.player(run)
-    if valid(unit) then
-      local ok, err = pcall(function() unit.die(player and player.force or d.force) end)
-      if not ok then tb.log(run, "FEHLER", "7) die: " .. tostring(err)) end
-    end
-  end
-  if cur.killed and not cur.done and game.tick >= cur.killed + 60 then
-    cur.done = true
-    t22_ask(run, tb, d, "Stirbt der Wurm mit Sandstaub, ohne Leiche und ohne Wolfram, steht im Chat „… ist gerettet“, und verschwindet die Jagd oben links?")
-  end
-end
-
-t22_enter[8] = function(run, tb, d)
-  t22_ask(run, tb, d, "Steht der Sandwurm in der Factoriopedia unter Gegner mit sandfarbenem Symbol, Name und Beschreibung?")
-end
-
-t22_enter[9] = function(run, tb, d)
-  local base = t22_base(d)
-  local chest = t22_make(run, tb, d, {name = CHEST, position = at(base, -20, -30), force = d.force})
-  if not chest then return tb.log(run, "FEHLER", "9) Kiste ließ sich nicht bauen") end
-  local hunt = t22_hunt(run, tb, d, chest, {teaching = true, debug = true}, "Speichern und Laden (Lehrjagd 90 s)")
-  if not hunt then return end
-  d.cur.w5 = false
-  tb.log(run, "INFO", "9) Planung (routing) nur von 36,2 s bis 41,2 s nach dem Wurmzeichen, davor warten. Speichere zwischen 37 und 40 s und lade;"
-    .. " nach dem Auftauchen (41,2 s) noch einmal speichern und laden.")
-end
-
-t22_watch[9] = function(run, tb, d)
-  local cur = d.cur
-  local hunt = cur and cur.hunt
-  if not hunt or cur.done then return end
-  local running = storage.hunts.list[hunt.id] == hunt
-  local t = game.tick - hunt.warn_tick
-  if running and t >= 30 * 60 and t % 60 == 0 then
-    local worm = hunt.worm
-    local open = hunt.path ~= nil and hunt.path.id ~= nil
-    if hunt.phase == "routing" and open then cur.w5 = true end
-    tb.log(run, "MESSUNG", string.format("9) %s s: Phase %s, Kandidat %s, spawn_tick %s, Anfrage offen %s, Wurm gültig %s", tb.num(t / 60, 0),
-      tostring(hunt.phase), hunt.plan and hunt.plan.chosen and "gewählt" or "–", tostring(hunt.spawn_tick), open and "ja" or "nein",
-      worm and tostring(valid(worm.unit)) or "–"))
-  end
-  if not running then
-    cur.done = true
-    if not cur.w5 then tb.log(run, "INFO", "9) W5 offen: beim Speichern war keine Anfrage offen (Zeitablauf deckt beide Fälle, Plan 4.5)") end
-    t22_ask(run, tb, d, "Taucht der Wurm auf, fährt er nach dem Laden weiter und beißt bei 0?")
-  end
-end
-
-local function t22_next(run, tb, d)
-  if d.step >= T22_LAST then
-    d.done_all = true
-    tb.finish(run, string.format("%d Schritte, %d Jagden", d.step, #d.hunts))
-    return
-  end
-  -- Kein Wurm überlebt einen Schritt (Schritt 2 setzt die Jagd aus Schritt 1 fort).
-  if d.step ~= 1 then
-    for _, hunt in ipairs(d.hunts) do end_if_running(hunt) end
-  end
-  d.step = d.step + 1
-  tb.log(run, "INFO", "Schritt " .. d.step .. " von " .. T22_LAST)
-  local ok, err = pcall(t22_enter[d.step], run, tb, d)
-  if not ok then tb.log(run, "FEHLER", d.step .. ") Skriptfehler: " .. tostring(err)) end
-end
-
-local function t22_start(run, tb)
-  local d = run.data
-  local player = tb.player(run)
-  if not player then
-    tb.log(run, "FEHLER", "T22 braucht einen Spieler im Spiel")
-    tb.finish(run, "abgebrochen (kein Spieler)")
-    return
-  end
-  if not storage_ready() then
-    tb.log(run, "FEHLER", "storage des Laufzeitcodes fehlt (scripts/migrate.lua init, Schema 4)")
-    tb.finish(run, "abgebrochen (kein storage)")
-    return
-  end
-  local surface = tb.surface()
-  if not terrain.harvest_allowed(surface) then
-    tb.log(run, "FEHLER", "terrain.harvest_allowed(" .. surface.name .. ") = false: der Laufzeitcode zählt hier nicht")
-    tb.finish(run, "abgebrochen (Prüfstand-Fläche nicht erlaubt)")
-    return
-  end
-  local force = player.force
-  d.force = force
-  d.origin = tb.area(run.id)
-  d.box = box_of(d.origin, {x = T22_HALF, y = T22_HALF})
-  d.saved = {grace = worms_lib.grace_snapshot(force), paused = storage.hunts.paused_until}
-  d.stats = copy(worms_lib.stats_of(force))
-  d.made = {made = new_made()}
-  d.hunts, d.units = {}, {}
-  d.step = 0
-  clear_area(surface, d.box)
-  tb.prepare(d.origin, T22_HALF)
-  local n, m = math.floor(d.origin.x), math.floor(d.origin.y)
-  tiles(surface, n + T22_ISLAND.dx1, m + T22_ISLAND.dy1, n + T22_ISLAND.dx2, m + T22_ISLAND.dy2, ROCK)
-  worms_lib.ensure_force()
-  worms_lib.set_paused(nil)
-  worms_lib.set_worm_off(force, false)
-  vibration_lib.testbench_enable(force)
-  worms_lib.set_grace(force, {awake = true})
-  tb.protect(run, player)
-  d.max_pos = at(d.origin, -60, 60)
-  tb.watch(run, player, d.max_pos)
-  tb.log(run, "INFO", "Neun Schritte mit dem echten Sandwurm und deiner Force (" .. force.name .. ", wach); ALT+O oder /arrakis-test weiter schaltet zum nächsten,"
-    .. " nach Schritt 9 endet der Test. Jede FRAGE wartet auf deine Antwort. Ende nach " .. (T22_END_TICKS + 60) / 3600 .. " min Spielzeit oder mit /arrakis-test stop."
-    .. " Bitte vorher /arrakis-test tempo 1.")
-  if game.speed ~= 1 then
-    tb.log(run, "INFO", "Zeitraffer an (game.speed " .. string.format("%g", game.speed) .. "): zurück mit /arrakis-test tempo 1")
-  end
-  d.step = 1
-  tb.log(run, "INFO", "Schritt 1 von " .. T22_LAST)
-  t22_enter[1](run, tb, d)
-end
-
-local function t22_tick(run, tb)
-  local d = run.data
-  if not d.made or d.done_all then return end
-  local fn = t22_watch[d.step]
-  if fn then
-    local ok, err = pcall(fn, run, tb, d)
-    if not ok then tb.log(run, "FEHLER", d.step .. ") Skriptfehler: " .. tostring(err)) end
-  end
-  if game.tick - run.started >= T22_END_TICKS then
-    d.done_all = true
-    tb.finish(run, string.format("%d min um: Schritt %d, %d Jagden", (T22_END_TICKS + 60) / 3600, d.step, #d.hunts))
-  end
-end
-
-local function t22_on_event(run, tb, name, event)
-  local d = run.data
-  if not d.made or d.done_all then return end
-  if (name == "test_key" or name == "test_next") and event.player_index == run.player_index then t22_next(run, tb, d) end
-end
-
-local function t22_cleanup(run, tb)
-  local d = run.data
-  local force = d.force
-  if not valid(force) then return end
-  pcall(abort_hunts, {[force.index] = true})
-  local surface = tb.surface()
-  pcall(sandworm_lib.sweep, {surface})
-  if d.box then
-    local left = read(function() return sandworms_in(surface, d.box) end) or 0
-    if left > 0 then tb.log(run, "FEHLER", left .. " arrakis-sandworm-* nach dem Aufräumen im Bereich von T22") end
-    pcall(clear_area, surface, d.box)
-  end
-  vibration_lib.testbench_disable(force)
-  if d.saved then
-    worms_lib.grace_restore(force, d.saved.grace)
-    worms_lib.set_paused(d.saved.paused)
-  end
-  local stats = worms_lib.stats_of(force)
-  for key in pairs(stats) do stats[key] = nil end
-  for key, value in pairs(d.stats or {}) do stats[key] = value end
-  worms_lib.ensure_force()
-end
-
 return
 {
   T21 =
@@ -3088,17 +2461,5 @@ return
     tick = t21_tick,
     on_event = t21_on_event,
     cleanup = t21_cleanup
-  },
-  T22 =
-  {
-    title = "Sandwurm: Optik und Laden",
-    timeout = T22_END_TICKS + 60,
-    interactive = true,
-    steps = true,
-    confirm = nil,
-    start = t22_start,
-    tick = t22_tick,
-    on_event = t22_on_event,
-    cleanup = t22_cleanup
   }
 }

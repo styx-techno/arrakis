@@ -1,3 +1,5 @@
+-- T14 Kartengenerator: Karte echt (Kacheln): Prüfstand-Test (aus t_karte.lua aufgeteilt, Verhalten unverändert).
+
 -- Prüfstand: Kartengenerator-Test T14 „Karte echt“ (Vertrag siehe runner.lua).
 -- T14 nimmt die Karte 2 (ab 0.5.4, reguläres Spice ab 0.5.5 aus arrakis_v3_spice_*) auf echten Kacheln
 -- ab (T11-Empfehlung, Bauplan Schritt 6). Je Seed (der Seed dieses Spielstands und 8 feste wie in T11, mit

@@ -1,60 +1,66 @@
--- Prüfstand: Ornithopter mit echtem Laufzeitcode (Phase 3c, docs/protokolle/plan-3c.md 6; Vertrag siehe runner.lua).
---   T15: scripts/flyer.lua, scripts/hold.lua, scripts/harvester.lua, scripts/intake.lua und scripts/migrate.lua auf der
---        Prüfstand-Fläche (terrain.harvest_allowed erlaubt sie mit der Startup-Einstellung) und auf der echten Ablage
---        arrakis-hold. Siebzehn Schritte, je eine OK/FEHLER-Zeile mit Werten; Einzelwerte als MESSUNG nur in der Datei.
---   T16: Flugphysik des echten arrakis-ornithopter mit seinem echten Tempo-Sticker: parallele Bahnen wie T1, gemessen
---        zwischen 5 s und 15 s nach dem Start.
---   T17: Bedienung (interaktiv, nur mit Spieler): Taste, Verknüpfungen, Fenster, Fernbedienung, Fernfahren,
---        Solo-Rettung. Jeder Tastendruck und Verknüpfungsklick schreibt eine MESSUNG-Zeile.
--- Ornithopter und Ernter entstehen mit raise_built = true (script_raised_built trägt sie ein); Piloten und Fahrer sind
--- Puppen ohne Spieler (tb.dummy_driver). Ausnahme: die Vergleichsbahnen in T16, die bewusst nie eingetragen werden.
--- Taste, Verknüpfung und Fensterknopf rufen im Spiel flyer_lib.toggle_carry (Plan 4.5); T15 und T16 rufen dieselbe
--- Funktion ohne Spieler und meist mit ausdrücklichem Ziel-Ernter. Ob die Wege im Spiel ankommen, zeigt nur T17.
--- Zustand nur in run.data (Zahlen, Texte, Positionen, LuaEntity- und LuaRenderObject-Referenzen; vor jeder
--- Benutzung prüfen). Die Abläufe stehen als Funktionslisten in diesem Modul, run.data hält nur Schritt- und Phasennummern.
--- Die Modultabelle von scripts/flyer.lua heißt hier flyer_lib (tools/check/api_names.py hält flyer für LuaEntity).
---
--- Isolation von T15 und T16 (Plan 6): Beide heben echte Ernter auf die echte Ablage. Ohne Aufräumen setzte
--- return_cargo alte Lasten in eine eben vorbereitete Fläche (tb.prepare zerstört Flieger per destroy(),
--- on_object_destroyed kommt erst am Ende dieses oder des nächsten Ticks), und resolve_harvester fände sie dort.
--- Deshalb räumen start und cleanup gleich auf (sweep): zuerst jeder Ernter auf arrakis-hold, dessen Abhebepunkt in
--- der eigenen Fläche liegt (raise_destroy: flyer.lua leert den Träger und streicht die Warteliste), dann jeder
--- eingetragene Ornithopter der Fläche (jetzt leer); im cleanup dazu die eigenen Ernter und Ornithopter am Boden.
--- Erst danach tb.prepare, gebaut wird frühestens 2 Ticks später. Zahlen zur Ablage gelten immer relativ zum Stand vor
--- dem Schritt, nie absolut: Ein anderer Test oder der Spielstand kann selbst Lasten tragen.
+-- T15 Ornithopter: echter Code: Prüfstand-Test (aus t_ornithopter.lua aufgeteilt, Verhalten unverändert).
+-- Gemeinsame Helfer der Familie: scripts/testbench/gemeinsam_ornithopter.lua.
 
+local common = require("scripts.testbench.gemeinsam_ornithopter")
 local flyer_lib = require("scripts.flyer")
 local harvester = require("scripts.harvester")
-local hold = require("scripts.hold")
 local intake = require("scripts.intake")
+local speed = require("prototypes.ornithopter-speed")
+local FLYER = common.FLYER
+local NAME = common.NAME
+local INTAKE = common.INTAKE
+local SPICE = common.SPICE
+local ROCK = common.ROCK
+local HOLD = common.HOLD
+local COAL_P = common.COAL_P
+local ROCKET_P = common.ROCKET_P
+local FLIGHT_FUEL = common.FLIGHT_FUEL
+local CARRY_SHORTCUT = common.CARRY_SHORTCUT
+local REMOTE_SHORTCUT = common.REMOTE_SHORTCUT
+local ORNITHOPTER_TECH = common.ORNITHOPTER_TECH
+local valid = common.valid
+local force_of = common.force_of
+local copy_pos = common.copy_pos
+local at = common.at
+local pos_text = common.pos_text
+local read = common.read
+local quality_exists = common.quality_exists
+local box_of = common.box_of
+local inside = common.inside
+local fuel_energy = common.fuel_energy
+local flyer_state = common.flyer_state
+local car_state = common.car_state
+local own_stickers = common.own_stickers
+local sticker_text = common.sticker_text
+local sticker_p = common.sticker_p
+local sticker_ok = common.sticker_ok
+local render_ok = common.render_ok
+local check = common.check
+local check_loaded = common.check_loaded
+local check_carried = common.check_carried
+local create = common.create
+local remember = common.remember
+local new_car = common.new_car
+local new_flyer = common.new_flyer
+local couple = common.couple
+local tidy = common.tidy
+local sweep = common.sweep
+local storage_ready = common.storage_ready
+
+local hold = require("scripts.hold")
 local migrate = require("scripts.migrate")
 local terrain = require("scripts.terrain")
-local speed = require("prototypes.ornithopter-speed")
-
-local FLYER = "arrakis-ornithopter"
-local NAME = "spice-harvester"
-local INTAKE = "arrakis-spice-intake"
 local PROBE = "arrakis-harvester-probe"
-local SPICE = "spice-sand"
-local ROCK = "arrakis-rock"
 local SAND = "sand-1"
-local HOLD = "arrakis-hold"
 -- Die beiden Tempo-Sticker aus 0.6.0; seit 0.6.1 gibt es nur noch die Familien aus prototypes/ornithopter-speed.lua.
 local OLD_STICKERS = {"arrakis-ornithopter-empty", "arrakis-ornithopter-loaded"}
--- Stufe ohne Brennstoff (t = 1) und für Raketentreibstoff (r = 1,15), Plan 4.9. Ab 0.9.0 fliegt der Ornithopter nur mit
--- Flugtreibstoff; die Prüflinge tanken Raketentreibstoff (100 MJ, bei 800 kW gut 2 min Flug je Stück).
-local COAL_P, ROCKET_P = 100, 115
-local FLIGHT_FUEL = "rocket-fuel"
 -- Stufe für Atomtreibstoff: r = 1,15 / (2,5 / 1,8) ≈ 0,83, nächste Stufe p = 82 (prototypes/ornithopter-speed.lua), 15 f.
 local NUCLEAR_P = speed.percent(speed.fuel_bucket(1.15, 2.5))
 local IMAGE_SPRITE = "arrakis-harvester-carried-"
 local SHADOW_SPRITE = "arrakis-harvester-carried-shadow-"
 local CARRY_INPUT = "arrakis-carry-toggle"
-local CARRY_SHORTCUT = "arrakis-carry"
-local REMOTE_SHORTCUT = "arrakis-give-remote"
 local REMOTE_ITEM = "spidertron-remote"
 local HARVESTING_TECH = "arrakis-spice-harvesting"
-local ORNITHOPTER_TECH = "arrakis-ornithopter"
 -- Force für Forschung, Migration, fremde Force und „kein Landeplatz“ (einmal anlegen, wiederverwenden wie tb.worm_force).
 local T15_FORCE = "arrakis-t15"
 -- Force, die erst in Schritt 12 entsteht (Ablage für neue Forces versteckt) und am Ende in neutral aufgeht.
@@ -74,48 +80,9 @@ local DOCK_WAIT = 181
 local CRASH_SHARE = 0.3       -- Absturzschaden als Anteil der Höchstgesundheit (Plan 4.10)
 local LAND_RADIUS = 6         -- Landung höchstens so weit von Todesstelle bzw. Abhebepunkt (erste Suchstufe)
 local SEAT_RANGE = 6          -- Insasse am Boden höchstens so weit vom Abhebepunkt (Plan 6, Schritt 3)
--- Stellplätze der Ablage (Plan 4.11): 16 × 16 im 10er-Raster, x, y ∈ {−60, −50, …, 90}.
-local SLOT_FIRST, SLOT_LAST, SLOT_SPACING = -60, 90, 10
 -- Farben wie T3 (scripts/testbench/t_harvester.lua): Auto beim Aufbau, Puppe vor dem Einsteigen.
 local CAR_COLOR = {r = 0.2, g = 0.7, b = 1, a = 1}
 local DRIVER_COLOR = {r = 0.6, g = 0.2, b = 0.8, a = 0.5}
-
--- Allgemeine Helfer ---------------------------------------------------------------------------
-
-local function valid(object)
-  return object ~= nil and object.valid
-end
-
-local function force_of(run, tb)
-  local player = tb.player(run)
-  return player and player.force or game.forces["player"]
-end
-
-local function copy_pos(position)
-  return {x = position.x or position[1], y = position.y or position[2]}
-end
-
-local function at(origin, dx, dy)
-  return {x = origin.x + dx, y = origin.y + dy}
-end
-
-local function pos_text(tb, position)
-  if not position then return "–" end
-  local p = copy_pos(position)
-  return "(" .. tb.num(p.x) .. ", " .. tb.num(p.y) .. ")"
-end
-
--- Liest einen Wert; Fehler werden zu nil.
-local function read(fn)
-  local ok, value = pcall(fn)
-  if ok then return value end
-  return nil
-end
-
-local function quality_exists(name)
-  local ok, exists = pcall(function() return prototypes.quality[name] ~= nil end)
-  return ok and exists
-end
 
 -- spice-harvester je Qualität außer quality-unknown, als {name, quality}: Ein Name allein fragt die Produktionsstatistik
 -- nur nach „normal“ (A23 concepts.d.ts:4599–4611). So zählt und löscht der Test, was migrate.lua abfragt.
@@ -125,26 +92,6 @@ local function harvester_ids()
     if quality ~= "quality-unknown" then table.insert(ids, {name = NAME, quality = quality}) end
   end
   return ids
-end
-
--- BoundingBox um center mit halben Kantenlängen half {x, y} (ganze Kacheln wie tb.prepare).
-local function box_of(center, half)
-  return
-  {
-    left_top = {x = math.floor(center.x - half.x), y = math.floor(center.y - half.y)},
-    right_bottom = {x = math.ceil(center.x + half.x), y = math.ceil(center.y + half.y)}
-  }
-end
-
--- Liegt position (auch ein Ort {surface, x, y}) in einer der Flächen?
-local function inside(boxes, position)
-  local x, y = position.x or position[1], position.y or position[2]
-  for _, box in pairs(boxes) do
-    if x >= box.left_top.x and x <= box.right_bottom.x and y >= box.left_top.y and y <= box.right_bottom.y then
-      return true
-    end
-  end
-  return false
 end
 
 -- Name eines ItemIDAndQualityIDPair (gelesen: LuaItemPrototype/LuaQualityPrototype) als "name@qualität" (wie T3).
@@ -180,35 +127,6 @@ local function color_text(color)
   if type(color) ~= "table" then return color == nil and "–" or tostring(color) end
   local r, g, b, a = color.r or color[1], color.g or color[2], color.b or color[3], color.a or color[4] or 1
   return string.format("%.2f/%.2f/%.2f/%.2f", r or 0, g or 0, b or 0, a)
-end
-
--- Gespeicherte Energie (J): Brennstoffinventar, Rest des brennenden Stücks, Wärmepuffer (wie T1). Qualität zählt mit
--- (fuel_value ist je Prototyp; ein legendärer Raketentreibstoff hat denselben Brennwert, A23 prototypes.d.ts).
-local function fuel_energy(entity)
-  if not valid(entity) then return nil end
-  local ok, total = pcall(function()
-    local burner = entity.burner
-    if not burner then return nil end
-    local sum = 0
-    for _, item in pairs(burner.inventory.get_contents()) do
-      local name = item.name
-      if type(name) ~= "string" then name = name.name end
-      local prototype = prototypes.item[name]
-      sum = sum + (prototype and prototype.fuel_value or 0) * item.count
-    end
-    local rest = read(function() return burner.remaining_burning_fuel end)
-    if type(rest) == "number" then sum = sum + rest end
-    local heat = read(function() return burner.heat end)
-    if type(heat) == "number" then sum = sum + heat end
-    return sum
-  end)
-  if ok then return total end
-  return nil
-end
-
-local function fuel_items(entity)
-  local inventory = valid(entity) and entity.get_fuel_inventory()
-  return inventory and inventory.get_item_count() or 0
 end
 
 local function trunk_count(car, item)
@@ -248,16 +166,6 @@ local function gas(car, driver, on)
   if valid(driver) then pcall(function() driver.riding_state = state end) end
 end
 
--- Steht position genau auf einem Stellplatz der Ablage?
-local function at_slot(position)
-  local function near(v)
-    local k = math.floor((v - SLOT_FIRST) / SLOT_SPACING + 0.5)
-    local slot = SLOT_FIRST + k * SLOT_SPACING
-    return k >= 0 and slot <= SLOT_LAST and math.abs(v - slot) < 0.01
-  end
-  return near(position.x) and near(position.y)
-end
-
 local function free_slots()
   return hold.free_count()
 end
@@ -273,100 +181,6 @@ local function slot_contents(position)
   end
   if #names == 0 then return "nichts" end
   return table.concat(names, ", ")
-end
-
--- Zustände und Merkmale ------------------------------------------------------------------------
-
--- Zustand des Fliegers nach Plan 4.3 (Datensatz in storage.flyers).
-local function flyer_state(flyer)
-  if not valid(flyer) then return "weg" end
-  local record = flyer_lib.get(flyer)
-  if not record then return "ohne Datensatz" end
-  if record.cargo then return "beladen" end
-  if record.coupling then return "koppelt" end
-  return "leer"
-end
-
--- Zustand des Ernters (storage.harvesters, scripts/harvester.lua).
-local function car_state(car)
-  if not valid(car) then return "weg" end
-  local h = harvester.get(car)
-  return h and h.state or "ohne Datensatz"
-end
-
--- Eigene Sticker am Flieger: die Familien arrakis-ornithopter-empty-<p> und -loaded-<p> in flyer.stickers (A23
--- classes.d.ts:8564), erkannt mit speed.parse (prototypes/ornithopter-speed.lua).
-local function own_stickers(flyer)
-  local list = {}
-  if not valid(flyer) then return list end
-  local stickers = read(function() return flyer.stickers end)
-  for _, sticker in pairs(stickers or {}) do
-    if sticker.valid and speed.parse(sticker.name) then table.insert(list, sticker) end
-  end
-  return list
-end
-
--- Zustand und Stufe eines eigenen Stickers als Text, z. B. "beladen t1,00".
-local function sticker_label(sticker)
-  local state, j = speed.parse(sticker.name)
-  if not state then return sticker.name end
-  return (state == "loaded" and "beladen" or "leer") .. " t" .. speed.factor_text(j)
-end
-
-local function sticker_text(list)
-  if #list == 0 then return "keiner" end
-  local names = {}
-  for _, sticker in ipairs(list) do table.insert(names, sticker_label(sticker)) end
-  return table.concat(names, " + ")
-end
-
--- p der Stufe eines Stickers oder nil.
-local function sticker_p(sticker)
-  local _, j = speed.parse(sticker.name)
-  return j and speed.percent(j)
-end
-
--- Was hat der Flieger im Brenner? "none" (nichts, auch kein Feuer), "rocket" (nur normaler Raketentreibstoff) oder
--- "other". Ohne Brennstoff behält er die Stufe seines Stickers, der erste bekommt t = 1 (p = 100); mit Raketentreibstoff
--- gilt p = 115 (Plan 4.9). Andere Brennstoffe prüft der Schritt selbst (15 f, T16).
-local function fuel_kind(flyer)
-  local burner = read(function() return flyer.burner end)
-  if not burner then return "other" end
-  local kind = "none"
-  local function see(name, quality)
-    if type(name) ~= "string" then name = name.name end
-    if type(quality) == "table" then quality = quality.name end
-    if name == FLIGHT_FUEL and (quality == nil or quality == "normal") then
-      if kind == "none" then kind = "rocket" end
-    else
-      kind = "other"
-    end
-  end
-  local burning = read(function() return burner.currently_burning end)
-  if burning then see(burning.name, burning.quality) end
-  local inventory = burner.inventory
-  for i = 1, #inventory do
-    local stack = inventory[i]
-    if stack.valid_for_read then see(stack.name, stack.quality) end
-  end
-  return kind
-end
-
--- Genau ein eigener Sticker im Zustand state ("empty", "loaded"); mit Raketentreibstoff in Stufe p = 115, ohne
--- Brennstoff in p = 100 oder 115.
-local function sticker_ok(flyer, stickers, state)
-  if #stickers ~= 1 then return false end
-  local got = speed.parse(stickers[1].name)
-  if got ~= state then return false end
-  local p, kind = sticker_p(stickers[1]), fuel_kind(flyer)
-  if kind == "rocket" then return p == ROCKET_P end
-  if kind == "none" then return p == ROCKET_P or p == COAL_P end
-  return true
-end
-
-local function render_ok(object)
-  local ok, is_valid = pcall(function() return object ~= nil and object.valid end)
-  return ok and is_valid == true
 end
 
 local function flyer_text(tb, flyer)
@@ -395,26 +209,6 @@ local function seat_of(vehicle, who)
   return nil
 end
 
--- Bewertung ---------------------------------------------------------------------------------------
-
-local function check(failed, ok, label)
-  if not ok then table.insert(failed, label) end
-  return ok
-end
-
--- „beladen“ (Plan 4.3, 4.6 Schritt 7): Datensatz trägt car, nicht abbaubar, genau ein eigener Sticker „beladen“ (mit
--- Raketentreibstoff t1,15), Lastbild und Schatten gültig.
-local function check_loaded(failed, label, flyer, car)
-  local record = valid(flyer) and flyer_lib.get(flyer)
-  if not check(failed, record ~= nil and record ~= false, label .. ": Ornithopter ohne Datensatz") then return false end
-  local ok = check(failed, valid(car) and record.cargo == car.unit_number, label .. ": nicht beladen (" .. flyer_state(flyer) .. ")")
-  ok = check(failed, flyer.minable_flag == false, label .. ": Ornithopter abbaubar") and ok
-  local stickers = own_stickers(flyer)
-  ok = check(failed, sticker_ok(flyer, stickers, "loaded"), label .. ": Sticker " .. sticker_text(stickers)) and ok
-  ok = check(failed, render_ok(record.renders.image) and render_ok(record.renders.shadow), label .. ": Lastbild oder Schatten fehlt") and ok
-  return ok
-end
-
 -- „leer“: Datensatz da, keine Last, keine Kopplung, abbaubar, genau ein eigener Sticker „leer“ (mit Raketentreibstoff
 -- t1,15), kein
 -- Lastbild.
@@ -429,21 +223,6 @@ local function check_empty(failed, label, flyer)
   return ok
 end
 
--- Ernter getragen (Plan 4.6 Schritte 4 und 5): carried, carried_by, auf der Ablage an einem Stellplatz, gesperrt.
-local function check_carried(failed, label, car, flyer)
-  local h = valid(car) and harvester.get(car)
-  if not check(failed, h ~= nil and h ~= false, label .. ": Ernter weg oder ohne Datensatz") then return false end
-  local ok = check(failed, h.state == "carried", label .. ": Ernter " .. tostring(h.state) .. " statt carried")
-  if flyer ~= false then
-    ok = check(failed, valid(flyer) and h.carried_by == flyer.unit_number, label .. ": carried_by " .. tostring(h.carried_by)) and ok
-  end
-  ok = check(failed, car.surface.name == HOLD and at_slot(car.position), label .. ": nicht auf einem Stellplatz der Ablage ("
-    .. car.surface.name .. " " .. string.format("%.2f, %.2f", car.position.x, car.position.y) .. ")") and ok
-  ok = check(failed, car.disabled_by_script == true and car.minable_flag == false, label .. ": nicht gesperrt (disabled_by_script "
-    .. tostring(car.disabled_by_script) .. ", minable_flag " .. tostring(car.minable_flag) .. ")") and ok
-  return ok
-end
-
 -- Ernter fahrbereit am Boden: mobile, auf der Prüfstand-Fläche, entsperrt.
 local function check_mobile(failed, label, car, tb)
   if not check(failed, valid(car), label .. ": Ernter weg") then return false end
@@ -453,72 +232,11 @@ local function check_mobile(failed, label, car, tb)
   return ok
 end
 
--- Entities und Aufräumen ----------------------------------------------------------------------------
-
--- Erzeugt eine Entity (Standard: Prüfstand-Fläche) und merkt sie für das Aufräumen (kind: cars, flyers, others);
--- nil, wenn es nicht ging (Grund in der Datei).
-local function create(run, tb, params, surface, kind)
-  local ok, entity = pcall(function() return (surface or tb.surface()).create_entity(params) end)
-  if ok and entity then
-    local made = run.data.made
-    if made then table.insert(made[kind or "others"], entity) end
-    return entity
-  end
-  tb.trace(run, params.name .. " bei " .. pos_text(tb, params.position) .. " ging nicht" .. (ok and "" or (": " .. tostring(entity))))
-  return nil
-end
-
--- Merkt eine anderswo entstandene Entity (Klon, Puppe) für das Aufräumen.
-local function remember(run, entity, kind)
-  local made = run.data.made
-  if made and valid(entity) then table.insert(made[kind or "others"], entity) end
-  return entity
-end
-
--- Treibstoff ins Brennstoffinventar, auch mit Qualität; gibt die eingelegte Menge zurück.
-local function add_fuel(entity, item, count, quality)
-  local inventory = valid(entity) and entity.get_fuel_inventory()
-  if not inventory then return 0 end
-  local ok, inserted = pcall(function() return inventory.insert{name = item, count = count, quality = quality} end)
-  return ok and inserted or 0
-end
-
--- Echter Ernter, per script_raised_built eingetragen. opts: coal, orientation, force, quality, surface.
-local function new_car(run, tb, position, opts)
-  opts = opts or {}
-  local car = create(run, tb, {name = NAME, position = position, force = opts.force or force_of(run, tb),
-    orientation = opts.orientation or 0.25, quality = opts.quality, raise_built = true}, opts.surface, "cars")
-  if car and opts.coal and opts.coal > 0 then tb.fuel(car, "coal", opts.coal) end
-  return car
-end
-
 -- Spielfigur ohne Spieler neben near (Force von near oder force).
 local function new_dummy(run, tb, near, force)
   local surface = near.surface
   local position = surface.find_non_colliding_position("character", near.position, 10, 0.5) or near.position
   return create(run, tb, {name = "character", position = position, force = force or near.force}, surface, "others")
-end
-
--- Echter Ornithopter. opts: fuel (Item, Standard keins), count, fuel_quality, quality, pilot (Puppe als Pilot),
--- raw (ohne raise_built: nicht eingetragen), force, surface.
-local function new_flyer(run, tb, position, opts)
-  opts = opts or {}
-  local force = opts.force or force_of(run, tb)
-  local flyer = create(run, tb, {name = FLYER, position = position, force = force, quality = opts.quality,
-    raise_built = not opts.raw, create_build_effect_smoke = false}, opts.surface, "flyers")
-  if not flyer then return nil end
-  if opts.fuel then
-    add_fuel(flyer, opts.fuel, opts.count or 5, opts.fuel_quality)
-    -- Eingetragen wird beim Bau, also noch ohne Brennstoff (Sticker t1,00). Die Pflege des Taktes gleich hier, damit der
-    -- Sticker schon zum Brennstoff passt (ab 0.9.0 hat Raketentreibstoff t1,15).
-    local record = not opts.raw and flyer_lib.get(flyer)
-    if record then flyer_lib.care(record) end
-  end
-  if opts.pilot then
-    local pilot = tb.dummy_driver(flyer, force)
-    if pilot then remember(run, pilot, "others") end
-  end
-  return flyer
 end
 
 -- Paar für das Anheben: Ernter bei c (Kachelmitte), Ornithopter 1,5 Kacheln nördlich. Spinnen kollidieren mit nichts
@@ -535,12 +253,6 @@ local function new_pair(run, tb, c, opts)
   return flyer, car
 end
 
--- Kopplung starten (wie Taste, Shortcut und Knopf, Plan 4.5, nur ohne Spieler). Gibt ok, Grund zurück.
-local function couple(flyer, car)
-  if not valid(flyer) then return false, "no_flyer" end
-  return flyer_lib.toggle_carry(flyer, car, nil)
-end
-
 -- Last absetzen bzw. Kopplung abbrechen (derselbe Aufruf).
 local function toggle(flyer)
   if not valid(flyer) then return false, "no_flyer" end
@@ -551,74 +263,8 @@ local function result_text(ok, reason)
   return tostring(ok) .. ", " .. tostring(reason)
 end
 
--- Entfernt, was der Test gebaut hat: zuerst Ernter (raise_destroy, auch auf der Ablage: flyer.lua leert den Träger),
--- dann Ornithopter (raise_destroy, jetzt leer), zuletzt den Rest (Puppen, Mauern, Annahmen, Maschinen, Klippen).
-local function tidy(run)
-  local made = run.data.made
-  if not made then return end
-  for _, kind in ipairs({"cars", "flyers", "others"}) do
-    for _, entity in pairs(made[kind]) do
-      if valid(entity) then pcall(function() entity.destroy{raise_destroy = true} end) end
-    end
-    made[kind] = {}
-  end
-end
-
--- Isolation (Plan 6, siehe Kopf): getragene Ernter dieser Flächen von der Ablage, dann eingetragene Ornithopter der
--- Flächen; mit ground dazu alle Ernter und Ornithopter am Boden der Flächen (nur im cleanup).
-local function sweep(run, tb, boxes, ground)
-  local surface = tb.surface()
-  local index = surface.index
-  local counts = {hold = 0, flyers = 0, ground = 0}
-  local hold_surface = game.get_surface(HOLD)
-  if hold_surface and storage.harvesters then
-    for _, car in pairs(hold_surface.find_entities_filtered{name = NAME}) do
-      local h = car.valid and harvester.get(car)
-      local lift = h and h.lift_pos
-      if lift and lift.surface == index and inside(boxes, lift) then
-        car.destroy{raise_destroy = true}
-        counts.hold = counts.hold + 1
-      end
-    end
-  end
-  local flyers = {}
-  for _, record in pairs(storage.flyers or {}) do
-    local entity = record.entity
-    if valid(entity) and entity.surface.index == index and inside(boxes, entity.position) then table.insert(flyers, entity) end
-  end
-  for _, entity in ipairs(flyers) do
-    if entity.valid then
-      entity.destroy{raise_destroy = true}
-      counts.flyers = counts.flyers + 1
-    end
-  end
-  if ground then
-    for _, box in pairs(boxes) do
-      for _, name in ipairs({NAME, FLYER}) do
-        for _, entity in pairs(surface.find_entities_filtered{area = box, name = name}) do
-          if entity.valid then
-            entity.destroy{raise_destroy = true}
-            counts.ground = counts.ground + 1
-          end
-        end
-      end
-    end
-  end
-  if counts.hold + counts.flyers + counts.ground > 0 then
-    tb.trace(run, string.format("Aufräumen: %d Ernter von der Ablage, %d eingetragene Ornithopter, %d am Boden",
-      counts.hold, counts.flyers, counts.ground))
-  end
-  return counts
-end
-
 local function t15_force()
   return game.forces[T15_FORCE] or game.create_force(T15_FORCE)
-end
-
--- Ist storage des Laufzeitcodes da (scripts/migrate.lua init)?
-local function storage_ready()
-  return storage.flyers and storage.harvesters and storage.couplings and storage.stranded and storage.hold
-    and storage.reg and storage.intakes
 end
 
 -- T15 Ornithopter: echter Code -------------------------------------------------------------------
@@ -2762,600 +2408,6 @@ local function t15_cleanup(run, tb)
   if game.forces[T15_NEW_FORCE] then pcall(function() game.merge_forces(T15_NEW_FORCE, "neutral") end) end
 end
 
--- T16 Ornithopter: Flugphysik -----------------------------------------------------------------------
--- Echte Ornithopter (eingetragen über script_raised_built, also mit echtem Sticker) mit Dummy-Pilot fliegen alle
--- zugleich los, Ziel 400 Kacheln voraus. Gemessen wird zwischen 5 s und 15 s nach dem Start: Weg, Brennwert.
--- Fläche A: Ost-Bahnen im Abstand 10, dazu West und Nordost; Fläche B (400 Kacheln östlich): Nord und Süd in eigenen
--- Spalten. Die Beine drehen nicht mit der Flugrichtung (docs/pruefstand.md, Bekannte Grenzen), deshalb N und S getrennt.
--- Vergleichsbahnen (raw): create_entity ohne raise_built; care sieht sie nie, und eine Puppe ohne Spieler löst kein
--- on_player_driving_changed_state aus. Bei einem eingetragenen Flieger hängte care binnen 60 Ticks den eigenen
--- Sticker wieder an, und im Messfenster wirkten beide.
--- Seit 0.6.1 wählt die Mod den Sticker je Brennstoff (prototypes/ornithopter-speed.lua): Jede Bahn nennt ihren Sticker
--- samt Stufe (z. B. „leer t1,15“). Die Bahn „effectivity_modifier 0,5“ (ohne Sticker, nur MESSUNG) zeigt, ob dieses
--- Feld bei einer Spinne wirkt; beim Ernter wirkt es (scripts/harvester.lua, apply_fuel_normalization).
-
-local T16_HALF_A = {x = 140, y = 95}
-local T16_B = {x = 400, y = 0}
-local T16_HALF_B = {x = 45, y = 140}
-local T16_GO = 140             -- Ticks nach dem Bau: Anheben fertig (120 bis 129), dann alle zugleich los
-local T16_FROM, T16_TO = 5 * 60, 15 * 60
-local T16_DISTANCE = 400
-local T16_EMPTY = {7.0, 9.0}
-local T16_LOADED = {5.0, 6.5}
-local T16_RATIO = {0.65, 0.75}
-local T16_FUEL_SPREAD = 1.10
-local T16_QUALITY_SPREAD = 0.10
-local T16_DIRS =
-{
-  O = {x = 1, y = 0},
-  W = {x = -1, y = 0},
-  N = {x = 0, y = -1},
-  S = {x = 0, y = 1},
-  NO = {x = math.sqrt(0.5), y = -math.sqrt(0.5)}
-}
--- start relativ zur Fläche (A: Ursprung, B: Ursprung + T16_B). check: "empty" oder "loaded" (Tempo-Grenzen, geteilt
--- durch den Tempo-Faktor g des Brennstoffs); group = "fuel": Tempo je Treibstoff [U7]; pair: leere Bahn für das
--- Verhältnis beladen/leer; to: eigenes Ende des Messfensters (schnelle Bahnen verließen sonst die Fläche); reject:
--- Brennstoff, der ab 0.9.0 nicht in den Ornithopter passt (die Bahn fliegt nicht, gezählt wird das Einfüllen).
-local T16_LANES =
-{
-  {key = "coal", label = "Kohle einfüllen", fuel = "coal", count = 10, start = {-125, -85}, reject = true},
-  {key = "solid", label = "Festbrennstoff einfüllen", fuel = "solid-fuel", count = 5, start = {-115, -85}, reject = true},
-  {key = "briquette", label = "Spice-Brikett einfüllen", fuel = "arrakis-spice-briquette", count = 5, start = {-105, -85}, reject = true},
-  {key = "rocket", label = "leer, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, -60}, check = "empty", group = "fuel"},
-  {key = "nuclear", label = "leer, Atomtreibstoff, O", fuel = "nuclear-fuel", count = 1, dir = "O", start = {-125, -50}, check = "empty", group = "fuel"},
-  {key = "legendary_fuel", label = "leer, Raketentreibstoff legendär, O", fuel = "rocket-fuel", fuel_quality = "legendary", count = 2, dir = "O",
-   start = {-125, -40}, check = "empty", group = "fuel", needs = "legendary", to = 10 * 60},
-  {key = "legendary_nuclear", label = "leer, Atomtreibstoff legendär, O", fuel = "nuclear-fuel", fuel_quality = "legendary", count = 1, dir = "O",
-   start = {-125, -30}, check = "empty", group = "fuel", needs = "legendary", to = 10 * 60},
-  {key = "uncommon", label = "leer, Raketentreibstoff, O, Ornithopter ungewöhnlich", fuel = "rocket-fuel", count = 2, quality = "uncommon", dir = "O",
-   start = {-125, 0}, check = "empty", needs = "uncommon", base = "rocket"},
-  {key = "legendary", label = "leer, Raketentreibstoff, O, Ornithopter legendär", fuel = "rocket-fuel", count = 2, quality = "legendary", dir = "O",
-   start = {-125, 10}, check = "empty", needs = "legendary", base = "rocket"},
-  {key = "loaded_nuclear", label = "beladen, Atomtreibstoff, O", fuel = "nuclear-fuel", count = 1, dir = "O", start = {-125, 20}, check = "loaded",
-   loaded = true, pair = "nuclear"},
-  {key = "loaded_rocket", label = "beladen, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, 30}, check = "loaded",
-   loaded = true, pair = "rocket"},
-  {key = "raw", label = "ohne Sticker (Rohwert), Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O", start = {-125, 40}, raw = true},
-  {key = "max_tick", label = "Test-Sticker vehicle_speed_max 8/60, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O",
-   start = {-125, 50}, raw = true, sticker = "arrakis-test-speed-max-tick"},
-  {key = "max_second", label = "Test-Sticker vehicle_speed_max 8, Raketentreibstoff, O", fuel = "rocket-fuel", count = 2, dir = "O",
-   start = {-125, 60}, raw = true, sticker = "arrakis-test-speed-max-second"},
-  {key = "west", label = "leer, Raketentreibstoff, W", fuel = "rocket-fuel", count = 2, dir = "W", start = {125, 70}, check = "empty"},
-  {key = "northeast", label = "leer, Raketentreibstoff, NO", fuel = "rocket-fuel", count = 2, dir = "NO", start = {-125, 85}, check = "empty"},
-  {key = "hover", label = "Schweben beladen, Raketentreibstoff, ohne Ziel", fuel = "rocket-fuel", count = 2, loaded = true, hover = true, start = {100, 80}},
-  {key = "north", label = "leer, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {-20, 125}, check = "empty"},
-  {key = "loaded_rocket_north", label = "beladen, Raketentreibstoff, N", fuel = "rocket-fuel", count = 2, dir = "N", region = "B", start = {0, 125},
-   check = "loaded", loaded = true, pair = "north"},
-  {key = "south", label = "leer, Raketentreibstoff, S", fuel = "rocket-fuel", count = 2, dir = "S", region = "B", start = {35, -125}, check = "empty"},
-  {key = "effectivity", label = "ohne Sticker, Raketentreibstoff, effectivity_modifier 0,5, O", fuel = "rocket-fuel", count = 2, dir = "O",
-   start = {-125, -70}, raw = true, effectivity = 0.5}
-}
-
--- Tempo-Faktor g eines Brennstoffs samt Qualität (prototypes/ornithopter-speed.lua): Raketentreibstoff normal 1.
-local function t16_gain(fuel, quality)
-  local item = prototypes.item[fuel]
-  local level = quality and prototypes.quality[quality] and prototypes.quality[quality].level or 0
-  return item and speed.gain(item.fuel_acceleration_multiplier + level * item.fuel_acceleration_multiplier_quality_bonus) or 1
-end
-
-local function t16_build(run, tb, d)
-  d.lanes = {}
-  local skipped = {}
-  for _, spec in ipairs(T16_LANES) do
-    if spec.needs and not quality_exists(spec.needs) then
-      table.insert(skipped, spec.label)
-    else
-      local base = spec.region == "B" and at(d.origin, T16_B.x, T16_B.y) or d.origin
-      local start = at(base, spec.start[1] + 0.5, spec.start[2] + 0.5)
-      local lane = {spec = spec, start = start, gain = t16_gain(spec.fuel, spec.fuel_quality)}
-      lane.flyer = new_flyer(run, tb, start, {fuel = spec.fuel, count = spec.count, fuel_quality = spec.fuel_quality,
-        quality = spec.quality, raw = spec.raw, pilot = true})
-      if lane.flyer and spec.reject then
-        lane.fuel_in = fuel_items(lane.flyer)
-        lane.lost = "fliegt nicht (Brennstoff-Probe)"
-      elseif lane.flyer then
-        lane.un = lane.flyer.unit_number
-        lane.fuel_in = fuel_items(lane.flyer)
-        lane.pilot = lane.flyer.get_driver() ~= nil
-        if spec.sticker then
-          lane.sticker = create(run, tb, {name = spec.sticker, position = lane.flyer.position, target = lane.flyer, force = lane.flyer.force})
-        end
-        if spec.effectivity then
-          -- Ob das Feld bei einer Spinne schreibbar ist, sagt die API nicht („the car“); pcall, gelesen wird zurück.
-          local ok, err = pcall(function() lane.flyer.effectivity_modifier = spec.effectivity end)
-          lane.eff_probe = {ok = ok, err = not ok and tostring(err) or nil,
-            value = read(function() return lane.flyer.effectivity_modifier end)}
-        end
-        if spec.loaded then
-          lane.car = new_car(run, tb, at(start, 0, 1.5), {})
-          lane.result = {couple(lane.flyer, lane.car)}
-        end
-      end
-      table.insert(d.lanes, lane)
-    end
-  end
-  if #skipped > 0 then tb.log(run, "INFO", "Ohne Quality entfallen: " .. table.concat(skipped, "; ")) end
-  d.go_tick = game.tick + T16_GO
-  d.phase = "go"
-end
-
-local function t16_go(run, tb, d)
-  local failed = {}
-  for _, lane in ipairs(d.lanes) do
-    local spec = lane.spec
-    if spec.reject then
-      tb.trace(run, string.format("Bahn %s: %d von %d %s eingefüllt", spec.label, lane.fuel_in or 0, spec.count, spec.fuel))
-    elseif not lane.flyer then
-      lane.lost = "Ornithopter ließ sich nicht erzeugen"
-    elseif spec.loaded and not (check_loaded(failed, spec.label, lane.flyer, lane.car) and check_carried(failed, spec.label, lane.car, lane.flyer)) then
-      lane.lost = "Anheben ging nicht"
-    elseif not spec.raw and not flyer_lib.get(lane.flyer) then
-      lane.lost = "nicht eingetragen"
-    end
-    if lane.flyer and not lane.lost and not spec.hover then
-      local dir = T16_DIRS[spec.dir]
-      local ok = pcall(function()
-        lane.flyer.autopilot_destination = {x = lane.start.x + dir.x * T16_DISTANCE, y = lane.start.y + dir.y * T16_DISTANCE}
-      end)
-      if not ok then lane.lost = "autopilot_destination ging nicht" end
-    end
-    if lane.lost and not spec.reject then tb.log(run, "FEHLER", "Bahn " .. spec.label .. ": " .. lane.lost) end
-    if lane.flyer and not spec.reject then
-      local effectivity = lane.eff_probe
-      local extra = ""
-      if effectivity then
-        extra = ", effectivity_modifier " .. tb.num(spec.effectivity, 2) .. " " .. (effectivity.ok and "geschrieben" or ("nicht schreibbar ("
-          .. tostring(effectivity.err) .. ")")) .. ", gelesen " .. tostring(effectivity.value and tb.num(effectivity.value, 3))
-      end
-      tb.trace(run, string.format("Bahn %s: Start %s, %d Brennstoffe, Pilot %s, Sticker %s%s%s", spec.label, pos_text(tb, lane.start),
-        lane.fuel_in or 0, tostring(lane.pilot), sticker_text(own_stickers(lane.flyer)), spec.sticker and (" + " .. spec.sticker) or "", extra))
-    end
-  end
-  if #failed > 0 then tb.trace(run, "Anheben: " .. table.concat(failed, "; ")) end
-  d.t0 = game.tick
-  d.phase = "sample"
-end
-
-local function t16_sample(lane, key)
-  local flyer = lane.flyer
-  if not valid(flyer) then return end
-  lane[key] = {position = copy_pos(flyer.position), energy = fuel_energy(flyer), items = fuel_items(flyer),
-    sticker = sticker_text(own_stickers(flyer))}
-end
-
--- Tempo (Kacheln/s), kJ/Kachel und kW zwischen den beiden Messpunkten; nil, wenn nicht gemessen.
-local function t16_values(lane)
-  local a, b = lane.from, lane.to
-  if not (a and b) then return nil end
-  local seconds = ((lane.spec.to or T16_TO) - T16_FROM) / 60
-  local distance = math.sqrt((b.position.x - a.position.x) ^ 2 + (b.position.y - a.position.y) ^ 2)
-  local used = (a.energy and b.energy) and (a.energy - b.energy) or nil
-  return
-  {
-    speed = distance / seconds,
-    distance = distance,
-    kj_tile = used and distance > 0 and used / distance / 1000 or nil,
-    kw = used and used / seconds / 1000 or nil,
-    used = used
-  }
-end
-
-local function range_text(range)
-  return string.format("%.2f–%.2f", range[1], range[2])
-end
-
-local function t16_evaluate(run, tb, d)
-  local by_key, speeds = {}, {}
-  for _, lane in ipairs(d.lanes) do
-    by_key[lane.spec.key] = lane
-    lane.values = t16_values(lane)
-    local v = lane.values
-    if v then
-      speeds[lane.spec.key] = v.speed
-      tb.trace(run, string.format("Bahn %s: %s Kacheln/s, %s Kacheln in 10 s, %s kJ/Kachel, %s kW, Brennstoffe %d → %d, Sticker %s → %s",
-        lane.spec.label, tb.num(v.speed, 2), tb.num(v.distance), tb.num(v.kj_tile, 1), tb.num(v.kw, 0),
-        lane.from.items or 0, lane.to.items or 0, lane.from.sticker or "–", lane.to.sticker or "–"))
-    end
-  end
-  local criteria, ok_count = 0, 0
-  local function rule(title, failed, values)
-    criteria = criteria + 1
-    if #failed == 0 then ok_count = ok_count + 1 end
-    tb.log(run, #failed == 0 and "OK" or "FEHLER", title .. ": " .. values .. (#failed > 0 and (" | nicht erfüllt: " .. table.concat(failed, "; ")) or ""))
-  end
-  local function speed_of(key)
-    return speeds[key]
-  end
-  -- 1. leer 7,0–9,0; 2. beladen 5,0–6,5, je geteilt durch den Tempo-Faktor g des Brennstoffs (ab 0.9.0)
-  for _, kind in ipairs({"empty", "loaded"}) do
-    local range = kind == "empty" and T16_EMPTY or T16_LOADED
-    local failed, parts = {}, {}
-    for _, lane in ipairs(d.lanes) do
-      if lane.spec.check == kind then
-        local v = speed_of(lane.spec.key)
-        if not v then
-          table.insert(failed, lane.spec.label .. " nicht gemessen")
-        else
-          local norm = v / lane.gain
-          local text = lane.spec.label .. " " .. tb.num(v, 2) .. (lane.gain ~= 1 and (" (/ g " .. tb.num(lane.gain, 3) .. " = " .. tb.num(norm, 2) .. ")") or "")
-          table.insert(parts, text)
-          if norm < range[1] or norm > range[2] then table.insert(failed, text) end
-        end
-      end
-    end
-    rule((kind == "empty" and "Tempo leer " or "Tempo beladen ") .. range_text(range) .. " Kacheln/s · g [U6]", failed, table.concat(parts, ", "))
-  end
-  -- 3. beladen/leer, gleicher Brennstoff und gleiche Richtung
-  do
-    local failed, parts = {}, {}
-    for _, lane in ipairs(d.lanes) do
-      local pair = lane.spec.pair
-      if pair then
-        local loaded, empty = speed_of(lane.spec.key), speed_of(pair)
-        if loaded and empty and empty > 0 then
-          local ratio = loaded / empty
-          table.insert(parts, lane.spec.label .. " / " .. by_key[pair].spec.label .. " = " .. tb.num(ratio, 3))
-          if ratio < T16_RATIO[1] or ratio > T16_RATIO[2] then table.insert(failed, lane.spec.label .. " " .. tb.num(ratio, 3)) end
-        else
-          table.insert(failed, lane.spec.label .. ": Paar nicht gemessen")
-        end
-      end
-    end
-    local rn, ro = speed_of("loaded_rocket_north"), speed_of("rocket")
-    if rn and ro and ro > 0 then
-      tb.trace(run, "beladen, Raketentreibstoff, N / leer, Raketentreibstoff, O = " .. tb.num(rn / ro, 3) .. " (kein Paar gleicher Richtung)")
-    end
-    rule("Verhältnis beladen/leer " .. range_text(T16_RATIO), failed, table.concat(parts, ", "))
-  end
-  -- 4. Treibstoff [U7] (ab 0.9.0): Tempo je Treibstoff im Verhältnis zu Raketentreibstoff wie g (Atomtreibstoff 1,39,
-  -- legendärer Raketentreibstoff 1,67, legendärer Atomtreibstoff 2,64), je höchstens T16_FUEL_SPREAD daneben.
-  do
-    local failed, parts = {}, {}
-    local rocket = speed_of("rocket")
-    for _, lane in ipairs(d.lanes) do
-      if lane.spec.group == "fuel" and lane.spec.key ~= "rocket" then
-        local v = speed_of(lane.spec.key)
-        if v and rocket and rocket > 0 then
-          local ratio = v / rocket
-          local text = string.format("%s %s (%s statt %s)", lane.spec.label, tb.num(v, 2), tb.num(ratio, 3), tb.num(lane.gain, 3))
-          table.insert(parts, text)
-          if math.abs(ratio / lane.gain - 1) > T16_FUEL_SPREAD - 1 then table.insert(failed, text) end
-        else
-          table.insert(failed, lane.spec.label .. " nicht gemessen")
-        end
-      end
-    end
-    rule("Besserer Treibstoff fliegt schneller [U7], Verhältnis zu Raketentreibstoff = g ± " .. tb.num((T16_FUEL_SPREAD - 1) * 100, 0) .. " %",
-      failed, "Raketentreibstoff " .. tostring(rocket and tb.num(rocket, 2)) .. "; " .. table.concat(parts, ", "))
-  end
-  -- 6. Nur Flugtreibstoff (0.9.0): Kohle, Festbrennstoff und Spice-Brikett gehen nicht hinein.
-  do
-    local failed, parts = {}, {}
-    for _, lane in ipairs(d.lanes) do
-      if lane.spec.reject then
-        local n = lane.fuel_in
-        table.insert(parts, lane.spec.label .. " " .. tostring(n))
-        if n ~= 0 then table.insert(failed, lane.spec.label .. " " .. tostring(n) .. " statt 0") end
-      end
-    end
-    rule("Nur Flugtreibstoff passt hinein", failed, table.concat(parts, ", "))
-  end
-  -- 5. Qualität [U8]
-  do
-    local failed, parts = {}, {}
-    local rocket_v = speed_of("rocket")
-    for _, lane in ipairs(d.lanes) do
-      if lane.spec.base then
-        local v = speed_of(lane.spec.key)
-        if v and rocket_v and rocket_v > 0 then
-          local change = math.abs(v - rocket_v) / rocket_v
-          table.insert(parts, lane.spec.label .. " " .. tb.num(v, 2) .. " (" .. tb.num(change * 100, 1) .. " %)")
-          if change > T16_QUALITY_SPREAD then table.insert(failed, lane.spec.label .. " " .. tb.num(change * 100, 1) .. " %") end
-        else
-          table.insert(failed, lane.spec.label .. " nicht gemessen")
-        end
-      end
-    end
-    if #parts == 0 and #failed == 0 then
-      tb.log(run, "INFO", "Qualität [U8]: ohne Quality nicht prüfbar")
-    else
-      rule("Qualität ändert das Tempo um höchstens 10 % [U8]", failed, "Raketentreibstoff normal " .. tostring(rocket_v and tb.num(rocket_v, 2)) .. "; " .. table.concat(parts, ", "))
-    end
-  end
-  -- Vergleichsbahnen [U22], effectivity_modifier und Schweben [U10]: nur MESSUNG/INFO.
-  for _, key in ipairs({"raw", "max_tick", "max_second", "effectivity"}) do
-    local lane = by_key[key]
-    local v = lane and lane.values
-    tb.trace(run, string.format("Vergleich %s: %s Kacheln/s", lane and lane.spec.label or key, tostring(v and tb.num(v.speed, 2))))
-  end
-  do
-    local lane = by_key.effectivity
-    local effectivity = lane and lane.eff_probe
-    local raw = speed_of("raw")
-    local v = speed_of("effectivity")
-    if effectivity then
-      tb.trace(run, string.format("effectivity_modifier bei der Spinne: %s, gelesen %s; Tempo %s statt %s Kacheln/s ohne (Verhältnis %s)",
-        effectivity.ok and "geschrieben" or ("nicht schreibbar (" .. tostring(effectivity.err) .. ")"),
-        tostring(effectivity.value and tb.num(effectivity.value, 3)), tostring(v and tb.num(v, 2)), tostring(raw and tb.num(raw, 2)),
-        (v and raw and raw > 0) and tb.num(v / raw, 3) or "–"))
-    end
-  end
-  local hover = by_key.hover
-  local hv = hover and hover.values
-  if hv then
-    tb.trace(run, string.format("Schweben [U10]: Brennwert %s → %s kJ, Brennstoffe %d → %d, Verbrauch %s kW (%s kJ je 10 s), Weg %s Kacheln",
-      tb.num(hover.from.energy and hover.from.energy / 1000, 0), tb.num(hover.to.energy and hover.to.energy / 1000, 0),
-      hover.from.items or 0, hover.to.items or 0, tb.num(hv.kw, 1), tb.num(hv.used and hv.used / 1000, 0), tb.num(hv.distance, 2)))
-    if hv.used and hv.used > 1000 then
-      tb.log(run, "INFO", "U10 hält nicht: Schweben kostet " .. tb.num(hv.kw, 1) .. " kW (docs/protokolle/plan-3c.md 4.16 nimmt das hin)")
-    end
-  end
-  -- Raketentreibstoff: r = t = 1,15, sein Sticker BASE / 1,15 ergibt BASE · Rohtempo bei t = 1 (prototypes/ornithopter-speed.lua).
-  local empty, loaded = speed_of("rocket"), speed_of("loaded_rocket")
-  tb.log(run, "INFO", string.format("Vorschlag aus den Ost-Bahnen mit Raketentreibstoff [U6]: BASE_EMPTY %s · 8 / %s = %s, BASE_LOADED %s · 5.6 / %s = %s"
-    .. " (prototypes/ornithopter-speed.lua)",
-    tb.num(speed.BASE_EMPTY, 3), tostring(empty and tb.num(empty, 2)), (empty and empty > 0) and tb.num(speed.BASE_EMPTY * 8 / empty, 3) or "–",
-    tb.num(speed.BASE_LOADED, 3), tostring(loaded and tb.num(loaded, 2)), (loaded and loaded > 0) and tb.num(speed.BASE_LOADED * 5.6 / loaded, 3) or "–"))
-  for _, lane in ipairs(d.lanes) do
-    if valid(lane.flyer) then pcall(function() lane.flyer.autopilot_destination = nil end) end
-  end
-  local measured, flying = 0, 0
-  for _, lane in ipairs(d.lanes) do
-    if not lane.spec.reject then flying = flying + 1 end
-    if lane.values then measured = measured + 1 end
-  end
-  local summary = string.format("%d/%d Bahnen gemessen, Kriterien %d/%d OK", measured, flying, ok_count, criteria)
-  tb.finish(run, summary)
-end
-
-local function t16_start(run, tb)
-  local d = run.data
-  local origin = tb.area(run.id)
-  d.origin = origin
-  d.boxes = {box_of(origin, T16_HALF_A), box_of(at(origin, T16_B.x, T16_B.y), T16_HALF_B)}
-  d.made = {cars = {}, flyers = {}, others = {}}
-  if not storage_ready() then
-    tb.log(run, "FEHLER", "storage des Laufzeitcodes fehlt (scripts/migrate.lua init nicht gelaufen)")
-    tb.finish(run, "abgebrochen (kein storage)")
-    return
-  end
-  sweep(run, tb, d.boxes, false)
-  tb.prepare(origin, T16_HALF_A)
-  tb.prepare(at(origin, T16_B.x, T16_B.y), T16_HALF_B)
-  tb.watch(run, nil, at(origin, 0, 92))
-  tb.log(run, "INFO", "Echte Ornithopter auf parallelen Bahnen, alle zugleich; gemessen zwischen 5 s und 15 s nach dem Start."
-    .. " Grenzen: leer " .. range_text(T16_EMPTY) .. ", beladen " .. range_text(T16_LOADED) .. " Kacheln/s, beladen/leer "
-    .. range_text(T16_RATIO) .. ". Einzelwerte in der Datei.")
-  d.phase = "build"
-  d.wait_until = game.tick + 30
-end
-
-local function t16_tick(run, tb)
-  local d = run.data
-  if d.phase == "build" then
-    if game.tick >= d.wait_until then t16_build(run, tb, d) end
-  elseif d.phase == "go" then
-    if game.tick >= d.go_tick then t16_go(run, tb, d) end
-  elseif d.phase == "sample" then
-    local elapsed = game.tick - d.t0
-    if elapsed == T16_FROM then
-      for _, lane in ipairs(d.lanes) do if not lane.lost then t16_sample(lane, "from") end end
-    end
-    for _, lane in ipairs(d.lanes) do
-      if not lane.lost and lane.from and not lane.to and elapsed >= (lane.spec.to or T16_TO) then t16_sample(lane, "to") end
-    end
-    if elapsed >= T16_TO then
-      d.phase = "done"
-      t16_evaluate(run, tb, d)
-    end
-  end
-end
-
-local function t16_cleanup(run, tb)
-  local d = run.data
-  pcall(tidy, run)
-  if d.boxes then pcall(sweep, run, tb, d.boxes, true) end
-end
-
--- T17 Ornithopter: Bedienung (interaktiv) -------------------------------------------------------------
--- Neben Max: ein Ornithopter mit Raketentreibstoff, ein Ernter mit 500 Spice-Sand, 30 Kacheln weiter eine Annahme auf Fels.
--- Jeder Druck auf die Taste (arrakis-carry-toggle) und jeder Klick auf eine der beiden Verknüpfungen schreibt eine
--- MESSUNG-Zeile (Weiterleitung carry_key und shortcut aus runner.lua, zusätzlich zu flyer.lua: event_handler fasst sie
--- zusammen, die Reihenfolge ist nicht zugesichert; der Zustand in der Zeile kann also vor oder nach dem Laufzeitcode
--- stehen). Jeder Zustandswechsel von Ornithopter oder Ernter schreibt eine INFO-Zeile. Nach dem zweiten Anheben
--- (Schritt 2; Schritt 1 ist Anheben und Absetzen, Plan 6) fliegt der Test den Ornithopter 20 s im Kreis (wie T9 C),
--- dann kommt die FRAGE zum Lastbild.
-
-local T17_END_TICKS = 360 * 60 -- „endet nach 6 min Spielzeit“ (Zeitlimit des Runners 380 s)
-local T17_CIRCLE_TICKS = 20 * 60
-local T17_CIRCLE_RADIUS = 8
-local T17_CIRCLE_STEP = 45     -- Grad je neuem Ziel (wie T9)
-local T17_CIRCLE_EVERY = 3 * 60
-
-local function entity_text(entity)
-  if not entity then return "nil" end
-  if not entity.valid then return "ungültig" end
-  return entity.name .. (entity.unit_number and (" #" .. entity.unit_number) or "")
-end
-
--- Was beim Tastendruck oder Klick am Spieler steht (wie T12), dazu resolve_flyer (ohne Seiteneffekt).
-local function t17_measure(run, tb, player, event)
-  local parts = {}
-  local function add(label, fn)
-    local ok, value = pcall(fn)
-    table.insert(parts, label .. " = " .. (ok and tostring(value) or ("Fehler " .. tostring(value))))
-  end
-  add("vehicle", function() return entity_text(player.vehicle) end)
-  add("physical_vehicle", function() return entity_text(player.physical_vehicle) end)
-  add("controller_type", function() return tb.enum_name(defines.controllers, player.controller_type) end)
-  add("render_mode", function() return tb.enum_name(defines.render_mode, player.render_mode) end)
-  add("spidertron_remote_selection", function()
-    local list = player.spidertron_remote_selection
-    if not list then return "nil" end
-    if #list == 0 then return "leer" end
-    local names = {}
-    for _, entity in pairs(list) do table.insert(names, entity_text(entity)) end
-    return table.concat(names, ", ")
-  end)
-  add("cursor_stack", function()
-    local stack = player.cursor_stack
-    if not stack then return "nil (kein Cursor)" end
-    if not stack.valid_for_read then return "leer" end
-    return stack.name .. " x" .. stack.count
-  end)
-  add("selected", function() return entity_text(player.selected) end)
-  add("cursor_position", function() return event.cursor_position and pos_text(tb, event.cursor_position) or "–" end)
-  add("resolve_flyer", function() return entity_text(flyer_lib.resolve_flyer(player, event.cursor_position)) end)
-  return table.concat(parts, ", ")
-end
-
-local function t17_states(d)
-  return flyer_state(d.flyer), car_state(d.car)
-end
-
-local function t17_start(run, tb)
-  local d = run.data
-  local player = tb.player(run)
-  if not player then
-    tb.log(run, "FEHLER", "Kein Spieler für den interaktiven Test")
-    tb.finish(run, "abgebrochen (kein Spieler)")
-    return
-  end
-  if not storage_ready() then
-    tb.log(run, "FEHLER", "storage des Laufzeitcodes fehlt (scripts/migrate.lua init nicht gelaufen)")
-    tb.finish(run, "abgebrochen (kein storage)")
-    return
-  end
-  local origin = tb.area(run.id)
-  d.boxes = {box_of(origin, {x = 60, y = 60})}
-  d.made = {cars = {}, flyers = {}, others = {}}
-  d.keys, d.shortcuts, d.changes = 0, 0, 0
-  d.lifts = 0 -- Wechsel des Ornithopters nach „beladen“; der Kreisflug beginnt beim zweiten
-  sweep(run, tb, d.boxes, true)
-  tb.prepare(origin, 60)
-  local surface = tb.surface()
-  local force = player.force
-  local tech = force.technologies[ORNITHOPTER_TECH]
-  if tech and not tech.researched then
-    tech.researched = true
-    tb.log(run, "INFO", "„Ornithopter“ für deine Force erforscht (sonst gäbe es die Verknüpfungen nicht)")
-  end
-  tb.watch(run, player, origin)
-  d.flyer = new_flyer(run, tb, at(origin, 4.5, 0.5), {fuel = FLIGHT_FUEL, count = 4, force = force})
-  d.car = new_car(run, tb, at(origin, 12.5, 0.5), {coal = 10, force = force})
-  local rock = at(origin, 42, 0)
-  tb.fill({{rock.x - 8, rock.y - 8}, {rock.x + 8, rock.y + 8}}, ROCK, surface)
-  d.intake = create(run, tb, {name = INTAKE, position = rock, force = force, raise_built = true})
-  if not (d.flyer and d.car and d.intake) then
-    tb.log(run, "FEHLER", "Aufbau ging nicht (Einzelheiten in der Datei)")
-    tb.finish(run, "abgebrochen (Aufbau)")
-    return
-  end
-  local spice = d.car.get_inventory(defines.inventory.car_trunk).insert{name = SPICE, count = 500}
-  local record = intake.get(d.intake)
-  tb.log(run, "INFO", string.format("Ornithopter %s mit Raketentreibstoff, Ernter %s mit %d Spice-Sand, Annahme %s auf Fels%s",
-    pos_text(tb, d.flyer.position), pos_text(tb, d.car.position), spice, pos_text(tb, d.intake.position),
-    (record and not record.bad) and "" or " (FEHLER: nicht richtig eingetragen)"))
-  d.last_flyer, d.last_car = t17_states(d)
-  local steps =
-  {
-    "1) In den Ornithopter einsteigen, über den Ernter fliegen, Umschalt+C: Ring um den Ernter, nach 2 s hängt er dran. Noch einmal Umschalt+C: abgesetzt.",
-    "2) Wieder anheben. Dann fliegt der Test den Ornithopter 20 s im Kreis; danach kommt eine FRAGE.",
-    "3) Die Verknüpfung „Ernter anheben oder absetzen“ in der Leiste klicken: absetzen, noch einmal: anheben.",
-    "4) Das Fahrzeugfenster des Ornithopters öffnen; rechts daneben hängt das Ornithopter-Fenster. Dort „Absetzen“, dann „In den Ernter steigen“.",
-    "5) Aussteigen, die Verknüpfung „Fernbedienung für Ornithopter“ klicken, mit der Fernbedienung den Ornithopter auswählen, Karte öffnen (M), "
-      .. "Rechtsklick auf den Ernter. Nach der Ankunft in der Karte Umschalt+C, danach die Verknüpfung „Ernter anheben oder absetzen“.",
-    "6) Den Ornithopter aus der Karte fernfahren (WASD) und Umschalt+C drücken.",
-    "8) Solo-Rettung: in den Ernter steigen, den Ornithopter per Fernbedienung herholen, die Karte offen lassen, Umschalt+C. "
-      .. "Erwartet: Du sitzt danach als Pilot im Ornithopter, der Ernter hängt dran. Über der Annahme absetzen: nach 2 s dockt er an."
-  }
-  for _, text in ipairs(steps) do tb.log(run, "INFO", text) end
-  tb.log(run, "FRAGE", "7) Ist Umschalt+C unter Einstellungen → Steuerung doppelt belegt? [U1]")
-  tb.log(run, "INFO", "Jeder Druck auf Umschalt+C und jeder Klick auf eine der beiden Verknüpfungen schreibt eine MESSUNG-Zeile, jeder"
-    .. " Zustandswechsel eine INFO-Zeile. Ende nach 6 min Spielzeit oder mit /arrakis-test stop. Bitte mit /arrakis-test tempo 1.")
-  if game.speed ~= 1 then
-    tb.log(run, "INFO", "Zeitraffer an (game.speed " .. string.format("%g", game.speed) .. "): die 6 min vergehen schneller; zurück mit /arrakis-test tempo 1")
-  end
-end
-
-local function t17_circle_point(circle, angle)
-  local rad = math.rad(angle)
-  return {x = circle.center.x + circle.radius * math.cos(rad), y = circle.center.y + circle.radius * math.sin(rad)}
-end
-
-local function t17_tick(run, tb)
-  local d = run.data
-  if not d.flyer then return end
-  local now = game.tick
-  local flyer_now, car_now = t17_states(d)
-  if flyer_now ~= d.last_flyer or car_now ~= d.last_car then
-    d.changes = d.changes + 1
-    tb.log(run, "INFO", string.format("Zustand: Ornithopter %s → %s, Ernter %s → %s", d.last_flyer, flyer_now, d.last_car, car_now))
-    if flyer_now == "beladen" and d.last_flyer ~= "beladen" then d.lifts = d.lifts + 1 end
-    if flyer_now == "beladen" and d.lifts == 2 and not d.circle and valid(d.flyer) then
-      d.circle = {center = copy_pos(d.flyer.position), radius = T17_CIRCLE_RADIUS, angle = 0, next_tick = now, until_tick = now + T17_CIRCLE_TICKS, targets = 0}
-      tb.log(run, "INFO", "2) Kreisflug 20 s um " .. pos_text(tb, d.circle.center) .. " (wie T9 C)")
-    end
-    d.last_flyer, d.last_car = flyer_now, car_now
-  end
-  local circle = d.circle
-  if circle and not circle.done and valid(d.flyer) then
-    if now >= circle.until_tick then
-      circle.done = true
-      pcall(function() d.flyer.autopilot_destination = nil end)
-      tb.log(run, "MESSUNG", string.format("2) Kreisflug fertig: %d Ziele, Ornithopter %s", circle.targets, flyer_state(d.flyer)))
-      tb.log(run, "FRAGE", "2) Hängt der Ernter sichtbar unter dem Ornithopter, und liegt der Schatten passend am Boden? [U27] Bitte Screenshot.")
-    elseif now >= circle.next_tick then
-      circle.next_tick = now + T17_CIRCLE_EVERY
-      circle.angle = (circle.angle + T17_CIRCLE_STEP) % 360
-      if pcall(function() d.flyer.autopilot_destination = t17_circle_point(circle, circle.angle) end) then
-        circle.targets = circle.targets + 1
-      end
-    end
-  end
-  if now - run.started >= T17_END_TICKS then
-    if not (circle and circle.done) then
-      tb.log(run, "FRAGE", "2) (ohne Kreisflug) Hängt der Ernter sichtbar unter dem Ornithopter, und liegt der Schatten passend am Boden? [U27]")
-    end
-    tb.finish(run, string.format("%d Tastendrücke, %d Verknüpfungsklicks, %d Zustandswechsel gemessen", d.keys, d.shortcuts, d.changes))
-  end
-end
-
-local function t17_on_event(run, tb, name, event)
-  local d = run.data
-  if not d.flyer then return end
-  local player = event.player_index and game.get_player(event.player_index)
-  if not player then return end
-  local who = player.index ~= run.player_index and (" (Spieler " .. player.name .. ")") or ""
-  if name == "carry_key" then
-    d.keys = d.keys + 1
-    tb.log(run, "MESSUNG", string.format("Umschalt+C %d%s: %s; Ornithopter %s, Ernter %s", d.keys, who, t17_measure(run, tb, player, event),
-      flyer_state(d.flyer), car_state(d.car)))
-  elseif name == "shortcut" then
-    if event.prototype_name ~= CARRY_SHORTCUT and event.prototype_name ~= REMOTE_SHORTCUT then return end
-    d.shortcuts = d.shortcuts + 1
-    tb.log(run, "MESSUNG", string.format("Verknüpfung %s %d%s: %s; Ornithopter %s, Ernter %s", event.prototype_name, d.shortcuts, who,
-      t17_measure(run, tb, player, event), flyer_state(d.flyer), car_state(d.car)))
-  elseif name == "driving_changed" then
-    tb.log(run, "MESSUNG", string.format("Ein-/Ausstieg%s: vehicle = %s, controller_type = %s, Ereignis-Entity = %s", who,
-      tostring(read(function() return entity_text(player.vehicle) end)),
-      tostring(read(function() return tb.enum_name(defines.controllers, player.controller_type) end)),
-      tostring(read(function() return entity_text(event.entity) end))))
-  end
-end
-
--- Kreisflug anhalten; eine Last absetzen (ohne Hinweis), damit kein Ernter des Tests auf der Ablage bleibt.
--- Ornithopter, Ernter und Annahme bleiben zum Ansehen stehen (wie T9).
-local function t17_cleanup(run, tb)
-  local d = run.data
-  if valid(d.flyer) then
-    pcall(function() d.flyer.autopilot_destination = nil end)
-    local record = flyer_lib.get(d.flyer)
-    if record and record.cargo then pcall(flyer_lib.drop, record, nil, true) end
-  end
-end
-
 return
 {
   T15 =
@@ -3368,26 +2420,5 @@ return
     tick = t15_tick,
     on_event = t15_on_event,
     cleanup = t15_cleanup
-  },
-  T16 =
-  {
-    title = "Ornithopter: Flugphysik",
-    timeout = 90 * 60,
-    interactive = false,
-    confirm = nil,
-    start = t16_start,
-    tick = t16_tick,
-    cleanup = t16_cleanup
-  },
-  T17 =
-  {
-    title = "Ornithopter: Bedienung",
-    timeout = 380 * 60,
-    interactive = true,
-    confirm = nil,
-    start = t17_start,
-    tick = t17_tick,
-    on_event = t17_on_event,
-    cleanup = t17_cleanup
   }
 }
