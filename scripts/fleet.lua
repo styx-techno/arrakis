@@ -27,7 +27,8 @@
 --   arrakis-depot-signals), last_h, last_r (zuletzt gelesene Signale H und R), soll (geltende Soll-Zahl), recall (Rückruf
 --   gilt), census (Zahlen fürs Fenster und die Statussignale), signals_written.
 -- Aufträge zusätzlich kind "deploy" (EINSATZ), "move" (UMSETZEN), "recall" (RÜCKRUF) mit depot = un, target = {x, y}
---   (Platz aus scripts/fleet-fields.lua, reserviert), store = true (ins Lager legen), wait_reason, priority.
+--   (Platz aus scripts/fleet-fields.lua, reserviert), store = true (ins Lager legen), wait_reason, priority;
+--   "return" zusätzlich after_recall = true (Rückflug nach dem Rückruf: wie "deploy" ohne Bereitschaftsregel).
 -- storage.harvesters[un] zusätzlich fleet_owner = depot_un (von der Leitstelle eingesetzt), fleet_wait.reason =
 --   "rescue"|"recall"|"reserve" (Reserve: kein Rückweg, x und y fehlen).
 
@@ -488,7 +489,7 @@ local function check_wait(un, h)
   -- Reserve (docs/plan-3f.md 1.6) hat keinen Rückweg; solange der Rückruf gilt, bringt die Leitstelle keinen zurück.
   if not d or fw.reason == "reserve" or not fw.x or d.recall then return end
   local pos = {surface = fw.surface, x = fw.x, y = fw.y}
-  if calm(pos) then new_job("return", h, {return_pos = pos}) end
+  if calm(pos) then new_job("return", h, {return_pos = pos, after_recall = fw.reason == "recall" or nil}) end
 end
 
 local function scan_harvesters(tick)
@@ -602,7 +603,9 @@ local function dispatch(tick)
       local record, reason, dist = pick(job, h, list)
       -- Bereitschaft: Bei zwei oder mehr Carryalls bleibt einer für Rettungen frei. Nicht beim Rückruf (Signal R oder
       -- Knopf): Der holt alle in Sicherheit, also fliegen alle mit (Max 29.10. zu T28: sonst holt nur einer nacheinander).
-      local urgent = job.kind == "rescue" or job.priority == lib.RECALL_URGENT
+      -- Auch nicht beim Ausliefern aufs Feld (Einsatz aus dem Lager, Rückflug nach dem Rückruf): Da fliegen alle freien
+      -- parallel (Max 01.11. zu T28). Der Rückflug nach einer Rettung hält die Regel weiter ein.
+      local urgent = job.kind == "rescue" or job.priority == lib.RECALL_URGENT or job.kind == "deploy" or job.after_recall
       if record and not urgent and (total[record.depot] or 0) >= 2 and (free[record.depot] or 0) <= 1 then
         record = nil
       end
@@ -1299,9 +1302,11 @@ local function census(list)
   return per
 end
 
-local function depot_job(d, kind)
+-- Ein noch nicht vergebener Auftrag dieser Art an der Leitstelle. Ist der letzte Einsatz vergeben, kommt im nächsten Takt
+-- der nächste dazu; so setzen mehrere freie Carryalls parallel ein (Max 01.11.: sonst nacheinander).
+local function open_depot_job(d, kind)
   for _, job in pairs(storage.jobs.list) do
-    if job.kind == kind and job.depot == d.un then return job end
+    if job.kind == kind and job.depot == d.un and job.state == "open" then return job end
   end
   return nil
 end
@@ -1379,7 +1384,7 @@ local function control_depot(d, c, tick)
     end
   end
   if #c.active < soll then
-    if depot_job(d, "deploy") then return true end
+    if open_depot_job(d, "deploy") then return true end
     local spot = fields.find_spot(d, lib.RANGE, nil)
     if not spot then return true end
     local h = c.reserve[1] or spawn_reserve(d, tick)

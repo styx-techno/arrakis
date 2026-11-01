@@ -1214,6 +1214,18 @@ local function owned(s, state)
   return list
 end
 
+-- Meiste gleichzeitig fliegende Aufträge einer Art mit Carryalls dieser Leitstelle (Max 01.11.: Einsetzen und
+-- Zurückbringen nach dem Rückruf parallel, nicht nacheinander).
+local function note_parallel(s, kind)
+  local n = 0
+  local un = valid(s.depot) and s.depot.unit_number
+  for _, job in pairs(storage.jobs.list) do
+    local record = job.kind == kind and job.carryall and storage.flyers[job.carryall]
+    if record and record.depot == un then n = n + 1 end
+  end
+  s.parallel = math.max(s.parallel or 0, n)
+end
+
 local function depot_jobs(s)
   local n = 0
   local un = valid(s.depot) and s.depot.unit_number
@@ -1342,7 +1354,7 @@ end
 function t26.s2_build(run, tb, d)
   local s = d.s2
   fleet_force(true)
-  if not build_base(run, tb, d, s, {carryalls = 3, rocket = 60, coal = 300}) then return fail(run, tb, 2, "Leitstelle oder Carryalls ließen sich nicht bauen") end
+  if not build_base(run, tb, d, s, {carryalls = 2, rocket = 60, coal = 300}) then return fail(run, tb, 2, "Leitstelle oder Carryalls ließen sich nicht bauen") end
   s.depot.get_inventory(defines.inventory.chest).insert{name = NAME, count = 3}
   s.fields = place_fields(tb, d, T26_FIELDS)
   chart_area(tb, d)
@@ -1365,6 +1377,7 @@ end
 function t26.s2_wait(run, tb, d)
   local s = d.s2
   local r = wait_for(s, function()
+    note_parallel(s, "deploy")
     return #owned(s, "deployed") == 2 and depot_jobs(s) == 0
   end, function()
     return fail(run, tb, 2, string.format("nach 240 s %d eigene Ernter aufgebaut, %d im Lager, Aufträge %d, Feldsuche offen %d",
@@ -1392,12 +1405,13 @@ function t26.s2_check(run, tb, d)
   local gap = #list == 2 and fleet_distance(list[1].entity.position, list[2].entity.position) or 0
   check(failed, gap >= fields.SPACING, "Abstand der beiden " .. tb.num(gap))
   for i, h in ipairs(list) do check(failed, on_field(h), "Ernter " .. i .. " nicht auf Spice") end
+  check(failed, (s.parallel or 0) >= 2, "Einsätze nacheinander (höchstens " .. (s.parallel or 0) .. " gleichzeitig)")
   local active, reserve = red_signal(s.depot, "arrakis-signal-harvesters"), red_signal(s.depot, "arrakis-signal-reserve")
   check(failed, active == 2 and reserve == 1, "Statussignale aktiv " .. active .. ", Reserve " .. reserve)
   s.ok = #failed == 0
   local result = verdict(run, tb, 2, "Soll 2 aus dem Fenster", failed, string.format(
-    "zwei eingesetzt nach %s s, Abstand %s, Signale aktiv %d / Reserve %d / freie Carryalls %d",
-    tb.num((game.tick - s.start) / 60), tb.num(gap), active, reserve, red_signal(s.depot, "arrakis-signal-carryalls")))
+    "zwei eingesetzt nach %s s (%d gleichzeitig), Abstand %s, Signale aktiv %d / Reserve %d / freie Carryalls %d",
+    tb.num((game.tick - s.start) / 60), s.parallel or 0, tb.num(gap), active, reserve, red_signal(s.depot, "arrakis-signal-carryalls")))
   d.s3, d.s4, d.s5 = s, s, s
   return s.ok and "keep" or result
 end
@@ -1588,7 +1602,7 @@ local T26_R_FIELDS = {{x = -60, y = 20}, {x = -10, y = -20}}
 function t26.s7_build(run, tb, d)
   local s = d.s7
   fleet_force(true)
-  if not build_base(run, tb, d, s, {carryalls = 3, rocket = 60, coal = 300}) then return fail(run, tb, 7, "Leitstelle oder Carryalls ließen sich nicht bauen") end
+  if not build_base(run, tb, d, s, {carryalls = 2, rocket = 60, coal = 300}) then return fail(run, tb, 7, "Leitstelle oder Carryalls ließen sich nicht bauen") end
   local origin = tb.area(run.id)
   s.cars = {
     new_harvester(run, tb, d, at(origin, T26_R_FIELDS[1].x, T26_R_FIELDS[1].y)),
@@ -1641,6 +1655,7 @@ function t26.s7_hold(run, tb, d)
   s.dist_home = valid(s.cars[1]) and fleet_distance(s.cars[1].position, s.depot.position) or -1
   set_wire_signal(run, tb, s, "R", 0)
   s.release = game.tick
+  s.parallel = 0
   s.deadline = game.tick + 240 * 60
   return 1
 end
@@ -1648,6 +1663,7 @@ end
 function t26.s7_back(run, tb, d)
   local s = d.s7
   return wait_for(s, function()
+    note_parallel(s, "return")
     for i, car in ipairs(s.cars) do
       if not (state_of(car) == "deployed" and fleet_distance(car.position, s.origins[i]) <= 4) then return false end
     end
@@ -1662,8 +1678,10 @@ function t26.s7_check(run, tb, d)
   local failed = {}
   check(failed, s.held, "während R nicht beide wartend an der Leitstelle")
   check(failed, s.dist_home <= 18, "Ernter 1 " .. tb.num(s.dist_home) .. " Kacheln von der Leitstelle")
+  check(failed, (s.parallel or 0) >= 2, "Rückflüge nacheinander (höchstens " .. (s.parallel or 0) .. " gleichzeitig)")
   return verdict(run, tb, 7, "Signal R holt alle, R = 0 bringt sie zurück", failed, string.format(
-    "an der Leitstelle nach %s s, zurück nach %s s", tb.num((s.home_tick - s.start) / 60), tb.num((game.tick - s.release) / 60)))
+    "an der Leitstelle nach %s s, zurück nach %s s (%d gleichzeitig)", tb.num((s.home_tick - s.start) / 60),
+    tb.num((game.tick - s.release) / 60), s.parallel or 0))
 end
 
 local T26_STEPS =
@@ -1912,9 +1930,9 @@ local function t28_start(run, tb)
   tb.protect(run, player)
   s.start = game.tick
   tb.log(run, "INFO", "Leitstelle mit Flottenleitung, 3 Ernter im Lager, drei Spicefelder rechts. Öffne die Leitstelle: Stell die"
-    .. " Soll-Zahl mit + auf 2; zwei Carryalls setzen nacheinander je einen Ernter ein, die Lampe links oben leuchtet ab zwei"
+    .. " Soll-Zahl mit + auf 2; zwei Carryalls setzen gleichzeitig je einen Ernter ein, die Lampe links oben leuchtet ab zwei"
     .. " aktiven. Dann „Alle zurückrufen“ drücken (beide kommen an die Leitstelle) und noch einmal drücken (sie fliegen"
-    .. " zurück). 5 min Zeit.")
+    .. " beide gleichzeitig zurück). 5 min Zeit.")
 end
 
 local function t28_tick(run, tb)
