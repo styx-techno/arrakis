@@ -1,4 +1,4 @@
--- Tempo des Ornithopters je Brennstoff (0.6.1, docs/plan-3c.md 4.9) [U6, U7]. Reines Lua ohne data, game und storage:
+-- Tempo des Ornithopters je Brennstoff (0.6.1, docs/protokolle/plan-3c.md 4.9) [U6, U7]. Reines Lua ohne data, game und storage:
 -- Die Datenstufe legt damit die Sticker an (prototypes/ornithopter.lua) und prüft sie (tools/check/checks.lua), die
 -- Laufzeit wählt damit den Sticker (scripts/flyer.lua) und der Prüfstand liest die Namen (T15, T16). Vorbild:
 -- scripts/migrate.lua lädt prototypes.planet.planet-map-gen auch zur Laufzeit.

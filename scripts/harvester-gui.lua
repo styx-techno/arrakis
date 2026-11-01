@@ -1,8 +1,8 @@
 -- Relatives Fenster am Fahrzeugfenster des Spice-Ernters (Phase 3b, Plan 4.9): Zustand, Laderaum,
 -- Treibstoff und ein Knopf für Aufbauen/Einpacken/Abdocken (gleichwertig zur Taste Umschalt+H).
 -- Bibliothek für __core__/lualib/event_handler. Offene Fenster stehen in storage.gui_open[player_index] = un.
--- Getragen (Phase 3c, docs/plan-3c.md 4.1): Knopf „Wird getragen“ gesperrt; der 30-Tick-Takt schließt das Fenster.
--- Phase 3d1 (docs/plan-3d1.md 4.1, 4.11): Vibration und Wärme, Countdown eines Wurmzeichens, Kontrollkästchen
+-- Getragen (Phase 3c, docs/protokolle/plan-3c.md 4.1): Knopf „Wird getragen“ gesperrt; der 30-Tick-Takt schließt das Fenster.
+-- Phase 3d1 (docs/protokolle/plan-3d1.md 4.1, 4.11): Vibration und Wärme, Countdown eines Wurmzeichens, Kontrollkästchen
 -- „Vorsichtsmodus“ (ruft vibration.set_careful) und dessen Warte-Zeile. Werte aus dem Datensatz (Stand des letzten
 -- 60-Tick-Takts); ohne vib_key ist die Wärme 0.
 
@@ -39,7 +39,7 @@ local function mmss(ticks)
   return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
 
--- Vibration, Wärme, Countdown und Vorsichtsmodus (docs/plan-3d1.md 4.1).
+-- Vibration, Wärme, Countdown und Vorsichtsmodus (docs/protokolle/plan-3d1.md 4.1).
 local function update_worms(frame, h)
   if not frame.arrakis_vibration then return end
   local tick = game.tick
@@ -232,7 +232,7 @@ gui.on_nth_tick =
 }
 
 -- Nach Mod-Änderungen alle offenen Ernterfenster schließen: Ein alt gespeichertes Fenster hat die Elemente aus 3d1
--- nicht (docs/plan-3d1.md 4.1); beim nächsten Öffnen baut build es vollständig.
+-- nicht (docs/protokolle/plan-3d1.md 4.1); beim nächsten Öffnen baut build es vollständig.
 gui.on_configuration_changed = function()
   for player_index in pairs(storage.gui_open) do close(player_index) end
 end

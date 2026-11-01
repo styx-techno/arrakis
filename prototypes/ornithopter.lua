@@ -1,4 +1,4 @@
--- Phase 3c (docs/plan-3c.md 3): Ornithopter mit Bein, Item, Rezept und Forschung „Ornithopter“, Tempo-Sticker (seit
+-- Phase 3c (docs/protokolle/plan-3c.md 3): Ornithopter mit Bein, Item, Rezept und Forschung „Ornithopter“, Tempo-Sticker (seit
 -- 0.6.1 je Zustand und Brennstoff-Stufe, prototypes/ornithopter-speed.lua), 32 Sprites des Lastbilds (getragener
 -- Spice-Ernter und Schatten), Absetz-Probe, Taste und zwei Verknüpfungen.
 -- Anheben, Tragen und Absetzen steuert das Skript (scripts/flyer.lua, scripts/hold.lua).

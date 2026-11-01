@@ -335,7 +335,7 @@ function lib.reset()
   storage.fields = {chunks = {}, queue = {}, queued = {}, refill = {}, claims = {}}
 end
 
--- Nur für den Prüfstand: Ohne Spieler kartiert force.chart auf dem Server nichts (V6, docs/plan-3d1.md); bis zum
+-- Nur für den Prüfstand: Ohne Spieler kartiert force.chart auf dem Server nichts (V6, docs/protokolle/plan-3d1.md); bis zum
 -- nächsten reset() zählt die Feldsuche dann auch nicht kartierte Chunks.
 function lib.skip_chart()
   data().skip_chart = true

@@ -1,4 +1,4 @@
--- Prüfstand: Vibration und Würmer mit echtem Laufzeitcode (Phase 3d1, docs/plan-3d1.md 6; Vertrag siehe runner.lua).
+-- Prüfstand: Vibration und Würmer mit echtem Laufzeitcode (Phase 3d1, docs/protokolle/plan-3d1.md 6; Vertrag siehe runner.lua).
 --   T18: scripts/vibration.lua und scripts/worms.lua auf der Prüfstand-Fläche: Prototypen, Zeitlinie der Wärme bis zum
 --        Wurmzeichen, Gewichte aller Quellen, feste Quellen, Zerfall, Nachbarschaft, Erstbefüllung, Vorsichtsmodus und
 --        Prüfstand-Sperre. Elf Schritte laufen parallel ab Tick 2, jeder in eigenen Chunks mit 3 Chunks Abstand.
@@ -2972,7 +2972,7 @@ local function t19_start(run, tb)
   local stats = worms_lib.stats_of(d.force)
   for key in pairs(stats) do stats[key] = nil end
   stats.bitten, stats.escaped, stats.gone, stats.killed = 0, 0, 0, 0
-  -- Ohne Wurm wie 0.7.0 (docs/plan-3d2.md 6): Biss genau bei 0; den Wurm prüft T21.
+  -- Ohne Wurm wie 0.7.0 (docs/protokolle/plan-3d2.md 6): Biss genau bei 0; den Wurm prüft T21.
   worms_lib.set_worm_off(d.force, true)
   worms_lib.set_grace(d.force, {awake = true, first_hunt_done = false}, {"first_hunt"})
   lanes_init(d, #T19_STEPS, game.tick + 2)
@@ -3243,7 +3243,7 @@ local function t20_start(run, tb)
   tb.prepare(d.origin, T20_HALF)
   worms_lib.ensure_force()
   worms_lib.set_paused(nil)
-  -- Ohne Wurm wie 0.7.0 (docs/plan-3d2.md 6).
+  -- Ohne Wurm wie 0.7.0 (docs/protokolle/plan-3d2.md 6).
   worms_lib.set_worm_off(force, true)
   tb.log(run, "INFO", "T20 prüft die Warnungen ohne Wurm; den Wurm zeigt T22.")
   vibration_lib.testbench_enable(force)

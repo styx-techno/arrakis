@@ -1,6 +1,6 @@
 # Bauplan Phase 3e: Leitstelle und Carryalls (0.10.0)
 
-Stand: gebaut in 0.10.0 (28.10.2026); Abweichungen vom Entwurf stehen jeweils als „Umgesetzt:“ dabei. Grundlage ist das Design (docs/design-ernter-ornithopter.md), Abschnitte 2.2 (Stufe 2), 3, 4.4 und 6. Abschnitt 1 hier sammelt die Festlegungen, bei denen Max widersprechen kann; ohne Widerspruch gilt die Standardwahl.
+Stand: gebaut in 0.10.0 (28.10.2026); Abweichungen vom Entwurf stehen jeweils als „Umgesetzt:“ dabei. Grundlage ist das Design (docs/protokolle/design-ernter-ornithopter.md), Abschnitte 2.2 (Stufe 2), 3, 4.4 und 6. Abschnitt 1 hier sammelt die Festlegungen, bei denen Max widersprechen kann; ohne Widerspruch gilt die Standardwahl.
 
 Ziel aus dem Fahrplan (Design 7, Zeile 3e): **3 Ernter, eine Leitstelle, 2 Carryalls, Treibstoff in der Leitstelle: 60 min ohne Eingriff, kein Ernter verloren, kein Ernter ohne Treibstoff.**
 

@@ -1,4 +1,4 @@
--- Phase 3d1 (docs/plan-3d1.md 3): Wurm-Eruption, Sandstaub, Signal „Wurmzeichen“, zwei Geräusche, Verknüpfung
+-- Phase 3d1 (docs/protokolle/plan-3d1.md 3): Wurm-Eruption, Sandstaub, Signal „Wurmzeichen“, zwei Geräusche, Verknüpfung
 -- „Vibrationsanzeige“ und zwei Tipps (Briefings). Einen sichtbaren Wurm gibt es noch nicht (3d2); Vibration, Wärme,
 -- Jagd und Biss steuert das Skript (scripts/vibration.lua, scripts/worms.lua, scripts/worms-gui.lua).
 -- 2.0-Schreibweise wie überall; compat.finish (prototypes/compat.lua) schreibt unter 2.1 um. Hier braucht nichts eine

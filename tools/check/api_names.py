@@ -118,7 +118,7 @@ def api_version(folder, fallback):
 # Namen, die als Methodenaufruf erlaubt sind, obwohl der Prüfer sie nirgends findet.
 CALL_WHITELIST = {
   # worms.lua: storage.rng ist ein LuaRandomGenerator, aufgerufen über seinen Aufruf-Operator rng(lower, upper)
-  # (A23 classes.d.ts:11748, docs/plan-3d1.md 1 „Zufall“); eine benannte Methode gibt es nicht.
+  # (A23 classes.d.ts:11748, docs/protokolle/plan-3d1.md 1 „Zufall“); eine benannte Methode gibt es nicht.
   "rng",
 }
 
@@ -143,11 +143,11 @@ WRITE_WHITELIST = {
   # Start-Tick der FRAGE-Pause um
   "s.pending.tick",
   # vibration.lua: e = storage.vib.heat[s] (Takt der Wärme), record = storage.vib.sources[un] (Gewicht dieses Takts),
-  # docs/plan-3d1.md 4.2
+  # docs/protokolle/plan-3d1.md 4.2
   "e.tick", "record.weight",
-  # worms.lua: hunt = storage.hunts.list[id], Force der Jagd (docs/plan-3d1.md 4.2)
+  # worms.lua: hunt = storage.hunts.list[id], Force der Jagd (docs/protokolle/plan-3d1.md 4.2)
   "hunt.force_index",
-  # sandworm.lua: Wurm-Felder der Jagd (docs/plan-3d2.md 4.2): hunt.path = offene Pfad-Anfrage, path = hunt.path
+  # sandworm.lua: Wurm-Felder der Jagd (docs/protokolle/plan-3d2.md 4.2): hunt.path = offene Pfad-Anfrage, path = hunt.path
   # (Kennung der Anfrage), plan = hunt.plan (nächster Kandidat), worm = hunt.worm (zuletzt geschriebener activity_mode)
   "hunt.path", "path.id", "plan.next", "worm.mode",
   # t_sandwurm: w = Beobachtung einer Jagd (w.hold = Haltezeit und Weg beim Halten, w.unit = beobachteter Wurm),

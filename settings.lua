@@ -8,7 +8,7 @@ data:extend({
     order = "z"
   },
   {
-    -- Wurmbiss (Entscheidung 4): gilt für Spice-Ernter im Bissradius (docs/plan-3d1.md 4.9).
+    -- Wurmbiss (Entscheidung 4): gilt für Spice-Ernter im Bissradius (docs/protokolle/plan-3d1.md 4.9).
     type = "string-setting",
     name = "arrakis-worm-bite",
     setting_type = "runtime-global",

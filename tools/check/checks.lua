@@ -237,7 +237,7 @@ if briquette_recipe then
   if not has_value(briquette_recipe.categories or {briquette_recipe.category}, "spice-refining") then add("FEHLER recipe arrakis-spice-briquette nicht in spice-refining") end
 end
 
--- Phase 3c (docs/plan-3c.md 3 und 7): Ornithopter, Forschung, Taste, Verknüpfungen, Sticker, Lastbild, Probe
+-- Phase 3c (docs/protokolle/plan-3c.md 3 und 7): Ornithopter, Forschung, Taste, Verknüpfungen, Sticker, Lastbild, Probe
 local expected_3c = {
   ["spider-vehicle"] = {"arrakis-ornithopter"},
   ["item-with-entity-data"] = {"arrakis-ornithopter"},
@@ -322,7 +322,7 @@ if orni_tech then
 end
 local orni_recipe = raw.recipe["arrakis-ornithopter"]
 if orni_recipe and orni_recipe.enabled ~= false then add("FEHLER 3c: recipe arrakis-ornithopter von Anfang an frei") end
--- Tempo-Sticker (0.6.1, docs/plan-3c.md 4.9 und 9): je Zustand eine Familie, eine Stufe t_j = 1,02^j je Sticker
+-- Tempo-Sticker (0.6.1, docs/protokolle/plan-3c.md 4.9 und 9): je Zustand eine Familie, eine Stufe t_j = 1,02^j je Sticker
 -- (j = −35 … 70), Name mit p = floor(100 · t_j + 0,5), versteckt, vehicle_speed_modifier = BASE / t_j (BASE leer 0,603,
 -- beladen 0,427), 216000 Ticks. Die Vertragswerte stehen hier fest wie 0,52 und 0,364 in 0.6.0: Weicht eine Konstante in
 -- prototypes/ornithopter-speed.lua ab, FEHLER. Name und Modifier rechnet die Regel aus diesen Werten selbst nach, nicht
@@ -338,7 +338,7 @@ if not (speed_ok and type(speed) == "table") then add("FEHLER 3c: prototypes/orn
 else
   local plan_values = {{"BASE_EMPTY", PLAN_BASE.empty}, {"BASE_LOADED", PLAN_BASE.loaded}, {"STEP", PLAN_STEP}, {"MIN_J", PLAN_MIN_J}, {"MAX_J", PLAN_MAX_J}}
   for _, kv in ipairs(plan_values) do
-    if speed[kv[1]] ~= kv[2] then add("FEHLER 3c: prototypes/ornithopter-speed.lua " .. kv[1] .. " = " .. tostring(speed[kv[1]]) .. " statt " .. kv[2] .. " (docs/plan-3c.md 9)") end
+    if speed[kv[1]] ~= kv[2] then add("FEHLER 3c: prototypes/ornithopter-speed.lua " .. kv[1] .. " = " .. tostring(speed[kv[1]]) .. " statt " .. kv[2] .. " (docs/protokolle/plan-3c.md 9)") end
   end
   for _, state in ipairs({"empty", "loaded"}) do
     for j = PLAN_MIN_J, PLAN_MAX_J do
@@ -530,7 +530,7 @@ local carry_key = raw["custom-input"]["arrakis-carry-toggle"]
 if carry_key and (carry_key.key_sequence ~= "SHIFT + C" or carry_key.consuming ~= "none") then add("FEHLER 3c: custom-input arrakis-carry-toggle " .. tostring(carry_key.key_sequence) .. " / " .. tostring(carry_key.consuming)) end
 add("3c: Ornithopter " .. (orni and "da" or "fehlt") .. ", Tempo-Sticker leer " .. speed_count.empty .. "/106, beladen " .. speed_count.loaded .. "/106, Lastbild " .. sprite_count .. "/32 Sprites")
 
--- Phase 3d1 (docs/plan-3d1.md 3 und 7): Eruption, Sandstaub, Signal, Geräusche, Verknüpfung, Tipps. Pfade und Werte
+-- Phase 3d1 (docs/protokolle/plan-3d1.md 3 und 7): Eruption, Sandstaub, Signal, Geräusche, Verknüpfung, Tipps. Pfade und Werte
 -- stehen hier fest (nicht aus prototypes/worms.lua gelesen).
 local expected_3d1 = {
   explosion = {"arrakis-worm-eruption"},
@@ -681,7 +681,7 @@ end end
 if tech_count ~= 12 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 12") end
 add("3d1: " .. count_3d1 .. "/8 Prototypen, " .. tech_count .. " Forschungen")
 
--- Phase 3d2 (docs/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
+-- Phase 3d2 (docs/protokolle/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus
 -- prototypes/sandworm.lua gelesen).
 local expected_3d2 = {
   ["segmented-unit"] = {"arrakis-sandworm-small"},
@@ -815,7 +815,7 @@ if tb_on then
 end
 add("Prüfstand " .. (tb_on and "an" or "aus") .. ": " .. tb_count .. " Test-Prototypen")
 
--- Statische Regeln (docs/plan-3d1.md 7, docs/plan-3d2.md 7) über den Laufzeitcode, ohne Kommentare: Ereignisse nur über
+-- Statische Regeln (docs/protokolle/plan-3d1.md 7, docs/protokolle/plan-3d2.md 7) über den Laufzeitcode, ohne Kommentare: Ereignisse nur über
 -- event_handler, kein math.random, keine Modultabelle sandworm als globale Variable; sandworm.lua tötet nie (kein die(), kein
 -- devour) und nennt die Sandwurm-Force nicht; jeder wörtliche Schlüssel arrakis-message.* steht in beiden Sprachen.
 do

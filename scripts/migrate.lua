@@ -1,5 +1,5 @@
--- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10; Schema 3: docs/plan-3d1.md 4.16; Schema 4:
--- docs/plan-3d2.md 4.14).
+-- storage-Aufbau, Schema und Migration (Phase 3b, Plan 4.2 und 4.10; Schema 3: docs/protokolle/plan-3d1.md 4.16; Schema 4:
+-- docs/protokolle/plan-3d2.md 4.14).
 -- Erste Bibliothek in control.lua: legt alle Tabellen in on_init und on_configuration_changed an, bevor die anderen
 -- Module sie benutzen. on_load schreibt nie (diese Bibliothek hat kein on_load).
 --
@@ -12,7 +12,7 @@
 --   storage.gui_open[player_index] = un (scripts/harvester-gui.lua)
 --   storage.migration       {spice_drills = {LuaEntity…}, old_map_notice = true|nil}
 --
--- Schema 2 (0.6.0, Phase 3c, docs/plan-3c.md 4.2), dazu:
+-- Schema 2 (0.6.0, Phase 3c, docs/protokolle/plan-3c.md 4.2), dazu:
 --   storage.harvesters[un]  zusätzlich state "carried", carried_by = flyer_un|nil, lift_pos = {surface, x, y}|nil
 --   storage.flyers[un]      Ornithopter-Datensätze (scripts/flyer.lua)
 --   storage.couplings[un]   true, Ornithopter, die gerade ankoppeln (10-Tick-Takt)
@@ -27,7 +27,7 @@
 -- Ernter her, und der Auslöser der Engine feuerte nicht. Erforscht das Skript, bekommt die Force eine Chatzeile.
 -- Herunterstufen auf 0.5.x mit getragenem Ernter ist nicht unterstützt (0.5.x kennt carried nicht): vorher absetzen.
 --
--- Schema 3 (0.7.0, Phase 3d1, docs/plan-3d1.md 4.2), dazu:
+-- Schema 3 (0.7.0, Phase 3d1, docs/protokolle/plan-3d1.md 4.2), dazu:
 --   storage.rng             LuaRandomGenerator (Kartenseed), nur für die Ruhezeit der Sektoren
 --   storage.grace[force_index]  Schonfrist je Force (scripts/worms.lua)
 --   storage.vib             {sources, heat, rumble, overlay, testbench}: Quellen, Wärme, Rumpeln, Vibrationsanzeige,
@@ -44,7 +44,7 @@
 -- on_research_finished sofort aus [V2], und worms.lua nennt den Termin dann nicht ein zweites Mal. Herunterstufen auf
 -- 0.6.x: vorher /arrakis-uninstall ja (Markierungen und die Sandwurm-Force blieben sonst im Spielstand).
 --
--- Schema 4 (0.8.0, Phase 3d2, docs/plan-3d2.md 4.2), dazu:
+-- Schema 4 (0.8.0, Phase 3d2, docs/protokolle/plan-3d2.md 4.2), dazu:
 --   storage.path_requests[request_id] = {hunt, kind = "plan"|"reroute", sent}: offene Pfad-Anfragen (scripts/sandworm.lua)
 --   storage.worm_dives[i] = {unit, start, wave}: abtauchende Würmer (ab 0.8.4, scripts/sandworm.lua dive_takt)
 --   storage.hunts           zusätzlich worm_off, spawn_dir (Prüfstand), log, log_next, ersatz (Protokoll)
@@ -197,7 +197,7 @@ function migrate.ornithopter_pending(force)
   return true
 end
 
--- Holt „Ornithopter“ nach (docs/plan-3c.md 4.15): steht aus und die Force hat einen Ernter oder je einen hergestellt
+-- Holt „Ornithopter“ nach (docs/protokolle/plan-3c.md 4.15): steht aus und die Force hat einen Ernter oder je einen hergestellt
 -- → researched = true (A23 classes.d.ts:22293), Rückgabe true. Der Trigger feuert nicht für früher hergestellte Ernter
 -- [U12]. Setzt nur, was fehlt, und meldet nichts; für T15 exportiert.
 function migrate.ornithopter_research(force)
