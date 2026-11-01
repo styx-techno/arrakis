@@ -76,7 +76,7 @@ local FIXED = {["mining-drill"] = true, ["assembling-machine"] = true, furnace =
 local SCAN_TYPES = {"car", "spider-vehicle", "locomotive", "mining-drill", "assembling-machine", "furnace"}
 local FIXED_TYPES = {"mining-drill", "assembling-machine", "furnace"}
 -- Ernter stehen in storage.harvesters, der Ornithopter vibriert nicht (Plan 1 „Gewichte sonst“).
-local EXCLUDED = {[harvester.NAME] = true, [FLYER] = true, ["arrakis-carryall"] = true}
+local EXCLUDED = {[harvester.NAME] = true, [harvester.MK2] = true, [FLYER] = true, ["arrakis-carryall"] = true}
 
 local OVERLAY_COLOR =
 {
@@ -263,8 +263,8 @@ function lib.damping(force)
   return 1 - lib.DAMPING_STEP * level
 end
 
--- Gewicht eines Ernters aus seinem Zustand (ohne Sand).
-local function harvester_weight(h, entity)
+-- Gewicht eines Ernters aus seinem Zustand (ohne Sand), ohne Mk2-Faktor.
+local function state_weight(h, entity)
   local W = lib.WEIGHTS.by_state
   local state = h.state
   if state == "deployed" then return W.deployed * lib.damping(entity.force) end
@@ -274,12 +274,17 @@ local function harvester_weight(h, entity)
   return 0
 end
 
+-- Gewicht eines Ernters (ohne Sand); der Mk2 vibriert in jedem Zustand um 20 % schwächer (docs/plan-3i.md 2.1).
+local function harvester_weight(h, entity)
+  return state_weight(h, entity) * harvester.vibration_factor(entity)
+end
+
 -- Gewicht und Sand einer Entity jetzt (für Fenster und Prüfstand): Ernter nach Zustand, Fahrzeuge nur fahrend, feste
 -- Quellen nur bei status == working. Abseits vom Sand ist das Gewicht 0. Ohne Prüfstand-Regel (die wendet der Takt an).
 function lib.weight_of(entity)
   if not (entity and entity.valid) then return 0, false end
   local surface = entity.surface
-  if entity.name == harvester.NAME then
+  if harvester.is_name(entity.name) then
     local h = harvester.get(entity)
     if not h or h.state == "carried" then return 0, false end
     local sand = sand_at(surface, entity.position)

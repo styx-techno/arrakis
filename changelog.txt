@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.15.0
+Date: 2026-11-01
+  Features:
+    - Spice-Ernter Mk2: neue Trigger-Forschung „Ernter Mk2“, erforscht, sobald man die ersten Wurmzähne erbeutet (einen Sandwurm töten oder einen Wurmzahn aufheben). Rezept: 1 Spice-Ernter, 4 Wurmzähne, 10 Spice-Essenz (verdirbt, also frisch verbauen).
+    - Der Mk2 fördert 50 % mehr Spice-Sand (und braucht beim Ernten 50 % mehr Brennstoff) und vibriert in jedem Zustand 20 % schwächer, zusätzlich zur Ernte-Dämpfung. Sonst wie der Ernter: Tempo, Laderaum, Aufbau, Andocken, Tragen und Wurmbiss.
+    - Die Ornithopter-Leitstelle setzt aus ihrem Lager zuerst Mk2 ein.
+    - Vorläufige Grafik: Ernter-Bild mit kühlerem Stahlton (auch am Flieger); eigene Grafik folgt.
+  Modding:
+    - scripts/harvester.lua: NAMES, NAME_LIST, MK2, is_name, rate_factor, vibration_factor, tint_of, research_mk2. Alle Module erkennen Ernter über harvester.is_name. fleet.spawn_reserve und fleet.store_harvester für den Prüfstand.
+    - Prüfstand: T35 (Ernter Mk2, sechs Schritte).
+---------------------------------------------------------------------------------------------------
 Version: 0.14.0
 Date: 2026-11-01
   Features:

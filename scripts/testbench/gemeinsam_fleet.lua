@@ -26,6 +26,7 @@ local vibration_lib = require("scripts.vibration")
 local CARRYALL = "arrakis-carryall"
 local DEPOT = "arrakis-depot"
 local NAME = "spice-harvester"
+local MK2 = "spice-harvester-mk2"
 local INTAKE = "arrakis-spice-intake"
 local SPICE = "spice-sand"
 local ROCK = "arrakis-rock"
@@ -175,12 +176,13 @@ local function parked(s, carryall)
     and burner_count(carryall, FLIGHT_FUEL) >= 5 and item_count(trunk_of(carryall), "coal") >= 50
 end
 
--- Echter Ernter der Force arrakis-t23 auf einem Spicefeld 13×13; opts: coal (Standard 50), fill (Slots Spice-Sand).
+-- Echter Ernter der Force arrakis-t23 auf einem Spicefeld 13×13; opts: coal (Standard 50), fill (Slots Spice-Sand),
+-- name (Standard Ernter; T35 baut den Mk2).
 local function new_harvester(run, tb, d, position, opts)
   opts = opts or {}
   local surface = tb.surface()
   place_spice(surface, position, 6, 100000)
-  local car = create(run, tb, {name = NAME, position = {x = position.x + 0.5, y = position.y + 0.5}, force = t23_force(),
+  local car = create(run, tb, {name = opts.name or NAME, position = {x = position.x + 0.5, y = position.y + 0.5}, force = t23_force(),
     orientation = 0.25, raise_built = true}, "cars")
   if not car then return nil end
   if (opts.coal or 50) > 0 then tb.fuel(car, "coal", opts.coal or 50) end
@@ -446,7 +448,7 @@ local function sweep(run, tb)
       pcall(function() e.destroy{raise_destroy = true} end)
     end
   end
-  for _, name in ipairs({NAME, SPICE, "constant-combinator"}) do
+  for _, name in ipairs({NAME, MK2, SPICE, "constant-combinator"}) do
     for _, e in pairs(surface.find_entities_filtered{name = name, area = area}) do
       if e.valid then pcall(function() e.destroy{raise_destroy = true} end) end
     end
@@ -478,6 +480,7 @@ return
   CARRYALL = CARRYALL,
   DEPOT = DEPOT,
   NAME = NAME,
+  MK2 = MK2,
   INTAKE = INTAKE,
   SPICE = SPICE,
   ROCK = ROCK,

@@ -25,6 +25,8 @@ require("prototypes.worms")
 require("prototypes.sandworm")
 -- Phase 3h (docs/plan-3h.md): Thumper, Wurmzahn, Forschung Thumper (nach harvester.lua wegen der Voraussetzung).
 require("prototypes.thumper")
+-- Phase 3i (docs/plan-3i.md): Ernter Mk2 (kopiert den Ernter, Rezept mit Wurmzähnen aus thumper.lua).
+require("prototypes.harvester-mk2")
 
 -- Prüfstand: nur mit Startup-Einstellung "arrakis-testbench".
 require("prototypes.testbench.init")

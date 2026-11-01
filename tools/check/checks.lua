@@ -671,6 +671,8 @@ local plan_techs = {
   ["arrakis-territory-survey"] = "unit",
   -- 0.14.0 (docs/plan-3h.md 2.1): Trigger scripted, ausgelöst von scripts/thumper.lua
   ["arrakis-thumper"] = "scripted nil",
+  -- 0.15.0 (docs/plan-3i.md 2.2): Trigger scripted, ausgelöst von scripts/worms.lua drop_loot und scripts/harvester.lua
+  ["arrakis-harvester-mk2"] = "scripted nil",
 }
 local tech_count = 0
 for n, tech in pairs(raw.technology) do if is_own(n) then
@@ -686,7 +688,7 @@ for n, tech in pairs(raw.technology) do if is_own(n) then
   if plan_techs[n] == nil then add("FEHLER 3d1: neue Forschung " .. n)
   elseif plan_techs[n] ~= got then add("FEHLER 3d1: Forschung " .. n .. " Auslöser " .. got .. " statt " .. plan_techs[n]) end
 end end
-if tech_count ~= 14 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 14") end
+if tech_count ~= 15 then add("FEHLER 3d1: " .. tech_count .. " eigene Forschungen statt 15") end
 -- Phase 3g (docs/plan-3g.md 2): Revierkunde nach der Leitstelle, 300 Einheiten.
 do
   local tech = raw.technology["arrakis-territory-survey"]
@@ -737,6 +739,61 @@ do
     if settings["runtime-global"] and not setting then add("FEHLER 3h: Einstellung " .. name .. " fehlt") end
   end
   add("3h: " .. n3h .. "/5 Prototypen")
+end
+
+-- Phase 3i (docs/plan-3i.md 2.1, 2.2): Ernter Mk2, Rezept mit Wurmzähnen, Forschung. Werte stehen hier fest.
+do
+  local n3i = 0
+  local mk1 = raw.car["spice-harvester"]
+  local mk2 = raw.car["spice-harvester-mk2"]
+  local tint = {r = 0.7, g = 0.8, b = 1}
+  if not (mk1 and mk2) then add("FEHLER 3i: car spice-harvester-mk2 fehlt") else
+    n3i = n3i + 1
+    if not (mk2.icon or (type(mk2.icons) == "table" and #mk2.icons > 0)) then add("FEHLER 3i: Mk2 ohne Symbol") end
+    if not (mk2.minable and mk2.minable.result == "spice-harvester-mk2") then add("FEHLER 3i: Mk2 minable") end
+    for _, key in ipairs({"inventory_size", "consumption", "effectivity", "weight", "max_health", "allow_remote_driving",
+                          "has_belt_immunity", "trash_inventory_size", "braking_force", "friction_force", "collision_mask"}) do
+      if type(mk1[key]) ~= "table" and mk1[key] ~= mk2[key] then add("FEHLER 3i: Mk2 " .. key .. " ungleich Mk1") end
+    end
+    if mk2.guns or mk2.equipment_grid or mk2.turret_animation then add("FEHLER 3i: Mk2 hat Waffen, Gitter oder Turm") end
+    local layers = mk2.animation and mk2.animation.layers or {}
+    if #layers ~= 3 then add("FEHLER 3i: Mk2 hat " .. #layers .. " Bildebenen statt 3") end
+    local base = layers[1] or {}
+    local bt = base.tint or {}
+    if base.filename ~= harvester_gfx .. "harvester-base.png" or bt.r ~= tint.r or bt.g ~= tint.g or bt.b ~= tint.b then
+      add("FEHLER 3i: Mk2 Basis-Ebene ohne Farbton {0.7, 0.8, 1} (gleich harvester.MK2_TINT)")
+    end
+    if (layers[2] or {}).apply_runtime_tint ~= true or (layers[2] or {}).tint then add("FEHLER 3i: Mk2 Farbmaske") end
+    if (layers[3] or {}).draw_as_shadow ~= true or (layers[3] or {}).tint then add("FEHLER 3i: Mk2 Schatten") end
+  end
+  local item = raw["item-with-entity-data"]["spice-harvester-mk2"]
+  if not (item and item.place_result == "spice-harvester-mk2" and (item.icon or item.icons) and item.stack_size == 1) then
+    add("FEHLER 3i: item spice-harvester-mk2")
+  else n3i = n3i + 1 end
+  local recipe = raw.recipe["spice-harvester-mk2"]
+  if not (recipe and recipe.enabled == false) then add("FEHLER 3i: recipe spice-harvester-mk2 fehlt oder nicht gesperrt") else
+    local want = {["spice-harvester"] = 1, ["arrakis-worm-tooth"] = 4, ["spice-essence"] = 10}
+    local seen = 0
+    for _, ing in ipairs(recipe.ingredients or {}) do
+      if want[ing.name] ~= ing.amount then add("FEHLER 3i: Mk2-Rezept Zutat " .. tostring(ing.name) .. " " .. tostring(ing.amount)) end
+      seen = seen + 1
+    end
+    if seen ~= 3 then add("FEHLER 3i: Mk2-Rezept hat " .. seen .. " Zutaten statt 3") end
+    local res = recipe.results and recipe.results[1]
+    if not (res and res.name == "spice-harvester-mk2" and res.amount == 1 and #recipe.results == 1) then add("FEHLER 3i: Mk2-Rezept Ergebnis") end
+    n3i = n3i + 1
+  end
+  local tech = raw.technology["arrakis-harvester-mk2"]
+  if not tech then add("FEHLER 3i: Forschung arrakis-harvester-mk2 fehlt") else
+    local pre = tech.prerequisites or {}
+    if #pre ~= 1 or pre[1] ~= "arrakis-spice-harvesting" then add("FEHLER 3i: arrakis-harvester-mk2 Voraussetzung") end
+    local unlocks = false
+    for _, e in ipairs(tech.effects or {}) do if e.type == "unlock-recipe" and e.recipe == "spice-harvester-mk2" then unlocks = true end end
+    if not unlocks then add("FEHLER 3i: arrakis-harvester-mk2 schaltet das Rezept nicht frei") end
+    if not (tech.icon or tech.icons) then add("FEHLER 3i: Forschung arrakis-harvester-mk2 ohne Symbol") end
+    n3i = n3i + 1
+  end
+  add("3i: " .. n3i .. "/4 Prototypen")
 end
 
 -- Phase 3d2 (docs/protokolle/plan-3d2.md 3 und 7): Sandwurm, Bohrstaub, Abtauchen. Namen und Werte stehen hier fest (nicht aus

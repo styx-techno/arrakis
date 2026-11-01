@@ -70,7 +70,7 @@ data:extend({
     results = {{type = "item", name = THUMPER, amount = 1}}
   },
   {
-    -- Beute (Plan 2.2): verwendet erst mit dem Ernter Mk2 (spätere Phase).
+    -- Beute (Plan 2.2): Zutat des Ernter Mk2 (prototypes/harvester-mk2.lua, docs/plan-3i.md).
     type = "item",
     name = TOOTH,
     icons = {{icon = GFX .. "icons/worm-tooth.png", icon_size = 64}},

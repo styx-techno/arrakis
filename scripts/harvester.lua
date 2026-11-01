@@ -32,7 +32,11 @@ local terrain = require("scripts.terrain")
 local lib = {}
 
 local NAME = "spice-harvester"
+-- Ernter Mk2 (docs/plan-3i.md): eigenes Fahrzeug, sonst alles wie der Ernter. Alle Module fragen lib.NAMES/is_name.
+local MK2 = "spice-harvester-mk2"
+local NAMES = {[NAME] = true, [MK2] = true}
 local SPICE = "spice-sand"
+local TOOTH = "arrakis-worm-tooth"
 local TOGGLE_INPUT = "arrakis-harvester-toggle"
 
 -- Tempo-Deckel (Kacheln/s), läuft jeden Tick für gefahrene Ernter (Plan 1, 4.4).
@@ -41,6 +45,19 @@ lib.CAP = 1.5
 lib.RESET = 1.45
 -- Name des Ernter-Prototyps.
 lib.NAME = NAME
+-- Name des Ernter Mk2 (docs/plan-3i.md 2.1).
+lib.MK2 = MK2
+-- Alle Ernter-Namen als Menge und als Liste (für find_entities_filtered und relative GUIs).
+lib.NAMES = NAMES
+lib.NAME_LIST = {NAME, MK2}
+-- Mk2: Faktor auf Förderung und Verbrauch beim Ernten.
+lib.MK2_RATE = 1.5
+-- Mk2: Faktor auf das Vibrationsgewicht in jedem Zustand (scripts/vibration.lua).
+lib.MK2_VIBRATION = 0.8
+-- Mk2: Farbton des Lastbilds am Flieger, wie die Basis-Ebene im Prototyp (prototypes/harvester-mk2.lua).
+lib.MK2_TINT = {r = 0.7, g = 0.8, b = 1, a = 1}
+-- Forschung, die das Mk2-Rezept freischaltet (prototypes/harvester-mk2.lua).
+lib.MK2_TECH = "arrakis-harvester-mk2"
 -- Dauer Aufbauen (Ticks).
 lib.DEPLOY_TICKS = 5 * 60
 -- Dauer Einpacken (Ticks).
@@ -84,7 +101,27 @@ local FRAME_COLOR = {r = 1, g = 0.75, b = 0.3, a = 0.6}
 -- Hilfen ----------------------------------------------------------------------------------------
 
 local function is_harvester(entity)
-  return entity and entity.valid and entity.name == NAME
+  return entity and entity.valid and NAMES[entity.name] == true
+end
+
+-- true für jeden Ernter-Namen (Mk1, Mk2).
+function lib.is_name(name)
+  return NAMES[name] == true
+end
+
+-- Faktor auf Förderung und Verbrauch (Mk2 1,5, sonst 1).
+function lib.rate_factor(entity)
+  return entity.name == MK2 and lib.MK2_RATE or 1
+end
+
+-- Faktor auf das Vibrationsgewicht (Mk2 0,8, sonst 1).
+function lib.vibration_factor(entity)
+  return entity.name == MK2 and lib.MK2_VIBRATION or 1
+end
+
+-- Farbton des Lastbilds für einen Ernter-Namen (nil = ungetönt).
+function lib.tint_of(name)
+  return name == MK2 and lib.MK2_TINT or nil
 end
 
 local function is_still(entity)
@@ -758,7 +795,8 @@ local function mine(h, tick)
     set_status(h, "no_fuel")
     return 0
   end
-  h.progress = h.progress + lib.RATE * dt
+  local factor = lib.rate_factor(entity)
+  h.progress = h.progress + lib.RATE * factor * dt
   local n = math.floor(h.progress)
   h.progress = h.progress - n
   local bonus = entity.force.mining_drill_productivity_bonus
@@ -771,7 +809,7 @@ local function mine(h, tick)
     stats(entity).on_flow(SPICE, inserted)
     drain(h, lib.DRAIN * inserted / (1 + bonus))
   end
-  consume(entity, lib.POWER * dt)
+  consume(entity, lib.POWER * factor * dt)
   lib.apply_fuel_normalization(entity)
   set_status(h, "harvesting")
   return inserted
@@ -964,6 +1002,25 @@ local function on_marked_for_deconstruction(event)
   end
 end
 
+-- Forschung „Ernter Mk2“ (docs/plan-3i.md 2.2): Trigger per Skript, sobald die Force Wurmzähne erbeutet
+-- (scripts/worms.lua drop_loot) oder ein Spieler einen Wurmzahn aufhebt (auch für Spielstände aus 0.14.0).
+-- Gibt true zurück, wenn die Forschung jetzt erforscht wurde.
+function lib.research_mk2(force)
+  if not (force and force.valid) then return false end
+  local tech = force.technologies[lib.MK2_TECH]
+  if not tech or tech.researched then return false end
+  force.script_trigger_research(lib.MK2_TECH)
+  if not tech.researched then tech.researched = true end
+  return true
+end
+
+local function on_picked_up_item(event)
+  local stack = event.item_stack
+  if not (stack and stack.name == TOOTH) then return end
+  local player = game.get_player(event.player_index)
+  if player then lib.research_mk2(player.force) end
+end
+
 -- Taste: zuerst das Fahrzeug, in dem der Spieler sitzt, sonst die Auswahl (auch aus der Kartenansicht).
 local function on_toggle_key(event)
   local player = game.get_player(event.player_index)
@@ -995,6 +1052,7 @@ lib.events =
   [defines.events.on_object_destroyed] = on_object_destroyed,
   [defines.events.on_player_driving_changed_state] = on_driving_changed,
   [defines.events.on_marked_for_deconstruction] = on_marked_for_deconstruction,
+  [defines.events.on_picked_up_item] = on_picked_up_item,
   [TOGGLE_INPUT] = on_toggle_key
 }
 

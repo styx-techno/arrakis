@@ -741,7 +741,7 @@ local function base_spot(d, job)
   for _, offset in ipairs(lib.BASE_OFFSETS) do
     local p = {x = d.position.x + offset[1], y = d.position.y + offset[2]}
     local free = not taken[p.x .. "/" .. p.y]
-      and #surface.find_entities_filtered{name = harvester.NAME, position = p, radius = 3, limit = 1} == 0
+      and #surface.find_entities_filtered{name = harvester.NAME_LIST, position = p, radius = 3, limit = 1} == 0
     if free then
       if terrain.is_rock_area(surface, {{p.x - 2, p.y - 2}, {p.x + 2, p.y + 2}}) then return p end
       first_free = first_free or p
@@ -835,7 +835,7 @@ local function store_harvester(h, d)
   local inventory = d.entity.get_inventory(defines.inventory.chest)
   local entity = h.entity
   if not (inventory and entity.valid) then return false end
-  if not inventory.can_insert({name = harvester.NAME, quality = entity.quality.name}) then return false end
+  if not inventory.can_insert({name = entity.name, quality = entity.quality.name}) then return false end
   return entity.mine{inventory = inventory, force = false, raise_destroyed = true, ignore_minable = true}
 end
 
@@ -1290,20 +1290,25 @@ local function fuel_from_depot(d, entity, n)
 end
 
 -- Ernter aus dem Lager auf einen Abstellplatz (docs/plan-3f.md 1.7): Item mit Qualität und gespeicherten Werten,
--- betankt, als Reserve dieser Leitstelle. Gibt den Datensatz zurück oder nil.
+-- betankt, als Reserve dieser Leitstelle. Ernter Mk2 zuerst (docs/plan-3i.md 1.4 a). Gibt den Datensatz zurück oder nil.
 local function spawn_reserve(d, tick)
   local depot_inv = d.entity.get_inventory(defines.inventory.chest)
   if not depot_inv then return nil end
   local stack
   for i = 1, #depot_inv do
-    if depot_inv[i].valid_for_read and depot_inv[i].name == harvester.NAME then stack = depot_inv[i] break end
+    local slot = depot_inv[i]
+    if slot.valid_for_read and harvester.is_name(slot.name) then
+      if slot.name == harvester.MK2 then stack = slot break end
+      stack = stack or slot
+    end
   end
   if not stack then return nil end
+  local name = stack.name
   local surface = d.entity.surface
   local spot = base_spot(d, nil)
-  local position = surface.find_non_colliding_position(harvester.NAME, spot, 6, 0.5)
+  local position = surface.find_non_colliding_position(name, spot, 6, 0.5)
   if not position then return nil end
-  local entity = surface.create_entity{name = harvester.NAME, position = position, force = d.entity.force,
+  local entity = surface.create_entity{name = name, position = position, force = d.entity.force,
     quality = stack.quality, item = stack, raise_built = true}
   if not entity then return nil end
   stack.count = stack.count - 1
@@ -1321,7 +1326,7 @@ local function harvester_items(d)
   local depot_inv = d.entity.get_inventory(defines.inventory.chest)
   local n = 0
   for _, item in pairs(depot_inv and depot_inv.get_contents() or {}) do
-    if item.name == harvester.NAME then n = n + item.count end
+    if harvester.is_name(item.name) then n = n + item.count end
   end
   return n
 end
@@ -1593,6 +1598,9 @@ end
 
 -- Für den Prüfstand und /arrakis-uninstall.
 lib.depot_of = depot_of
+-- Prüfstand T35 (docs/plan-3i.md 3): Ausgabe aus dem Lager (Mk2 zuerst) und Einlagern.
+lib.spawn_reserve = spawn_reserve
+lib.store_harvester = store_harvester
 lib.register_depot = register_depot
 lib.fill_of = fill_of
 lib.onboard_energy = onboard_energy

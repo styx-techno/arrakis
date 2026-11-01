@@ -128,7 +128,7 @@ local function build(player, h)
     {
       gui = defines.relative_gui_type.car_gui,
       position = defines.relative_gui_position.right,
-      names = {harvester.NAME}
+      names = harvester.NAME_LIST
     }
   }
   frame.add{type = "label", name = "arrakis_state"}
@@ -155,7 +155,7 @@ local function open_record(player)
   local h = storage.harvesters[storage.gui_open[player.index] or 0]
   if h and h.entity.valid then return h end
   local opened = player.opened
-  if opened and type(opened) ~= "number" and opened.object_name == "LuaEntity" and opened.name == harvester.NAME then
+  if opened and type(opened) ~= "number" and opened.object_name == "LuaEntity" and harvester.is_name(opened.name) then
     return harvester.get(opened) or harvester.register(opened)
   end
   return nil
@@ -163,7 +163,7 @@ end
 
 local function on_gui_opened(event)
   local entity = event.entity
-  if not (entity and entity.valid and entity.name == harvester.NAME) then return end
+  if not (entity and entity.valid and harvester.is_name(entity.name)) then return end
   local player = game.get_player(event.player_index)
   if not player then return end
   local h = harvester.get(entity) or harvester.register(entity)
@@ -175,7 +175,7 @@ end
 local function on_gui_closed(event)
   if not storage.gui_open[event.player_index] then return end
   local entity = event.entity
-  if entity and entity.valid and entity.name ~= harvester.NAME then return end
+  if entity and entity.valid and not harvester.is_name(entity.name) then return end
   close(event.player_index)
 end
 

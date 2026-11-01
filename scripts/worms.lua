@@ -116,7 +116,6 @@ local ARRAKIS = "arrakis"
 local ORNITHOPTER_TECH = "arrakis-ornithopter"
 local DISCOVERY_TECH = "planet-discovery-arrakis"
 local HARVESTING_TECH = "arrakis-spice-harvesting"
-local HARVESTER = harvester.NAME
 
 -- Forces ohne Schonfrist und ohne Ziele (Plan 4.6).
 local EXEMPT = {enemy = true, neutral = true, [FORCE] = true}
@@ -245,7 +244,7 @@ local function box_distance(entity, cx, cy)
 end
 
 local function kind_of(entity)
-  if entity.name == HARVESTER then return "harvest" end
+  if harvester.is_name(entity.name) then return "harvest" end
   if VEHICLE_TYPES[entity.type] then return "vehicle" end
   return "building"
 end
@@ -916,7 +915,7 @@ local function devour(victims, target, mode, worm_force)
   end
   -- Gibt true zurück, wenn das Fahrzeug stirbt.
   local function settle(vehicle)
-    if vehicle.name == HARVESTER then
+    if harvester.is_name(vehicle.name) then
       local h = harvester.get(vehicle)
       local trunk = vehicle.get_inventory(defines.inventory.car_trunk)
       if mode == "heavy-damage" then
@@ -1771,6 +1770,8 @@ function lib.drop_loot(unit, hunt, force)
     enable_looted = true, allow_belts = false}
   if force and force.valid and force.name ~= FORCE then
     force.print({"arrakis-message.msg-worm-loot", n, gps(surface, position)})
+    -- Phase 3i (docs/plan-3i.md 2.2): die ersten Zähne schalten den Ernter Mk2 frei.
+    harvester.research_mk2(force)
   end
   storage.hunts.teeth = (storage.hunts.teeth or 0) + n
   return n
