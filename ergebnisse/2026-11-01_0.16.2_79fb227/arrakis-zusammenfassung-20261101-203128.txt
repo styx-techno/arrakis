@@ -1,0 +1,3 @@
+SUMMARY arrakis-test-20261101-203128.txt | Tests 1 | bestanden 0 | FEHLER 1 | abgebrochen 0 | ohne ENDE 0
+T39 | Wurm unter Beschuss 0.16.2 | FEHLER | 40.8 s | OK 0 FEHLER 1 FRAGE 0
+  ! [T39] FEHLER +40.6s: 1) Wurm unter Beschuss: Ergebnis bitten, abgetaucht ende, wütend 150 von 1730 Takten, beruhigt 0 mal, Kopf bis 8.6 Kacheln an den Fels, Lebenspunkte zuletzt 30000 | nicht erfüllt: wütend in 150 von 1730 Takten
