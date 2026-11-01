@@ -296,12 +296,13 @@ local function foreign_regular(own)
   return n
 end
 
--- Ist die Sandwurm-Force da und feindlich zu force (beide Richtungen, ohne Waffenruhe)?
+-- Ist die Sandwurm-Force da und feindlich zu force (beide Richtungen; seit 0.16.2 hält der Wurm selbst Waffenruhe,
+-- force nicht, scripts/worms.lua set_hostile)?
 local function worm_hostile(force)
   local worm = game.forces[WORM_FORCE]
   if not (worm and force and force.valid) then return false end
   return not worm.get_friend(force) and not force.get_friend(worm)
-    and not worm.get_cease_fire(force) and not force.get_cease_fire(worm)
+    and worm.get_cease_fire(force) and not force.get_cease_fire(worm)
 end
 
 local function hunt_text(tb, hunt)

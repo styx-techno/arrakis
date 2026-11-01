@@ -258,12 +258,15 @@ end
 
 -- Sandwurm-Force --------------------------------------------------------------------------------
 
--- Feindschaft in beide Richtungen, ohne Waffenruhe (wie tb.worm_force).
+-- Feindschaft in beide Richtungen; der Wurm selbst hält aber Waffenruhe (0.16.2). Grund (Max im Spiel T34, Prüfstand T39
+-- Lauf 73d06d4): Sobald Geschütze in Reichweite waren, griff die Demolisher-KI sie an (enraged_at_target in 9 von 10
+-- Takten, schon bevor ein Schuss traf), bog zum Fels ab und tauchte dort als „kein Weg“ ab. Biss und Zerdrücken macht das
+-- Skript, die KI braucht keine Ziele. Die anderen Forces halten keine Waffenruhe: Geschütze schießen weiter auf den Wurm.
 local function set_hostile(worm, other)
   if other.index == worm.index or other.name == "neutral" then return end
   worm.set_friend(other, false)
   other.set_friend(worm, false)
-  worm.set_cease_fire(other, false)
+  worm.set_cease_fire(other, true)
   other.set_cease_fire(worm, false)
 end
 

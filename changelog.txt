@@ -5,11 +5,11 @@ Date: 2026-11-01
     - Unruhe: Das tiefe Brummen ist etwa 15 % lauter.
     - Wurmzeichen: Steht der Ernter ganz auf Fels, bricht die Sandfontäne nicht mehr unter ihm aus dem Fels, sondern an der nächsten Sandstelle daneben; dorthin zielt auch der Wurm. Eine Fontäne kommt nie mehr aus Fels.
     - Thumper: Jeder Schlag ist jetzt zu hören (eigener tiefer Stampf-Ton, einmal je Sekunde).
-    - Sandwurm unter Beschuss: Er biegt nicht mehr wütend zum Schützen ab. Bisher fuhr er so an die Felsinsel mit den Geschützen, blieb dort hängen und tauchte als festgefahren ab (das sah aus wie Sterben, gab aber keine Zähne, und bei 0 biss die Jagd trotzdem zu).
+    - Sandwurm vor Geschützen: Er greift Geschütze nicht mehr von sich aus an und bleibt auf Kurs zu seinem Ziel. Bisher bog er zu ihnen ab, sobald sie in Reichweite waren, blieb an der Felsinsel hängen und tauchte ab (das sah aus wie Sterben, gab aber keine Zähne, und bei 0 biss die Jagd trotzdem zu). Die Geschütze schießen weiter auf ihn.
     - Sandwurm im Angriff: Liegt der Punkt hinter dem Ziel im Fels (z. B. Thumper kurz vor einer Felsinsel), fährt er nur bis zum letzten freien Sand, statt gegen den Fels zu drücken.
     - Tipps und Tricks: „Arrakis“ und „Wurmzeichen“ zeigen oben eine bewegte Szene wie die Vanilla-Planeten (Felsplateau mit Leitstelle, Ernter mit Staubring, kreisender Ornithopter; Countdown-Ring, Rettung per Ornithopter, leere Sandfontäne bei 0) und einen kürzeren Text mit Objekt-Links.
   Modding:
-    - Prüfstand T39 (neu, läuft bei „alle“ mit): Wurm unter Beschuss vor einer Felsinsel mit 20 Geschützen; er darf nicht wütend werden und nicht abtauchen. sound/thumper.ogg aus tools/ton/thumper.py.
+    - Sandwurm-Force: hält selbst Waffenruhe gegenüber allen Forces (die anderen nicht), wütende KI-Zustände setzt sandworm.lua zusätzlich sofort zurück. Prüfstand T39 (neu, läuft bei „alle“ mit): Wurm fährt an 45 Geschützen entlang, muss auf der Spur bleiben, vor 0 sterben und 2–4 Zähne fallen lassen. sound/thumper.ogg aus tools/ton/thumper.py.
     - terrain.sand_spot sucht die nächste Sandkachel (optional mit Abstand zu einem Punkt). Prüfstand T19 Schritt 5a prüft, dass bei der Flucht auf Fels keine Eruption unter dem Ernter liegt. tools/check/checks.lua prüft, dass beide Tipps eine Simulation auf Arrakis haben und ihr Skript sich übersetzen lässt.
 ---------------------------------------------------------------------------------------------------
 Version: 0.16.1
